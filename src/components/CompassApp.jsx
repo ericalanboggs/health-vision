@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Home, Flag, Backpack, TrendingUp, Clock3, FileText, ChevronLeft, Compass } from 'lucide-react'
+import { Home, Flag, Backpack, TrendingUp, Clock3, FileText, ChevronLeft, Mountain } from 'lucide-react'
 import NorthStarStep from './steps/NorthStarStep'
 import CardinalDirectionsStep from './steps/CardinalDirectionsStep'
 import TerrainStep from './steps/TerrainStep'
@@ -74,8 +74,8 @@ const CompassApp = ({ onBack }) => {
       <nav className="w-full md:w-64 bg-stone-100 border-b md:border-b-0 md:border-r border-stone-200 p-4 no-print">
         <div className="flex items-center justify-between md:block mb-6">
           <h1 className="text-2xl font-bold text-green-800 flex items-center gap-2">
-            <Compass className="w-7 h-7" />
-            Climb Your Health Summit
+            <Mountain className="w-7 h-7" />
+            Health Summit
           </h1>
           <button
             onClick={onBack}
@@ -128,7 +128,7 @@ const CompassApp = ({ onBack }) => {
 const IntroPage = ({ onNext }) => {
   return (
     <div className="max-w-4xl mx-auto">
-      <h2 className="text-4xl font-bold text-stone-900 mb-6">Design Your Interactive Health Vision</h2>
+      <h2 className="text-4xl font-bold text-stone-900 mb-6">Design Your Interactive Health Summit</h2>
       <p className="text-xl text-stone-700 mb-10 leading-relaxed">
         In the next 5–10 minutes, you&apos;ll map out where you&apos;re headed, why it matters, where you are today, and what feels realistic for the next month.
         Move at your own pace—you can always come back to refine or expand.

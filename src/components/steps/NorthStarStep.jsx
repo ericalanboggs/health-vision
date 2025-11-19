@@ -72,10 +72,10 @@ const NorthStarStep = ({ formData, updateFormData, onNext }) => {
       </p>
 
       <div className="space-y-8">
-        {/* Q1: Health Vision */}
+        {/* Q1: Health Summit */}
         <div className="bg-white p-6 rounded-xl shadow-md border border-stone-200">
           <label className="block text-xl font-semibold text-stone-800 mb-2">
-            What is your health vision?
+            What is your health summit?
           </label>
           <p className="text-sm text-stone-600 mb-4">
             Imagine yourself 1–2 years from now. Describe your <strong>ideal state of health and well-being</strong>.

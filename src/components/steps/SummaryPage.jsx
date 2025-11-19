@@ -75,7 +75,7 @@ const SummaryPage = ({ formData, onNavigate }) => {
     // Title
     doc.setFontSize(18)
     doc.setTextColor(34, 197, 94)
-    doc.text('MY HEALTH VISION & PERSONAL PLAN', margin, yPos)
+    doc.text('MY HEALTH SUMMIT & PERSONAL PLAN', margin, yPos)
     yPos += 10
     doc.setFontSize(10)
     doc.setTextColor(100, 100, 100)
@@ -84,7 +84,7 @@ const SummaryPage = ({ formData, onNavigate }) => {
 
     // Vision Setting
     addSection('STEP 1: VISION SETTING')
-    addText('Health Vision (1-2 years):', 11, true)
+    addText('Health Summit (1-2 years):', 11, true)
     addText(formData.visionStatement || 'Not yet defined')
     addText('How I Feel:', 11, true)
     addText(formData.feelingState || 'Not yet defined')
@@ -189,7 +189,7 @@ const SummaryPage = ({ formData, onNavigate }) => {
     addText(actionPlan.weeklyCheckIn.nextSteps, 9)
 
     // Save PDF
-    doc.save(`health-vision-plan-${new Date().toISOString().split('T')[0]}.pdf`)
+    doc.save(`health-summit-plan-${new Date().toISOString().split('T')[0]}.pdf`)
   }
 
   const handleReminder = (period) => {
@@ -221,10 +221,10 @@ const SummaryPage = ({ formData, onNavigate }) => {
     const endDate = formatICSDate(new Date(reminderDate.getTime() + 60 * 60 * 1000))
 
     const visionSummary = `
-HEALTH VISION REVIEW
+HEALTH SUMMIT REVIEW
 ====================
 
-It's time to review and update your Health Vision & Action Plan!
+It's time to review and update your Health Summit & Action Plan!
 
 YOUR VISION (1-2 years):
 ${formData.visionStatement || 'Not yet defined'}
@@ -251,7 +251,7 @@ Review your full plan, celebrate progress, and adjust as needed!
 
     const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Health Vision//Reminder//EN
+PRODID:-//Health Summit//Reminder//EN
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
@@ -259,14 +259,14 @@ UID:${Date.now()}@healthvision.app
 DTSTAMP:${formatICSDate(now)}
 DTSTART:${startDate}
 DTEND:${endDate}
-SUMMARY:Review Your Health Vision
+SUMMARY:Review Your Health Summit
 DESCRIPTION:${visionSummary.replace(/\n/g, '\\n')}
-LOCATION:Health Vision App
+LOCATION:Health Summit App
 STATUS:CONFIRMED
 SEQUENCE:0
 BEGIN:VALARM
 TRIGGER:-PT1H
-DESCRIPTION:Health Vision Review Reminder
+DESCRIPTION:Health Summit Review Reminder
 ACTION:DISPLAY
 END:VALARM
 END:VEVENT
@@ -276,7 +276,7 @@ END:VCALENDAR`.trim()
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `health-vision-reminder-${period}.ics`
+    a.download = `health-summit-reminder-${period}.ics`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -633,7 +633,7 @@ END:VCALENDAR`.trim()
           
           <div className="space-y-4">
             <div>
-              <h4 className="text-sm font-semibold text-stone-600 mb-1">Health Vision (1-2 years)</h4>
+              <h4 className="text-sm font-semibold text-stone-600 mb-1">Health Summit (1-2 years)</h4>
               <p className="text-stone-800 leading-relaxed">
                 {isEmpty(formData.visionStatement) ? <span className="text-stone-400 italic text-sm">Not yet defined</span> : formData.visionStatement}
               </p>
