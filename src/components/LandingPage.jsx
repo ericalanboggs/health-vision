@@ -65,7 +65,7 @@ const LandingPage = ({ onStart }) => {
             Your Ascent in Four Stages
           </h2>
           <p className="text-center text-stone-600 mb-12 text-lg">
-            A thoughtful framework to move from vision to action in 30 minutes
+            A thoughtful framework to move from vision to action in 10 minutes or less
           </p>
           
           <div className="grid md:grid-cols-2 gap-8">
