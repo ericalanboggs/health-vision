@@ -75,7 +75,7 @@ const CompassApp = ({ onBack }) => {
         <div className="flex items-center justify-between md:block mb-6">
           <h1 className="text-2xl font-bold text-green-800 flex items-center gap-2">
             <Compass className="w-7 h-7" />
-            My Health Summit
+            Climb Your Health Summit
           </h1>
           <button
             onClick={onBack}

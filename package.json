@@ -1,5 +1,6 @@
 {
-  "name": "career-compass-app",
+  "name": "climb-your-health-summit",
+  "private": true,
   "version": "1.0.0",
   "description": "A beautiful career compass app for defining your north star vision",
   "type": "module",

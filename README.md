@@ -1,10 +1,10 @@
-# 🏔️ My Health Summit
+# 🏔️ Climb Your Health Summit
 
 A beautiful, thoughtful health planning application designed to help individuals climb to their health summit with purpose, not just a plan.
 
 ## 🏔️ Overview
 
-My Health Summit guides users through a structured 4-step framework using a mountain climbing metaphor. The app helps you define your vision, assess your resources, map your route, and create an actionable plan to reach your health goals.
+Climb Your Health Summit guides users through a structured 4-step framework using a mountain climbing metaphor. The app helps you define your vision, assess your resources, map your route, and create an actionable plan to reach your health goals.
 
 ## ✨ Features
 
