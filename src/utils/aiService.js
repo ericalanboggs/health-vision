@@ -1,0 +1,172 @@
+import OpenAI from 'openai'
+
+// Initialize OpenAI client
+// Note: In production, use environment variables and a backend API
+const getOpenAIClient = () => {
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY
+  if (!apiKey) {
+    throw new Error('OpenAI API key not found. Please add VITE_OPENAI_API_KEY to your .env file')
+  }
+  return new OpenAI({
+    apiKey,
+    dangerouslyAllowBrowser: true // Note: In production, call from backend
+  })
+}
+
+/**
+ * Enhance action plan with AI personalization
+ */
+export const enhanceActionPlan = async (formData, actionPlan) => {
+  try {
+    const client = getOpenAIClient()
+    
+    const prompt = `You are a health coach helping someone personalize their health action plan. Based on their context, make the generic actions more specific, actionable, and tailored to their situation.
+
+USER CONTEXT:
+Vision: ${formData.visionStatement || 'Not specified'}
+How they want to feel: ${formData.feelingState || 'Not specified'}
+Why it matters: ${formData.whyMatters || 'Not specified'}
+Current health score: ${formData.currentScore || 5}/10
+Time capacity: ${formData.timeCapacity || '10 minutes/day'}
+Readiness: ${formData.readiness || 5}/10
+Barriers: ${(formData.barriers || []).join(', ') || 'None'}
+Barrier notes: ${formData.barriersNotes || 'None'}
+Preferred times: ${formData.preferredTimes || 'Not specified'}
+Sustainable approach: ${formData.sustainableNotes || 'Not specified'}
+
+CURRENT GENERIC PLAN:
+${actionPlan.weeklyActions.map(item => `${item.area}:\n${item.actions.map(a => `- ${a}`).join('\n')}`).join('\n\n')}
+
+TASK:
+Provide 4-6 highly specific, personalized action steps for THIS WEEK that:
+1. Fit their exact time capacity and schedule
+2. Address their specific barriers
+3. Align with their vision and why it matters
+4. Feel achievable given their readiness level
+5. Are concrete and actionable (not vague advice)
+
+Format as a JSON array of objects with this structure:
+[
+  {
+    "action": "Specific action step",
+    "why": "Brief reason why this works for them",
+    "tip": "One practical tip to make it easier"
+  }
+]
+
+Keep actions brief, specific, and encouraging. Focus on small wins that build momentum.`
+
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an empathetic health coach who specializes in creating personalized, achievable action plans. You focus on small wins and meeting people where they are.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      response_format: { type: 'json_object' }
+    })
+
+    const content = response.choices[0].message.content
+    const parsed = JSON.parse(content)
+    
+    // Handle different possible response formats
+    return parsed.actions || parsed.plan || parsed
+  } catch (error) {
+    console.error('AI Enhancement Error:', error)
+    throw error
+  }
+}
+
+/**
+ * Get personalized barrier strategies with AI
+ */
+export const enhanceBarrierStrategy = async (barrier, userContext) => {
+  try {
+    const client = getOpenAIClient()
+    
+    const prompt = `You are a health coach helping someone overcome a specific barrier.
+
+BARRIER: ${barrier}
+USER CONTEXT: ${userContext}
+
+Provide 3-4 highly specific, actionable strategies to overcome this barrier given their exact situation. Be practical and empathetic.
+
+Format as a JSON object:
+{
+  "mainStrategy": "One sentence main approach",
+  "tactics": ["Specific tactic 1", "Specific tactic 2", "Specific tactic 3"]
+}`
+
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a practical health coach who gives specific, actionable advice tailored to individual circumstances.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      response_format: { type: 'json_object' }
+    })
+
+    return JSON.parse(response.choices[0].message.content)
+  } catch (error) {
+    console.error('AI Barrier Strategy Error:', error)
+    throw error
+  }
+}
+
+/**
+ * Generate a personalized motivational message
+ */
+export const generateMotivationalMessage = async (formData) => {
+  try {
+    const client = getOpenAIClient()
+    
+    const prompt = `Create a brief, personalized motivational message for someone starting their health journey.
+
+Their vision: ${formData.visionStatement || 'Not specified'}
+Why it matters: ${formData.whyMatters || 'Not specified'}
+Current score: ${formData.currentScore || 5}/10
+Readiness: ${formData.readiness || 5}/10
+
+Write 2-3 sentences that are:
+- Encouraging and warm
+- Specific to their situation
+- Focused on their "why"
+- Realistic about where they are
+
+Just return the message text, no JSON.`
+
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an empathetic health coach who writes brief, personalized encouragement.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.8,
+      max_tokens: 150
+    })
+
+    return response.choices[0].message.content.trim()
+  } catch (error) {
+    console.error('AI Motivational Message Error:', error)
+    throw error
+  }
+}

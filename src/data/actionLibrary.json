@@ -1,0 +1,258 @@
+{
+  "Movement/Exercise": {
+    "5 minutes/day": [
+      "5-minute morning stretch routine",
+      "2-minute desk exercises every 2 hours",
+      "Walk around the block after lunch",
+      "Do 10 squats before each meal"
+    ],
+    "10 minutes/day": [
+      "10-minute morning walk",
+      "Bodyweight circuit (push-ups, squats, planks)",
+      "Follow a 10-minute yoga video",
+      "Dance to 3 favorite songs"
+    ],
+    "20 minutes/day": [
+      "20-minute workout video (YouTube)",
+      "Jog/walk intervals in neighborhood",
+      "Strength training routine (3 exercises)",
+      "Bike ride around the area"
+    ],
+    "30-60 minutes/day": [
+      "Full gym workout (cardio + strength)",
+      "Group fitness class",
+      "Long walk or hike",
+      "Swimming session"
+    ],
+    "More than 1 hour/day": [
+      "Comprehensive workout program",
+      "Sports league or team practice",
+      "Long-distance running/cycling",
+      "Multiple fitness activities per day"
+    ]
+  },
+  "Nutrition": {
+    "5 minutes/day": [
+      "Prep one healthy snack for tomorrow",
+      "Drink water before each meal",
+      "Add one vegetable to dinner",
+      "Track meals in a simple food journal"
+    ],
+    "10 minutes/day": [
+      "Prepare overnight oats for breakfast",
+      "Chop vegetables for the week",
+      "Plan tomorrow's meals",
+      "Make a healthy smoothie"
+    ],
+    "20 minutes/day": [
+      "Batch cook protein for the week",
+      "Prepare 2-3 healthy meals",
+      "Create a weekly meal plan",
+      "Shop for fresh ingredients"
+    ],
+    "30-60 minutes/day": [
+      "Full meal prep for 3-4 days",
+      "Cook a new healthy recipe",
+      "Organize kitchen and pantry",
+      "Batch cook multiple meals"
+    ],
+    "More than 1 hour/day": [
+      "Complete weekly meal prep",
+      "Learn advanced cooking techniques",
+      "Experiment with new cuisines",
+      "Prepare freezer meals for the month"
+    ]
+  },
+  "Sleep": {
+    "5 minutes/day": [
+      "Set a consistent bedtime alarm",
+      "Do a 5-minute wind-down routine",
+      "Dim lights 30 minutes before bed",
+      "Put phone in another room"
+    ],
+    "10 minutes/day": [
+      "Evening meditation or breathing exercises",
+      "Light stretching before bed",
+      "Journal about the day",
+      "Prepare bedroom for optimal sleep"
+    ],
+    "20 minutes/day": [
+      "Full bedtime routine (shower, skincare, reading)",
+      "Gentle yoga for sleep",
+      "Progressive muscle relaxation",
+      "Create a sleep sanctuary"
+    ],
+    "30-60 minutes/day": [
+      "Comprehensive sleep hygiene routine",
+      "Evening walk to wind down",
+      "Extended relaxation practice",
+      "Sleep tracking and optimization"
+    ],
+    "More than 1 hour/day": [
+      "Full evening routine with multiple practices",
+      "Sleep optimization program",
+      "Comprehensive wind-down activities",
+      "Advanced sleep improvement techniques"
+    ]
+  },
+  "Stress Management": {
+    "5 minutes/day": [
+      "5-minute breathing exercise",
+      "Quick body scan meditation",
+      "Step outside for fresh air",
+      "Listen to calming music"
+    ],
+    "10 minutes/day": [
+      "Guided meditation app session",
+      "Journaling practice",
+      "Mindful tea or coffee break",
+      "Gratitude practice"
+    ],
+    "20 minutes/day": [
+      "Yoga or tai chi practice",
+      "Nature walk",
+      "Creative hobby time",
+      "Deep relaxation exercise"
+    ],
+    "30-60 minutes/day": [
+      "Full meditation or yoga session",
+      "Therapy or counseling",
+      "Extended nature time",
+      "Comprehensive stress-relief routine"
+    ],
+    "More than 1 hour/day": [
+      "Multiple stress-management practices",
+      "Retreat or spa day",
+      "Extended outdoor activities",
+      "Comprehensive wellness program"
+    ]
+  },
+  "Alcohol/Substance Moderation": {
+    "5 minutes/day": [
+      "Track daily intake in a journal",
+      "Replace one drink with sparkling water",
+      "Set a daily limit reminder",
+      "Practice saying 'no thanks'"
+    ],
+    "10 minutes/day": [
+      "Find alcohol-free alternatives to try",
+      "Plan social activities without drinking",
+      "Read about benefits of moderation",
+      "Connect with a support buddy"
+    ],
+    "20 minutes/day": [
+      "Attend a support group meeting",
+      "Practice stress-relief alternatives",
+      "Prepare mocktails or healthy drinks",
+      "Journal about triggers and patterns"
+    ],
+    "30-60 minutes/day": [
+      "Therapy or counseling session",
+      "Comprehensive trigger management",
+      "Alternative activity planning",
+      "Support group participation"
+    ],
+    "More than 1 hour/day": [
+      "Intensive support program",
+      "Multiple healthy alternatives",
+      "Comprehensive lifestyle changes",
+      "Professional treatment program"
+    ]
+  },
+  "Planning/Organization": {
+    "5 minutes/day": [
+      "Review tomorrow's schedule",
+      "Set 3 priorities for the day",
+      "Clear one surface or space",
+      "Update to-do list"
+    ],
+    "10 minutes/day": [
+      "Weekly planning session",
+      "Organize one drawer or area",
+      "Review and adjust goals",
+      "Time-block tomorrow's schedule"
+    ],
+    "20 minutes/day": [
+      "Comprehensive weekly planning",
+      "Declutter and organize a room",
+      "Set up systems and routines",
+      "Review progress on goals"
+    ],
+    "30-60 minutes/day": [
+      "Deep organization project",
+      "Full home/workspace organization",
+      "System implementation",
+      "Comprehensive planning session"
+    ],
+    "More than 1 hour/day": [
+      "Major organization overhaul",
+      "Multiple planning systems",
+      "Complete life organization",
+      "Professional organizing help"
+    ]
+  },
+  "Tech Boundaries": {
+    "5 minutes/day": [
+      "Set phone to 'Do Not Disturb' during meals",
+      "Delete one distracting app",
+      "Turn off non-essential notifications",
+      "Charge phone outside bedroom"
+    ],
+    "10 minutes/day": [
+      "Set app time limits",
+      "Create tech-free zones at home",
+      "Schedule specific social media times",
+      "Practice digital sunset routine"
+    ],
+    "20 minutes/day": [
+      "Full digital detox evening",
+      "Replace screen time with reading",
+      "Implement tech-free morning routine",
+      "Audit and clean up digital life"
+    ],
+    "30-60 minutes/day": [
+      "Extended tech-free activities",
+      "Comprehensive digital wellness plan",
+      "Multiple tech-free periods",
+      "Alternative hobby development"
+    ],
+    "More than 1 hour/day": [
+      "Digital minimalism practice",
+      "Extended tech-free lifestyle",
+      "Multiple offline activities",
+      "Comprehensive digital wellness"
+    ]
+  },
+  "Social Connection": {
+    "5 minutes/day": [
+      "Text a friend to check in",
+      "Call a family member",
+      "Smile and chat with a neighbor",
+      "Send a thoughtful message"
+    ],
+    "10 minutes/day": [
+      "Have a meaningful conversation",
+      "Schedule a coffee date",
+      "Join an online community",
+      "Reach out to someone new"
+    ],
+    "20 minutes/day": [
+      "Video call with loved ones",
+      "Attend a meetup or group",
+      "Volunteer in community",
+      "Practice active listening"
+    ],
+    "30-60 minutes/day": [
+      "Attend social event or gathering",
+      "Join a club or class",
+      "Host friends or family",
+      "Community involvement activity"
+    ],
+    "More than 1 hour/day": [
+      "Multiple social activities",
+      "Host gatherings regularly",
+      "Deep community involvement",
+      "Build strong social network"
+    ]
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "Time": {
+    "strategy": "Start with micro-habits that take less than 5 minutes",
+    "tips": [
+      "Stack new habits onto existing routines",
+      "Use waiting time (coffee brewing, commute) productively",
+      "Wake up 15 minutes earlier for morning routine",
+      "Batch similar tasks together to save time"
+    ]
+  },
+  "Energy": {
+    "strategy": "Match activities to your energy peaks and valleys",
+    "tips": [
+      "Schedule demanding tasks during your high-energy hours",
+      "Start with the easiest version of your goal",
+      "Improve sleep quality first—it multiplies energy",
+      "Take strategic breaks to recharge throughout the day"
+    ]
+  },
+  "Stress": {
+    "strategy": "Build stress management into your daily routine",
+    "tips": [
+      "Practice 5-minute breathing exercises when stressed",
+      "Identify and address root causes, not just symptoms",
+      "Set boundaries to protect your wellbeing",
+      "Schedule regular breaks and recovery time"
+    ]
+  },
+  "Motivation": {
+    "strategy": "Create systems that don't rely on motivation alone",
+    "tips": [
+      "Make it easier to do the right thing (prep, environment)",
+      "Track progress visually to see momentum",
+      "Connect daily actions to your bigger 'why'",
+      "Celebrate small wins to build positive momentum"
+    ]
+  },
+  "Clarity": {
+    "strategy": "Break down your vision into specific, actionable steps",
+    "tips": [
+      "Define what success looks like for each week",
+      "Choose 1-2 focus areas instead of trying everything",
+      "Write down your plan and review it weekly",
+      "Ask for help or guidance when stuck"
+    ]
+  },
+  "Environment": {
+    "strategy": "Design your environment to support healthy choices",
+    "tips": [
+      "Remove temptations and add helpful cues",
+      "Prep healthy options in advance",
+      "Create a dedicated space for your health activities",
+      "Surround yourself with people who support your goals"
+    ]
+  },
+  "Support": {
+    "strategy": "Build accountability and community around your goals",
+    "tips": [
+      "Find an accountability partner or coach",
+      "Join a group or community with similar goals",
+      "Share your goals with supportive friends/family",
+      "Schedule regular check-ins to stay on track"
+    ]
+  },
+  "Knowledge": {
+    "strategy": "Learn as you go, starting with the basics",
+    "tips": [
+      "Focus on one skill or area at a time",
+      "Find a trusted resource or mentor",
+      "Practice consistently rather than seeking perfection",
+      "Ask questions and seek feedback regularly"
+    ]
+  }
+}
