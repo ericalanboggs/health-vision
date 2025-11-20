@@ -193,7 +193,7 @@ const LandingPage = ({ onStart }) => {
             Begin Your Ascent
             <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
           </button>
-          <p className="mt-4 text-stone-600">Takes approximately 30 minutes</p>
+          <p className="mt-4 text-stone-600">10 minutes or less</p>
         </div>
       </div>
     </div>
