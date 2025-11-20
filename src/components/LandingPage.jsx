@@ -51,11 +51,11 @@ const LandingPage = ({ onStart }) => {
           </div>
           
           <h1 className="text-5xl lg:text-6xl font-bold text-stone-900 mb-6 leading-tight">
-            Climb to Your <span className="text-green-600">Health Summit</span>
+            Your Fastest Path to a <span className="text-green-600">Healthier You</span>
           </h1>
           
           <p className="text-xl lg:text-2xl text-stone-600 mb-12 leading-relaxed">
-            Ascend to optimal health with purpose, not just a plan. Define your Summit Vision and chart a path that adapts as you grow.
+            Create a crystal-clear vision and a focused plan that adapts with you—no overwhelm, just progress.
           </p>
         </div>
 
