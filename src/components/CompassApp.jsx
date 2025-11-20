@@ -134,16 +134,7 @@ const IntroPage = ({ onNext }) => {
         Move at your own pace—you can always come back to refine or expand.
       </p>
 
-      <div className="grid md:grid-cols-2 gap-6 mb-10">
-        <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6">
-          <h3 className="text-2xl font-semibold text-stone-900 mb-4">What to Expect</h3>
-          <ul className="space-y-3 text-stone-700">
-            <li>• Step 1: Paint a vivid health vision (future state)</li>
-            <li>• Step 2: Anchor into your why and core drivers</li>
-            <li>• Step 3: Assess your current reality—strengths and hurdles</li>
-            <li>• Step 4: Calibrate time, readiness, and support needs</li>
-          </ul>
-        </div>
+      <div className="max-w-2xl mx-auto mb-10">
         <div className="bg-green-50 rounded-2xl border border-green-200 shadow-sm p-6">
           <h3 className="text-2xl font-semibold text-green-900 mb-4">Tips for the Journey</h3>
           <ul className="space-y-3 text-green-900">
