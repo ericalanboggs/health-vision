@@ -43,9 +43,10 @@ const LandingPage = ({ onStart }) => {
         <div className="text-center max-w-4xl mx-auto mb-20">
           <div className="flex justify-center mb-8">
             <div className="relative">
-              <Mountain 
-                className="w-24 h-24 text-green-600" 
-                strokeWidth={1.5} 
+              <img 
+                src="/summit-logo.png" 
+                alt="Summit Logo" 
+                className="w-32 h-32 object-contain"
               />
             </div>
           </div>
