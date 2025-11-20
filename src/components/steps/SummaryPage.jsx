@@ -399,7 +399,7 @@ END:VCALENDAR`.trim()
 
           {/* Weekly Actions */}
           <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-6 mb-6">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-green-100 rounded-xl">
                   <Target className="w-6 h-6 text-green-600" />
