@@ -128,7 +128,7 @@ const CompassApp = ({ onBack }) => {
 const IntroPage = ({ onNext }) => {
   return (
     <div className="max-w-4xl mx-auto">
-      <h2 className="text-4xl font-bold text-stone-900 mb-6">Design Your Interactive Health Summit</h2>
+      <h2 className="text-4xl font-bold text-stone-900 mb-6">See Your Summit</h2>
       <p className="text-xl text-stone-700 mb-10 leading-relaxed">
         In the next 5–10 minutes, you&apos;ll map out where you&apos;re headed, why it matters, where you are today, and what feels realistic for the next month.
         Move at your own pace—you can always come back to refine or expand.
