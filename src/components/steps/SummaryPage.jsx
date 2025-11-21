@@ -15,9 +15,20 @@ const SummaryPage = ({ formData, onNavigate }) => {
   
   // AI Enhancement state
   const [aiEnhanced, setAiEnhanced] = useState(null)
-  const [showAiView, setShowAiView] = useState(false)
+  const [showAiView, setShowAiView] = useState(true) // Default to AI view
   const [isEnhancing, setIsEnhancing] = useState(false)
   const [enhancementError, setEnhancementError] = useState(null)
+  const [selectedActions, setSelectedActions] = useState([])
+  const [customActions, setCustomActions] = useState([])
+  const [showAddCustom, setShowAddCustom] = useState(false)
+  const [newCustomAction, setNewCustomAction] = useState('')
+
+  // Auto-run AI enhancement on mount
+  useEffect(() => {
+    if (!aiEnhanced && !isEnhancing) {
+      handleAIEnhancement()
+    }
+  }, []) // Run once on mount
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -301,6 +312,26 @@ END:VCALENDAR`.trim()
     }
   }
 
+  const toggleActionSelection = (index) => {
+    setSelectedActions(prev => 
+      prev.includes(index) 
+        ? prev.filter(i => i !== index)
+        : [...prev, index]
+    )
+  }
+
+  const handleAddCustomAction = () => {
+    if (newCustomAction.trim()) {
+      setCustomActions(prev => [...prev, newCustomAction.trim()])
+      setNewCustomAction('')
+      setShowAddCustom(false)
+    }
+  }
+
+  const handleRemoveCustomAction = (index) => {
+    setCustomActions(prev => prev.filter((_, i) => i !== index))
+  }
+
   const isEmpty = (value) => !value || value.trim() === ''
   const isArrayEmpty = (arr) => !arr || arr.length === 0
 
@@ -397,125 +428,6 @@ END:VCALENDAR`.trim()
             </div>
           </div>
 
-          {/* Weekly Actions */}
-          <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-6 mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-green-100 rounded-xl">
-                  <Target className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-stone-900">This Week's Actions</h3>
-                  <p className="text-sm text-stone-600">Based on your {formData.timeCapacity || '10 minutes/day'} capacity</p>
-                </div>
-              </div>
-              
-              {/* AI Enhancement Button / Toggle */}
-              {!aiEnhanced ? (
-                <button
-                  onClick={handleAIEnhancement}
-                  disabled={isEnhancing}
-                  className="flex items-center justify-center gap-2 px-4 py-2 w-full sm:w-auto bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed no-print"
-                >
-                  {isEnhancing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Personalizing...
-                    </>
-                  ) : (
-                    <>
-                      <Wand2 className="w-4 h-4" />
-                      Personalize with AI
-                    </>
-                  )}
-                </button>
-              ) : (
-                <button
-                  onClick={() => setShowAiView(!showAiView)}
-                  className="flex items-center justify-center gap-2 px-4 py-2 w-full sm:w-auto bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all no-print"
-                >
-                  {showAiView ? (
-                    <>
-                      <Target className="w-4 h-4" />
-                      Show Original Plan
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      Show AI Recommendations
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-
-            {/* Error Message */}
-            {enhancementError && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-800">
-                  <strong>Error:</strong> {enhancementError}
-                </p>
-                <p className="text-xs text-red-600 mt-1">
-                  Make sure you've added your OpenAI API key to the .env file.
-                </p>
-              </div>
-            )}
-
-            {/* AI Enhanced Actions */}
-            {aiEnhanced && showAiView ? (
-              <div className="space-y-4">
-                <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border-2 border-purple-200 mb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="w-5 h-5 text-purple-600" />
-                    <h4 className="font-semibold text-purple-900">AI-Personalized Plan</h4>
-                  </div>
-                  <p className="text-sm text-purple-800">
-                    These actions have been tailored specifically to your situation, schedule, and goals.
-                  </p>
-                </div>
-                
-                {Array.isArray(aiEnhanced) ? aiEnhanced.map((item, index) => (
-                  <div key={index} className="bg-gradient-to-r from-purple-50 to-blue-50 p-5 rounded-xl border border-purple-200">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-stone-900 mb-2">{item.action}</p>
-                        <p className="text-sm text-purple-800 mb-2">
-                          <strong>Why this works:</strong> {item.why}
-                        </p>
-                        <p className="text-sm text-stone-600">
-                          <strong>💡 Tip:</strong> {item.tip}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )) : (
-                  <p className="text-stone-500 italic">Unexpected response format</p>
-                )}
-              </div>
-            ) : actionPlan.weeklyActions.length > 0 ? (
-              <div className="space-y-6">
-                {actionPlan.weeklyActions.map((item, index) => (
-                  <div key={index} className="border-l-4 border-green-500 pl-4">
-                    <h4 className="font-semibold text-stone-900 mb-3">{item.area}</h4>
-                    <ul className="space-y-2">
-                      {item.actions.map((action, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-stone-700">
-                          <span className="text-green-600 mt-1">✓</span>
-                          <span>{action}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-stone-500 italic">Complete the previous steps to generate personalized actions.</p>
-            )}
-          </div>
-
           {/* Barrier Strategies */}
           {actionPlan.barrierStrategies.length > 0 && (
             <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-6 mb-6">
@@ -588,6 +500,176 @@ END:VCALENDAR`.trim()
               </div>
             </div>
           )}
+
+          {/* Build Your Plan - AI Actions with Checkboxes */}
+          <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-6 mb-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 bg-green-100 rounded-xl">
+                <Target className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-stone-900">Build Your Plan</h3>
+              </div>
+            </div>
+            <p className="text-sm text-stone-600 mb-6">Choose at least 1 (but no more than 3) actions to start with this week</p>
+
+            {/* Loading State */}
+            {isEnhancing && (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-purple-600 mx-auto mb-3" />
+                  <p className="text-stone-600">Building your personalized plan...</p>
+                </div>
+              </div>
+            )}
+
+            {/* Error Message */}
+            {enhancementError && !isEnhancing && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">
+                  <strong>Error:</strong> {enhancementError}
+                </p>
+                <p className="text-xs text-red-600 mt-1">
+                  Make sure you've added your OpenAI API key to the .env file.
+                </p>
+              </div>
+            )}
+
+            {/* AI Personalized Plan Header */}
+            {aiEnhanced && !isEnhancing && (
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border-2 border-purple-200 mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-5 h-5 text-purple-600" />
+                  <h4 className="font-semibold text-purple-900">AI-Personalized Plan</h4>
+                </div>
+                <p className="text-sm text-purple-800">
+                  These actions have been tailored specifically to your situation, schedule, and goals.
+                </p>
+              </div>
+            )}
+
+            {/* AI Enhanced Actions with Checkboxes */}
+            {aiEnhanced && !isEnhancing && Array.isArray(aiEnhanced) && (
+              <div className="space-y-3 mb-4">
+                {aiEnhanced.map((item, index) => (
+                  <div 
+                    key={index} 
+                    className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                      selectedActions.includes(index)
+                        ? 'bg-green-50 border-green-300'
+                        : 'bg-white border-stone-200 hover:border-stone-300'
+                    }`}
+                    onClick={() => toggleActionSelection(index)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedActions.includes(index)}
+                        onChange={() => toggleActionSelection(index)}
+                        className="mt-1 w-5 h-5 text-green-600 rounded border-stone-300 focus:ring-green-500 cursor-pointer"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <div className="flex-1">
+                        <p className="font-semibold text-stone-900 mb-2">{item.action}</p>
+                        <p className="text-sm text-purple-800 mb-2">
+                          <strong>Why this works:</strong> {item.why}
+                        </p>
+                        <p className="text-sm text-stone-600">
+                          <strong>💡 Tip:</strong> {item.tip}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Custom Actions */}
+            {customActions.length > 0 && (
+              <div className="space-y-3 mb-4">
+                {customActions.map((action, index) => (
+                  <div key={`custom-${index}`} className="p-4 rounded-lg border-2 border-blue-200 bg-blue-50">
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        defaultChecked
+                        className="mt-1 w-5 h-5 text-blue-600 rounded border-stone-300 focus:ring-blue-500"
+                      />
+                      <div className="flex-1">
+                        <p className="font-semibold text-stone-900">{action}</p>
+                        <p className="text-xs text-blue-600 mt-1">Custom action</p>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveCustomAction(index)}
+                        className="text-stone-400 hover:text-red-600 transition-colors"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add Your Own Link/Form */}
+            {!showAddCustom ? (
+              <button
+                onClick={() => setShowAddCustom(true)}
+                className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center gap-2 transition-colors"
+              >
+                <span className="text-lg">+</span>
+                Hey smarty, I have another idea
+              </button>
+            ) : (
+              <div className="mt-4 p-4 bg-stone-50 rounded-lg border border-stone-200">
+                <textarea
+                  value={newCustomAction}
+                  onChange={(e) => setNewCustomAction(e.target.value)}
+                  placeholder="Describe your custom action..."
+                  className="w-full p-3 border border-stone-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  rows="3"
+                />
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={handleAddCustomAction}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+                  >
+                    Add Action
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAddCustom(false)
+                      setNewCustomAction('')
+                    }}
+                    className="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Hidden: Original Plan (kept for reference but not displayed) */}
+            <div className="hidden">
+              {actionPlan.weeklyActions.length > 0 && (
+                <div className="space-y-6">
+                  {actionPlan.weeklyActions.map((item, index) => (
+                    <div key={index} className="border-l-4 border-green-500 pl-4">
+                      <h4 className="font-semibold text-stone-900 mb-3">{item.area}</h4>
+                      <ul className="space-y-2">
+                        {item.actions.map((action, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-stone-700">
+                            <span className="text-green-600 mt-1">✓</span>
+                            <span>{action}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Weekly Check-In */}
           <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-200 p-6 mb-6">

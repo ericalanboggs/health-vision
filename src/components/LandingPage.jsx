@@ -39,28 +39,28 @@ const LandingPage = ({ onStart }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-green-50 to-stone-100">
       {/* Hero Section */}
-      <div className="container mx-auto px-6 py-16 lg:py-24">
-        <div className="text-center max-w-4xl mx-auto mb-20">
-          <div className="flex justify-center mb-8">
+      <div className="container mx-auto px-6 pt-12 pb-16">
+        <div className="text-center max-w-4xl mx-auto mb-10">
+          <div className="flex justify-center mb-6">
             <div className="relative">
               <img 
                 src="/summit-logo.png" 
                 alt="Summit Logo" 
-                className="w-32 h-32 object-contain"
+                className="w-24 h-24 object-contain"
               />
             </div>
           </div>
           
-          <h1 className="text-5xl lg:text-6xl font-bold text-stone-900 mb-6 leading-tight">
+          <h1 className="text-5xl lg:text-6xl font-bold text-stone-900 mb-4 leading-tight">
             Your Fastest Path to a <span className="text-green-600">Healthier You</span>
           </h1>
           
-          <p className="text-xl lg:text-2xl text-stone-600 mb-8 leading-relaxed">
+          <p className="text-xl lg:text-2xl text-stone-600 mb-6 leading-relaxed">
             Create a crystal-clear vision and a focused plan that adapts with you—no overwhelm, just progress.
           </p>
 
           {/* CTA Section */}
-          <div className="text-center mb-12">
+          <div className="text-center mb-10">
             <button
               onClick={onStart}
               className="group inline-flex items-center gap-3 bg-green-600 hover:bg-green-700 text-white font-bold text-lg px-10 py-5 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
@@ -72,8 +72,8 @@ const LandingPage = ({ onStart }) => {
           </div>
         </div>
 
-        {/* Four Quadrants Section */}
-        <div className="max-w-7xl mx-auto mb-16">
+        {/* Four Stages Section - Vertical Timeline */}
+        <div className="max-w-3xl mx-auto mb-16 pt-12 pb-16 px-8 relative">
           <h2 className="text-3xl font-bold text-center text-stone-900 mb-4">
             Your Ascent in Four Stages
           </h2>
@@ -81,117 +81,65 @@ const LandingPage = ({ onStart }) => {
             A thoughtful framework to move from vision to action in 5 minutes or less
           </p>
           
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Summit Vision Quadrant */}
-            <div className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-green-300 relative overflow-hidden">
-              <div className="relative z-10">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-3 bg-green-100 rounded-xl">
-                    <Flag className="w-8 h-8 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-stone-900">Summit Vision</h3>
-                    <p className="text-sm text-stone-500">1-2 Years</p>
-                  </div>
-                </div>
-                <p className="text-stone-600 leading-relaxed mb-4">
-                  Define your ideal health state and the impact you want to create. What does optimal wellbeing look and feel like?
-                </p>
-                <ul className="space-y-2 text-sm text-stone-600">
-                  <li className="flex items-center gap-2">
-                    <span className="text-green-600">•</span>
-                    <span>Ideal health state and daily vitality</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="text-green-600">•</span>
-                    <span>Purpose statement and legacy</span>
-                  </li>
-                </ul>
+          {/* Winding dotted path SVG */}
+          <svg className="absolute left-1/2 top-48 -translate-x-1/2 w-24 h-[1200px] pointer-events-none" style={{ zIndex: 0 }}>
+            <path
+              d="M 48 0 Q 48 80, 20 120 T 48 240 T 76 360 T 48 480 T 20 600 T 48 720 T 76 840 T 48 960 T 20 1080 T 48 1150"
+              fill="none"
+              stroke="#d6d3d1"
+              strokeWidth="3"
+              strokeDasharray="8,8"
+              strokeLinecap="round"
+            />
+          </svg>
+          
+          <div className="flex flex-col items-center gap-24 relative" style={{ zIndex: 1 }}>
+            {/* Summit Vision */}
+            <div className="flex flex-col items-center text-center max-w-md relative">
+              <div className="w-16 h-16 bg-green-100 rounded-full mb-6 flex items-center justify-center shadow-lg">
+                <Flag className="w-8 h-8 text-green-600" />
               </div>
+              <h3 className="text-3xl font-bold text-stone-900 mb-2">Summit Vision</h3>
+              <p className="text-base text-stone-600 mb-4">You in 1-2 years</p>
+              <p className="text-base text-stone-700 leading-relaxed">
+                Define your ideal health state and the impact you want to create.
+              </p>
             </div>
 
-            {/* Base Camp Inventory Quadrant */}
-            <div className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-green-300 relative overflow-hidden">
-              <div className="relative z-10">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-3 bg-green-100 rounded-xl">
-                    <Backpack className="w-8 h-8 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-stone-900">Base Camp Inventory</h3>
-                    <p className="text-sm text-stone-500">Your Resources</p>
-                  </div>
-                </div>
-                <p className="text-stone-600 leading-relaxed mb-4">
-                  Assess your non-negotiables, strengths, energizers, and gaps. Know what you bring and what you need.
-                </p>
-                <ul className="space-y-2 text-sm text-stone-600">
-                  <li className="flex items-center gap-2">
-                    <span className="text-green-600">•</span>
-                    <span>Core values and health must-haves</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="text-green-600">•</span>
-                    <span>Resources, support, and areas to develop</span>
-                  </li>
-                </ul>
+            {/* Base Camp Inventory */}
+            <div className="flex flex-col items-center text-center max-w-md relative">
+              <div className="w-16 h-16 bg-green-100 rounded-full mb-6 flex items-center justify-center shadow-lg">
+                <Backpack className="w-8 h-8 text-green-600" />
               </div>
+              <h3 className="text-3xl font-bold text-stone-900 mb-2">Base Camp Inventory</h3>
+              <p className="text-base text-stone-600 mb-4">Your Resources</p>
+              <p className="text-base text-stone-700 leading-relaxed">
+                Assess your non-negotiables, strengths, energizers, and gaps. Know what you bring and what you need.
+              </p>
             </div>
 
-            {/* Chart the Ascent Quadrant */}
-            <div className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-green-300 relative overflow-hidden">
-              <div className="relative z-10">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-3 bg-green-100 rounded-xl">
-                    <TrendingUp className="w-8 h-8 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-stone-900">Map the Ascent</h3>
-                    <p className="text-sm text-stone-500">Your Path</p>
-                  </div>
-                </div>
-                <p className="text-stone-600 leading-relaxed mb-4">
-                  Identify milestones, obstacles, and opportunities. Break down your Summit Vision into achievable checkpoints.
-                </p>
-                <ul className="space-y-2 text-sm text-stone-600">
-                  <li className="flex items-center gap-2">
-                    <span className="text-green-600">•</span>
-                    <span>Major health milestones</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="text-green-600">•</span>
-                    <span>Realistic obstacles and opportunities</span>
-                  </li>
-                </ul>
+            {/* Map the Ascent */}
+            <div className="flex flex-col items-center text-center max-w-md relative">
+              <div className="w-16 h-16 bg-green-100 rounded-full mb-6 flex items-center justify-center shadow-lg">
+                <TrendingUp className="w-8 h-8 text-green-600" />
               </div>
+              <h3 className="text-3xl font-bold text-stone-900 mb-2">Map the Ascent</h3>
+              <p className="text-base text-stone-600 mb-4">Know the Path</p>
+              <p className="text-base text-stone-700 leading-relaxed">
+                Break down your Summit Vision into achievable checkpoints.
+              </p>
             </div>
 
-            {/* First Steps Quadrant */}
-            <div className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-green-300 relative overflow-hidden">
-              <div className="relative z-10">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-3 bg-green-100 rounded-xl">
-                    <Footprints className="w-8 h-8 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-stone-900">First Steps</h3>
-                    <p className="text-sm text-stone-500">0-90 Days</p>
-                  </div>
-                </div>
-                <p className="text-stone-600 leading-relaxed mb-4">
-                  Take immediate action. Define the smallest version of progress and commit to foundational habits.
-                </p>
-                <ul className="space-y-2 text-sm text-stone-600">
-                  <li className="flex items-center gap-2">
-                    <span className="text-green-600">•</span>
-                    <span>90-day moves and quick wins</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="text-green-600">•</span>
-                    <span>Daily habits to build momentum</span>
-                  </li>
-                </ul>
+            {/* First Steps */}
+            <div className="flex flex-col items-center text-center max-w-md">
+              <div className="w-16 h-16 bg-green-100 rounded-full mb-6 flex items-center justify-center shadow-lg">
+                <Footprints className="w-8 h-8 text-green-600" />
               </div>
+              <h3 className="text-3xl font-bold text-stone-900 mb-2">First Steps</h3>
+              <p className="text-base text-stone-600 mb-4">Habit experimentation</p>
+              <p className="text-base text-stone-700 leading-relaxed">
+                Define the smallest version of progress that seems likely to work for you.
+              </p>
             </div>
           </div>
         </div>

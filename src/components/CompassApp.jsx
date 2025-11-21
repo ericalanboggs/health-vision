@@ -130,11 +130,11 @@ const IntroPage = ({ onNext }) => {
     <div className="max-w-4xl mx-auto">
       <h2 className="text-4xl font-bold text-stone-900 mb-6">See Your Summit</h2>
       <p className="text-xl text-stone-700 mb-10 leading-relaxed">
-        In the next 5–10 minutes, you&apos;ll map out where you&apos;re headed, why it matters, where you are today, and what feels realistic for the next month.
+        In the next 5 minutes, you&apos;ll map out where you&apos;re headed, why it matters, where you are today, and what feels realistic for the next month.
         Move at your own pace—you can always come back to refine or expand.
       </p>
 
-      <div className="max-w-2xl mx-auto mb-10">
+      <div className="max-w-2xl mb-10">
         <div className="bg-green-50 rounded-2xl border border-green-200 shadow-sm p-6">
           <h3 className="text-2xl font-semibold text-green-900 mb-4">Tips for the Journey</h3>
           <ul className="space-y-3 text-green-900">
@@ -143,12 +143,6 @@ const IntroPage = ({ onNext }) => {
             <li>• This is a safe space: honesty beats polished language.</li>
           </ul>
         </div>
-      </div>
-
-      <div className="bg-green-50 border-l-4 border-green-500 p-6 rounded-r-xl mb-8">
-        <p className="text-lg text-stone-800 leading-relaxed">
-          <strong>Reminder:</strong> Your health vision is a living document. Each pass adds clarity, reveals patterns, and helps you commit to the next right step.
-        </p>
       </div>
 
       <button
