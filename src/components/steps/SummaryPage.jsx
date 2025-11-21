@@ -371,45 +371,12 @@ END:VCALENDAR`.trim()
 
   return (
     <div className="max-w-5xl mx-auto">
-      {/* Header with Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 no-print">
-        <div className="flex items-center gap-3 mb-4 sm:mb-0">
-          <div className="p-3 bg-green-100 rounded-xl">
-            <FileText className="w-8 h-8 text-green-600" />
-          </div>
-          <h2 className="text-4xl font-bold text-stone-900">My Personal Health Plan</h2>
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-8">
+        <div className="p-3 bg-green-100 rounded-xl">
+          <FileText className="w-8 h-8 text-green-600" />
         </div>
-        <div className="flex flex-wrap gap-3">
-          {/* Remind Me Button with Dropdown */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setShowReminderDropdown(!showReminderDropdown)}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-3 rounded-lg shadow-md hover:shadow-lg transition-all"
-            >
-              <Bell className="w-4 h-4" />
-              Remind Me
-              <ChevronDown className="w-4 h-4" />
-            </button>
-            
-            {showReminderDropdown && (
-              <div className="absolute top-full mt-2 right-0 bg-white rounded-lg shadow-xl border border-stone-200 py-2 min-w-[160px] z-10">
-                <button onClick={() => handleReminder('1week')} className="w-full text-left px-4 py-2 hover:bg-stone-100 transition-colors text-stone-700">In 1 Week</button>
-                <button onClick={() => handleReminder('1month')} className="w-full text-left px-4 py-2 hover:bg-stone-100 transition-colors text-stone-700">In 1 Month</button>
-                <button onClick={() => handleReminder('3months')} className="w-full text-left px-4 py-2 hover:bg-stone-100 transition-colors text-stone-700">In 3 Months</button>
-                <button onClick={() => handleReminder('6months')} className="w-full text-left px-4 py-2 hover:bg-stone-100 transition-colors text-stone-700">In 6 Months</button>
-              </div>
-            )}
-          </div>
-
-          <button onClick={handlePrint} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-3 rounded-lg shadow-md hover:shadow-lg transition-all">
-            <Printer className="w-4 h-4" />
-            Print
-          </button>
-          <button onClick={handleDownload} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-3 rounded-lg shadow-md hover:shadow-lg transition-all">
-            <Download className="w-4 h-4" />
-            Download PDF
-          </button>
-        </div>
+        <h2 className="text-4xl font-bold text-stone-900">My Personal Health Plan</h2>
       </div>
 
       {/* Tab Navigation */}
@@ -620,38 +587,73 @@ END:VCALENDAR`.trim()
 
             {/* Finalized Plan View */}
             {isPlanFinalized ? (
-              <div className="space-y-3">
-                <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200 mb-4">
-                  <p className="text-sm text-green-800 font-medium">
-                    ✓ Your plan is set! Here's what you're committing to this week:
-                  </p>
-                </div>
-                {getSelectedActionsData().map((item, index) => (
-                  <div key={index} className="p-4 rounded-lg border-2 border-green-300 bg-green-50">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                        ✓
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-stone-900 mb-2">{item.action}</p>
-                        {item.type === 'ai' && (
-                          <>
-                            <p className="text-sm text-stone-700 mb-1">
-                              <strong>Why this works:</strong> {item.why}
-                            </p>
-                            <p className="text-sm text-stone-600">
-                              <strong>💡 Tip:</strong> {item.tip}
-                            </p>
-                          </>
-                        )}
-                        {item.type === 'custom' && (
-                          <p className="text-xs text-blue-600">Custom action</p>
-                        )}
+              <>
+                <div className="space-y-3 mb-6">
+                  <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200 mb-4">
+                    <p className="text-sm text-green-800 font-medium">
+                      ✓ Your plan is set! Here's what you're committing to this week:
+                    </p>
+                  </div>
+                  {getSelectedActionsData().map((item, index) => (
+                    <div key={index} className="p-4 rounded-lg border-2 border-green-300 bg-green-50">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                          ✓
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-stone-900 mb-2">{item.action}</p>
+                          {item.type === 'ai' && (
+                            <>
+                              <p className="text-sm text-stone-700 mb-1">
+                                <strong>Why this works:</strong> {item.why}
+                              </p>
+                              <p className="text-sm text-stone-600">
+                                <strong>💡 Tip:</strong> {item.tip}
+                              </p>
+                            </>
+                          )}
+                          {item.type === 'custom' && (
+                            <p className="text-xs text-blue-600">Custom action</p>
+                          )}
+                        </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+
+                {/* Action Buttons - After Finalized Plan */}
+                <div className="flex flex-wrap gap-3 pt-4 border-t border-stone-200">
+                  {/* Remind Me Button with Dropdown */}
+                  <div className="relative" ref={dropdownRef}>
+                    <button
+                      onClick={() => setShowReminderDropdown(!showReminderDropdown)}
+                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-3 rounded-lg shadow-md hover:shadow-lg transition-all"
+                    >
+                      <Bell className="w-4 h-4" />
+                      Remind Me
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                    
+                    {showReminderDropdown && (
+                      <div className="absolute top-full mt-2 right-0 bg-white rounded-lg shadow-xl border border-stone-200 py-2 min-w-[160px] z-10">
+                        <button onClick={() => handleReminder('1week')} className="w-full text-left px-4 py-2 hover:bg-stone-100 transition-colors text-stone-700">In 1 Week</button>
+                        <button onClick={() => handleReminder('1month')} className="w-full text-left px-4 py-2 hover:bg-stone-100 transition-colors text-stone-700">In 1 Month</button>
+                        <button onClick={() => handleReminder('3months')} className="w-full text-left px-4 py-2 hover:bg-stone-100 transition-colors text-stone-700">In 3 Months</button>
+                        <button onClick={() => handleReminder('6months')} className="w-full text-left px-4 py-2 hover:bg-stone-100 transition-colors text-stone-700">In 6 Months</button>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
+
+                  <button onClick={handlePrint} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-3 rounded-lg shadow-md hover:shadow-lg transition-all">
+                    <Printer className="w-4 h-4" />
+                    Print
+                  </button>
+                  <button onClick={handleDownload} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-3 rounded-lg shadow-md hover:shadow-lg transition-all">
+                    <Download className="w-4 h-4" />
+                    Download PDF
+                  </button>
+                </div>
+              </>
             ) : (
               <>
                 {/* AI Enhanced Actions with Checkboxes */}
