@@ -55,9 +55,21 @@ const LandingPage = ({ onStart }) => {
             Your Fastest Path to a <span className="text-green-600">Healthier You</span>
           </h1>
           
-          <p className="text-xl lg:text-2xl text-stone-600 mb-12 leading-relaxed">
+          <p className="text-xl lg:text-2xl text-stone-600 mb-8 leading-relaxed">
             Create a crystal-clear vision and a focused plan that adapts with you—no overwhelm, just progress.
           </p>
+
+          {/* CTA Section */}
+          <div className="text-center mb-12">
+            <button
+              onClick={onStart}
+              className="group inline-flex items-center gap-3 bg-green-600 hover:bg-green-700 text-white font-bold text-lg px-10 py-5 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+            >
+              Begin Your Ascent
+              <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+            </button>
+            <p className="mt-4 text-stone-600">5 minutes or less</p>
+          </div>
         </div>
 
         {/* Four Quadrants Section */}
@@ -66,7 +78,7 @@ const LandingPage = ({ onStart }) => {
             Your Ascent in Four Stages
           </h2>
           <p className="text-center text-stone-600 mb-12 text-lg">
-            A thoughtful framework to move from vision to action in 10 minutes or less
+            A thoughtful framework to move from vision to action in 5 minutes or less
           </p>
           
           <div className="grid md:grid-cols-2 gap-8">
@@ -182,18 +194,6 @@ const LandingPage = ({ onStart }) => {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* CTA Section */}
-        <div className="text-center">
-          <button
-            onClick={onStart}
-            className="group inline-flex items-center gap-3 bg-green-600 hover:bg-green-700 text-white font-bold text-lg px-10 py-5 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-          >
-            Begin Your Ascent
-            <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-          </button>
-          <p className="mt-4 text-stone-600">10 minutes or less</p>
         </div>
       </div>
     </div>
