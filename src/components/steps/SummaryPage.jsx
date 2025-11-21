@@ -429,41 +429,6 @@ END:VCALENDAR`.trim()
             </div>
           </div>
 
-          {/* Barrier Strategies */}
-          {actionPlan.barrierStrategies.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-6 mb-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-amber-100 rounded-xl">
-                  <TrendingUp className="w-6 h-6 text-amber-600" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-stone-900">Overcoming Your Barriers</h3>
-                  <p className="text-sm text-stone-600">Strategies for your top challenges</p>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                {actionPlan.barrierStrategies.map((item, index) => (
-                  <div key={index} className="bg-amber-50 p-5 rounded-xl border border-amber-200">
-                    <h4 className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
-                      <span className="text-lg">🚧</span>
-                      {item.barrier}
-                    </h4>
-                    <p className="text-stone-700 font-medium mb-3">{item.strategy}</p>
-                    <ul className="space-y-1.5 text-sm text-stone-600">
-                      {item.tips.map((tip, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <span className="text-amber-600 mt-0.5">•</span>
-                          <span>{tip}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Habit Recommendations */}
           {actionPlan.habitRecommendations.length > 0 && (
             <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-6 mb-6">
@@ -572,8 +537,8 @@ END:VCALENDAR`.trim()
               </div>
             )}
 
-            {/* AI Personalized Plan Header */}
-            {aiEnhanced && !isEnhancing && (
+            {/* AI Personalized Plan Header - Only show in edit mode */}
+            {aiEnhanced && !isEnhancing && !isPlanFinalized && (
               <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border-2 border-purple-200 mb-6">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles className="w-5 h-5 text-purple-600" />
@@ -802,6 +767,41 @@ END:VCALENDAR`.trim()
               )}
             </div>
           </div>
+
+          {/* Barrier Strategies */}
+          {actionPlan.barrierStrategies.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-6 mb-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-amber-100 rounded-xl">
+                  <TrendingUp className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-stone-900">Overcoming Your Barriers</h3>
+                  <p className="text-sm text-stone-600">Strategies for your top challenges</p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {actionPlan.barrierStrategies.map((item, index) => (
+                  <div key={index} className="bg-amber-50 p-5 rounded-xl border border-amber-200">
+                    <h4 className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                      <span className="text-lg">🚧</span>
+                      {item.barrier}
+                    </h4>
+                    <p className="text-stone-700 font-medium mb-3">{item.strategy}</p>
+                    <ul className="space-y-1.5 text-sm text-stone-600">
+                      {item.tips.map((tip, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="text-amber-600 mt-0.5">•</span>
+                          <span>{tip}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Weekly Check-In */}
           <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-200 p-6 mb-6">
