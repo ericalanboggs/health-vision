@@ -22,6 +22,7 @@ const SummaryPage = ({ formData, onNavigate }) => {
   const [customActions, setCustomActions] = useState([])
   const [showAddCustom, setShowAddCustom] = useState(false)
   const [newCustomAction, setNewCustomAction] = useState('')
+  const [isPlanFinalized, setIsPlanFinalized] = useState(false)
 
   // Check if user has sufficient data for personalization
   const hasSufficientData = () => {
@@ -343,6 +344,28 @@ END:VCALENDAR`.trim()
     setCustomActions(prev => prev.filter((_, i) => i !== index))
   }
 
+  const handleFinalizePlan = () => {
+    if (selectedActions.length > 0 || customActions.length > 0) {
+      setIsPlanFinalized(true)
+    }
+  }
+
+  const handleEditPlan = () => {
+    setIsPlanFinalized(false)
+  }
+
+  const getSelectedActionsData = () => {
+    const aiActions = selectedActions.map(index => ({
+      type: 'ai',
+      ...aiEnhanced[index]
+    }))
+    const customActionsData = customActions.map(action => ({
+      type: 'custom',
+      action: action
+    }))
+    return [...aiActions, ...customActionsData]
+  }
+
   const isEmpty = (value) => !value || value.trim() === ''
   const isArrayEmpty = (arr) => !arr || arr.length === 0
 
@@ -514,15 +537,28 @@ END:VCALENDAR`.trim()
 
           {/* Build Your Plan - AI Actions with Checkboxes */}
           <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-6 mb-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-3 bg-green-100 rounded-xl">
-                <Target className="w-6 h-6 text-green-600" />
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-green-100 rounded-xl">
+                  <Target className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-stone-900">Build Your Plan</h3>
+                </div>
               </div>
-              <div>
-                <h3 className="text-2xl font-bold text-stone-900">Build Your Plan</h3>
-              </div>
+              {isPlanFinalized && (
+                <button
+                  onClick={handleEditPlan}
+                  className="flex items-center gap-2 px-4 py-2 text-green-600 hover:text-green-700 font-semibold transition-colors no-print"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Edit
+                </button>
+              )}
             </div>
-            <p className="text-sm text-stone-600 mb-6">Choose at least 1 (but no more than 3) actions to start with this week</p>
+            {!isPlanFinalized && (
+              <p className="text-sm text-stone-600 mb-6">Choose at least 1 (but no more than 3) actions to start with this week</p>
+            )}
 
             {/* Loading State */}
             {isEnhancing && (
@@ -582,105 +618,153 @@ END:VCALENDAR`.trim()
               </div>
             )}
 
-            {/* AI Enhanced Actions with Checkboxes */}
-            {aiEnhanced && !isEnhancing && Array.isArray(aiEnhanced) && (
-              <div className="space-y-3 mb-4">
-                {aiEnhanced.map((item, index) => (
-                  <div 
-                    key={index} 
-                    className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                      selectedActions.includes(index)
-                        ? 'bg-green-50 border-green-300'
-                        : 'bg-white border-stone-200 hover:border-stone-300'
-                    }`}
-                    onClick={() => toggleActionSelection(index)}
-                  >
+            {/* Finalized Plan View */}
+            {isPlanFinalized ? (
+              <div className="space-y-3">
+                <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200 mb-4">
+                  <p className="text-sm text-green-800 font-medium">
+                    ✓ Your plan is set! Here's what you're committing to this week:
+                  </p>
+                </div>
+                {getSelectedActionsData().map((item, index) => (
+                  <div key={index} className="p-4 rounded-lg border-2 border-green-300 bg-green-50">
                     <div className="flex items-start gap-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedActions.includes(index)}
-                        onChange={() => toggleActionSelection(index)}
-                        className="mt-1 w-5 h-5 text-green-600 rounded border-stone-300 focus:ring-green-500 cursor-pointer"
-                        onClick={(e) => e.stopPropagation()}
-                      />
+                      <div className="flex-shrink-0 w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                        ✓
+                      </div>
                       <div className="flex-1">
                         <p className="font-semibold text-stone-900 mb-2">{item.action}</p>
-                        <p className="text-sm text-purple-800 mb-2">
-                          <strong>Why this works:</strong> {item.why}
-                        </p>
-                        <p className="text-sm text-stone-600">
-                          <strong>💡 Tip:</strong> {item.tip}
-                        </p>
+                        {item.type === 'ai' && (
+                          <>
+                            <p className="text-sm text-stone-700 mb-1">
+                              <strong>Why this works:</strong> {item.why}
+                            </p>
+                            <p className="text-sm text-stone-600">
+                              <strong>💡 Tip:</strong> {item.tip}
+                            </p>
+                          </>
+                        )}
+                        {item.type === 'custom' && (
+                          <p className="text-xs text-blue-600">Custom action</p>
+                        )}
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-            )}
-
-            {/* Custom Actions */}
-            {customActions.length > 0 && (
-              <div className="space-y-3 mb-4">
-                {customActions.map((action, index) => (
-                  <div key={`custom-${index}`} className="p-4 rounded-lg border-2 border-blue-200 bg-blue-50">
-                    <div className="flex items-start gap-3">
-                      <input
-                        type="checkbox"
-                        defaultChecked
-                        className="mt-1 w-5 h-5 text-blue-600 rounded border-stone-300 focus:ring-blue-500"
-                      />
-                      <div className="flex-1">
-                        <p className="font-semibold text-stone-900">{action}</p>
-                        <p className="text-xs text-blue-600 mt-1">Custom action</p>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveCustomAction(index)}
-                        className="text-stone-400 hover:text-red-600 transition-colors"
+            ) : (
+              <>
+                {/* AI Enhanced Actions with Checkboxes */}
+                {aiEnhanced && !isEnhancing && Array.isArray(aiEnhanced) && (
+                  <div className="space-y-3 mb-4">
+                    {aiEnhanced.map((item, index) => (
+                      <div 
+                        key={index} 
+                        className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                          selectedActions.includes(index)
+                            ? 'bg-green-50 border-green-300'
+                            : 'bg-white border-stone-200 hover:border-stone-300'
+                        }`}
+                        onClick={() => toggleActionSelection(index)}
                       >
-                        ✕
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedActions.includes(index)}
+                            onChange={() => toggleActionSelection(index)}
+                            className="mt-1 w-5 h-5 text-green-600 rounded border-stone-300 focus:ring-green-500 cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <div className="flex-1">
+                            <p className="font-semibold text-stone-900 mb-2">{item.action}</p>
+                            <p className="text-sm text-purple-800 mb-2">
+                              <strong>Why this works:</strong> {item.why}
+                            </p>
+                            <p className="text-sm text-stone-600">
+                              <strong>💡 Tip:</strong> {item.tip}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Custom Actions */}
+                {customActions.length > 0 && (
+                  <div className="space-y-3 mb-4">
+                    {customActions.map((action, index) => (
+                      <div key={`custom-${index}`} className="p-4 rounded-lg border-2 border-blue-200 bg-blue-50">
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            defaultChecked
+                            className="mt-1 w-5 h-5 text-blue-600 rounded border-stone-300 focus:ring-blue-500"
+                          />
+                          <div className="flex-1">
+                            <p className="font-semibold text-stone-900">{action}</p>
+                            <p className="text-xs text-blue-600 mt-1">Custom action</p>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveCustomAction(index)}
+                            className="text-stone-400 hover:text-red-600 transition-colors"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add Your Own Link/Form */}
+                {!showAddCustom ? (
+                  <button
+                    onClick={() => setShowAddCustom(true)}
+                    className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center gap-2 transition-colors mb-6"
+                  >
+                    <span className="text-lg">+</span>
+                    Hey smarty, I have another idea
+                  </button>
+                ) : (
+                  <div className="mb-6 p-4 bg-stone-50 rounded-lg border border-stone-200">
+                    <textarea
+                      value={newCustomAction}
+                      onChange={(e) => setNewCustomAction(e.target.value)}
+                      placeholder="Describe your custom action..."
+                      className="w-full p-3 border border-stone-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      rows="3"
+                    />
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={handleAddCustomAction}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+                      >
+                        Add Action
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowAddCustom(false)
+                          setNewCustomAction('')
+                        }}
+                        className="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold rounded-lg transition-colors"
+                      >
+                        Cancel
                       </button>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                )}
 
-            {/* Add Your Own Link/Form */}
-            {!showAddCustom ? (
-              <button
-                onClick={() => setShowAddCustom(true)}
-                className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center gap-2 transition-colors"
-              >
-                <span className="text-lg">+</span>
-                Hey smarty, I have another idea
-              </button>
-            ) : (
-              <div className="mt-4 p-4 bg-stone-50 rounded-lg border border-stone-200">
-                <textarea
-                  value={newCustomAction}
-                  onChange={(e) => setNewCustomAction(e.target.value)}
-                  placeholder="Describe your custom action..."
-                  className="w-full p-3 border border-stone-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  rows="3"
-                />
-                <div className="flex gap-2 mt-3">
+                {/* Finalize Plan Button */}
+                {(selectedActions.length > 0 || customActions.length > 0) && (
                   <button
-                    onClick={handleAddCustomAction}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+                    onClick={handleFinalizePlan}
+                    className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all"
                   >
-                    Add Action
+                    Finalize Plan
                   </button>
-                  <button
-                    onClick={() => {
-                      setShowAddCustom(false)
-                      setNewCustomAction('')
-                    }}
-                    className="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold rounded-lg transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
+                )}
+              </>
             )}
 
             {/* Hidden: Original Plan (kept for reference but not displayed) */}
