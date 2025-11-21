@@ -756,13 +756,25 @@ END:VCALENDAR`.trim()
                 )}
 
                 {/* Finalize Plan Button */}
-                {(selectedActions.length > 0 || customActions.length > 0) && (
-                  <button
-                    onClick={handleFinalizePlan}
-                    className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all"
-                  >
-                    Finalize Plan
-                  </button>
+                {aiEnhanced && !isEnhancing && (
+                  <div className="mt-6">
+                    <button
+                      onClick={handleFinalizePlan}
+                      disabled={selectedActions.length === 0 && customActions.length === 0}
+                      className={`w-full py-3 font-bold rounded-lg shadow-md transition-all ${
+                        selectedActions.length > 0 || customActions.length > 0
+                          ? 'bg-green-600 hover:bg-green-700 text-white hover:shadow-lg'
+                          : 'bg-stone-300 text-stone-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Finalize Plan
+                    </button>
+                    {selectedActions.length === 0 && customActions.length === 0 && (
+                      <p className="text-xs text-stone-500 text-center mt-2">
+                        Select at least one action to finalize your plan
+                      </p>
+                    )}
+                  </div>
                 )}
               </>
             )}
