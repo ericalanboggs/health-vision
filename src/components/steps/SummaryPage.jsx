@@ -25,10 +25,22 @@ const SummaryPage = ({ formData, onNavigate }) => {
   const [newCustomAction, setNewCustomAction] = useState('')
   const [isPlanFinalized, setIsPlanFinalized] = useState(false)
   const [dayCommitments, setDayCommitments] = useState({}) // Track day commitments per action
+  const [timePreferences, setTimePreferences] = useState({}) // Track time-of-day per action
   const [encouragementMessage] = useState(() => {
     const messages = ['Nice!', 'Great!', 'Ok!']
     return messages[Math.floor(Math.random() * messages.length)]
   })
+
+  // Time of day options with corresponding hours
+  const timeOfDayOptions = [
+    { label: 'Early Morning (6-8am)', value: 'early-morning', hour: 7 },
+    { label: 'Mid-Morning (8-10am)', value: 'mid-morning', hour: 9 },
+    { label: 'Lunch Time (12-1pm)', value: 'lunch', hour: 12 },
+    { label: 'Early Afternoon (1-3pm)', value: 'early-afternoon', hour: 14 },
+    { label: 'Afternoon (3-5pm)', value: 'afternoon', hour: 16 },
+    { label: 'After Work (5-7pm)', value: 'after-work', hour: 18 },
+    { label: 'Before Bedtime (9-10pm)', value: 'bedtime', hour: 21 }
+  ]
 
   // Check if user has sufficient data for personalization
   const hasSufficientData = () => {
@@ -219,17 +231,6 @@ const SummaryPage = ({ formData, onNavigate }) => {
       }
     }
 
-    if (actionPlan.barrierStrategies.length > 0) {
-      yPos += 3
-      addText('Overcoming Your Barriers:', 11, true)
-      actionPlan.barrierStrategies.forEach(item => {
-        addText(`${item.barrier}:`, 10, true)
-        addText(`Strategy: ${item.strategy}`, 9)
-        addText('Tips:', 9, true)
-        item.tips.forEach(tip => addText(`  • ${tip}`, 8))
-      })
-    }
-
     if (actionPlan.habitRecommendations.length > 0) {
       yPos += 3
       addText('Your Plan: Start Small, Then Stack', 11, true)
@@ -244,18 +245,6 @@ const SummaryPage = ({ formData, onNavigate }) => {
         addText(`Based on your vision and needs, experiment with habits focused around ${habitText}.`, 9, true)
       }
     }
-
-    yPos += 3
-    addText('Weekly Check-In Prompts:', 11, true)
-    actionPlan.weeklyCheckIn.prompts.forEach((prompt, idx) => {
-      addText(`${idx + 1}. ${prompt}`, 9)
-    })
-
-    yPos += 5
-    doc.setFontSize(9)
-    doc.setTextColor(100, 100, 100)
-    addText(`Remember: ${actionPlan.weeklyCheckIn.reminderText}`, 9)
-    addText(actionPlan.weeklyCheckIn.nextSteps, 9)
 
     // Save PDF
     doc.save(`health-summit-plan-${new Date().toISOString().split('T')[0]}.pdf`)
@@ -296,13 +285,16 @@ const SummaryPage = ({ formData, onNavigate }) => {
     
     finalizedActions.forEach((item, index) => {
       const committedDays = dayCommitments[index] || []
+      const timePreference = timePreferences[index] || 'mid-morning'
+      const timeOption = timeOfDayOptions.find(opt => opt.value === timePreference)
+      const eventHour = timeOption ? timeOption.hour : 9
       
       if (committedDays.length > 0) {
         // Create an event for each committed day
         committedDays.forEach(day => {
           const eventDate = getNextDayOccurrence(day, now)
-          // Set default time to 9 AM
-          eventDate.setHours(9, 0, 0, 0)
+          // Set time based on user's preference
+          eventDate.setHours(eventHour, 0, 0, 0)
           
           const startDate = formatICSDate(eventDate)
           const endDate = formatICSDate(new Date(eventDate.getTime() + 20 * 60 * 1000)) // 20 minutes
@@ -436,15 +428,20 @@ END:VEVENT
 
   const handleFinalizePlan = () => {
     if (selectedActions.length > 0 || selectedAiActions.length > 0 || customActions.length > 0) {
-      // Initialize day commitments for each action if not already set
+      // Initialize day commitments and time preferences for each action if not already set
       const actionsData = getSelectedActionsData()
       const initialCommitments = {}
+      const initialTimePrefs = {}
       actionsData.forEach((_, index) => {
         if (!dayCommitments[index]) {
           initialCommitments[index] = []
         }
+        if (!timePreferences[index]) {
+          initialTimePrefs[index] = 'mid-morning' // Default to mid-morning
+        }
       })
       setDayCommitments(prev => ({ ...prev, ...initialCommitments }))
+      setTimePreferences(prev => ({ ...prev, ...initialTimePrefs }))
       setIsPlanFinalized(true)
     }
   }
@@ -461,6 +458,13 @@ END:VEVENT
         : [...currentDays, day]
       return { ...prev, [actionIndex]: newDays }
     })
+  }
+
+  const handleTimePreferenceChange = (actionIndex, timeValue) => {
+    setTimePreferences(prev => ({
+      ...prev,
+      [actionIndex]: timeValue
+    }))
   }
 
   const getSelectedActionsData = () => {
@@ -711,21 +715,46 @@ END:VEVENT
                             <p className="text-xs text-blue-600 mb-3">Custom action</p>
                           )}
                           
-                          {/* Day Commitment Chips */}
-                          <div className="flex flex-wrap gap-2 mt-3">
-                            {days.map(day => (
-                              <button
-                                key={day}
-                                onClick={() => toggleDayCommitment(index, day)}
-                                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                                  committedDays.includes(day)
-                                    ? 'bg-green-600 text-white shadow-sm'
-                                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                                }`}
+                          {/* When will you do this? Label */}
+                          <div className="mb-2">
+                            <label className="block text-sm font-normal text-stone-900">
+                              When will you do this?
+                            </label>
+                          </div>
+                          
+                          {/* Day Commitment Chips and Time Selector - Responsive Layout */}
+                          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                            {/* Day Commitment Chips */}
+                            <div className="flex flex-wrap gap-2">
+                              {days.map(day => (
+                                <button
+                                  key={day}
+                                  onClick={() => toggleDayCommitment(index, day)}
+                                  className={`px-5 py-2 rounded-lg text-sm font-medium transition-all border ${
+                                    committedDays.includes(day)
+                                      ? 'bg-green-50 text-green-700 border-green-600'
+                                      : 'bg-white text-stone-600 border-stone-300 hover:bg-stone-50'
+                                  }`}
+                                >
+                                  {day}
+                                </button>
+                              ))}
+                            </div>
+                            
+                            {/* Time of Day Selector */}
+                            <div className="w-full lg:w-auto lg:flex-shrink-0">
+                              <select
+                                value={timePreferences[index] || 'mid-morning'}
+                                onChange={(e) => handleTimePreferenceChange(index, e.target.value)}
+                                className="w-full lg:min-w-[200px] px-4 py-2 border border-stone-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
                               >
-                                {day}
-                              </button>
-                            ))}
+                                {timeOfDayOptions.map(option => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -950,57 +979,6 @@ END:VEVENT
             </div>
           </div>
 
-          {/* Barrier Strategies */}
-          {actionPlan.barrierStrategies.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-6 mb-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-amber-100 rounded-xl">
-                  <TrendingUp className="w-6 h-6 text-amber-600" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-stone-900">Overcoming Your Barriers</h3>
-                  <p className="text-sm text-stone-600">Strategies for your top challenges</p>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                {actionPlan.barrierStrategies.map((item, index) => (
-                  <div key={index} className="bg-amber-50 p-5 rounded-xl border border-amber-200">
-                    <h4 className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
-                      <span className="text-lg">🚧</span>
-                      {item.barrier}
-                    </h4>
-                    <p className="text-stone-700 font-medium mb-3">{item.strategy}</p>
-                    <ul className="space-y-1.5 text-sm text-stone-600">
-                      {item.tips.map((tip, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <span className="text-amber-600 mt-0.5">•</span>
-                          <span>{tip}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Weekly Check-In */}
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-200 p-6 mb-6">
-            <h3 className="text-xl font-bold text-stone-900 mb-4">📋 Weekly Check-In Prompts</h3>
-            <ul className="space-y-3 mb-4">
-              {actionPlan.weeklyCheckIn.prompts.map((prompt, index) => (
-                <li key={index} className="flex items-start gap-2 text-stone-700">
-                  <span className="text-purple-600 font-bold">{index + 1}.</span>
-                  <span>{prompt}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="bg-white/50 p-4 rounded-lg border border-purple-200">
-              <p className="text-sm text-stone-700 italic mb-2">{actionPlan.weeklyCheckIn.reminderText}</p>
-              <p className="text-sm text-stone-600 font-medium">{actionPlan.weeklyCheckIn.nextSteps}</p>
-            </div>
-          </div>
         </>
       )}
 
