@@ -1,0 +1,126 @@
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
+import { trackEvent } from '../lib/posthog'
+import { Loader2, CheckCircle, XCircle } from 'lucide-react'
+
+export default function AuthCallback() {
+  const navigate = useNavigate()
+  const [status, setStatus] = useState('processing') // processing, success, error
+
+  useEffect(() => {
+    const handleAuthCallback = async () => {
+      try {
+        // Check if we have a hash with auth tokens
+        const hashParams = new URLSearchParams(window.location.hash.substring(1))
+        const accessToken = hashParams.get('access_token')
+        const refreshToken = hashParams.get('refresh_token')
+
+        if (accessToken) {
+          // Set the session from the tokens
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          })
+
+          if (error) {
+            console.error('Auth callback error:', error)
+            trackEvent('auth_callback_failed', { error: error.message })
+            setStatus('error')
+            return
+          }
+
+          if (data.session) {
+            trackEvent('user_authenticated', { 
+              userId: data.session.user.id,
+              email: data.session.user.email 
+            })
+            setStatus('success')
+            
+            // Clear the hash and redirect to dashboard
+            window.history.replaceState(null, '', '/dashboard')
+            setTimeout(() => {
+              navigate('/dashboard', { replace: true })
+            }, 1500)
+          } else {
+            setStatus('error')
+          }
+        } else {
+          // No tokens in URL, check if already authenticated
+          const { data } = await supabase.auth.getSession()
+          if (data.session) {
+            navigate('/dashboard', { replace: true })
+          } else {
+            setStatus('error')
+          }
+        }
+      } catch (error) {
+        console.error('Error in auth callback:', error)
+        trackEvent('auth_callback_error', { error: error.message })
+        setStatus('error')
+      }
+    }
+
+    handleAuthCallback()
+  }, [navigate])
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+        {status === 'processing' && (
+          <>
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-stone-800 mb-3">
+              Signing you in...
+            </h1>
+            <p className="text-stone-600">
+              Please wait while we verify your magic link
+            </p>
+          </>
+        )}
+
+        {status === 'success' && (
+          <>
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-10 h-10 text-green-600" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-stone-800 mb-3">
+              Welcome back!
+            </h1>
+            <p className="text-stone-600">
+              Redirecting you to your dashboard...
+            </p>
+          </>
+        )}
+
+        {status === 'error' && (
+          <>
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                <XCircle className="w-10 h-10 text-red-600" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-stone-800 mb-3">
+              Authentication Failed
+            </h1>
+            <p className="text-stone-600 mb-6">
+              We couldn't verify your magic link. It may have expired or already been used.
+            </p>
+            <button
+              onClick={() => navigate('/login')}
+              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition"
+            >
+              Try Again
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
