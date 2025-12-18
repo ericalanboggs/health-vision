@@ -1,27 +1,94 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCurrentUser, signOut } from '../services/authService'
-import { Calendar, Target, LogOut, User } from 'lucide-react'
+import { getCurrentWeekHabits } from '../services/habitService'
+import { getCurrentWeekNumber, getCurrentWeekDateRange } from '../utils/weekCalculator'
+import { Calendar, Target, LogOut, User, Clock, ArrowRight } from 'lucide-react'
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [currentHabits, setCurrentHabits] = useState([])
+  const [weekNumber, setWeekNumber] = useState(1)
+  const [weekDateRange, setWeekDateRange] = useState('')
 
   useEffect(() => {
-    const loadUser = async () => {
+    const loadDashboardData = async () => {
       const { user } = await getCurrentUser()
       setUser(user)
+      
+      // Get current week info
+      const week = getCurrentWeekNumber()
+      const dateRange = getCurrentWeekDateRange()
+      setWeekNumber(week)
+      setWeekDateRange(dateRange)
+      
+      // Load current week's habits
+      const { success, data } = await getCurrentWeekHabits()
+      if (success && data) {
+        setCurrentHabits(data)
+      }
+      
       setLoading(false)
     }
 
-    loadUser()
+    loadDashboardData()
   }, [])
 
   const handleSignOut = async () => {
     await signOut()
     navigate('/login')
   }
+
+  // Format habits into readable format with separate habit and schedule
+  const formatHabits = () => {
+    if (currentHabits.length === 0) return []
+
+    // Group habits by habit_name
+    const habitGroups = {}
+    currentHabits.forEach(habit => {
+      if (!habitGroups[habit.habit_name]) {
+        habitGroups[habit.habit_name] = []
+      }
+      habitGroups[habit.habit_name].push(habit)
+    })
+
+    // Format each habit group
+    return Object.entries(habitGroups).map(([habitName, habits]) => {
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+      const days = habits.map(h => dayNames[h.day_of_week]).sort((a, b) => {
+        const order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        return order.indexOf(a) - order.indexOf(b)
+      })
+      
+      // Format time range (convert from 24hr to 12hr format)
+      const time = habits[0].reminder_time
+      const [hours] = time.split(':')
+      const hour = parseInt(hours)
+      const startHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
+      const endHour = startHour + 1
+      const ampm = hour >= 12 ? 'PM' : 'AM'
+      const timeRange = `${startHour}-${endHour}${ampm.toLowerCase()}`
+      
+      // Format days list
+      let daysStr
+      if (days.length === 1) {
+        daysStr = days[0]
+      } else if (days.length === 2) {
+        daysStr = `${days[0]} and ${days[1]}`
+      } else {
+        daysStr = `${days.slice(0, -1).join(', ')}, and ${days[days.length - 1]}`
+      }
+      
+      return {
+        habit: habitName,
+        schedule: `${daysStr} between ${timeRange}.`
+      }
+    })
+  }
+
+  const formattedHabits = formatHabits()
 
   if (loading) {
     return (
@@ -59,6 +126,16 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Week Info Banner */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-stone-800">Week {weekNumber}</h2>
+              <p className="text-stone-600">{weekDateRange}</p>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Habit Commitments Card */}
           <button
@@ -73,9 +150,29 @@ export default function Dashboard() {
             <h2 className="text-2xl font-bold text-stone-800 mb-2">
               Weekly Habits
             </h2>
-            <p className="text-stone-600 mb-4">
-              Set your commitments for this week. Choose 1-2 habits with specific days and times.
-            </p>
+            
+            {formattedHabits.length > 0 ? (
+              <div className="mb-4 space-y-3">
+                {formattedHabits.map((habitData, index) => (
+                  <div key={index} className="flex flex-col gap-1">
+                    <p className="text-base leading-6 text-stone-700">
+                      {habitData.habit}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-stone-600" />
+                      <p className="text-sm leading-6 text-stone-600">
+                        {habitData.schedule}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-stone-600 mb-4">
+                Set your commitments for this week. Choose 1-2 habits with specific days and times.
+              </p>
+            )}
+            
             <div className="text-green-600 font-semibold group-hover:gap-2 flex items-center gap-1 transition-all">
               Manage Habits
               <span className="group-hover:translate-x-1 transition-transform">→</span>

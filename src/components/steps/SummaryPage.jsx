@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react'
-import { FileText, Sparkles, Heart, Map, Clock3, Edit2, Bell, Target, TrendingUp, Lightbulb, Wand2, Loader2, RefreshCw, Copy, Check } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { FileText, Sparkles, Heart, Map, Clock3, Edit2, Bell, Target, TrendingUp, Lightbulb, Wand2, Loader2, RefreshCw, Copy, Check, CheckCircle } from 'lucide-react'
 import { generateActionPlan, generateMotivationalMessage } from '../../utils/planGenerator'
 import { enhanceActionPlan } from '../../utils/aiService'
+import { saveHabitsForWeek } from '../../services/habitService'
+import { getCurrentWeekNumber } from '../../utils/weekCalculator'
+import { getCurrentUser } from '../../services/authService'
 import jsPDF from 'jspdf'
 
 const SummaryPage = ({ formData, onNavigate }) => {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('plan') // 'summary' or 'plan'
   const [copied, setCopied] = useState(false)
+  const [isConfirmingHabits, setIsConfirmingHabits] = useState(false)
+  const [habitsConfirmed, setHabitsConfirmed] = useState(false)
   
   // Generate the action plan
   const actionPlan = generateActionPlan(formData)
@@ -355,6 +362,97 @@ END:VEVENT
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  }
+
+  const handleConfirmHabits = async () => {
+    setIsConfirmingHabits(true)
+    
+    try {
+      // Check if user is authenticated
+      const { user } = await getCurrentUser()
+      if (!user) {
+        alert('Please log in to save your habits')
+        navigate('/login')
+        return
+      }
+
+      // Get current week number
+      const weekNumber = getCurrentWeekNumber()
+      
+      // Get selected actions with their day/time commitments
+      const finalizedActions = getSelectedActionsData()
+      
+      // Map day names to numbers (0 = Sunday, 6 = Saturday)
+      const dayNameToNumber = {
+        'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6
+      }
+      
+      // Build habits array for database
+      const habits = []
+      
+      finalizedActions.forEach((item, index) => {
+        const committedDays = dayCommitments[index] || []
+        const timePreference = timePreferences[index] || 'mid-morning'
+        const timeOption = timeOfDayOptions.find(opt => opt.value === timePreference)
+        const eventHour = timeOption ? timeOption.hour : 9
+        
+        // Create a habit entry for each committed day
+        committedDays.forEach(dayName => {
+          habits.push({
+            habit_name: item.action,
+            day_of_week: dayNameToNumber[dayName],
+            reminder_time: `${String(eventHour).padStart(2, '0')}:00:00`,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Chicago'
+          })
+        })
+      })
+      
+      // Validate: at least 1 habit with at least 1 day
+      if (habits.length === 0) {
+        alert('Please select at least one day for your habits')
+        setIsConfirmingHabits(false)
+        return
+      }
+      
+      // Validate: max 2 habits (unique habit names)
+      const uniqueHabits = [...new Set(habits.map(h => h.habit_name))]
+      if (uniqueHabits.length > 2) {
+        alert('Please select a maximum of 2 habits for this week')
+        setIsConfirmingHabits(false)
+        return
+      }
+      
+      // Validate: max 3 days per habit
+      const habitDayCounts = {}
+      habits.forEach(h => {
+        habitDayCounts[h.habit_name] = (habitDayCounts[h.habit_name] || 0) + 1
+      })
+      const exceedsMaxDays = Object.values(habitDayCounts).some(count => count > 3)
+      if (exceedsMaxDays) {
+        alert('Please select a maximum of 3 days per habit')
+        setIsConfirmingHabits(false)
+        return
+      }
+      
+      // Save to database
+      const result = await saveHabitsForWeek(weekNumber, habits)
+      
+      if (result.success) {
+        setHabitsConfirmed(true)
+        // Redirect to dashboard after brief delay
+        setTimeout(() => {
+          navigate('/dashboard')
+        }, 2000)
+      } else {
+        alert('Failed to save habits. Please try again.')
+        console.error('Save habits error:', result.error)
+      }
+    } catch (error) {
+      console.error('Error confirming habits:', error)
+      alert('An error occurred. Please try again.')
+    } finally {
+      setIsConfirmingHabits(false)
+    }
   }
 
   const handleAIEnhancement = async () => {
@@ -764,31 +862,64 @@ END:VEVENT
 
                 {/* Action Buttons - After Finalized Plan */}
                 <div className="flex flex-wrap gap-3 pt-4 border-t border-stone-200">
-                  {/* Create Calendar Reminder Button */}
-                  <button
-                    onClick={handleReminder}
-                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-3 rounded-lg shadow-md hover:shadow-lg transition-all"
-                  >
-                    <Bell className="w-4 h-4" />
-                    Create Calendar Reminder
-                  </button>
+                  {!habitsConfirmed ? (
+                    <>
+                      {/* Confirm This Week's Habits Button - Primary Action */}
+                      <button
+                        onClick={handleConfirmHabits}
+                        disabled={isConfirmingHabits}
+                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all"
+                      >
+                        {isConfirmingHabits ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-5 h-5" />
+                            Confirm This Week's Habits
+                          </>
+                        )}
+                      </button>
 
-                  <button 
-                    onClick={handleCopyToClipboard}
-                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-3 rounded-lg shadow-md hover:shadow-lg transition-all"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-4 h-4" />
-                        Copied!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4" />
-                        Copy to Clipboard
-                      </>
-                    )}
-                  </button>
+                      {/* Secondary Actions - Calendar and Clipboard */}
+                      <button
+                        onClick={handleReminder}
+                        className="flex items-center gap-2 bg-white hover:bg-stone-50 text-green-600 font-semibold px-5 py-3 rounded-lg border-2 border-green-600 shadow-sm hover:shadow transition-all"
+                      >
+                        <Bell className="w-4 h-4" />
+                        Create Calendar Reminder
+                      </button>
+
+                      <button 
+                        onClick={handleCopyToClipboard}
+                        className="flex items-center gap-2 bg-white hover:bg-stone-50 text-green-600 font-semibold px-5 py-3 rounded-lg border-2 border-green-600 shadow-sm hover:shadow transition-all"
+                      >
+                        {copied ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4" />
+                            Copy to Clipboard
+                          </>
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <div className="w-full bg-green-50 border-2 border-green-500 rounded-lg p-4">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="w-6 h-6 text-green-600" />
+                        <div>
+                          <p className="font-semibold text-green-900">Habits Confirmed!</p>
+                          <p className="text-sm text-green-700">Redirecting you to your dashboard...</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
