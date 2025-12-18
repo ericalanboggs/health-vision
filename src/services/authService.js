@@ -1,5 +1,6 @@
 import supabase from '../lib/supabase'
 import { trackEvent } from '../lib/posthog'
+import { isPilotApproved } from '../config/pilotAllowlist'
 
 /**
  * Send a magic link to the user's email
@@ -28,6 +29,28 @@ export const sendMagicLink = async (email) => {
     console.error('Error in sendMagicLink:', error)
     trackEvent('magic_link_error', { error: error.message })
     return { success: false, error }
+  }
+}
+
+/**
+ * Check if an email has pilot access
+ * @param {string} email - Email address to check
+ * @returns {Promise<boolean>}
+ */
+export const checkPilotAccess = async (email) => {
+  try {
+    const hasAccess = isPilotApproved(email)
+    
+    trackEvent('pilot_access_checked', { 
+      email, 
+      hasAccess 
+    })
+    
+    return hasAccess
+  } catch (error) {
+    console.error('Error checking pilot access:', error)
+    trackEvent('pilot_access_check_error', { error: error.message })
+    return false
   }
 }
 

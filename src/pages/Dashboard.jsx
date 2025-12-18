@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCurrentUser, signOut } from '../services/authService'
 import { getCurrentWeekHabits } from '../services/habitService'
+import { loadJourney } from '../services/journeyService'
 import { getCurrentWeekNumber, getCurrentWeekDateRange } from '../utils/weekCalculator'
-import { Calendar, Target, LogOut, User, Clock, ArrowRight } from 'lucide-react'
+import { Calendar, Target, LogOut, User, Clock, ArrowRight, Flag } from 'lucide-react'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -12,6 +13,7 @@ export default function Dashboard() {
   const [currentHabits, setCurrentHabits] = useState([])
   const [weekNumber, setWeekNumber] = useState(1)
   const [weekDateRange, setWeekDateRange] = useState('')
+  const [visionStatement, setVisionStatement] = useState('')
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -28,6 +30,12 @@ export default function Dashboard() {
       const { success, data } = await getCurrentWeekHabits()
       if (success && data) {
         setCurrentHabits(data)
+      }
+      
+      // Load user's vision
+      const journeyResult = await loadJourney()
+      if (journeyResult.success && journeyResult.data?.form_data?.visionStatement) {
+        setVisionStatement(journeyResult.data.form_data.visionStatement)
       }
       
       setLoading(false)
@@ -136,7 +144,37 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Vision Card */}
+          <button
+            onClick={() => navigate('/vision')}
+            className="bg-white rounded-2xl shadow-lg p-8 text-left hover:shadow-xl transition group"
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-200 transition">
+                <Flag className="w-8 h-8 text-blue-600" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-stone-800 mb-2">
+              Your Vision
+            </h2>
+            
+            {visionStatement ? (
+              <p className="text-stone-600 mb-4 line-clamp-3">
+                {visionStatement}
+              </p>
+            ) : (
+              <p className="text-stone-600 mb-4">
+                Create your health vision to guide your journey. Define where you want to be in 1-2 years.
+              </p>
+            )}
+            
+            <div className="text-blue-600 font-semibold group-hover:gap-2 flex items-center gap-1 transition-all">
+              {visionStatement ? 'View & Edit Vision' : 'Create Vision'}
+              <span className="group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+          </button>
+
           {/* Habit Commitments Card */}
           <button
             onClick={() => navigate('/habits')}

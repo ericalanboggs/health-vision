@@ -4,6 +4,9 @@ import LandingPage from './components/LandingPage'
 import CompassApp from './components/CompassApp'
 import Home from './pages/Home'
 import Login from './pages/Login'
+import PilotIntake from './pages/PilotIntake'
+import Start from './pages/Start'
+import Vision from './pages/Vision'
 import AuthCallback from './pages/AuthCallback'
 import AuthTest from './pages/AuthTest'
 import Dashboard from './pages/Dashboard'
@@ -43,9 +46,28 @@ function App() {
         <Route path="/journey" element={<HealthJourney />} />
         
         {/* Auth routes */}
+        <Route path="/pilot" element={<PilotIntake />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/test" element={<AuthTest />} />
+        
+        {/* First-time user experience */}
+        <Route 
+          path="/start" 
+          element={
+            <ProtectedRoute>
+              <Start />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/vision" 
+          element={
+            <ProtectedRoute>
+              <Vision />
+            </ProtectedRoute>
+          } 
+        />
         
         {/* Protected routes */}
         <Route 

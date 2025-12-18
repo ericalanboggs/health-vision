@@ -41,20 +41,44 @@ export const saveJourney = async (formData, currentStep) => {
   }
 
   try {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || null
     const sessionId = getSessionId()
-    const userId = supabase.auth.user()?.id || null
 
-    // Check if journey exists
-    const { data: existingJourney } = await supabase
-      .from('health_journeys')
-      .select('id')
-      .eq('session_id', sessionId)
-      .single()
+    console.log('💾 Saving journey:', { 
+      userId, 
+      sessionId, 
+      currentStep,
+      hasVision: !!formData?.visionStatement,
+      visionLength: formData?.visionStatement?.length || 0
+    })
+
+    // For authenticated users, query by user_id; for anonymous, use session_id
+    let existingJourney
+    if (userId) {
+      const { data } = await supabase
+        .from('health_journeys')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle()
+      existingJourney = data
+      console.log('🔍 Existing journey check (by user_id):', existingJourney ? 'Found' : 'Not found')
+    } else {
+      const { data } = await supabase
+        .from('health_journeys')
+        .select('id')
+        .eq('session_id', sessionId)
+        .maybeSingle()
+      existingJourney = data
+      console.log('🔍 Existing journey check (by session_id):', existingJourney ? 'Found' : 'Not found')
+    }
 
     let result
     if (existingJourney) {
       // Update existing journey
-      result = await supabase
+      console.log('🔄 Updating existing journey')
+      const updateQuery = supabase
         .from('health_journeys')
         .update({
           form_data: formData,
@@ -62,11 +86,15 @@ export const saveJourney = async (formData, currentStep) => {
           updated_at: new Date().toISOString(),
           user_id: userId,
         })
-        .eq('session_id', sessionId)
-        .select()
-        .single()
+      
+      if (userId) {
+        result = await updateQuery.eq('user_id', userId).select().single()
+      } else {
+        result = await updateQuery.eq('session_id', sessionId).select().single()
+      }
     } else {
       // Create new journey
+      console.log('➕ Creating new journey')
       result = await supabase
         .from('health_journeys')
         .insert({
@@ -81,15 +109,16 @@ export const saveJourney = async (formData, currentStep) => {
     }
 
     if (result.error) {
-      console.error('Error saving journey:', result.error)
+      console.error('❌ Error saving journey:', result.error)
       trackEvent('journey_save_failed', { error: result.error.message })
       return { success: false, error: result.error }
     }
 
+    console.log('✅ Journey saved successfully')
     trackEvent('journey_saved', { step: currentStep })
     return { success: true, data: result.data }
   } catch (error) {
-    console.error('Error in saveJourney:', error)
+    console.error('❌ Error in saveJourney:', error)
     trackEvent('journey_save_error', { error: error.message })
     return { success: false, error }
   }
@@ -100,31 +129,51 @@ export const saveJourney = async (formData, currentStep) => {
  */
 export const loadJourney = async () => {
   if (!isSupabaseConfigured()) {
+    console.warn('Supabase not configured')
     return { success: false, error: 'Supabase not configured' }
   }
 
   try {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || null
     const sessionId = getSessionId()
 
-    const { data, error } = await supabase
-      .from('health_journeys')
-      .select('*')
-      .eq('session_id', sessionId)
-      .single()
+    console.log('🔍 Loading journey:', { userId, sessionId })
+
+    // For authenticated users, query by user_id; for anonymous, use session_id
+    let query = supabase.from('health_journeys').select('*')
+    
+    if (userId) {
+      console.log('📊 Querying by user_id:', userId)
+      query = query.eq('user_id', userId)
+    } else {
+      console.log('📊 Querying by session_id:', sessionId)
+      query = query.eq('session_id', sessionId)
+    }
+
+    const { data, error } = await query.maybeSingle()
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No journey found - this is okay
-        return { success: true, data: null }
-      }
-      console.error('Error loading journey:', error)
+      console.error('❌ Error loading journey:', error)
       return { success: false, error }
     }
+
+    if (!data) {
+      console.log('⚠️ No journey found')
+      return { success: true, data: null }
+    }
+
+    console.log('✅ Journey loaded successfully:', {
+      hasVision: !!data.form_data?.visionStatement,
+      currentStep: data.current_step,
+      visionLength: data.form_data?.visionStatement?.length || 0
+    })
 
     trackEvent('journey_loaded')
     return { success: true, data }
   } catch (error) {
-    console.error('Error in loadJourney:', error)
+    console.error('❌ Error in loadJourney:', error)
     return { success: false, error }
   }
 }
@@ -138,17 +187,21 @@ export const completeJourney = async () => {
   }
 
   try {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || null
     const sessionId = getSessionId()
 
-    const { data, error } = await supabase
+    let updateQuery = supabase
       .from('health_journeys')
       .update({
         completed: true,
         updated_at: new Date().toISOString(),
       })
-      .eq('session_id', sessionId)
-      .select()
-      .single()
+
+    const { data, error } = userId 
+      ? await updateQuery.eq('user_id', userId).select().single()
+      : await updateQuery.eq('session_id', sessionId).select().single()
 
     if (error) {
       console.error('Error completing journey:', error)
@@ -172,12 +225,16 @@ export const deleteJourney = async () => {
   }
 
   try {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || null
     const sessionId = getSessionId()
 
-    const { error } = await supabase
-      .from('health_journeys')
-      .delete()
-      .eq('session_id', sessionId)
+    let deleteQuery = supabase.from('health_journeys').delete()
+    
+    const { error } = userId
+      ? await deleteQuery.eq('user_id', userId)
+      : await deleteQuery.eq('session_id', sessionId)
 
     if (error) {
       console.error('Error deleting journey:', error)
@@ -204,7 +261,9 @@ export const getUserJourneys = async () => {
   }
 
   try {
-    const userId = supabase.auth.user()?.id
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id
+    
     if (!userId) {
       return { success: false, error: 'User not authenticated' }
     }
