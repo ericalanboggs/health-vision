@@ -67,7 +67,7 @@ export default function Home() {
           navigate('/dashboard', { replace: true })
         } else {
           console.log('Not authenticated')
-          navigate('/login', { replace: true })
+          navigate('/pilot', { replace: true })
         }
       }
     }
