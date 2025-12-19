@@ -9,6 +9,13 @@ import { isPilotApproved } from '../config/pilotAllowlist'
  */
 export const sendMagicLink = async (email) => {
   try {
+    if (!supabase) {
+      const error = new Error('Supabase is not configured')
+      console.error('Error sending magic link:', error)
+      trackEvent('magic_link_failed', { error: error.message })
+      return { success: false, error }
+    }
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
@@ -60,6 +67,11 @@ export const checkPilotAccess = async (email) => {
  */
 export const getCurrentUser = async () => {
   try {
+    if (!supabase) {
+      console.error('Error getting current user: Supabase is not configured')
+      return { user: null, session: null }
+    }
+
     const { data, error } = await supabase.auth.getSession()
     
     if (error) {
@@ -85,6 +97,12 @@ export const getCurrentUser = async () => {
  */
 export const signOut = async () => {
   try {
+    if (!supabase) {
+      const error = new Error('Supabase is not configured')
+      console.error('Error signing out:', error)
+      return { success: false, error }
+    }
+
     const { error } = await supabase.auth.signOut()
 
     if (error) {
@@ -106,6 +124,11 @@ export const signOut = async () => {
  * @returns {Function} Unsubscribe function
  */
 export const onAuthStateChange = (callback) => {
+  if (!supabase) {
+    console.error('Error setting up auth state listener: Supabase is not configured')
+    return () => {}
+  }
+
   const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
     callback(event, session)
   })
@@ -121,6 +144,12 @@ export const onAuthStateChange = (callback) => {
  */
 export const upsertProfile = async (userId, profileData) => {
   try {
+    if (!supabase) {
+      const error = new Error('Supabase is not configured')
+      console.error('Error upserting profile:', error)
+      return { success: false, error }
+    }
+
     const { error } = await supabase
       .from('profiles')
       .upsert({
@@ -148,6 +177,12 @@ export const upsertProfile = async (userId, profileData) => {
  */
 export const getProfile = async (userId) => {
   try {
+    if (!supabase) {
+      const error = new Error('Supabase is not configured')
+      console.error('Error getting profile:', error)
+      return { success: false, error }
+    }
+
     const { data, error } = await supabase
       .from('profiles')
       .select('*')

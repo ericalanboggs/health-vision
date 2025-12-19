@@ -14,6 +14,10 @@ import { getCurrentWeekNumber } from '../utils/weekCalculator'
  */
 export const saveHabitsForWeek = async (weekNumber, habits) => {
   try {
+    if (!supabase) {
+      return { success: false, error: 'Supabase is not configured' }
+    }
+
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
@@ -61,6 +65,10 @@ export const saveHabitsForWeek = async (weekNumber, habits) => {
  */
 export const getHabitsForWeek = async (weekNumber) => {
   try {
+    if (!supabase) {
+      return { success: false, error: 'Supabase is not configured' }
+    }
+
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
@@ -114,6 +122,10 @@ export const getPreviousWeekHabits = async () => {
  */
 export const deleteHabitsForWeek = async (weekNumber) => {
   try {
+    if (!supabase) {
+      return { success: false, error: 'Supabase is not configured' }
+    }
+
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
@@ -147,6 +159,10 @@ export const deleteHabitsForWeek = async (weekNumber) => {
  */
 export const updateHabit = async (habitId, updates) => {
   try {
+    if (!supabase) {
+      return { success: false, error: 'Supabase is not configured' }
+    }
+
     const { data, error } = await supabase
       .from('weekly_habits')
       .update(updates)
@@ -174,6 +190,10 @@ export const updateHabit = async (habitId, updates) => {
  */
 export const deleteHabit = async (habitId) => {
   try {
+    if (!supabase) {
+      return { success: false, error: 'Supabase is not configured' }
+    }
+
     const { error } = await supabase
       .from('weekly_habits')
       .delete()
@@ -229,6 +249,10 @@ export const copyHabitsToWeek = async (fromWeek, toWeek) => {
  */
 export const getAllUserHabits = async () => {
   try {
+    if (!supabase) {
+      return { success: false, error: 'Supabase is not configured' }
+    }
+
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {

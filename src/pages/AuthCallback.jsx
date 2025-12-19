@@ -11,6 +11,13 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
+        if (!supabase) {
+          console.error('Supabase is not configured')
+          trackEvent('auth_callback_failed', { error: 'Supabase not configured' })
+          setStatus('error')
+          return
+        }
+
         // Check if we have a hash with auth tokens
         const hashParams = new URLSearchParams(window.location.hash.substring(1))
         const accessToken = hashParams.get('access_token')

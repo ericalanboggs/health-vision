@@ -9,6 +9,13 @@ export default function Home() {
 
   useEffect(() => {
     const checkAuthAndRedirect = async () => {
+      if (!supabase) {
+        console.error('Supabase is not configured')
+        setDebugInfo('Configuration error - redirecting to pilot intake...')
+        navigate('/pilot', { replace: true })
+        return
+      }
+
       const hash = window.location.hash
       const hasToken = hash.includes('access_token')
       

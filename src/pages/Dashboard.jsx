@@ -133,72 +133,65 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Week Info Banner */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-stone-800">Week {weekNumber}</h2>
-              <p className="text-stone-600">{weekDateRange}</p>
-            </div>
-          </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-12">
+        {/* Welcome Section - Moved to Top */}
+        <div className="bg-[#f3f6ff] border border-[#cdcdcd] rounded-lg p-4 flex flex-col gap-3">
+          <h2 className="text-3xl font-bold text-black leading-9">
+            Welcome to Your Summit Pilot 🏔️
+          </h2>
+          <p className="text-base text-black leading-6">
+            This is a 4-week pilot program to help you build sustainable health habits. 
+            Each week, commit to 1-2 habits and reflect on your progress. 
+            You'll receive gentle SMS reminders at the times you choose.
+          </p>
+          <p className="text-base text-black leading-6">
+            Pilot Timeline: Week {weekNumber} ({weekDateRange})
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Vision Card */}
+        {/* Vision Section */}
+        <div className="bg-[#f3f6ff] border border-[#cdcdcd] rounded-lg p-4 flex flex-col gap-3">
+          <h2 className="text-3xl font-bold text-black leading-9">
+            Your Vision
+          </h2>
+          
+          {visionStatement ? (
+            <p className="text-base text-black leading-6">
+              {visionStatement}
+            </p>
+          ) : (
+            <p className="text-base text-black leading-6">
+              Create your health vision to guide your journey. Define where you want to be in 1-2 years.
+            </p>
+          )}
+          
           <button
             onClick={() => navigate('/vision')}
-            className="bg-white rounded-2xl shadow-lg p-8 text-left hover:shadow-xl transition group"
+            className="flex items-center justify-center gap-3 text-green-600 font-bold text-lg hover:gap-4 transition-all"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-200 transition">
-                <Flag className="w-8 h-8 text-blue-600" />
-              </div>
-            </div>
-            <h2 className="text-2xl font-bold text-stone-800 mb-2">
-              Your Vision
-            </h2>
-            
-            {visionStatement ? (
-              <p className="text-stone-600 mb-4 line-clamp-3">
-                {visionStatement}
-              </p>
-            ) : (
-              <p className="text-stone-600 mb-4">
-                Create your health vision to guide your journey. Define where you want to be in 1-2 years.
-              </p>
-            )}
-            
-            <div className="text-blue-600 font-semibold group-hover:gap-2 flex items-center gap-1 transition-all">
-              {visionStatement ? 'View & Edit Vision' : 'Create Vision'}
-              <span className="group-hover:translate-x-1 transition-transform">→</span>
-            </div>
+            <span>View and Edit Vision</span>
+            <ArrowRight className="w-6 h-6" />
           </button>
+        </div>
 
-          {/* Habit Commitments Card */}
-          <button
-            onClick={() => navigate('/habits')}
-            className="bg-white rounded-2xl shadow-lg p-8 text-left hover:shadow-xl transition group"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition">
-                <Target className="w-8 h-8 text-green-600" />
-              </div>
-            </div>
-            <h2 className="text-2xl font-bold text-stone-800 mb-2">
+        {/* Weekly Sections - Grouped Side by Side */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          {/* Weekly Habits */}
+          <div className="bg-[#f3f6ff] border border-[#cdcdcd] rounded-lg p-4 flex flex-col gap-3">
+            <h2 className="text-3xl font-bold text-black leading-9">
               Weekly Habits
             </h2>
             
             {formattedHabits.length > 0 ? (
-              <div className="mb-4 space-y-3">
+              <div className="flex flex-col gap-1">
                 {formattedHabits.map((habitData, index) => (
                   <div key={index} className="flex flex-col gap-1">
-                    <p className="text-base leading-6 text-stone-700">
+                    <p className="text-base leading-6 text-black">
                       {habitData.habit}
                     </p>
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-stone-600" />
-                      <p className="text-sm leading-6 text-stone-600">
+                      <Clock className="w-5 h-5 text-black/80" />
+                      <p className="text-sm leading-6 text-black/80">
                         {habitData.schedule}
                       </p>
                     </div>
@@ -206,50 +199,45 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : (
-              <p className="text-stone-600 mb-4">
+              <p className="text-base text-black leading-6">
                 Set your commitments for this week. Choose 1-2 habits with specific days and times.
               </p>
             )}
             
-            <div className="text-green-600 font-semibold group-hover:gap-2 flex items-center gap-1 transition-all">
-              Manage Habits
-              <span className="group-hover:translate-x-1 transition-transform">→</span>
-            </div>
-          </button>
+            <button
+              onClick={() => navigate('/habits')}
+              className="flex items-center justify-center gap-3 text-green-600 font-bold text-lg hover:gap-4 transition-all"
+            >
+              <span>Manage Habits</span>
+              <ArrowRight className="w-6 h-6" />
+            </button>
+          </div>
 
-          {/* Weekly Reflection Card */}
-          <button
-            onClick={() => navigate('/reflection')}
-            className="bg-white rounded-2xl shadow-lg p-8 text-left hover:shadow-xl transition group"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center group-hover:bg-amber-200 transition">
-                <Calendar className="w-8 h-8 text-amber-600" />
-              </div>
-            </div>
-            <h2 className="text-2xl font-bold text-stone-800 mb-2">
+          {/* Weekly Reflection */}
+          <div className="bg-[#f3f6ff] border border-[#cdcdcd] rounded-lg p-4 flex flex-col gap-3">
+            <h2 className="text-3xl font-bold text-black leading-9">
               Weekly Reflection
             </h2>
-            <p className="text-stone-600 mb-4">
+            
+            <p className="text-base text-black leading-6">
               Reflect on your week. What went well? What was challenging? What will you adjust?
             </p>
-            <div className="text-amber-600 font-semibold group-hover:gap-2 flex items-center gap-1 transition-all">
-              Start Reflection
-              <span className="group-hover:translate-x-1 transition-transform">→</span>
+            
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-black/80" />
+              <p className="text-sm leading-6 text-black/80">
+                Complete by Sunday each week
+              </p>
             </div>
-          </button>
-        </div>
-
-        {/* Welcome Message */}
-        <div className="mt-8 bg-white rounded-2xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-stone-800 mb-2">
-            Welcome to Your Summit Pilot 🏔️
-          </h3>
-          <p className="text-stone-600">
-            This is a 4-week pilot program to help you build sustainable health habits. 
-            Each week, commit to 1-2 habits and reflect on your progress. 
-            You'll receive gentle SMS reminders at the times you choose.
-          </p>
+            
+            <button
+              onClick={() => navigate('/reflection')}
+              className="flex items-center justify-center gap-3 text-green-600 font-bold text-lg hover:gap-4 transition-all"
+            >
+              <span>Start Reflection</span>
+              <ArrowRight className="w-6 h-6" />
+            </button>
+          </div>
         </div>
       </main>
     </div>

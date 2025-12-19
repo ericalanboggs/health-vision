@@ -18,6 +18,16 @@ export default function AuthTest() {
       const type = hashParams.get('type')
       
       // Get current session
+      if (!supabase) {
+        setInfo({
+          fullUrl,
+          error: 'Supabase is not configured',
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken,
+        })
+        return
+      }
+      
       const { data: sessionData } = await supabase.auth.getSession()
       
       // Get all hash params
