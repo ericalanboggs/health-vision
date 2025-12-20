@@ -166,7 +166,7 @@ export default function PilotIntake() {
   // Input state - main form
   return (
     <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+      <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
@@ -175,17 +175,77 @@ export default function PilotIntake() {
           </div>
           
           <h1 className="text-3xl font-bold text-stone-800 mb-2">
-            Summit Pilot Access
+            Summit Pilot Program
           </h1>
           
-          <p className="text-stone-600">
-            Enter your email to verify pilot access
+          <p className="text-stone-600 text-lg">
+            A 4-week experiment in sustainable health change
           </p>
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <p className="text-sm text-stone-700">
-            <strong>Note:</strong> Summit is currently in a limited pilot phase. Only approved email addresses can access the platform.
+        {/* Marketing Bullets */}
+        <div className="mb-8 space-y-4">
+          <h2 className="text-xl font-semibold text-stone-800 mb-4">How It Works</h2>
+          
+          <div className="space-y-3">
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <p className="font-medium text-stone-800">Define Your Health Vision</p>
+                <p className="text-sm text-stone-600">Clarify what you actually want—not what you think you "should" do.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <p className="font-medium text-stone-800">Commit to 1-2 Small Habits Weekly</p>
+                <p className="text-sm text-stone-600">No overwhelming lists. Just realistic experiments that fit your actual life.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <p className="font-medium text-stone-800">Get Gentle Reminders (SMS + Email)</p>
+                <p className="text-sm text-stone-600">Nudges, not pressure. We remind you of what you chose—no guilt, no streaks.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <p className="font-medium text-stone-800">Reflect Weekly on What's Working</p>
+                <p className="text-sm text-stone-600">3 simple questions to help you learn and adjust—no judgment, just data.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <p className="font-medium text-stone-800">Human-in-the-Loop Support</p>
+                <p className="text-sm text-stone-600">Real coaching support when you need it—this isn't just an app.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+          <p className="text-sm text-stone-700 mb-2">
+            <strong>🎯 This is a pilot program</strong>
+          </p>
+          <p className="text-sm text-stone-600">
+            We're testing this approach with a small group to learn what actually helps people build sustainable health habits. Your feedback will shape what we build next.
           </p>
         </div>
 
@@ -230,8 +290,18 @@ export default function PilotIntake() {
           </button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-stone-200">
-          <p className="text-xs text-stone-500 text-center">
+        <div className="mt-6 pt-6 border-t border-stone-200 text-center">
+          <p className="text-sm text-stone-600 mb-3">
+            Don't have access yet?
+          </p>
+          <a
+            href={`mailto:eric.alan.boggs@gmail.com?subject=Summit Pilot Access Request&body=Hi Eric,%0D%0A%0D%0AI'd like to request access to the Summit Pilot program.%0D%0A%0D%0AMy email: ${encodeURIComponent(email || '')}%0D%0A%0D%0AWhy I'm interested:%0D%0A[Please share a bit about your health goals and why you'd like to join the pilot]%0D%0A%0D%0AThanks!`}
+            className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-medium transition"
+          >
+            <Mail className="w-4 h-4" />
+            Request Access
+          </a>
+          <p className="text-xs text-stone-500 mt-4">
             If approved, we'll send you a secure magic link to sign in.
           </p>
         </div>
