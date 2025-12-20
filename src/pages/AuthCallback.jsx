@@ -18,16 +18,28 @@ export default function AuthCallback() {
           return
         }
 
-        // Check if we have a hash with auth tokens
+        // Give Supabase time to automatically process the URL
+        // detectSessionInUrl in config should handle this
+        await new Promise(resolve => setTimeout(resolve, 1500))
+
+        // Check if we have a hash with auth tokens (most common)
         const hashParams = new URLSearchParams(window.location.hash.substring(1))
         const accessToken = hashParams.get('access_token')
         const refreshToken = hashParams.get('refresh_token')
 
-        if (accessToken) {
+        // Also check query params (some mobile browsers use this)
+        const queryParams = new URLSearchParams(window.location.search)
+        const queryAccessToken = queryParams.get('access_token')
+        const queryRefreshToken = queryParams.get('refresh_token')
+
+        const token = accessToken || queryAccessToken
+        const refresh = refreshToken || queryRefreshToken
+
+        if (token) {
           // Set the session from the tokens
           const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
+            access_token: token,
+            refresh_token: refresh,
           })
 
           if (error) {
@@ -44,7 +56,7 @@ export default function AuthCallback() {
             })
             setStatus('success')
             
-            // Clear the hash and redirect to dashboard
+            // Clear the hash/query and redirect to dashboard
             window.history.replaceState(null, '', '/dashboard')
             setTimeout(() => {
               navigate('/dashboard', { replace: true })
@@ -53,11 +65,32 @@ export default function AuthCallback() {
             setStatus('error')
           }
         } else {
-          // No tokens in URL, check if already authenticated
-          const { data } = await supabase.auth.getSession()
-          if (data.session) {
-            navigate('/dashboard', { replace: true })
+          // No tokens in URL - retry session check (Supabase might still be processing)
+          let session = null
+          for (let i = 0; i < 3; i++) {
+            const { data } = await supabase.auth.getSession()
+            if (data.session) {
+              session = data.session
+              break
+            }
+            // Wait before retrying
+            if (i < 2) {
+              await new Promise(resolve => setTimeout(resolve, 1000))
+            }
+          }
+          
+          if (session) {
+            trackEvent('user_authenticated', { 
+              userId: session.user.id,
+              email: session.user.email 
+            })
+            setStatus('success')
+            setTimeout(() => {
+              navigate('/dashboard', { replace: true })
+            }, 1500)
           } else {
+            console.error('No tokens found and no existing session')
+            trackEvent('auth_callback_failed', { error: 'No tokens or session found' })
             setStatus('error')
           }
         }

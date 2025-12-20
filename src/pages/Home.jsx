@@ -23,18 +23,41 @@ export default function Home() {
         // Magic link callback - process authentication
         setDebugInfo('Processing magic link...')
         
-        // Wait briefly for Supabase to process the hash
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Give Supabase more time to process the hash, especially on mobile
+        // Supabase's detectSessionInUrl should automatically handle this
+        await new Promise(resolve => setTimeout(resolve, 2000))
         
-        const { data } = await supabase.auth.getSession()
+        // Retry session check up to 3 times with delays (for slow mobile connections)
+        let session = null
+        for (let i = 0; i < 3; i++) {
+          const { data, error } = await supabase.auth.getSession()
+          
+          if (error) {
+            console.error('Error getting session:', error)
+            setDebugInfo(`Authentication error: ${error.message}`)
+          }
+          
+          if (data.session) {
+            session = data.session
+            break
+          }
+          
+          // Wait before retrying
+          if (i < 2) {
+            await new Promise(resolve => setTimeout(resolve, 1000))
+          }
+        }
         
-        if (data.session) {
+        if (session) {
           // Clear the hash and redirect to dashboard
           window.history.replaceState(null, '', '/')
           navigate('/dashboard', { replace: true })
         } else {
-          // Auth failed, go to pilot intake
-          navigate('/pilot', { replace: true })
+          // Auth failed after retries, go to pilot intake
+          setDebugInfo('Authentication failed. Please try again.')
+          setTimeout(() => {
+            navigate('/pilot', { replace: true })
+          }, 2000)
         }
       } else {
         // No magic link - check existing session

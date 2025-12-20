@@ -3,7 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { getCurrentUser, signOut } from '../services/authService'
 import { getCurrentWeekHabits } from '../services/habitService'
 import { loadJourney } from '../services/journeyService'
-import { getCurrentWeekNumber, getCurrentWeekDateRange } from '../utils/weekCalculator'
+import {
+  getCurrentWeekNumber,
+  getCurrentWeekDateRange,
+  getPilotStartDate,
+  getWeekStartDate,
+  getWeekEndDate,
+} from '../utils/weekCalculator'
 import { Calendar, Target, LogOut, User, Clock, ArrowRight, Flag } from 'lucide-react'
 
 export default function Dashboard() {
@@ -13,7 +19,58 @@ export default function Dashboard() {
   const [currentHabits, setCurrentHabits] = useState([])
   const [weekNumber, setWeekNumber] = useState(1)
   const [weekDateRange, setWeekDateRange] = useState('')
-  const [visionStatement, setVisionStatement] = useState('')
+  const [pilotTimelineText, setPilotTimelineText] = useState('')
+  const [visionData, setVisionData] = useState({
+    visionStatement: '',
+    feelingState: '',
+    appearanceConfidence: '',
+    futureAbilities: '',
+    whyMatters: ''
+  })
+
+  const formatPilotTimeline = () => {
+    const pilotStart = getPilotStartDate()
+    const today = new Date()
+    pilotStart.setHours(0, 0, 0, 0)
+    today.setHours(0, 0, 0, 0)
+
+    console.log('DEBUG: today =', today.toISOString())
+    console.log('DEBUG: pilotStart =', pilotStart.toISOString())
+    console.log('DEBUG: today < pilotStart =', today < pilotStart)
+
+    const formatDate = (date, includeYear = false) =>
+      date.toLocaleDateString('en-US', {
+        month: 'numeric',
+        day: 'numeric',
+        ...(includeYear ? { year: '2-digit' } : {}),
+      })
+
+    if (today < pilotStart) {
+      console.log('DEBUG: Returning "Starts" message')
+      return `Starts ${formatDate(pilotStart, true)}`
+    }
+
+    const week4End = getWeekEndDate(4)
+    week4End.setHours(0, 0, 0, 0)
+    
+    console.log('DEBUG: week4End =', week4End.toISOString())
+    console.log('DEBUG: today > week4End =', today > week4End)
+    
+    if (today > week4End) {
+      console.log('DEBUG: Returning "Pilot Complete"')
+      return 'Pilot Complete'
+    }
+
+    const diffTime = today - pilotStart
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+    const currentWeek = Math.floor(diffDays / 7) + 1
+
+    console.log('DEBUG: currentWeek =', currentWeek)
+
+    const weekStart = getWeekStartDate(currentWeek)
+    const weekEnd = getWeekEndDate(currentWeek)
+    return `Week ${currentWeek}: ${formatDate(weekStart)}-${formatDate(weekEnd)}`
+  }
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -34,10 +91,18 @@ export default function Dashboard() {
       
       // Load user's vision
       const journeyResult = await loadJourney()
-      if (journeyResult.success && journeyResult.data?.form_data?.visionStatement) {
-        setVisionStatement(journeyResult.data.form_data.visionStatement)
+      if (journeyResult.success && journeyResult.data?.form_data) {
+        const formData = journeyResult.data.form_data
+        setVisionData({
+          visionStatement: formData.visionStatement || '',
+          feelingState: formData.feelingState || '',
+          appearanceConfidence: formData.appearanceConfidence || '',
+          futureAbilities: formData.futureAbilities || '',
+          whyMatters: formData.whyMatters || ''
+        })
       }
       
+      setPilotTimelineText(formatPilotTimeline())
       setLoading(false)
     }
 
@@ -145,7 +210,8 @@ export default function Dashboard() {
             You'll receive gentle SMS reminders at the times you choose.
           </p>
           <p className="text-stone-600">
-            <span className="font-semibold">Pilot Timeline:</span> Week {weekNumber} ({weekDateRange})
+            <span className="font-semibold">Pilot Timeline:</span>{' '}
+            {pilotTimelineText || `Week ${weekNumber} (${weekDateRange})`}
           </p>
         </div>
 
@@ -163,9 +229,21 @@ export default function Dashboard() {
             Your Vision
           </h2>
           
-          {visionStatement ? (
+          {visionData.visionStatement || visionData.feelingState || visionData.whyMatters ? (
             <p className="text-stone-600 mb-4 line-clamp-3">
-              {visionStatement}
+              {visionData.visionStatement && visionData.visionStatement}
+              {visionData.feelingState && (
+                <>{visionData.visionStatement && ' '}{visionData.feelingState}</>
+              )}
+              {visionData.appearanceConfidence && (
+                <>{(visionData.visionStatement || visionData.feelingState) && ' '}{visionData.appearanceConfidence}</>
+              )}
+              {visionData.futureAbilities && (
+                <>{(visionData.visionStatement || visionData.feelingState || visionData.appearanceConfidence) && ' '}{visionData.futureAbilities}</>
+              )}
+              {visionData.whyMatters && (
+                <>{(visionData.visionStatement || visionData.feelingState || visionData.appearanceConfidence || visionData.futureAbilities) && ' '}This matters because {visionData.whyMatters}</>
+              )}
             </p>
           ) : (
             <p className="text-stone-600 mb-4">
@@ -174,7 +252,7 @@ export default function Dashboard() {
           )}
           
           <div className="text-blue-600 font-semibold group-hover:gap-2 flex items-center gap-1 transition-all">
-            {visionStatement ? 'View & Edit Vision' : 'Create Vision'}
+            {visionData.visionStatement ? 'View & Edit Vision' : 'Create Vision'}
             <span className="group-hover:translate-x-1 transition-transform">→</span>
           </div>
         </button>
