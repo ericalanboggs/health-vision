@@ -8,6 +8,7 @@ import PilotIntake from './pages/PilotIntake'
 import Start from './pages/Start'
 import Vision from './pages/Vision'
 import Habits from './pages/Habits'
+import Reflection from './pages/Reflection'
 import AuthCallback from './pages/AuthCallback'
 import AuthTest from './pages/AuthTest'
 import Dashboard from './pages/Dashboard'
@@ -84,6 +85,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Habits />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/reflection" 
+          element={
+            <ProtectedRoute>
+              <Reflection />
             </ProtectedRoute>
           } 
         />
