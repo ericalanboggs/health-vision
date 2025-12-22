@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getCurrentUser, signOut } from '../services/authService'
+import { getCurrentUser } from '../services/authService'
 import { getCurrentWeekHabits } from '../services/habitService'
+import { getCurrentWeekReflection } from '../services/reflectionService'
 import { loadJourney } from '../services/journeyService'
 import {
   getCurrentWeekNumber,
@@ -11,13 +12,15 @@ import {
   getWeekEndDate,
 } from '../utils/weekCalculator'
 import { formatDaysDisplay } from '../utils/formatDays'
-import { Calendar, Target, LogOut, User, Clock, ArrowRight, Flag } from 'lucide-react'
+import { Calendar, Target, Clock, ArrowRight, Flag, CheckCircle } from 'lucide-react'
+import TopNav from '../components/TopNav'
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [currentHabits, setCurrentHabits] = useState([])
+  const [currentReflection, setCurrentReflection] = useState(null)
   const [weekNumber, setWeekNumber] = useState(1)
   const [weekDateRange, setWeekDateRange] = useState('')
   const [pilotTimelineText, setPilotTimelineText] = useState('')
@@ -90,6 +93,12 @@ export default function Dashboard() {
         setCurrentHabits(data)
       }
       
+      // Load current week's reflection
+      const reflectionResult = await getCurrentWeekReflection()
+      if (reflectionResult.success && reflectionResult.data) {
+        setCurrentReflection(reflectionResult.data)
+      }
+      
       // Load user's vision
       const journeyResult = await loadJourney()
       if (journeyResult.success && journeyResult.data?.form_data) {
@@ -110,10 +119,6 @@ export default function Dashboard() {
     loadDashboardData()
   }, [])
 
-  const handleSignOut = async () => {
-    await signOut()
-    navigate('/login')
-  }
 
   // Format habits into readable format with separate habit and schedule
   const formatHabits = () => {
@@ -164,29 +169,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-stone-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <User className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-stone-800">Summit Dashboard</h1>
-                <p className="text-sm text-stone-600">{user?.email}</p>
-              </div>
-            </div>
-            <button
-              onClick={handleSignOut}
-              className="flex items-center gap-2 px-4 py-2 text-stone-600 hover:text-stone-800 hover:bg-stone-100 rounded-lg transition"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </button>
-          </div>
-        </div>
-      </header>
+      <TopNav />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -305,17 +288,38 @@ export default function Dashboard() {
             <h2 className="text-2xl font-bold text-stone-800 mb-2">
               Weekly Reflection
             </h2>
-            <p className="text-stone-600 mb-4">
-              Reflect on your week. What went well? What was challenging? What will you adjust?
-            </p>
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="w-4 h-4 text-stone-600" />
-              <p className="text-sm text-stone-600">
-                Complete by Sunday each week
-              </p>
-            </div>
+            
+            {currentReflection ? (
+              <>
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <p className="text-green-700 font-medium">
+                    Completed {new Date(currentReflection.created_at).toLocaleDateString('en-US', { 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                </div>
+                <p className="text-stone-600 mb-4">
+                  You can update your reflection anytime this week.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-stone-600 mb-4">
+                  Reflect on your week. What went well? What was challenging? What will you adjust?
+                </p>
+                <div className="flex items-center gap-2 mb-4">
+                  <Clock className="w-4 h-4 text-stone-600" />
+                  <p className="text-sm text-stone-600">
+                    Complete by Sunday each week
+                  </p>
+                </div>
+              </>
+            )}
+            
             <div className="text-amber-600 font-semibold group-hover:gap-2 flex items-center gap-1 transition-all mt-auto">
-              Start Reflection
+              {currentReflection ? 'Update Reflection' : 'Start Reflection'}
               <span className="group-hover:translate-x-1 transition-transform">→</span>
             </div>
           </button>

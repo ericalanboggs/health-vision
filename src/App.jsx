@@ -6,6 +6,7 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import PilotIntake from './pages/PilotIntake'
 import ProfileSetup from './pages/ProfileSetup'
+import Profile from './pages/Profile'
 import Start from './pages/Start'
 import Vision from './pages/Vision'
 import Habits from './pages/Habits'
@@ -90,6 +91,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/profile" 
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           } 
         />
