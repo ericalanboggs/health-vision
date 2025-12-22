@@ -6,8 +6,9 @@ const RouteStep = ({ formData, updateFormData, onNext }) => {
     '5 minutes/day',
     '10 minutes/day',
     '20 minutes/day',
-    '30-60 minutes/day',
-    'More than 1 hour/day'
+    '30 minutes/day',
+    '45 minutes/day',
+    '60 minutes/day'
   ]
 
   const supportOptions = [

@@ -34,6 +34,8 @@ export const saveReflection = async (weekNumber, reflection) => {
 
     let result
 
+    console.log('Saving reflection:', { weekNumber, reflection, isUpdate: !!existing })
+
     if (existing) {
       // Update existing reflection
       result = await supabase
@@ -42,7 +44,7 @@ export const saveReflection = async (weekNumber, reflection) => {
           went_well: reflection.went_well,
           friction: reflection.friction,
           adjustment: reflection.adjustment,
-          updated_at: new Date().toISOString()
+          app_feedback: reflection.app_feedback || null
         })
         .eq('id', existing.id)
         .select()
@@ -56,7 +58,8 @@ export const saveReflection = async (weekNumber, reflection) => {
           week_number: weekNumber,
           went_well: reflection.went_well,
           friction: reflection.friction,
-          adjustment: reflection.adjustment
+          adjustment: reflection.adjustment,
+          app_feedback: reflection.app_feedback || null
         })
         .select()
         .single()
@@ -66,6 +69,12 @@ export const saveReflection = async (weekNumber, reflection) => {
 
     if (error) {
       console.error('Error saving reflection:', error)
+      console.error('Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      })
       trackEvent('reflection_save_failed', { error: error.message, weekNumber })
       return { success: false, error }
     }

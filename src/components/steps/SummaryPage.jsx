@@ -1029,11 +1029,11 @@ END:VEVENT
                 {/* Add Your Own Link/Form */}
                 {!showAddCustom ? (
                   <button
-                    onClick={() => setShowAddCustom(true)}
+                    onClick={() => setShowCustomInput(true)}
                     className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center gap-2 transition-colors mb-6"
                   >
                     <span className="text-lg">+</span>
-                    Hey smarty, I have another idea
+                    Add My Own
                   </button>
                 ) : (
                   <div className="mb-6 p-4 bg-stone-50 rounded-lg border border-stone-200">
@@ -1064,7 +1064,7 @@ END:VEVENT
                   </div>
                 )}
 
-                {/* Finalize Plan Button */}
+                {/* Schedule Habits Button */}
                 {aiEnhanced && (!isEnhancing || isRefreshing) && (
                   <div className="mt-6">
                     <button
@@ -1072,11 +1072,11 @@ END:VEVENT
                       disabled={selectedActions.length === 0 && selectedAiActions.length === 0 && customActions.length === 0}
                       className={`w-full py-3 font-bold rounded-lg shadow-md transition-all ${
                         selectedActions.length > 0 || selectedAiActions.length > 0 || customActions.length > 0
-                          ? 'bg-green-600 hover:bg-green-700 text-white hover:shadow-lg'
+                          ? 'bg-green-600 hover:bg-green-700 text-white'
                           : 'bg-stone-300 text-stone-500 cursor-not-allowed'
                       }`}
                     >
-                      Finalize Plan
+                      Schedule Habits
                     </button>
                     {selectedActions.length === 0 && selectedAiActions.length === 0 && customActions.length === 0 && (
                       <p className="text-xs text-stone-500 text-center mt-2">

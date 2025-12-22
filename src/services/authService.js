@@ -155,20 +155,31 @@ export const upsertProfile = async (userId, profileData) => {
       return { success: false, error }
     }
 
-    const { error } = await supabase
+    const dataToUpsert = {
+      id: userId,
+      ...profileData
+    }
+
+    console.log('Upserting profile with data:', dataToUpsert)
+
+    const { data, error } = await supabase
       .from('profiles')
-      .upsert({
-        id: userId,
-        ...profileData,
-        updated_at: new Date().toISOString(),
-      })
+      .upsert(dataToUpsert, { onConflict: 'id' })
+      .select()
 
     if (error) {
       console.error('Error upserting profile:', error)
+      console.error('Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      })
       return { success: false, error }
     }
 
-    return { success: true }
+    console.log('Profile upserted successfully:', data)
+    return { success: true, data }
   } catch (error) {
     console.error('Error in upsertProfile:', error)
     return { success: false, error }

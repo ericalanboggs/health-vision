@@ -14,7 +14,8 @@ export default function Reflection() {
   const [reflection, setReflection] = useState({
     went_well: '',
     friction: '',
-    adjustment: ''
+    adjustment: '',
+    app_feedback: ''
   })
 
   useEffect(() => {
@@ -33,7 +34,8 @@ export default function Reflection() {
       setReflection({
         went_well: data.went_well || '',
         friction: data.friction || '',
-        adjustment: data.adjustment || ''
+        adjustment: data.adjustment || '',
+        app_feedback: data.app_feedback || ''
       })
     }
     setLoading(false)
@@ -161,6 +163,22 @@ export default function Reflection() {
                 onChange={(e) => handleChange('adjustment', e.target.value)}
                 className="w-full h-32 p-4 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-white"
                 placeholder="I'll try morning walks instead of evening. Maybe just 5 minutes on busy days instead of skipping..."
+              />
+            </div>
+
+            {/* Question 4: App Feedback (Optional) */}
+            <div className="bg-stone-50 border border-stone-200 rounded-lg p-5">
+              <label className="block text-lg font-semibold text-stone-900 mb-2">
+                Feedback about the app <span className="text-sm font-normal text-stone-500">(Optional)</span>
+              </label>
+              <p className="text-sm text-stone-600 mb-3">
+                How's your experience with the app? Any suggestions or issues?
+              </p>
+              <textarea
+                value={reflection.app_feedback}
+                onChange={(e) => handleChange('app_feedback', e.target.value)}
+                className="w-full h-32 p-4 border border-stone-300 rounded-lg focus:ring-2 focus:ring-stone-500 focus:border-stone-500 resize-none bg-white"
+                placeholder="The reminders are helpful, but I'd love to see... / The app is working great for me..."
               />
             </div>
           </div>
