@@ -33,6 +33,16 @@ interface VisionData {
 }
 
 /**
+ * Convert 24-hour time to 12-hour format with AM/PM
+ */
+function formatTime12Hour(time24: string): string {
+  const [hours, minutes] = time24.split(':').map(Number)
+  const period = hours >= 12 ? 'pm' : 'am'
+  const hours12 = hours % 12 || 12
+  return `${hours12}:${minutes.toString().padStart(2, '0')}${period}`
+}
+
+/**
  * Generate a personalized reminder message using OpenAI
  */
 async function generatePersonalizedMessage(
@@ -41,10 +51,13 @@ async function generatePersonalizedMessage(
   timeOfDay: string,
   visionData: VisionData
 ): Promise<string> {
+  // Convert time to 12-hour format with AM/PM
+  const formattedTime = formatTime12Hour(timeOfDay)
+  
   // Fallback to generic message if OpenAI is not configured
   if (!OPENAI_API_KEY) {
     console.log('OpenAI not configured, using generic message')
-    return `Hi ${firstName}! 🏔️ Reminder: "${habitName}" is coming up at ${timeOfDay}. You've got this!`
+    return `Hi ${firstName}! 🏔️ Reminder: "${habitName}" is coming up at ${formattedTime}. You've got this!`
   }
 
   try {
@@ -54,7 +67,7 @@ User's Health Vision: ${visionData.visionStatement || 'Not provided'}
 Why It Matters: ${visionData.whyMatters || 'Not provided'}
 User's Name: ${firstName}
 Habit: ${habitName}
-Time: ${timeOfDay}
+Time: ${formattedTime}
 
 Requirements:
 - Keep it under 160 characters (SMS-friendly)
@@ -64,7 +77,7 @@ Requirements:
 - Start with "Hi ${firstName}!"
 - Don't use quotes around the habit name
 
-Example: "Hi ${firstName}! 🏔️ Your walk at ${timeOfDay} is a step toward that energized, clear-headed version of you. Let's go!"
+Example: "Hi ${firstName}! 🏔️ Your walk at ${formattedTime} is a step toward that energized, clear-headed version of you. Let's go!"
 
 Generate the message:`
 
@@ -105,7 +118,7 @@ Generate the message:`
     // Ensure message is under 160 characters
     if (message.length > 160) {
       console.log('Generated message too long, using generic')
-      return `Hi ${firstName}! 🏔️ Reminder: "${habitName}" is coming up at ${timeOfDay}. You've got this!`
+      return `Hi ${firstName}! 🏔️ Reminder: "${habitName}" is coming up at ${formattedTime}. You've got this!`
     }
 
     console.log(`✨ Generated personalized message: ${message}`)
@@ -114,7 +127,7 @@ Generate the message:`
   } catch (error) {
     console.error('Error generating personalized message:', error)
     // Fallback to generic message
-    return `Hi ${firstName}! 🏔️ Reminder: "${habitName}" is coming up at ${timeOfDay}. You've got this!`
+    return `Hi ${firstName}! 🏔️ Reminder: "${habitName}" is coming up at ${formattedTime}. You've got this!`
   }
 }
 
