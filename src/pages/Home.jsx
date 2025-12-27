@@ -22,11 +22,13 @@ export default function Home() {
       
       if (hasToken) {
         // Magic link callback - process authentication
+        console.log('Home: Magic link detected in URL hash')
         setDebugInfo('Processing magic link...')
         
         // Give Supabase more time to process the hash, especially on mobile
         // Supabase's detectSessionInUrl should automatically handle this
         await new Promise(resolve => setTimeout(resolve, 2000))
+        console.log('Home: Finished waiting for Supabase to process hash')
         
         // Retry session check up to 3 times with delays (for slow mobile connections)
         let session = null
