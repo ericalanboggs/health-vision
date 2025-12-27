@@ -6,6 +6,7 @@ const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
 const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
 
 interface Habit {
   id: string
@@ -22,6 +23,99 @@ interface Profile {
   phone: string
   sms_opt_in: boolean
   timezone: string
+}
+
+interface VisionData {
+  visionStatement?: string
+  whyMatters?: string
+  feelingState?: string
+  futureAbilities?: string
+}
+
+/**
+ * Generate a personalized reminder message using OpenAI
+ */
+async function generatePersonalizedMessage(
+  firstName: string,
+  habitName: string,
+  timeOfDay: string,
+  visionData: VisionData
+): Promise<string> {
+  // Fallback to generic message if OpenAI is not configured
+  if (!OPENAI_API_KEY) {
+    console.log('OpenAI not configured, using generic message')
+    return `Hi ${firstName}! 🏔️ Reminder: "${habitName}" is coming up at ${timeOfDay}. You've got this!`
+  }
+
+  try {
+    const prompt = `You are a supportive health coach sending a brief SMS reminder. Generate a personalized, motivating reminder message (max 160 characters) for this habit.
+
+User's Health Vision: ${visionData.visionStatement || 'Not provided'}
+Why It Matters: ${visionData.whyMatters || 'Not provided'}
+User's Name: ${firstName}
+Habit: ${habitName}
+Time: ${timeOfDay}
+
+Requirements:
+- Keep it under 160 characters (SMS-friendly)
+- Include the 🏔️ emoji
+- Connect the habit to their vision/why
+- Be encouraging and personal
+- Start with "Hi ${firstName}!"
+- Don't use quotes around the habit name
+
+Example: "Hi ${firstName}! 🏔️ Your walk at ${timeOfDay} is a step toward that energized, clear-headed version of you. Let's go!"
+
+Generate the message:`
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a supportive health coach who writes brief, personalized SMS reminders that connect habits to users\' health visions.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 100,
+        temperature: 0.7,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const message = data.choices[0]?.message?.content?.trim()
+
+    if (!message) {
+      throw new Error('No message generated')
+    }
+
+    // Ensure message is under 160 characters
+    if (message.length > 160) {
+      console.log('Generated message too long, using generic')
+      return `Hi ${firstName}! 🏔️ Reminder: "${habitName}" is coming up at ${timeOfDay}. You've got this!`
+    }
+
+    console.log(`✨ Generated personalized message: ${message}`)
+    return message
+
+  } catch (error) {
+    console.error('Error generating personalized message:', error)
+    // Fallback to generic message
+    return `Hi ${firstName}! 🏔️ Reminder: "${habitName}" is coming up at ${timeOfDay}. You've got this!`
+  }
 }
 
 serve(async (req) => {
@@ -115,8 +209,31 @@ serve(async (req) => {
       )
     }
 
-    // Create a map of user profiles
+    // Fetch vision data for all users
+    const { data: visionJourneys, error: visionError } = await supabase
+      .from('health_journeys')
+      .select('user_id, form_data')
+      .in('user_id', userIds)
+
+    if (visionError) {
+      console.error('Error fetching vision data:', visionError)
+    }
+
+    console.log(`Found ${visionJourneys?.length || 0} user visions`)
+
+    // Create maps for quick lookup
     const profileMap = new Map(profiles.map((p: Profile) => [p.id, p]))
+    const visionMap = new Map(
+      visionJourneys?.map((v: any) => [
+        v.user_id,
+        {
+          visionStatement: v.form_data?.visionStatement,
+          whyMatters: v.form_data?.whyMatters,
+          feelingState: v.form_data?.feelingState,
+          futureAbilities: v.form_data?.futureAbilities,
+        }
+      ]) || []
+    )
 
     // Send reminders
     const results = []
@@ -140,9 +257,17 @@ serve(async (req) => {
         continue
       }
 
-      // Format the reminder message
+      // Get user's vision data
+      const visionData = visionMap.get(habit.user_id) || {}
       const firstName = profile.first_name || 'there'
-      const message = `Hi ${firstName}! 🏔️ Reminder: "${habit.habit_name}" is coming up at ${habit.time_of_day}. You've got this!`
+
+      // Generate personalized message using OpenAI
+      const message = await generatePersonalizedMessage(
+        firstName,
+        habit.habit_name,
+        habit.time_of_day,
+        visionData
+      )
 
       try {
         // Send SMS via Twilio
