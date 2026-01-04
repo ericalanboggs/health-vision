@@ -179,7 +179,7 @@ export default function PilotIntake() {
           </h1>
           
           <p className="text-stone-600 text-lg">
-            A 4-week experiment in sustainable health change
+            A 3-week experiment in sustainable health change
           </p>
         </div>
 
