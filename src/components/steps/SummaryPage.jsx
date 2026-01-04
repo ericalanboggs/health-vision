@@ -703,7 +703,47 @@ END:VEVENT
               )}
             </div>
             {!isPlanFinalized && (
-              <p className="text-sm text-stone-600 mb-6">Choose 1–3 habits to start with this week.</p>
+              <>
+                <p className="text-sm text-stone-600 mb-4">Choose 1–3 habits to start with this week.</p>
+                
+                {/* Add Your Own Link/Form - Moved to top */}
+                {!showAddCustom ? (
+                  <button
+                    onClick={() => setShowAddCustom(true)}
+                    className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center gap-2 transition-colors mb-6"
+                  >
+                    <span className="text-lg">+</span>
+                    Add My Own
+                  </button>
+                ) : (
+                  <div className="mb-6 p-4 bg-stone-50 rounded-lg border border-stone-200">
+                    <textarea
+                      value={newCustomAction}
+                      onChange={(e) => setNewCustomAction(e.target.value)}
+                      placeholder="Describe your custom habit..."
+                      className="w-full p-3 border border-stone-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      rows="3"
+                    />
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={handleAddCustomAction}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+                      >
+                        Add Habit
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowAddCustom(false)
+                          setNewCustomAction('')
+                        }}
+                        className="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold rounded-lg transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Loading State - Only show during initial enhancement, not refresh */}
@@ -1023,44 +1063,6 @@ END:VEVENT
                         </div>
                       </div>
                     ))}
-                  </div>
-                )}
-
-                {/* Add Your Own Link/Form */}
-                {!showAddCustom ? (
-                  <button
-                    onClick={() => setShowCustomInput(true)}
-                    className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center gap-2 transition-colors mb-6"
-                  >
-                    <span className="text-lg">+</span>
-                    Add My Own
-                  </button>
-                ) : (
-                  <div className="mb-6 p-4 bg-stone-50 rounded-lg border border-stone-200">
-                    <textarea
-                      value={newCustomAction}
-                      onChange={(e) => setNewCustomAction(e.target.value)}
-                      placeholder="Describe your custom action..."
-                      className="w-full p-3 border border-stone-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      rows="3"
-                    />
-                    <div className="flex gap-2 mt-3">
-                      <button
-                        onClick={handleAddCustomAction}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
-                      >
-                        Add Action
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowAddCustom(false)
-                          setNewCustomAction('')
-                        }}
-                        className="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold rounded-lg transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
                   </div>
                 )}
 

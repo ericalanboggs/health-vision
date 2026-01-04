@@ -24,7 +24,7 @@ export default function Start() {
           </h1>
           
           <p className="text-xl text-stone-600 max-w-2xl mx-auto">
-            This is a 4-week pilot program to help you build sustainable health habits.
+            This is a 3-week pilot program to help you build sustainable health habits.
           </p>
         </div>
 
@@ -37,7 +37,7 @@ export default function Start() {
             </h2>
             <p className="text-stone-600 text-lg leading-relaxed">
               Each week, commit to 1-2 habits and reflect on your progress. 
-              You'll receive gentle SMS reminders at the times you choose.
+              You'll receive SMS reminders (if you opted in) at the times you choose.
             </p>
           </div>
 
@@ -83,10 +83,10 @@ export default function Start() {
               </div>
               <div>
                 <h3 className="font-semibold text-stone-800 mb-1">
-                  Gentle SMS Reminders
+                  SMS Reminders (if opted in)
                 </h3>
                 <p className="text-stone-600">
-                  Stay on track with personalized reminders sent at times that work for you. No pressure, just support.
+                  Stay on track with personalized reminders sent at times that work for you. Completely optional.
                 </p>
               </div>
             </div>
@@ -105,7 +105,7 @@ export default function Start() {
         {/* Footer Note */}
         <div className="text-center">
           <p className="text-sm text-stone-500">
-            This pilot program runs for 4 weeks. Let's build something meaningful together.
+            This pilot program runs for 3 weeks. Let's build something meaningful together.
           </p>
         </div>
       </div>
