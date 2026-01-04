@@ -129,6 +129,13 @@ export const getReflectionForWeek = async (weekNumber) => {
 }
 
 /**
+ * Get reflection for a specific week (alias for getReflectionForWeek)
+ * @param {number} weekNumber - Week number
+ * @returns {Promise<{success: boolean, data?: any, error?: any}>}
+ */
+export const getReflectionByWeek = getReflectionForWeek
+
+/**
  * Get reflection for current week
  * @returns {Promise<{success: boolean, data?: any, error?: any}>}
  */

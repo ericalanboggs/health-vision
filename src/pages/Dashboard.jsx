@@ -12,7 +12,7 @@ import {
   getWeekEndDate,
 } from '../utils/weekCalculator'
 import { formatDaysDisplay } from '../utils/formatDays'
-import { Calendar, Target, Clock, ArrowRight, Flag, CheckCircle } from 'lucide-react'
+import { Calendar, Target, Clock, ArrowRight, Flag, CheckCircle, User, ExternalLink } from 'lucide-react'
 import TopNav from '../components/TopNav'
 
 export default function Dashboard() {
@@ -35,45 +35,64 @@ export default function Dashboard() {
   const formatPilotTimeline = () => {
     const pilotStart = getPilotStartDate()
     const today = new Date()
-    pilotStart.setHours(0, 0, 0, 0)
-    today.setHours(0, 0, 0, 0)
+    
+    // Don't modify the original pilotStart date - it's already correctly set
+    const todayMidnight = new Date(today)
+    todayMidnight.setHours(0, 0, 0, 0)
 
-    console.log('DEBUG: today =', today.toISOString())
-    console.log('DEBUG: pilotStart =', pilotStart.toISOString())
-    console.log('DEBUG: today < pilotStart =', today < pilotStart)
+    console.log('DEBUG DASHBOARD: today =', today.toISOString())
+    console.log('DEBUG DASHBOARD: pilotStart =', pilotStart.toISOString())
+    console.log('DEBUG DASHBOARD: pilotStart date =', pilotStart.toDateString())
+    console.log('DEBUG DASHBOARD: today < pilotStart =', todayMidnight < pilotStart)
 
-    const formatDate = (date, includeYear = false) =>
-      date.toLocaleDateString('en-US', {
-        month: 'numeric',
-        day: 'numeric',
-        ...(includeYear ? { year: '2-digit' } : {}),
-      })
+    const formatDate = (date, includeYear = false) => {
+      // Use the environment variable directly to avoid timezone issues
+      const dateString = import.meta.env.VITE_PILOT_START_DATE || '2026-01-12'
+      const [year, month, day] = dateString.split('-')
+      
+      if (includeYear) {
+        return `${parseInt(month)}/${parseInt(day)}/${year.slice(2)}`
+      }
+      return `${parseInt(month)}/${parseInt(day)}`
+    }
 
-    if (today < pilotStart) {
+    // Before Week 1 starts
+    if (todayMidnight < pilotStart) {
       console.log('DEBUG: Returning "Starts" message')
-      return `Starts ${formatDate(pilotStart, true)}`
+      return `Pilot Week 1: Starts ${formatDate(pilotStart, true)}`
     }
 
-    const week4End = getWeekEndDate(4)
-    week4End.setHours(0, 0, 0, 0)
+    // Calculate week ranges based on the actual pilot start date
+    const week1Start = new Date(pilotStart)
+    const week1End = new Date(week1Start)
+    week1End.setDate(week1End.getDate() + 6)
     
-    console.log('DEBUG: week4End =', week4End.toISOString())
-    console.log('DEBUG: today > week4End =', today > week4End)
-    
-    if (today > week4End) {
-      console.log('DEBUG: Returning "Pilot Complete"')
-      return 'Pilot Complete'
+    if (today >= week1Start && today <= week1End) {
+      return `Pilot Week 1: Monday ${formatDate(week1Start)} - Sunday ${formatDate(week1End)}`
     }
 
-    const diffTime = today - pilotStart
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-    const currentWeek = Math.floor(diffDays / 7) + 1
+    // Week 2: 7 days after week 1 starts
+    const week2Start = new Date(week1Start)
+    week2Start.setDate(week2Start.getDate() + 7)
+    const week2End = new Date(week2Start)
+    week2End.setDate(week2End.getDate() + 6)
+    
+    if (today >= week2Start && today <= week2End) {
+      return `Pilot Week 2: Monday ${formatDate(week2Start)} - Sunday ${formatDate(week2End)}`
+    }
 
-    console.log('DEBUG: currentWeek =', currentWeek)
+    // Week 3: 14 days after week 1 starts
+    const week3Start = new Date(week1Start)
+    week3Start.setDate(week3Start.getDate() + 14)
+    const week3End = new Date(week3Start)
+    week3End.setDate(week3End.getDate() + 6)
+    
+    if (today >= week3Start && today <= week3End) {
+      return `Pilot Week 3: Monday ${formatDate(week3Start)} - Sunday ${formatDate(week3End)}`
+    }
 
-    const weekStart = getWeekStartDate(currentWeek)
-    const weekEnd = getWeekEndDate(currentWeek)
-    return `Week ${currentWeek}: ${formatDate(weekStart)}-${formatDate(weekEnd)}`
+    // After Week 3
+    return 'Pilot Complete'
   }
 
   useEffect(() => {
@@ -323,6 +342,40 @@ export default function Dashboard() {
               <span className="group-hover:translate-x-1 transition-transform">→</span>
             </div>
           </button>
+        </div>
+
+        {/* Coaching Section */}
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-left hover:shadow-xl transition group mt-6">
+          <div className="flex items-start gap-4">
+            {/* Coach Avatar */}
+            <div className="w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center group-hover:from-amber-500 group-hover:to-orange-600 transition">
+              <User className="w-7 h-7 text-white" />
+            </div>
+            
+            {/* Content */}
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-stone-800 mb-1">
+                Coaching
+              </h2>
+              <p className="text-stone-600 font-medium mb-3">
+                Optional 30 minute session
+              </p>
+              
+              <p className="text-stone-600 mb-4 leading-relaxed">
+                Need a hand? Schedule a session with Coach Eric to workshop challenges and make a plan.
+              </p>
+              
+              <a 
+                href="https://cal.com/eric-boggs/30min"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-amber-600 font-semibold group-hover:gap-3 transition-all hover:text-amber-700"
+              >
+                Schedule Session
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+          </div>
         </div>
       </main>
     </div>

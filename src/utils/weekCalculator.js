@@ -7,7 +7,10 @@
 
 // Global pilot start date - set this to when the pilot begins
 // Format: YYYY-MM-DD
-const PILOT_START_DATE = import.meta.env.VITE_PILOT_START_DATE || '2026-01-11'
+const PILOT_START_DATE = import.meta.env.VITE_PILOT_START_DATE || '2026-01-12'
+
+console.log('DEBUG: VITE_PILOT_START_DATE =', import.meta.env.VITE_PILOT_START_DATE)
+console.log('DEBUG: PILOT_START_DATE =', PILOT_START_DATE)
 
 /**
  * Get the current week number for the pilot
@@ -37,7 +40,10 @@ export const getCurrentWeekNumber = () => {
  * @returns {Date} Pilot start date
  */
 export const getPilotStartDate = () => {
-  return new Date(PILOT_START_DATE)
+  console.log('DEBUG getPilotStartDate: PILOT_START_DATE =', PILOT_START_DATE)
+  const date = new Date(PILOT_START_DATE)
+  console.log('DEBUG getPilotStartDate: new Date result =', date.toISOString())
+  return date
 }
 
 /**
