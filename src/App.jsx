@@ -15,6 +15,7 @@ import ScheduleHabits from './pages/ScheduleHabits'
 import Reflection from './pages/Reflection'
 import AuthCallback from './pages/AuthCallback'
 import AuthTest from './pages/AuthTest'
+import AuthDebug from './pages/AuthDebug'
 import Dashboard from './pages/Dashboard'
 import ProtectedRoute from './components/ProtectedRoute'
 import { trackEvent } from './lib/posthog'
@@ -56,6 +57,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/test" element={<AuthTest />} />
+        <Route path="/auth/debug" element={<AuthDebug />} />
         
         {/* Profile setup - Public for Twilio verification */}
         <Route 
