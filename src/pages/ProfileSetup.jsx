@@ -72,10 +72,6 @@ export default function ProfileSetup() {
       }
     }
 
-    if (!formData.smsConsent) {
-      newErrors.smsConsent = 'You must consent to receive text messages to participate in the pilot'
-    }
-
     if (!formData.pilotReason.trim()) {
       newErrors.pilotReason = 'Please tell us why you\'re interested in the pilot'
     }
@@ -232,31 +228,26 @@ export default function ProfileSetup() {
               )}
             </div>
 
-            {/* SMS Consent */}
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            {/* SMS Consent - Optional */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <input
                   type="checkbox"
                   id="smsConsent"
                   checked={formData.smsConsent}
                   onChange={(e) => handleChange('smsConsent', e.target.checked)}
-                  className={`mt-1 w-5 h-5 text-green-600 rounded border-stone-300 focus:ring-green-500 cursor-pointer ${
-                    errors.smsConsent ? 'border-red-500' : ''
-                  }`}
+                  className="mt-1 w-5 h-5 text-green-600 rounded border-stone-300 focus:ring-green-500 cursor-pointer"
                 />
                 <div className="flex-1">
                   <label htmlFor="smsConsent" className="block text-sm font-semibold text-stone-900 mb-1 cursor-pointer">
-                    Consent to receive text messages <span className="text-red-600">*</span>
+                    Enable SMS Habit Reminders <span className="text-sm font-normal text-stone-500">(Optional)</span>
                   </label>
                   <p className="text-sm text-stone-700">
-                    I agree to receive text message reminders and weekly reflection prompts as part of the Summit Pilot program. 
-                    Message and data rates may apply. You can opt out at any time.
+                    Get optional text reminders for your Summit habits. You'll receive one message per day, sent 15-30 minutes before your first habit, listing all your habits for that day. 
+                    Message and data rates may apply. Reply STOP to unsubscribe anytime.
                   </p>
                 </div>
               </div>
-              {errors.smsConsent && (
-                <p className="mt-2 text-sm text-red-600">{errors.smsConsent}</p>
-              )}
             </div>
 
             {/* Pilot Reason */}

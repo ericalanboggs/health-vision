@@ -1,15 +1,17 @@
 # SMS Reminders Edge Function
 
-This Supabase Edge Function sends SMS reminders to users for their scheduled habits via Twilio.
+This Supabase Edge Function sends consolidated daily SMS reminders to users for their scheduled habits via Twilio.
 
 ## How It Works
 
-1. **Triggered by cron job** - Runs every 15 minutes
-2. **Queries habits** - Finds habits scheduled for today
-3. **Filters by time** - Sends reminders 15-30 minutes before habit time
-4. **Checks consent** - Only sends to users with `sms_opt_in = true`
-5. **Prevents duplicates** - Tracks sent reminders in `sms_reminders` table
-6. **Sends via Twilio** - Uses Twilio API to send SMS
+1. **Triggered by cron job** - Runs every 15 minutes throughout the day
+2. **Queries habits** - Finds ALL habits scheduled for today for each user
+3. **Finds earliest habit** - Determines each user's first habit of the day
+4. **Checks timing window** - Only sends 15-30 minutes before user's first habit
+5. **Groups by user** - Consolidates all habits into a single message per user
+6. **Checks consent** - Only sends to users with `sms_opt_in = true`
+7. **Prevents duplicates** - Ensures only ONE message per user per day
+8. **Sends via Twilio** - Uses Twilio API to send consolidated SMS
 
 ## Environment Variables Required
 
@@ -52,7 +54,7 @@ In your Supabase Dashboard:
 3. Run this SQL to create the cron job:
 
 ```sql
--- Run every 15 minutes
+-- Run every 15 minutes to catch users' first habits at the right time
 SELECT cron.schedule(
   'send-sms-reminders',
   '*/15 * * * *',
@@ -78,12 +80,29 @@ curl -X POST https://your-project-ref.supabase.co/functions/v1/send-sms-reminder
 
 ## Message Format
 
-Reminders are sent in this format:
+Daily reminders are sent 15-30 minutes before the user's first habit in this consolidated format:
 ```
-Hi [FirstName]! 🏔️ Reminder: "[Habit Name]" is coming up at [Time]. You've got this!
+Hi [FirstName]! 🏔️ Your Summit habits for today:
+
+• [Habit 1] at [Time]
+• [Habit 2] at [Time]
+• [Habit 3] at [Time]
+
+You've got this! Reply STOP to opt out.
 ```
 
-Example:
+Example (sent at 1:45 PM if first habit is at 2:00 PM):
 ```
-Hi Eric! 🏔️ Reminder: "Take a 10-minute walk" is coming up at 14:00. You've got this!
+Hi Eric! 🏔️ Your Summit habits for today:
+
+• Take a 10-minute walk at 2:00pm
+• Drink 8 glasses of water at 5:00pm
+• Evening meditation at 8:00pm
+
+You've got this! Reply STOP to opt out.
 ```
+
+**Note:** 
+- Users receive a maximum of ONE message per day, regardless of how many habits they have scheduled
+- Message is sent 15-30 minutes before their earliest habit of the day
+- If a user has no habits scheduled for a day, no message is sent

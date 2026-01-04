@@ -154,8 +154,7 @@ serve(async (req) => {
     console.log(`Running reminder check at ${now.toISOString()}`)
     console.log(`Day: ${currentDayOfWeek}, Hour: ${currentHour}, Minute: ${currentMinute}`)
 
-    // Query habits that should get reminders now
-    // Look for habits scheduled for today within the next hour
+    // Query ALL habits scheduled for today
     const { data: habits, error: habitsError } = await supabase
       .from('weekly_habits')
       .select('*')
@@ -175,31 +174,21 @@ serve(async (req) => {
       )
     }
 
-    // Filter habits by time (send reminder 15 minutes before scheduled time)
-    const habitsToRemind = habits.filter((habit: Habit) => {
-      // Skip habits without a time set
-      if (!habit.time_of_day) {
-        console.log(`Skipping habit ${habit.id} - no time_of_day set`)
-        return false
-      }
-      
-      const [habitHour, habitMinute] = habit.time_of_day.split(':').map(Number)
-      
-      // Calculate minutes until habit time
-      const habitTimeInMinutes = habitHour * 60 + habitMinute
-      const currentTimeInMinutes = currentHour * 60 + currentMinute
-      const minutesUntilHabit = habitTimeInMinutes - currentTimeInMinutes
-
-      // Send reminder 15 minutes before (between 15-30 minutes before to allow for cron timing)
-      return minutesUntilHabit >= 15 && minutesUntilHabit <= 30
-    })
-
-    console.log(`${habitsToRemind.length} habits need reminders now`)
-
-    // Get user profiles for these habits
-    const userIds = [...new Set(habitsToRemind.map((h: Habit) => h.user_id))]
-    console.log('User IDs to fetch:', userIds)
+    // Filter out habits without time_of_day set
+    const habitsWithTime = habits.filter((h: Habit) => h.time_of_day)
     
+    if (habitsWithTime.length === 0) {
+      return new Response(
+        JSON.stringify({ message: 'No habits with times set for today', count: 0 }),
+        { headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Get unique user IDs
+    const userIds = [...new Set(habitsWithTime.map((h: Habit) => h.user_id))]
+    console.log('User IDs with habits today:', userIds)
+    
+    // Get user profiles with SMS consent
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('*')
@@ -248,39 +237,72 @@ serve(async (req) => {
       ]) || []
     )
 
-    // Send reminders
+    // Group habits by user
+    const habitsByUser = new Map<string, Habit[]>()
+    for (const habit of habitsWithTime) {
+      if (!habitsByUser.has(habit.user_id)) {
+        habitsByUser.set(habit.user_id, [])
+      }
+      habitsByUser.get(habit.user_id)!.push(habit)
+    }
+
+    // Send ONE consolidated reminder per user per day (before their first habit)
     const results = []
-    for (const habit of habitsToRemind) {
-      const profile = profileMap.get(habit.user_id)
+    const currentTimeInMinutes = currentHour * 60 + currentMinute
+
+    for (const [userId, userHabits] of habitsByUser.entries()) {
+      const profile = profileMap.get(userId)
       if (!profile || !profile.phone) {
-        console.log(`Skipping habit ${habit.id} - no profile or phone`)
+        console.log(`Skipping user ${userId} - no profile or phone`)
         continue
       }
 
-      // Check if we already sent a reminder for this habit today
+      // Check if we already sent a daily reminder to this user today
       const { data: existingReminder } = await supabase
         .from('sms_reminders')
         .select('id')
-        .eq('habit_id', habit.id)
+        .eq('user_id', userId)
         .gte('sent_at', new Date(now.setHours(0, 0, 0, 0)).toISOString())
-        .single()
+        .maybeSingle()
 
       if (existingReminder) {
-        console.log(`Already sent reminder for habit ${habit.id} today`)
+        console.log(`Already sent daily reminder to user ${userId} today`)
         continue
       }
 
+      // Sort habits by time to find the earliest one
+      const sortedHabits = userHabits.sort((a, b) => a.time_of_day.localeCompare(b.time_of_day))
+
+      // Get the earliest habit time
+      const firstHabit = sortedHabits[0]
+      const [firstHabitHour, firstHabitMinute] = firstHabit.time_of_day.split(':').map(Number)
+      const firstHabitTimeInMinutes = firstHabitHour * 60 + firstHabitMinute
+      const minutesUntilFirstHabit = firstHabitTimeInMinutes - currentTimeInMinutes
+
+      // Only send if we're 15-30 minutes before the first habit
+      if (minutesUntilFirstHabit < 15 || minutesUntilFirstHabit > 30) {
+        console.log(`User ${userId}: First habit at ${firstHabit.time_of_day}, ${minutesUntilFirstHabit} min away - outside reminder window`)
+        continue
+      }
+
+      console.log(`User ${userId}: First habit at ${firstHabit.time_of_day}, ${minutesUntilFirstHabit} min away - sending reminder!`)
+
       // Get user's vision data
-      const visionData = visionMap.get(habit.user_id) || {}
+      const visionData = visionMap.get(userId) || {}
       const firstName = profile.first_name || 'there'
 
-      // Generate personalized message using OpenAI
-      const message = await generatePersonalizedMessage(
-        firstName,
-        habit.habit_name,
-        habit.time_of_day,
-        visionData
-      )
+      // Build consolidated message
+      let message = `Hi ${firstName}! 🏔️ Your Summit habits for today:\n\n`
+      
+      for (const habit of sortedHabits) {
+        const formattedTime = formatTime12Hour(habit.time_of_day)
+        message += `• ${habit.habit_name} at ${formattedTime}\n`
+      }
+      
+      message += `\nYou've got this! Reply STOP to opt out.`
+
+      // Ensure message is under 160 characters for single SMS, or allow multi-part
+      console.log(`Message length: ${message.length} characters`)
 
       try {
         // Send SMS via Twilio
@@ -303,45 +325,46 @@ serve(async (req) => {
         const twilioData = await twilioResponse.json()
 
         if (twilioResponse.ok) {
-          // Log successful reminder
+          // Log successful reminder (store first habit ID as reference)
           await supabase.from('sms_reminders').insert({
-            user_id: habit.user_id,
-            habit_id: habit.id,
+            user_id: userId,
+            habit_id: sortedHabits[0].id,
             phone: profile.phone,
             message,
-            scheduled_for: new Date(now.setHours(parseInt(habit.time_of_day.split(':')[0]), parseInt(habit.time_of_day.split(':')[1]))).toISOString(),
+            scheduled_for: now.toISOString(),
             status: 'sent',
             twilio_sid: twilioData.sid,
           })
 
-          results.push({ habitId: habit.id, status: 'sent', phone: profile.phone })
-          console.log(`✓ Sent reminder to ${profile.phone} for "${habit.habit_name}"`)
+          results.push({ userId, status: 'sent', phone: profile.phone, habitCount: sortedHabits.length })
+          console.log(`✓ Sent daily reminder to ${profile.phone} with ${sortedHabits.length} habits`)
         } else {
           throw new Error(twilioData.message || 'Twilio API error')
         }
       } catch (error) {
-        console.error(`✗ Failed to send reminder for habit ${habit.id}:`, error)
+        console.error(`✗ Failed to send reminder to user ${userId}:`, error)
         
         // Log failed reminder
         await supabase.from('sms_reminders').insert({
-          user_id: habit.user_id,
-          habit_id: habit.id,
+          user_id: userId,
+          habit_id: sortedHabits[0].id,
           phone: profile.phone,
           message,
-          scheduled_for: new Date(now.setHours(parseInt(habit.time_of_day.split(':')[0]), parseInt(habit.time_of_day.split(':')[1]))).toISOString(),
+          scheduled_for: now.toISOString(),
           status: 'failed',
           error_message: error.message,
         })
 
-        results.push({ habitId: habit.id, status: 'failed', error: error.message })
+        results.push({ userId, status: 'failed', error: error.message })
       }
     }
 
     return new Response(
       JSON.stringify({
-        message: 'Reminder check complete',
+        message: 'Daily reminder check complete',
         totalHabitsToday: habits.length,
-        remindersAttempted: results.length,
+        usersWithHabits: habitsByUser.size,
+        remindersSent: results.filter(r => r.status === 'sent').length,
         results,
       }),
       { headers: { 'Content-Type': 'application/json' } }
