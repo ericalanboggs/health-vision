@@ -23,7 +23,10 @@ TWILIO_AUTH_TOKEN=your_twilio_auth_token
 TWILIO_PHONE_NUMBER=+1234567890
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+PILOT_START_DATE=2026-01-12
 ```
+
+**Note:** The function will only send reminders during the 3-week pilot period starting from `PILOT_START_DATE`. Outside this date range, the function will exit early without sending any messages.
 
 ## Deployment
 
@@ -106,3 +109,4 @@ You've got this! Reply STOP to opt out.
 - Users receive a maximum of ONE message per day, regardless of how many habits they have scheduled
 - Message is sent 15-30 minutes before their earliest habit of the day
 - If a user has no habits scheduled for a day, no message is sent
+- SMS reminders only run during the 3-week pilot period (January 12 - February 1, 2026)
