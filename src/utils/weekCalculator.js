@@ -18,7 +18,9 @@ console.log('DEBUG: PILOT_START_DATE =', PILOT_START_DATE)
  * @returns {number} Current week number (1-based)
  */
 export const getCurrentWeekNumber = () => {
-  const startDate = new Date(PILOT_START_DATE)
+  // Parse date as local time to avoid timezone issues
+  const [year, month, day] = PILOT_START_DATE.split('-').map(Number)
+  const startDate = new Date(year, month - 1, day)
   const today = new Date()
   
   // Reset time to midnight for accurate day calculation
@@ -41,7 +43,9 @@ export const getCurrentWeekNumber = () => {
  */
 export const getPilotStartDate = () => {
   console.log('DEBUG getPilotStartDate: PILOT_START_DATE =', PILOT_START_DATE)
-  const date = new Date(PILOT_START_DATE)
+  // Parse date as local time to avoid timezone issues
+  const [year, month, day] = PILOT_START_DATE.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
   console.log('DEBUG getPilotStartDate: new Date result =', date.toISOString())
   return date
 }
@@ -52,7 +56,9 @@ export const getPilotStartDate = () => {
  * @returns {Date} Start date for that week
  */
 export const getWeekStartDate = (weekNumber) => {
-  const startDate = new Date(PILOT_START_DATE)
+  // Parse date as local time to avoid timezone issues
+  const [year, month, day] = PILOT_START_DATE.split('-').map(Number)
+  const startDate = new Date(year, month - 1, day)
   const daysToAdd = (weekNumber - 1) * 7
   startDate.setDate(startDate.getDate() + daysToAdd)
   return startDate
