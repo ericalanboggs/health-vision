@@ -46,14 +46,19 @@ export default function Dashboard() {
     console.log('DEBUG DASHBOARD: today < pilotStart =', todayMidnight < pilotStart)
 
     const formatDate = (date, includeYear = false) => {
-      // Use the environment variable directly to avoid timezone issues
-      const dateString = import.meta.env.VITE_PILOT_START_DATE || '2026-01-12'
-      const [year, month, day] = dateString.split('-')
+      // Use UTC-based formatting to avoid timezone issues
+      const utcDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000))
+      const options = { 
+        month: 'numeric', 
+        day: 'numeric',
+        timeZone: 'UTC'
+      }
       
       if (includeYear) {
-        return `${parseInt(month)}/${parseInt(day)}/${year.slice(2)}`
+        options.year = '2-digit'
       }
-      return `${parseInt(month)}/${parseInt(day)}`
+      
+      return utcDate.toLocaleDateString('en-US', options)
     }
 
     // Before Week 1 starts

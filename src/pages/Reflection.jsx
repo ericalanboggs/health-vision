@@ -55,22 +55,20 @@ export default function Reflection() {
     const weekStart = getWeekStartDate(selectedWeek)
     const weekEnd = getWeekEndDate(selectedWeek)
     
-    // Use the same timezone-safe date formatting as the dashboard
-    const formatDateForWeek = (weekOffset) => {
-      const dateString = import.meta.env.VITE_PILOT_START_DATE || '2026-01-12'
-      const [year, month, day] = dateString.split('-')
-      const baseDate = new Date(year, parseInt(month) - 1, parseInt(day))
-      
-      // Calculate the actual date for this specific week offset
-      const actualDate = new Date(baseDate.getTime() + (weekOffset * 24 * 60 * 60 * 1000))
-      
-      return actualDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    // Use the same timezone-safe date formatting as the tabs
+    const formatDateUTC = (date) => {
+      const utcDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000))
+      return utcDate.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        timeZone: 'UTC'
+      })
     }
     
     // Calculate start and end dates correctly
     const startOffset = (selectedWeek - 1) * 7
     const endOffset = startOffset + 6
-    const dateRange = `${formatDateForWeek(startOffset)} - ${formatDateForWeek(endOffset)}`
+    const dateRange = `${formatDateUTC(weekStart)} - ${formatDateUTC(weekEnd)}`
     setWeekDateRange(dateRange)
 
     // Load the selected week's reflection
@@ -176,7 +174,17 @@ export default function Reflection() {
               const weekStart = new Date(baseDate.getTime() + (weekOffset * 24 * 60 * 60 * 1000))
               const weekEnd = new Date(weekStart.getTime() + (6 * 24 * 60 * 60 * 1000))
               
-              const dateRange = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+              // Use UTC-based formatting to avoid timezone issues
+              const formatDateUTC = (date) => {
+                const utcDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000))
+                return utcDate.toLocaleDateString('en-US', { 
+                  month: 'short', 
+                  day: 'numeric',
+                  timeZone: 'UTC'
+                })
+              }
+              
+              const dateRange = `${formatDateUTC(weekStart)} - ${formatDateUTC(weekEnd)}`
               
               const isCurrent = week === currentWeek
               const hasReflection = weekReflections[week]
