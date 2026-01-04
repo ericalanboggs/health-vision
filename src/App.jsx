@@ -90,13 +90,10 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        {/* Profile - Public for Twilio verification */}
         <Route 
           path="/profile" 
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } 
+          element={<Profile />} 
         />
         <Route 
           path="/habits" 

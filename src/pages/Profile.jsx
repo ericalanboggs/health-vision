@@ -47,6 +47,16 @@ export default function Profile() {
           email: result.user.email || result.user.user_metadata?.email || ''
         }))
       }
+    } else {
+      // No user logged in - show demo data for Twilio verification
+      setFormData({
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'demo@example.com',
+        phone: '(555) 123-4567',
+        smsConsent: false,
+        pilotReason: 'Example pilot reason'
+      })
     }
     setLoading(false)
   }
@@ -87,6 +97,12 @@ export default function Profile() {
     e.preventDefault()
 
     if (!validateForm()) {
+      return
+    }
+
+    // If no user is logged in (demo mode for Twilio), show message
+    if (!user) {
+      setErrors({ submit: 'Please log in to save your profile.' })
       return
     }
 
