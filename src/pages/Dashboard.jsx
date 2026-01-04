@@ -12,8 +12,9 @@ import {
   getWeekEndDate,
 } from '../utils/weekCalculator'
 import { formatDaysDisplay } from '../utils/formatDays'
-import { Calendar, Target, Clock, ArrowRight, Flag, CheckCircle, User, ExternalLink } from 'lucide-react'
+import { Calendar, Target, Clock, ArrowRight, Mountain, CheckCircle, ExternalLink } from 'lucide-react'
 import TopNav from '../components/TopNav'
+import coachEric from '../assets/coach-eric.jpeg'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -218,40 +219,45 @@ export default function Dashboard() {
           onClick={() => navigate('/vision?view=display')}
           className="w-full bg-white rounded-2xl shadow-lg p-8 text-left hover:shadow-xl transition group mb-6"
         >
-          <div className="flex items-start justify-between mb-4">
-            <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-200 transition">
-              <Flag className="w-8 h-8 text-blue-600" />
+          <div className="flex items-start gap-4">
+            {/* Vision Icon */}
+            <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-200 transition flex-shrink-0">
+              <Mountain className="w-8 h-8 text-blue-600" />
             </div>
-          </div>
-          <h2 className="text-2xl font-bold text-stone-800 mb-2">
-            Your Vision
-          </h2>
-          
-          {visionData.visionStatement || visionData.feelingState || visionData.whyMatters ? (
-            <p className="text-stone-600 mb-4 line-clamp-3">
-              {visionData.visionStatement && visionData.visionStatement}
-              {visionData.feelingState && (
-                <>{visionData.visionStatement && ' '}{visionData.feelingState}</>
+            
+            {/* Content */}
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-stone-800 mb-2">
+                Your Vision
+              </h2>
+              
+              {visionData.visionStatement || visionData.feelingState || visionData.whyMatters ? (
+                <p className="text-stone-600 mb-4 line-clamp-3">
+                  {visionData.visionStatement && visionData.visionStatement}
+                  {visionData.feelingState && (
+                    <>{visionData.visionStatement && ' '}{visionData.feelingState}</>
+                  )}
+                  {visionData.appearanceConfidence && (
+                    <>{(visionData.visionStatement || visionData.feelingState) && ' '}{visionData.appearanceConfidence}</>
+                  )}
+                  {visionData.futureAbilities && (
+                    <>{(visionData.visionStatement || visionData.feelingState || visionData.appearanceConfidence) && ' '}{visionData.futureAbilities}</>
+                  )}
+                  {visionData.whyMatters && (
+                    <>{(visionData.visionStatement || visionData.feelingState || visionData.appearanceConfidence || visionData.futureAbilities) && ' '}This matters because {visionData.whyMatters}</>
+                  )}
+                </p>
+              ) : (
+                <p className="text-stone-600 mb-4">
+                  Create your health vision to guide your journey. Define where you want to be in 1-2 years.
+                </p>
               )}
-              {visionData.appearanceConfidence && (
-                <>{(visionData.visionStatement || visionData.feelingState) && ' '}{visionData.appearanceConfidence}</>
-              )}
-              {visionData.futureAbilities && (
-                <>{(visionData.visionStatement || visionData.feelingState || visionData.appearanceConfidence) && ' '}{visionData.futureAbilities}</>
-              )}
-              {visionData.whyMatters && (
-                <>{(visionData.visionStatement || visionData.feelingState || visionData.appearanceConfidence || visionData.futureAbilities) && ' '}This matters because {visionData.whyMatters}</>
-              )}
-            </p>
-          ) : (
-            <p className="text-stone-600 mb-4">
-              Create your health vision to guide your journey. Define where you want to be in 1-2 years.
-            </p>
-          )}
-          
-          <div className="text-blue-600 font-semibold group-hover:gap-2 flex items-center gap-1 transition-all">
-            {visionData.visionStatement ? 'View & Edit Vision' : 'Create Vision'}
-            <span className="group-hover:translate-x-1 transition-transform">→</span>
+              
+              <div className="text-blue-600 font-semibold group-hover:gap-2 flex items-center gap-1 transition-all">
+                {visionData.visionStatement ? 'View & Edit Vision' : 'Create Vision'}
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </div>
+            </div>
           </div>
         </button>
 
@@ -262,89 +268,99 @@ export default function Dashboard() {
             onClick={() => navigate('/habits')}
             className="bg-white rounded-2xl shadow-lg p-8 text-left hover:shadow-xl transition group"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition">
+            <div className="flex items-start gap-4">
+              {/* Habits Icon */}
+              <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition flex-shrink-0">
                 <Target className="w-8 h-8 text-green-600" />
               </div>
-            </div>
-            <h2 className="text-2xl font-bold text-stone-800 mb-2">
-              Weekly Habits
-            </h2>
-            
-            {formattedHabits.length > 0 ? (
-              <div className="mb-4 space-y-3">
-                {formattedHabits.map((habitData, index) => (
-                  <div key={index} className="flex flex-col gap-1">
-                    <p className="text-base leading-6 text-stone-700">
-                      {habitData.habit}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-stone-600" />
-                      <p className="text-sm leading-6 text-stone-600">
-                        {habitData.schedule}
-                      </p>
-                    </div>
+              
+              {/* Content */}
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-stone-800 mb-2">
+                  Weekly Habits
+                </h2>
+                
+                {formattedHabits.length > 0 ? (
+                  <div className="mb-4 space-y-3">
+                    {formattedHabits.map((habitData, index) => (
+                      <div key={index} className="flex flex-col gap-1">
+                        <p className="text-base leading-6 text-stone-700">
+                          {habitData.habit}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-stone-600" />
+                          <p className="text-sm leading-6 text-stone-600">
+                            {habitData.schedule}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <p className="text-stone-600 mb-4">
+                    Set your commitments for this week. Choose 1-2 habits with specific days and times.
+                  </p>
+                )}
+                
+                <div className="text-green-600 font-semibold group-hover:gap-2 flex items-center gap-1 transition-all">
+                  Manage Habits
+                  <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </div>
               </div>
-            ) : (
-              <p className="text-stone-600 mb-4">
-                Set your commitments for this week. Choose 1-2 habits with specific days and times.
-              </p>
-            )}
-            
-            <div className="text-green-600 font-semibold group-hover:gap-2 flex items-center gap-1 transition-all">
-              Manage Habits
-              <span className="group-hover:translate-x-1 transition-transform">→</span>
             </div>
           </button>
 
           {/* Weekly Reflection */}
           <button
             onClick={() => navigate('/reflection')}
-            className="bg-white rounded-2xl shadow-lg p-8 text-left hover:shadow-xl transition group flex flex-col"
+            className="bg-white rounded-2xl shadow-lg p-8 text-left hover:shadow-xl transition group"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center group-hover:bg-amber-200 transition">
+            <div className="flex items-start gap-4">
+              {/* Reflection Icon */}
+              <div className="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center group-hover:bg-amber-200 transition flex-shrink-0">
                 <Calendar className="w-8 h-8 text-amber-600" />
               </div>
-            </div>
-            <h2 className="text-2xl font-bold text-stone-800 mb-2">
-              Weekly Reflection
-            </h2>
-            
-            {currentReflection ? (
-              <>
-                <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <p className="text-green-700 font-medium">
-                    Completed {new Date(currentReflection.created_at).toLocaleDateString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric' 
-                    })}
-                  </p>
+              
+              {/* Content */}
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-stone-800 mb-2">
+                  Weekly Reflection
+                </h2>
+                
+                {currentReflection ? (
+                  <>
+                    <div className="flex items-center gap-2 mb-3">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <p className="text-green-700 font-medium">
+                        Completed {new Date(currentReflection.created_at).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric' 
+                        })}
+                      </p>
+                    </div>
+                    <p className="text-stone-600 mb-4">
+                      You can update your reflection anytime this week.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-stone-600 mb-4">
+                      Reflect on your week. What went well? What was challenging? What will you adjust?
+                    </p>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Clock className="w-4 h-4 text-stone-600" />
+                      <p className="text-sm text-stone-600">
+                        Complete by Sunday each week
+                      </p>
+                    </div>
+                  </>
+                )}
+                
+                <div className="text-amber-600 font-semibold group-hover:gap-2 flex items-center gap-1 transition-all">
+                  {currentReflection ? 'Update Reflection' : 'Start Reflection'}
+                  <span className="group-hover:translate-x-1 transition-transform">→</span>
                 </div>
-                <p className="text-stone-600 mb-4">
-                  You can update your reflection anytime this week.
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-stone-600 mb-4">
-                  Reflect on your week. What went well? What was challenging? What will you adjust?
-                </p>
-                <div className="flex items-center gap-2 mb-4">
-                  <Clock className="w-4 h-4 text-stone-600" />
-                  <p className="text-sm text-stone-600">
-                    Complete by Sunday each week
-                  </p>
-                </div>
-              </>
-            )}
-            
-            <div className="text-amber-600 font-semibold group-hover:gap-2 flex items-center gap-1 transition-all mt-auto">
-              {currentReflection ? 'Update Reflection' : 'Start Reflection'}
-              <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </div>
             </div>
           </button>
         </div>
@@ -353,9 +369,11 @@ export default function Dashboard() {
         <div className="bg-white rounded-2xl shadow-lg p-8 text-left hover:shadow-xl transition group mt-6">
           <div className="flex items-start gap-4">
             {/* Coach Avatar */}
-            <div className="w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center group-hover:from-amber-500 group-hover:to-orange-600 transition">
-              <User className="w-7 h-7 text-white" />
-            </div>
+            <img 
+              src={coachEric} 
+              alt="Coach Eric" 
+              className="w-14 h-14 rounded-xl object-cover group-hover:shadow-lg transition"
+            />
             
             {/* Content */}
             <div className="flex-1">
