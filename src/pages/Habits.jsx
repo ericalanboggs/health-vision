@@ -219,6 +219,9 @@ export default function Habits() {
         await saveHabitsForWeek(weekNumber, newHabits)
       }
 
+      // Clear state and reload
+      setDayCommitments({})
+      setTimePreferences({})
       await loadHabits()
     } catch (error) {
       console.error('Error deleting habit:', error)
