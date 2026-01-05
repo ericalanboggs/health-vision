@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
-import { getCurrentUser } from '../services/authService'
+import { getCurrentUser, updateLastLogin } from '../services/authService'
 import { Loader2 } from 'lucide-react'
 
 export default function ProtectedRoute({ children }) {
@@ -12,6 +12,12 @@ export default function ProtectedRoute({ children }) {
       console.log('ProtectedRoute: Checking auth...')
       const { user } = await getCurrentUser()
       console.log('ProtectedRoute: User:', user)
+      
+      if (user) {
+        // Update last login timestamp
+        await updateLastLogin(user.id, user.email)
+      }
+      
       setUser(user)
       setLoading(false)
     }

@@ -221,3 +221,24 @@ export const getProfile = async (userId) => {
     return { success: true, data: null }
   }
 }
+
+/**
+ * Update last login timestamp for user
+ * @param {string} userId - User ID
+ * @param {string} email - User email
+ */
+export const updateLastLogin = async (userId, email) => {
+  try {
+    if (!supabase) return
+
+    await supabase
+      .from('profiles')
+      .update({ 
+        last_login_at: new Date().toISOString(),
+        email: email 
+      })
+      .eq('id', userId)
+  } catch (error) {
+    console.error('Error updating last login:', error)
+  }
+}

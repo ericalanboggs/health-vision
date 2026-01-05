@@ -1,0 +1,195 @@
+import supabase from '../lib/supabase'
+
+const ADMIN_EMAIL = 'eric.alan.boggs@gmail.com'
+
+/**
+ * Check if current user is admin
+ */
+export const isAdmin = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    return user?.email === ADMIN_EMAIL
+  } catch (error) {
+    console.error('Error checking admin status:', error)
+    return false
+  }
+}
+
+/**
+ * Get all users with pilot readiness data
+ */
+export const getAllUsers = async () => {
+  try {
+    const adminCheck = await isAdmin()
+    console.log('Admin check:', adminCheck)
+    
+    if (!adminCheck) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    // Get all profiles
+    console.log('Fetching profiles...')
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    console.log('Profiles result:', { profiles, profilesError })
+    
+    if (profilesError) throw profilesError
+
+    // Get all health journeys
+    const { data: journeys, error: journeysError } = await supabase
+      .from('health_journeys')
+      .select('user_id, form_data, updated_at')
+
+    if (journeysError) throw journeysError
+
+    // Get all habits
+    const { data: habits, error: habitsError } = await supabase
+      .from('weekly_habits')
+      .select('user_id, habit_name, week_number')
+
+    if (habitsError) throw habitsError
+
+    // Combine data
+    const usersData = profiles.map(profile => {
+      const journey = journeys?.find(j => j.user_id === profile.id)
+      const userHabits = habits?.filter(h => h.user_id === profile.id) || []
+
+      // Calculate pilot readiness
+      const hasLoggedIn = !!profile.last_login_at || profile.profile_completed
+      const hasHealthVision = !!(journey?.form_data?.visionStatement)
+      const activeHabitsCount = new Set(userHabits.map(h => h.habit_name)).size
+      const hasActiveHabits = activeHabitsCount > 0
+
+      const pilotReady = hasLoggedIn && hasHealthVision && hasActiveHabits
+
+      return {
+        id: profile.id,
+        name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'N/A',
+        email: profile.email || 'N/A',
+        phone: profile.phone || 'N/A',
+        smsOptIn: profile.sms_opt_in,
+        lastLogin: profile.last_login_at,
+        activeHabitsCount,
+        pilotReady,
+        hasLoggedIn,
+        hasHealthVision,
+        hasActiveHabits,
+        createdAt: profile.created_at
+      }
+    })
+
+    return { success: true, data: usersData }
+  } catch (error) {
+    console.error('Error fetching all users:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Get detailed user data for admin view
+ */
+export const getUserDetail = async (userId) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    // Get profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (profileError) throw profileError
+
+    // Get health journey
+    const { data: journey, error: journeyError } = await supabase
+      .from('health_journeys')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (journeyError && journeyError.code !== 'PGRST116') throw journeyError
+
+    // Get habits
+    const { data: habits, error: habitsError } = await supabase
+      .from('weekly_habits')
+      .select('*')
+      .eq('user_id', userId)
+      .order('week_number', { ascending: false })
+
+    if (habitsError) throw habitsError
+
+    // Get reflections
+    const { data: reflections, error: reflectionsError } = await supabase
+      .from('weekly_reflections')
+      .select('*')
+      .eq('user_id', userId)
+      .order('week_number', { ascending: false })
+
+    if (reflectionsError) throw reflectionsError
+
+    // Calculate pilot readiness
+    const hasLoggedIn = profile.profile_completed
+    const hasHealthVision = !!(journey?.form_data?.visionStatement)
+    const activeHabitsCount = new Set(habits?.map(h => h.habit_name) || []).size
+    const hasActiveHabits = activeHabitsCount > 0
+    const pilotReady = hasLoggedIn && hasHealthVision && hasActiveHabits
+
+    // Group habits by name
+    const habitGroups = {}
+    habits?.forEach(habit => {
+      if (!habitGroups[habit.habit_name]) {
+        habitGroups[habit.habit_name] = {
+          name: habit.habit_name,
+          weekNumber: habit.week_number,
+          days: [],
+          times: new Set(),
+          createdAt: habit.created_at
+        }
+      }
+      habitGroups[habit.habit_name].days.push(habit.day_of_week)
+      if (habit.time_of_day || habit.reminder_time) {
+        habitGroups[habit.habit_name].times.add(habit.time_of_day || habit.reminder_time)
+      }
+    })
+
+    const groupedHabits = Object.values(habitGroups).map(group => ({
+      ...group,
+      times: Array.from(group.times),
+      frequency: group.days.length
+    }))
+
+    return {
+      success: true,
+      data: {
+        profile: {
+          id: profile.id,
+          name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'N/A',
+          email: profile.email || 'N/A',
+          phone: profile.phone || 'N/A',
+          smsOptIn: profile.sms_opt_in,
+          createdAt: profile.created_at,
+          lastLogin: profile.last_login_at,
+          timezone: profile.timezone
+        },
+        pilotReadiness: {
+          ready: pilotReady,
+          hasLoggedIn,
+          hasHealthVision,
+          hasActiveHabits
+        },
+        healthVision: journey?.form_data || null,
+        habits: groupedHabits,
+        reflections: reflections || []
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching user detail:', error)
+    return { success: false, error: error.message }
+  }
+}

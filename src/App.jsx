@@ -17,7 +17,10 @@ import AuthCallback from './pages/AuthCallback'
 import AuthTest from './pages/AuthTest'
 import AuthDebug from './pages/AuthDebug'
 import Dashboard from './pages/Dashboard'
+import Admin from './pages/Admin'
+import AdminUserDetail from './pages/AdminUserDetail'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminRoute from './components/AdminRoute'
 import { trackEvent } from './lib/posthog'
 
 // Legacy health journey component wrapper
@@ -127,6 +130,24 @@ function App() {
             <ProtectedRoute>
               <Reflection />
             </ProtectedRoute>
+          } 
+        />
+        
+        {/* Admin routes */}
+        <Route 
+          path="/admin" 
+          element={
+            <AdminRoute>
+              <Admin />
+            </AdminRoute>
+          } 
+        />
+        <Route 
+          path="/admin/users/:userId" 
+          element={
+            <AdminRoute>
+              <AdminUserDetail />
+            </AdminRoute>
           } 
         />
         
