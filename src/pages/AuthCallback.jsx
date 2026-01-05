@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { getProfile } from '../services/authService'
 import { trackEvent } from '../lib/posthog'
 import { Loader2, CheckCircle, XCircle } from 'lucide-react'
 
@@ -54,12 +55,25 @@ export default function AuthCallback() {
               userId: data.session.user.id,
               email: data.session.user.email 
             })
+            
+            // Check if user has a profile (new vs returning user)
+            const { data: profile } = await getProfile(data.session.user.id)
+            
+            // Route based on whether user has completed onboarding
+            let redirectPath = '/start' // Default to onboarding for new users
+            if (profile && profile.full_name) {
+              // User has completed profile setup, go to dashboard
+              redirectPath = '/dashboard'
+            }
+            
+            console.log('Auth callback: User has profile?', !!profile, 'Redirecting to:', redirectPath)
+            
             setStatus('success')
             
-            // Clear the hash/query and redirect to dashboard
-            window.history.replaceState(null, '', '/dashboard')
+            // Clear the hash/query and redirect appropriately
+            window.history.replaceState(null, '', redirectPath)
             setTimeout(() => {
-              navigate('/dashboard', { replace: true })
+              navigate(redirectPath, { replace: true })
             }, 1500)
           } else {
             setStatus('error')
@@ -84,9 +98,22 @@ export default function AuthCallback() {
               userId: session.user.id,
               email: session.user.email 
             })
+            
+            // Check if user has a profile (new vs returning user)
+            const { data: profile } = await getProfile(session.user.id)
+            
+            // Route based on whether user has completed onboarding
+            let redirectPath = '/start' // Default to onboarding for new users
+            if (profile && profile.full_name) {
+              // User has completed profile setup, go to dashboard
+              redirectPath = '/dashboard'
+            }
+            
+            console.log('Auth callback retry: User has profile?', !!profile, 'Redirecting to:', redirectPath)
+            
             setStatus('success')
             setTimeout(() => {
-              navigate('/dashboard', { replace: true })
+              navigate(redirectPath, { replace: true })
             }, 1500)
           } else {
             console.error('No tokens found and no existing session')
