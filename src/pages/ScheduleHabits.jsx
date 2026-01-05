@@ -24,12 +24,12 @@ export default function ScheduleHabits() {
   }
 
   const timeOfDayOptions = [
-    { label: 'Early Morning (6-8am)', value: 'early-morning', hour: 7 },
-    { label: 'Mid-Morning (8-10am)', value: 'mid-morning', hour: 9 },
+    { label: 'Early Morning (6-8am)', value: 'early-morning', hour: 6 },
+    { label: 'Mid-Morning (8-10am)', value: 'mid-morning', hour: 8 },
     { label: 'Lunch Time (12-1pm)', value: 'lunch', hour: 12 },
-    { label: 'Early Afternoon (1-3pm)', value: 'early-afternoon', hour: 14 },
-    { label: 'Afternoon (3-5pm)', value: 'afternoon', hour: 16 },
-    { label: 'After Work (5-7pm)', value: 'after-work', hour: 18 },
+    { label: 'Early Afternoon (1-3pm)', value: 'early-afternoon', hour: 13 },
+    { label: 'Afternoon (3-5pm)', value: 'afternoon', hour: 15 },
+    { label: 'After Work (5-7pm)', value: 'after-work', hour: 17 },
     { label: 'Before Bedtime (9-10pm)', value: 'bedtime', hour: 21 }
   ]
 
@@ -81,6 +81,7 @@ export default function ScheduleHabits() {
             habit_name: habit.action,
             day_of_week: dayMap[day],
             reminder_time: reminderTime,
+            time_of_day: reminderTime,
             timezone: 'America/Chicago'
           })
         })

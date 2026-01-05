@@ -151,11 +151,16 @@ export default function Dashboard() {
 
     // Time slot mapping (hour -> label)
     const timeSlotMap = {
+      6: 'Early Morning (6-8am)',
       7: 'Early Morning (6-8am)',
+      8: 'Mid-Morning (8-10am)',
       9: 'Mid-Morning (8-10am)',
       12: 'Lunch Time (12-1pm)',
+      13: 'Early Afternoon (1-3pm)',
       14: 'Early Afternoon (1-3pm)',
+      15: 'Afternoon (3-5pm)',
       16: 'Afternoon (3-5pm)',
+      17: 'After Work (5-7pm)',
       18: 'After Work (5-7pm)',
       21: 'Before Bedtime (9-10pm)'
     }

@@ -40,13 +40,13 @@ const SummaryPage = ({ formData, onNavigate }) => {
 
   // Time of day options with corresponding hours
   const timeOfDayOptions = [
-    { label: 'Early Morning (6-8am)', value: 'early-morning', hour: 7 },
-    { label: 'Mid-Morning (8-10am)', value: 'mid-morning', hour: 9 },
-    { label: 'Lunch Time (12-1pm)', value: 'lunch', hour: 12 },
-    { label: 'Early Afternoon (1-3pm)', value: 'early-afternoon', hour: 14 },
-    { label: 'Afternoon (3-5pm)', value: 'afternoon', hour: 16 },
-    { label: 'After Work (5-7pm)', value: 'after-work', hour: 18 },
-    { label: 'Before Bedtime (9-10pm)', value: 'bedtime', hour: 21 }
+    { label: 'Early Morning (6-8am)', value: 'early-morning', hour: 6, startHour: 6 },
+    { label: 'Mid-Morning (8-10am)', value: 'mid-morning', hour: 8, startHour: 8 },
+    { label: 'Lunch Time (12-1pm)', value: 'lunch', hour: 12, startHour: 12 },
+    { label: 'Early Afternoon (1-3pm)', value: 'early-afternoon', hour: 13, startHour: 13 },
+    { label: 'Afternoon (3-5pm)', value: 'afternoon', hour: 15, startHour: 15 },
+    { label: 'After Work (5-7pm)', value: 'after-work', hour: 17, startHour: 17 },
+    { label: 'Before Bedtime (9-10pm)', value: 'bedtime', hour: 21, startHour: 21 }
   ]
 
   // Check if user has sufficient data for personalization
@@ -395,13 +395,16 @@ END:VEVENT
         const timePreference = timePreferences[index] || 'mid-morning'
         const timeOption = timeOfDayOptions.find(opt => opt.value === timePreference)
         const eventHour = timeOption ? timeOption.hour : 9
+        const eventStartHour = timeOption ? timeOption.startHour : 9
+        const eventEndHour = timeOption ? timeOption.endHour : 10
         
         // Create a habit entry for each committed day
         committedDays.forEach(dayName => {
           habits.push({
             habit_name: item.action,
             day_of_week: dayNameToNumber[dayName],
-            reminder_time: `${String(eventHour).padStart(2, '0')}:00:00`,
+            reminder_time: `${String(eventStartHour).padStart(2, '0')}:00:00`,
+            time_of_day: `${String(eventStartHour).padStart(2, '0')}:00:00`,
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Chicago'
           })
         })
