@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeft, CheckCircle, Loader2 } from 'lucide-react'
 import { getCurrentWeekNumber } from '../utils/weekCalculator'
 import { saveHabitsForWeek } from '../services/habitService'
+import { getCurrentUser, getProfile } from '../services/authService'
 
 export default function ScheduleHabits() {
   const navigate = useNavigate()
@@ -10,12 +11,26 @@ export default function ScheduleHabits() {
   const habits = location.state?.habits || []
   
   const [saving, setSaving] = useState(false)
+  const [userTimezone, setUserTimezone] = useState('America/Chicago')
   const [dayCommitments, setDayCommitments] = useState(
     habits.reduce((acc, _, index) => ({ ...acc, [index]: [] }), {})
   )
   const [timePreferences, setTimePreferences] = useState(
     habits.reduce((acc, _, index) => ({ ...acc, [index]: 'mid-morning' }), {})
   )
+
+  useEffect(() => {
+    const fetchUserTimezone = async () => {
+      const { success, user } = await getCurrentUser()
+      if (success && user) {
+        const { success: profileSuccess, data: profile } = await getProfile(user.id)
+        if (profileSuccess && profile?.timezone) {
+          setUserTimezone(profile.timezone)
+        }
+      }
+    }
+    fetchUserTimezone()
+  }, [])
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const dayMap = {
@@ -82,7 +97,7 @@ export default function ScheduleHabits() {
             day_of_week: dayMap[day],
             reminder_time: reminderTime,
             time_of_day: reminderTime,
-            timezone: 'America/Chicago'
+            timezone: userTimezone
           })
         })
       })

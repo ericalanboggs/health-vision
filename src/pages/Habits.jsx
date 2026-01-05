@@ -4,6 +4,7 @@ import { ArrowLeft, Beaker, Save, Loader2, Edit2, CheckCircle, Trash2, Plus } fr
 import { getCurrentWeekHabits, deleteHabitsForWeek, saveHabitsForWeek } from '../services/habitService'
 import { getCurrentWeekNumber, getCurrentWeekDateRange } from '../utils/weekCalculator'
 import { formatDaysDisplay, convertShortToFullDays } from '../utils/formatDays'
+import { getCurrentUser, getProfile } from '../services/authService'
 
 export default function Habits() {
   const navigate = useNavigate()
@@ -16,6 +17,7 @@ export default function Habits() {
   const [dayCommitments, setDayCommitments] = useState({})
   const [timePreferences, setTimePreferences] = useState({})
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, habitIndex: null, habitName: '' })
+  const [userTimezone, setUserTimezone] = useState('America/Chicago')
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const dayMap = {
@@ -39,6 +41,16 @@ export default function Habits() {
   ]
 
   useEffect(() => {
+    const fetchUserTimezone = async () => {
+      const { success, user } = await getCurrentUser()
+      if (success && user) {
+        const { success: profileSuccess, data: profile } = await getProfile(user.id)
+        if (profileSuccess && profile?.timezone) {
+          setUserTimezone(profile.timezone)
+        }
+      }
+    }
+    fetchUserTimezone()
     loadHabits()
   }, [])
 
@@ -141,7 +153,7 @@ export default function Habits() {
             habit_name: habitName,
             day_of_week: dayMap[day],
             reminder_time: reminderTime,
-            timezone: 'America/Chicago'
+            timezone: userTimezone
           })
         })
       })
@@ -212,7 +224,7 @@ export default function Habits() {
               day_of_week: dayMap[day],
               reminder_time: reminderTime,
               time_of_day: reminderTime,
-              timezone: 'America/Chicago'
+              timezone: userTimezone
             })
           })
         })
