@@ -414,25 +414,14 @@ END:VEVENT
         return
       }
       
-      // Validate: max 2 habits (unique habit names)
+      // Validate: max 3 habits (unique habit names)
       const uniqueHabits = [...new Set(habits.map(h => h.habit_name))]
-      if (uniqueHabits.length > 2) {
-        alert('Please select a maximum of 2 habits for this week')
+      if (uniqueHabits.length > 3) {
+        alert('Please select a maximum of 3 habits for this week')
         setIsConfirmingHabits(false)
         return
       }
       
-      // Validate: max 3 days per habit
-      const habitDayCounts = {}
-      habits.forEach(h => {
-        habitDayCounts[h.habit_name] = (habitDayCounts[h.habit_name] || 0) + 1
-      })
-      const exceedsMaxDays = Object.values(habitDayCounts).some(count => count > 3)
-      if (exceedsMaxDays) {
-        alert('Please select a maximum of 3 days per habit')
-        setIsConfirmingHabits(false)
-        return
-      }
       
       // Save to database
       const result = await saveHabitsForWeek(weekNumber, habits)

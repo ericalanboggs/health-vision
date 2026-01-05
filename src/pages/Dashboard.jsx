@@ -149,6 +149,17 @@ export default function Dashboard() {
   const formatHabits = () => {
     if (currentHabits.length === 0) return []
 
+    // Time slot mapping (hour -> label)
+    const timeSlotMap = {
+      7: 'Early Morning (6-8am)',
+      9: 'Mid-Morning (8-10am)',
+      12: 'Lunch Time (12-1pm)',
+      14: 'Early Afternoon (1-3pm)',
+      16: 'Afternoon (3-5pm)',
+      18: 'After Work (5-7pm)',
+      21: 'Before Bedtime (9-10pm)'
+    }
+
     // Group habits by habit_name
     const habitGroups = {}
     currentHabits.forEach(habit => {
@@ -163,21 +174,18 @@ export default function Dashboard() {
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
       const days = habits.map(h => dayNames[h.day_of_week])
       
-      // Format time range (convert from 24hr to 12hr format)
+      // Get time label from mapping
       const time = habits[0].reminder_time
       const [hours] = time.split(':')
       const hour = parseInt(hours)
-      const startHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
-      const endHour = startHour + 1
-      const ampm = hour >= 12 ? 'PM' : 'AM'
-      const timeRange = `${startHour}-${endHour}${ampm.toLowerCase()}`
+      const timeLabel = timeSlotMap[hour] || `${hour}:00`
       
       // Use utility function to format days
       const daysStr = formatDaysDisplay(days)
       
       return {
         habit: habitName,
-        schedule: `${daysStr} between ${timeRange}.`
+        schedule: `${daysStr} between ${timeLabel}.`
       }
     })
   }
