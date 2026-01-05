@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileText, Sparkles, Heart, Map, Clock3, Edit2, Bell, Target, TrendingUp, Lightbulb, Wand2, Loader2, RefreshCw, Copy, Check, CheckCircle, Mountain } from 'lucide-react'
+import { FileText, Sparkles, Heart, Map, Clock3, Edit2, Bell, Beaker, TrendingUp, Lightbulb, Wand2, Loader2, RefreshCw, Copy, Check, CheckCircle, Mountain } from 'lucide-react'
 import { generateActionPlan, generateMotivationalMessage } from '../../utils/planGenerator'
 import { enhanceActionPlan } from '../../utils/aiService'
 import { saveHabitsForWeek } from '../../services/habitService'
@@ -599,7 +599,7 @@ END:VEVENT
           }`}
         >
           <div className="flex items-center gap-2">
-            <Target className="w-4 h-4" />
+            <Beaker className="w-4 h-4" />
             My Plan
           </div>
         </button>
@@ -678,7 +678,7 @@ END:VEVENT
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-green-100 rounded-xl">
-                  <Target className="w-6 h-6 text-green-600" />
+                  <Beaker className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold text-stone-900">Habit Experiments</h3>

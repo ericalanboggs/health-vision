@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Target, Sparkles, RefreshCw, Plus, Loader2 } from 'lucide-react'
+import { ArrowLeft, Beaker, Sparkles, RefreshCw, Plus, Loader2 } from 'lucide-react'
 import { getCurrentWeekNumber } from '../utils/weekCalculator'
 import { getCurrentWeekHabits, saveHabitsForWeek } from '../services/habitService'
 import { loadJourney } from '../services/journeyService'
@@ -221,7 +221,7 @@ export default function AddHabit() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-green-100 rounded-xl">
-                <Target className="w-6 h-6 text-green-600" />
+                <Beaker className="w-6 h-6 text-green-600" />
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-stone-900">Add New Habit</h3>

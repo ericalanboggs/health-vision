@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Target, Save, Loader2, Edit2, CheckCircle, Trash2, Plus } from 'lucide-react'
+import { ArrowLeft, Beaker, Save, Loader2, Edit2, CheckCircle, Trash2, Plus } from 'lucide-react'
 import { getCurrentWeekHabits, deleteHabitsForWeek, saveHabitsForWeek } from '../services/habitService'
 import { getCurrentWeekNumber, getCurrentWeekDateRange } from '../utils/weekCalculator'
 import { formatDaysDisplay, convertShortToFullDays } from '../utils/formatDays'
@@ -280,7 +280,7 @@ export default function Habits() {
 
         {groupedHabits.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-            <Target className="w-16 h-16 text-stone-300 mx-auto mb-4" />
+            <Beaker className="w-16 h-16 text-stone-300 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-stone-800 mb-2">
               No Habits Set for This Week
             </h2>
@@ -298,7 +298,7 @@ export default function Habits() {
           <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-green-100 rounded-xl">
-                <Target className="w-6 h-6 text-green-600" />
+                <Beaker className="w-6 h-6 text-green-600" />
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-stone-900">Habit Experiments</h2>

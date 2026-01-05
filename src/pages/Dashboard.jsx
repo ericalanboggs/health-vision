@@ -12,7 +12,7 @@ import {
   getWeekEndDate,
 } from '../utils/weekCalculator'
 import { formatDaysDisplay } from '../utils/formatDays'
-import { Calendar, Target, Clock, ArrowRight, Mountain, CheckCircle, ExternalLink } from 'lucide-react'
+import { Calendar, Beaker, Clock, ArrowRight, Mountain, CheckCircle, ExternalLink } from 'lucide-react'
 import TopNav from '../components/TopNav'
 import coachEric from '../assets/coach-eric.jpeg'
 
@@ -284,7 +284,7 @@ export default function Dashboard() {
             <div className="flex items-start gap-4">
               {/* Habits Icon */}
               <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition flex-shrink-0">
-                <Target className="w-8 h-8 text-green-600" />
+                <Beaker className="w-8 h-8 text-green-600" />
               </div>
               
               {/* Content */}
