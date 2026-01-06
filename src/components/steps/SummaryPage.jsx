@@ -914,32 +914,6 @@ END:VEVENT
                           </>
                         )}
                       </button>
-
-                      {/* Secondary Actions - Calendar and Clipboard */}
-                      <button
-                        onClick={handleReminder}
-                        className="flex items-center gap-2 bg-white hover:bg-stone-50 text-green-600 font-semibold px-5 py-3 rounded-lg border-2 border-green-600 shadow-sm hover:shadow transition-all"
-                      >
-                        <Bell className="w-4 h-4" />
-                        Create Calendar Reminder
-                      </button>
-
-                      <button 
-                        onClick={handleCopyToClipboard}
-                        className="flex items-center gap-2 bg-white hover:bg-stone-50 text-green-600 font-semibold px-5 py-3 rounded-lg border-2 border-green-600 shadow-sm hover:shadow transition-all"
-                      >
-                        {copied ? (
-                          <>
-                            <Check className="w-4 h-4" />
-                            Copied!
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-4 h-4" />
-                            Copy to Clipboard
-                          </>
-                        )}
-                      </button>
                     </>
                   ) : (
                     <div className="w-full bg-green-50 border-2 border-green-500 rounded-lg p-4">
