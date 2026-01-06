@@ -27,34 +27,57 @@ export default function AuthCallback() {
         console.log('AuthCallback - Hash:', currentHash)
         console.log('AuthCallback - Search:', currentSearch)
 
-        // Give Supabase extra time to automatically process the URL
-        // Mobile browsers (especially Gmail app) need significantly more time
-        // Supabase's detectSessionInUrl will handle the tokens automatically
-        await new Promise(resolve => setTimeout(resolve, 3000))
-
-        // Retry session check multiple times with increasing delays
-        // This works better than manual token parsing for mobile in-app browsers
-        let session = null
-        const delays = [0, 1500, 2000, 2500] // Progressive delays for 4 attempts
+        // Check for PKCE code in query params (used by mobile browsers)
+        const queryParams = new URLSearchParams(currentSearch)
+        const code = queryParams.get('code')
         
-        for (let i = 0; i < delays.length; i++) {
-          if (delays[i] > 0) {
-            await new Promise(resolve => setTimeout(resolve, delays[i]))
-          }
-          
-          const { data, error } = await supabase.auth.getSession()
+        let session = null
+        
+        if (code) {
+          console.log('PKCE code found, exchanging for session...')
+          // Exchange the code for a session
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code)
           
           if (error) {
-            console.error(`Session check attempt ${i + 1} error:`, error)
+            console.error('Error exchanging code for session:', error)
+            trackEvent('auth_callback_failed', { error: error.message })
+            setStatus('error')
+            return
           }
           
           if (data?.session) {
             session = data.session
-            console.log(`Session found on attempt ${i + 1}`)
-            break
+            console.log('Session obtained from code exchange')
           }
+        } else {
+          // No code - try automatic session detection with retries
+          console.log('No PKCE code, trying automatic session detection...')
           
-          console.log(`Session check attempt ${i + 1}: No session yet`)
+          // Give Supabase extra time to automatically process the URL
+          await new Promise(resolve => setTimeout(resolve, 3000))
+
+          // Retry session check multiple times with increasing delays
+          const delays = [0, 1500, 2000, 2500] // Progressive delays for 4 attempts
+          
+          for (let i = 0; i < delays.length; i++) {
+            if (delays[i] > 0) {
+              await new Promise(resolve => setTimeout(resolve, delays[i]))
+            }
+            
+            const { data, error } = await supabase.auth.getSession()
+            
+            if (error) {
+              console.error(`Session check attempt ${i + 1} error:`, error)
+            }
+            
+            if (data?.session) {
+              session = data.session
+              console.log(`Session found on attempt ${i + 1}`)
+              break
+            }
+            
+            console.log(`Session check attempt ${i + 1}: No session yet`)
+          }
         }
         
         if (session) {
