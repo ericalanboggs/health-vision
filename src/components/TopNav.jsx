@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { User, LogOut } from 'lucide-react'
 import { signOut } from '../services/authService'
 
 export default function TopNav() {
@@ -23,18 +24,22 @@ export default function TopNav() {
           </button>
 
           {/* Actions */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/profile')}
-              className="text-stone-700 hover:text-stone-900 font-medium transition"
+              className="flex items-center gap-2 text-stone-700 hover:text-stone-900 hover:bg-stone-100 p-2 rounded-lg font-medium transition"
+              title="Update Profile"
             >
-              Update Profile
+              <User className="w-5 h-5 flex-shrink-0" />
+              <span className="hidden sm:inline">Update Profile</span>
             </button>
             <button
               onClick={handleSignOut}
-              className="text-stone-700 hover:text-stone-900 font-medium transition"
+              className="flex items-center gap-2 text-stone-700 hover:text-stone-900 hover:bg-stone-100 p-2 rounded-lg font-medium transition"
+              title="Sign Out"
             >
-              Sign Out
+              <LogOut className="w-5 h-5 flex-shrink-0" />
+              <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>
         </div>
