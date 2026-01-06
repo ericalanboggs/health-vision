@@ -61,7 +61,7 @@ export default function AuthCallback() {
             
             // Route based on whether user has completed onboarding
             let redirectPath = '/start' // Default to onboarding for new users
-            if (profile && profile.full_name) {
+            if (profile && profile.first_name) {
               // User has completed profile setup, go to dashboard
               redirectPath = '/dashboard'
             }
@@ -104,7 +104,7 @@ export default function AuthCallback() {
             
             // Route based on whether user has completed onboarding
             let redirectPath = '/start' // Default to onboarding for new users
-            if (profile && profile.full_name) {
+            if (profile && profile.first_name) {
               // User has completed profile setup, go to dashboard
               redirectPath = '/dashboard'
             }
