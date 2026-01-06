@@ -19,6 +19,14 @@ export default function AuthCallback() {
           return
         }
 
+        // Immediately capture URL before Gmail strips it
+        const currentUrl = window.location.href
+        const currentHash = window.location.hash
+        const currentSearch = window.location.search
+        console.log('AuthCallback - Full URL:', currentUrl)
+        console.log('AuthCallback - Hash:', currentHash)
+        console.log('AuthCallback - Search:', currentSearch)
+
         // Give Supabase extra time to automatically process the URL
         // Mobile browsers (especially Gmail app) need significantly more time
         // Supabase's detectSessionInUrl will handle the tokens automatically
