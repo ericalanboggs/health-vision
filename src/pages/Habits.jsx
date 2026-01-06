@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Beaker, Save, Loader2, Edit2, CheckCircle, Trash2, Plus, Calendar, Copy, Check } from 'lucide-react'
+import { ArrowLeft, Beaker, Save, Loader2, Edit2, CheckCircle, Trash2, Plus, Calendar, Copy, Check, MoreVertical } from 'lucide-react'
 import { getCurrentWeekHabits, deleteHabitsForWeek, saveHabitsForWeek } from '../services/habitService'
 import { getCurrentWeekNumber, getCurrentWeekDateRange } from '../utils/weekCalculator'
 import { formatDaysDisplay, convertShortToFullDays } from '../utils/formatDays'
@@ -19,6 +19,7 @@ export default function Habits() {
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, habitIndex: null, habitName: '' })
   const [userTimezone, setUserTimezone] = useState('America/Chicago')
   const [copied, setCopied] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const dayMap = {
@@ -395,15 +396,74 @@ END:VEVENT
   return (
     <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-stone-200">
+      <header className="bg-white shadow-sm border-b border-stone-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 text-stone-600 hover:text-stone-900 font-medium transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back to Dashboard
-          </button>
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center gap-2 text-stone-600 hover:text-stone-900 font-medium transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 flex-shrink-0" />
+              <span className="hidden sm:inline">Back to Dashboard</span>
+            </button>
+            
+            {/* Overflow Menu - Only show if habits exist */}
+            {groupedHabits.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  className="p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition"
+                  title="More actions"
+                >
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+                
+                {menuOpen && (
+                  <>
+                    {/* Backdrop to close menu */}
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setMenuOpen(false)}
+                    />
+                    
+                    {/* Dropdown Menu */}
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-stone-200 py-2 z-20">
+                      <button
+                        onClick={() => {
+                          handleReminder()
+                          setMenuOpen(false)
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-left text-stone-700 hover:bg-stone-50 transition"
+                      >
+                        <Calendar className="w-4 h-4 text-green-600" />
+                        <span>Add to Calendar</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          handleCopyToClipboard()
+                          setMenuOpen(false)
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-left text-stone-700 hover:bg-stone-50 transition"
+                      >
+                        {copied ? (
+                          <>
+                            <Check className="w-4 h-4 text-green-600" />
+                            <span>Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4 text-green-600" />
+                            <span>Copy to Clipboard</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -434,43 +494,12 @@ END:VEVENT
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-green-100 rounded-xl">
-                  <Beaker className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-stone-900">Habit Experiments</h2>
-                </div>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-green-100 rounded-xl">
+                <Beaker className="w-6 h-6 text-green-600" />
               </div>
-              
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleReminder}
-                  className="flex items-center gap-2 bg-white hover:bg-stone-50 text-green-600 font-semibold px-4 py-2 rounded-lg border-2 border-green-600 shadow-sm hover:shadow transition-all"
-                  title="Add to Calendar"
-                >
-                  <Calendar className="w-4 h-4" />
-                  <span className="hidden sm:inline">Add to Calendar</span>
-                </button>
-                
-                <button
-                  onClick={handleCopyToClipboard}
-                  className="flex items-center gap-2 bg-white hover:bg-stone-50 text-green-600 font-semibold px-4 py-2 rounded-lg border-2 border-green-600 shadow-sm hover:shadow transition-all"
-                  title="Copy to Clipboard"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span className="hidden sm:inline">Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-4 h-4" />
-                      <span className="hidden sm:inline">Copy</span>
-                    </>
-                  )}
-                </button>
+              <div>
+                <h2 className="text-2xl font-bold text-stone-900">Habit Experiments</h2>
               </div>
             </div>
 
