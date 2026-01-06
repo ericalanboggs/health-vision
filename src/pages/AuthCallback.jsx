@@ -20,8 +20,8 @@ export default function AuthCallback() {
         }
 
         // Give Supabase time to automatically process the URL
-        // detectSessionInUrl in config should handle this
-        await new Promise(resolve => setTimeout(resolve, 1500))
+        // Mobile browsers (especially Gmail app) need more time
+        await new Promise(resolve => setTimeout(resolve, 2500))
 
         // Check if we have a hash with auth tokens (most common)
         const hashParams = new URLSearchParams(window.location.hash.substring(1))
@@ -37,18 +37,37 @@ export default function AuthCallback() {
         const refresh = refreshToken || queryRefreshToken
 
         if (token) {
-          // Set the session from the tokens
-          const { data, error } = await supabase.auth.setSession({
-            access_token: token,
-            refresh_token: refresh,
-          })
+          // Set the session from the tokens with retry logic for mobile
+          let sessionData = null
+          let sessionError = null
+          
+          for (let attempt = 0; attempt < 3; attempt++) {
+            const { data, error } = await supabase.auth.setSession({
+              access_token: token,
+              refresh_token: refresh,
+            })
+            
+            if (data?.session) {
+              sessionData = data
+              break
+            }
+            
+            sessionError = error
+            
+            // Wait before retrying (mobile browsers need this)
+            if (attempt < 2) {
+              await new Promise(resolve => setTimeout(resolve, 1000))
+            }
+          }
 
-          if (error) {
-            console.error('Auth callback error:', error)
-            trackEvent('auth_callback_failed', { error: error.message })
+          if (sessionError && !sessionData) {
+            console.error('Auth callback error after retries:', sessionError)
+            trackEvent('auth_callback_failed', { error: sessionError.message })
             setStatus('error')
             return
           }
+          
+          const data = sessionData
 
           if (data.session) {
             trackEvent('user_authenticated', { 
