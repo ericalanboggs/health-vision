@@ -19,126 +19,65 @@ export default function AuthCallback() {
           return
         }
 
-        // Give Supabase time to automatically process the URL
-        // Mobile browsers (especially Gmail app) need more time
-        await new Promise(resolve => setTimeout(resolve, 2500))
+        // Give Supabase extra time to automatically process the URL
+        // Mobile browsers (especially Gmail app) need significantly more time
+        // Supabase's detectSessionInUrl will handle the tokens automatically
+        await new Promise(resolve => setTimeout(resolve, 3000))
 
-        // Check if we have a hash with auth tokens (most common)
-        const hashParams = new URLSearchParams(window.location.hash.substring(1))
-        const accessToken = hashParams.get('access_token')
-        const refreshToken = hashParams.get('refresh_token')
-
-        // Also check query params (some mobile browsers use this)
-        const queryParams = new URLSearchParams(window.location.search)
-        const queryAccessToken = queryParams.get('access_token')
-        const queryRefreshToken = queryParams.get('refresh_token')
-
-        const token = accessToken || queryAccessToken
-        const refresh = refreshToken || queryRefreshToken
-
-        if (token) {
-          // Set the session from the tokens with retry logic for mobile
-          let sessionData = null
-          let sessionError = null
-          
-          for (let attempt = 0; attempt < 3; attempt++) {
-            const { data, error } = await supabase.auth.setSession({
-              access_token: token,
-              refresh_token: refresh,
-            })
-            
-            if (data?.session) {
-              sessionData = data
-              break
-            }
-            
-            sessionError = error
-            
-            // Wait before retrying (mobile browsers need this)
-            if (attempt < 2) {
-              await new Promise(resolve => setTimeout(resolve, 1000))
-            }
-          }
-
-          if (sessionError && !sessionData) {
-            console.error('Auth callback error after retries:', sessionError)
-            trackEvent('auth_callback_failed', { error: sessionError.message })
-            setStatus('error')
-            return
+        // Retry session check multiple times with increasing delays
+        // This works better than manual token parsing for mobile in-app browsers
+        let session = null
+        const delays = [0, 1500, 2000, 2500] // Progressive delays for 4 attempts
+        
+        for (let i = 0; i < delays.length; i++) {
+          if (delays[i] > 0) {
+            await new Promise(resolve => setTimeout(resolve, delays[i]))
           }
           
-          const data = sessionData
-
-          if (data.session) {
-            trackEvent('user_authenticated', { 
-              userId: data.session.user.id,
-              email: data.session.user.email 
-            })
-            
-            // Check if user has a profile (new vs returning user)
-            const { data: profile } = await getProfile(data.session.user.id)
-            
-            // Route based on whether user has completed onboarding
-            let redirectPath = '/start' // Default to onboarding for new users
-            if (profile && profile.first_name) {
-              // User has completed profile setup, go to dashboard
-              redirectPath = '/dashboard'
-            }
-            
-            console.log('Auth callback: User has profile?', !!profile, 'Redirecting to:', redirectPath)
-            
-            setStatus('success')
-            
-            // Clear the hash/query and redirect appropriately
-            window.history.replaceState(null, '', redirectPath)
-            setTimeout(() => {
-              navigate(redirectPath, { replace: true })
-            }, 1500)
-          } else {
-            setStatus('error')
+          const { data, error } = await supabase.auth.getSession()
+          
+          if (error) {
+            console.error(`Session check attempt ${i + 1} error:`, error)
           }
+          
+          if (data?.session) {
+            session = data.session
+            console.log(`Session found on attempt ${i + 1}`)
+            break
+          }
+          
+          console.log(`Session check attempt ${i + 1}: No session yet`)
+        }
+        
+        if (session) {
+          trackEvent('user_authenticated', { 
+            userId: session.user.id,
+            email: session.user.email 
+          })
+          
+          // Check if user has a profile (new vs returning user)
+          const { data: profile } = await getProfile(session.user.id)
+          
+          // Route based on whether user has completed onboarding
+          let redirectPath = '/start' // Default to onboarding for new users
+          if (profile && profile.first_name) {
+            // User has completed profile setup, go to dashboard
+            redirectPath = '/dashboard'
+          }
+          
+          console.log('Auth callback: User has profile?', !!profile, 'Redirecting to:', redirectPath)
+          
+          setStatus('success')
+          
+          // Clear the hash/query and redirect appropriately
+          window.history.replaceState(null, '', redirectPath)
+          setTimeout(() => {
+            navigate(redirectPath, { replace: true })
+          }, 1500)
         } else {
-          // No tokens in URL - retry session check (Supabase might still be processing)
-          let session = null
-          for (let i = 0; i < 3; i++) {
-            const { data } = await supabase.auth.getSession()
-            if (data.session) {
-              session = data.session
-              break
-            }
-            // Wait before retrying
-            if (i < 2) {
-              await new Promise(resolve => setTimeout(resolve, 1000))
-            }
-          }
-          
-          if (session) {
-            trackEvent('user_authenticated', { 
-              userId: session.user.id,
-              email: session.user.email 
-            })
-            
-            // Check if user has a profile (new vs returning user)
-            const { data: profile } = await getProfile(session.user.id)
-            
-            // Route based on whether user has completed onboarding
-            let redirectPath = '/start' // Default to onboarding for new users
-            if (profile && profile.first_name) {
-              // User has completed profile setup, go to dashboard
-              redirectPath = '/dashboard'
-            }
-            
-            console.log('Auth callback retry: User has profile?', !!profile, 'Redirecting to:', redirectPath)
-            
-            setStatus('success')
-            setTimeout(() => {
-              navigate(redirectPath, { replace: true })
-            }, 1500)
-          } else {
-            console.error('No tokens found and no existing session')
-            trackEvent('auth_callback_failed', { error: 'No tokens or session found' })
-            setStatus('error')
-          }
+          console.error('No session found after all retry attempts')
+          trackEvent('auth_callback_failed', { error: 'No session found after retries' })
+          setStatus('error')
         }
       } catch (error) {
         console.error('Error in auth callback:', error)
