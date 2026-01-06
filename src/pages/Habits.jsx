@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Beaker, Save, Loader2, Edit2, CheckCircle, Trash2, Plus, Bell, Copy, Check } from 'lucide-react'
+import { ArrowLeft, Beaker, Save, Loader2, Edit2, CheckCircle, Trash2, Plus, Calendar, Copy, Check } from 'lucide-react'
 import { getCurrentWeekHabits, deleteHabitsForWeek, saveHabitsForWeek } from '../services/habitService'
 import { getCurrentWeekNumber, getCurrentWeekDateRange } from '../utils/weekCalculator'
 import { formatDaysDisplay, convertShortToFullDays } from '../utils/formatDays'
@@ -448,10 +448,10 @@ END:VEVENT
                 <button
                   onClick={handleReminder}
                   className="flex items-center gap-2 bg-white hover:bg-stone-50 text-green-600 font-semibold px-4 py-2 rounded-lg border-2 border-green-600 shadow-sm hover:shadow transition-all"
-                  title="Create Calendar Reminder"
+                  title="Add to Calendar"
                 >
-                  <Bell className="w-4 h-4" />
-                  <span className="hidden sm:inline">Calendar</span>
+                  <Calendar className="w-4 h-4" />
+                  <span className="hidden sm:inline">Add to Calendar</span>
                 </button>
                 
                 <button
