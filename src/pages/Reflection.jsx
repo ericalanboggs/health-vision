@@ -149,8 +149,8 @@ export default function Reflection() {
               onClick={() => navigate('/dashboard')}
               className="flex items-center gap-2 text-stone-600 hover:text-stone-900 font-medium transition-colors"
             >
-              <ArrowLeft className="w-5 h-5" />
-              Back to Dashboard
+              <ArrowLeft className="w-5 h-5 flex-shrink-0" />
+              <span className="hidden sm:inline">Back to Dashboard</span>
             </button>
           </div>
         </div>
