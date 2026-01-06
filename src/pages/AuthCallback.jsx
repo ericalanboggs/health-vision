@@ -31,53 +31,36 @@ export default function AuthCallback() {
         const queryParams = new URLSearchParams(currentSearch)
         const code = queryParams.get('code')
         
-        let session = null
-        
         if (code) {
-          console.log('PKCE code found, exchanging for session...')
-          // Exchange the code for a session
-          const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+          console.log('PKCE code found, letting Supabase handle exchange automatically...')
+        }
+        
+        // Give Supabase time to automatically process the URL
+        // detectSessionInUrl will handle PKCE code exchange automatically
+        await new Promise(resolve => setTimeout(resolve, 2000))
+
+        // Retry session check multiple times with increasing delays
+        let session = null
+        const delays = [0, 1500, 2000, 2500, 3000] // 5 attempts with progressive delays
+        
+        for (let i = 0; i < delays.length; i++) {
+          if (delays[i] > 0) {
+            await new Promise(resolve => setTimeout(resolve, delays[i]))
+          }
+          
+          const { data, error } = await supabase.auth.getSession()
           
           if (error) {
-            console.error('Error exchanging code for session:', error)
-            trackEvent('auth_callback_failed', { error: error.message })
-            setStatus('error')
-            return
+            console.error(`Session check attempt ${i + 1} error:`, error)
           }
           
           if (data?.session) {
             session = data.session
-            console.log('Session obtained from code exchange')
+            console.log(`Session found on attempt ${i + 1}`)
+            break
           }
-        } else {
-          // No code - try automatic session detection with retries
-          console.log('No PKCE code, trying automatic session detection...')
           
-          // Give Supabase extra time to automatically process the URL
-          await new Promise(resolve => setTimeout(resolve, 3000))
-
-          // Retry session check multiple times with increasing delays
-          const delays = [0, 1500, 2000, 2500] // Progressive delays for 4 attempts
-          
-          for (let i = 0; i < delays.length; i++) {
-            if (delays[i] > 0) {
-              await new Promise(resolve => setTimeout(resolve, delays[i]))
-            }
-            
-            const { data, error } = await supabase.auth.getSession()
-            
-            if (error) {
-              console.error(`Session check attempt ${i + 1} error:`, error)
-            }
-            
-            if (data?.session) {
-              session = data.session
-              console.log(`Session found on attempt ${i + 1}`)
-              break
-            }
-            
-            console.log(`Session check attempt ${i + 1}: No session yet`)
-          }
+          console.log(`Session check attempt ${i + 1}: No session yet`)
         }
         
         if (session) {
