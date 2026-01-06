@@ -367,6 +367,8 @@ serve(async (req) => {
       } catch (error) {
         console.error(`✗ Failed to send reminder to user ${userId}:`, error)
         
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        
         // Log failed reminder
         await supabase.from('sms_reminders').insert({
           user_id: userId,
@@ -375,10 +377,10 @@ serve(async (req) => {
           message,
           scheduled_for: now.toISOString(),
           status: 'failed',
-          error_message: error.message,
+          error_message: errorMessage,
         })
 
-        results.push({ userId, status: 'failed', error: error.message })
+        results.push({ userId, status: 'failed', error: errorMessage })
       }
     }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Beaker, Save, Loader2, Edit2, CheckCircle, Trash2, Plus } from 'lucide-react'
+import { ArrowLeft, Beaker, Save, Loader2, Edit2, CheckCircle, Trash2, Plus, Bell, Copy, Check } from 'lucide-react'
 import { getCurrentWeekHabits, deleteHabitsForWeek, saveHabitsForWeek } from '../services/habitService'
 import { getCurrentWeekNumber, getCurrentWeekDateRange } from '../utils/weekCalculator'
 import { formatDaysDisplay, convertShortToFullDays } from '../utils/formatDays'
@@ -18,6 +18,7 @@ export default function Habits() {
   const [timePreferences, setTimePreferences] = useState({})
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, habitIndex: null, habitName: '' })
   const [userTimezone, setUserTimezone] = useState('America/Chicago')
+  const [copied, setCopied] = useState(false)
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const dayMap = {
@@ -244,6 +245,131 @@ export default function Habits() {
     }
   }
 
+  const handleCopyToClipboard = async () => {
+    const groupedHabits = getGroupedHabits()
+    
+    let clipboardText = 'MY HABIT COMMITMENTS\n'
+    clipboardText += '===================\n\n'
+    
+    groupedHabits.forEach(([habitName, habitList], index) => {
+      clipboardText += `${index + 1}. ${habitName}\n`
+      
+      const committedDays = dayCommitments[index] || []
+      if (committedDays.length > 0) {
+        clipboardText += `   Days: ${committedDays.join(', ')}\n`
+      }
+      
+      const timeSlot = timePreferences[index] || 'mid-morning'
+      const timeOption = timeOfDayOptions.find(opt => opt.value === timeSlot)
+      if (timeOption) {
+        clipboardText += `   Time: ${timeOption.label}\n`
+      }
+      
+      clipboardText += '\n'
+    })
+    
+    try {
+      await navigator.clipboard.writeText(clipboardText)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+      alert('Failed to copy to clipboard')
+    }
+  }
+
+  const handleReminder = () => {
+    const now = new Date()
+    const formatICSDate = (date) => {
+      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+    }
+
+    const dayNameToNumber = {
+      'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6
+    }
+
+    const getNextDayOccurrence = (dayName, startFromDate = new Date()) => {
+      const targetDay = dayNameToNumber[dayName]
+      const date = new Date(startFromDate)
+      const currentDay = date.getDay()
+      let daysUntilTarget = targetDay - currentDay
+      
+      if (daysUntilTarget <= 0) {
+        daysUntilTarget += 7
+      }
+      
+      date.setDate(date.getDate() + daysUntilTarget)
+      return date
+    }
+
+    const groupedHabits = getGroupedHabits()
+    const events = []
+    
+    groupedHabits.forEach(([habitName, habitList], index) => {
+      const committedDays = dayCommitments[index] || []
+      const timePreference = timePreferences[index] || 'mid-morning'
+      const timeOption = timeOfDayOptions.find(opt => opt.value === timePreference)
+      const eventHour = timeOption ? timeOption.hour : 9
+      
+      if (committedDays.length > 0) {
+        committedDays.forEach(day => {
+          const eventDate = getNextDayOccurrence(day, now)
+          eventDate.setHours(eventHour, 0, 0, 0)
+          
+          const startDate = formatICSDate(eventDate)
+          const endDate = formatICSDate(new Date(eventDate.getTime() + 20 * 60 * 1000))
+          
+          events.push({
+            uid: `${Date.now()}-${index}-${day}@healthvision.app`,
+            startDate,
+            endDate,
+            summary: habitName,
+            description: habitName.replace(/\n/g, '\\n')
+          })
+        })
+      }
+    })
+
+    let icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Health Summit//Reminder//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+`
+
+    events.forEach(event => {
+      icsContent += `BEGIN:VEVENT
+UID:${event.uid}
+DTSTAMP:${formatICSDate(now)}
+DTSTART:${event.startDate}
+DTEND:${event.endDate}
+SUMMARY:${event.summary}
+DESCRIPTION:${event.description}
+LOCATION:Health Summit App
+STATUS:CONFIRMED
+SEQUENCE:0
+BEGIN:VALARM
+TRIGGER:-PT15M
+DESCRIPTION:Habit Reminder
+ACTION:DISPLAY
+END:VALARM
+END:VEVENT
+`
+    })
+
+    icsContent += `END:VCALENDAR`
+
+    const blob = new Blob([icsContent.trim()], { type: 'text/calendar;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `health-summit-habits.ics`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   // Group habits by name for display
   const getGroupedHabits = () => {
     const groups = {}
@@ -308,12 +434,43 @@ export default function Habits() {
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-green-100 rounded-xl">
-                <Beaker className="w-6 h-6 text-green-600" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-green-100 rounded-xl">
+                  <Beaker className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-stone-900">Habit Experiments</h2>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-stone-900">Habit Experiments</h2>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleReminder}
+                  className="flex items-center gap-2 bg-white hover:bg-stone-50 text-green-600 font-semibold px-4 py-2 rounded-lg border-2 border-green-600 shadow-sm hover:shadow transition-all"
+                  title="Create Calendar Reminder"
+                >
+                  <Bell className="w-4 h-4" />
+                  <span className="hidden sm:inline">Calendar</span>
+                </button>
+                
+                <button
+                  onClick={handleCopyToClipboard}
+                  className="flex items-center gap-2 bg-white hover:bg-stone-50 text-green-600 font-semibold px-4 py-2 rounded-lg border-2 border-green-600 shadow-sm hover:shadow transition-all"
+                  title="Copy to Clipboard"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span className="hidden sm:inline">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      <span className="hidden sm:inline">Copy</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 
