@@ -72,10 +72,11 @@ export default function AuthCallback() {
           // Check if user has a profile (new vs returning user)
           const { data: profile } = await getProfile(session.user.id)
           
-          // Route based on whether user has completed onboarding
-          let redirectPath = '/start' // Default to onboarding for new users
+          // Route based on profile completion status
+          let redirectPath = '/profile-setup' // Default to profile setup for new users
+          
           if (profile && profile.first_name) {
-            // User has completed profile setup, go to dashboard
+            // User has completed profile setup, send to dashboard
             redirectPath = '/dashboard'
           }
           
