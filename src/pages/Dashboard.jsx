@@ -14,6 +14,7 @@ import {
 import { formatDaysDisplay } from '../utils/formatDays'
 import { Calendar, Beaker, Clock, ArrowRight, Mountain, CheckCircle, ExternalLink } from 'lucide-react'
 import TopNav from '../components/TopNav'
+import WelcomeModal from '../components/WelcomeModal'
 import coachEric from '../assets/coach-eric.jpeg'
 
 export default function Dashboard() {
@@ -25,6 +26,7 @@ export default function Dashboard() {
   const [weekNumber, setWeekNumber] = useState(1)
   const [weekDateRange, setWeekDateRange] = useState('')
   const [pilotTimelineText, setPilotTimelineText] = useState('')
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false)
   const [visionData, setVisionData] = useState({
     visionStatement: '',
     feelingState: '',
@@ -138,12 +140,23 @@ export default function Dashboard() {
       }
       
       setPilotTimelineText(formatPilotTimeline())
+      
+      // Check if this is the user's first time on dashboard
+      const hasSeenWelcome = localStorage.getItem('hasSeenWelcome')
+      if (!hasSeenWelcome) {
+        setShowWelcomeModal(true)
+      }
+      
       setLoading(false)
     }
 
     loadDashboardData()
   }, [])
 
+  const handleCloseWelcomeModal = () => {
+    setShowWelcomeModal(false)
+    localStorage.setItem('hasSeenWelcome', 'true')
+  }
 
   // Format habits into readable format with separate habit and schedule
   const formatHabits = () => {
@@ -208,6 +221,9 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50">
       <TopNav />
+      
+      {/* Welcome Modal */}
+      <WelcomeModal isOpen={showWelcomeModal} onClose={handleCloseWelcomeModal} />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
