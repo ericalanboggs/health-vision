@@ -149,20 +149,20 @@ export default function Dashboard() {
   const formatHabits = () => {
     if (currentHabits.length === 0) return []
 
-    // Time slot mapping (hour -> label)
+    // Time slot mapping (hour -> simplified label)
     const timeSlotMap = {
-      6: 'Early Morning (6-8am)',
-      7: 'Early Morning (6-8am)',
-      8: 'Mid-Morning (8-10am)',
-      9: 'Mid-Morning (8-10am)',
-      12: 'Lunch Time (12-1pm)',
-      13: 'Early Afternoon (1-3pm)',
-      14: 'Early Afternoon (1-3pm)',
-      15: 'Afternoon (3-5pm)',
-      16: 'Afternoon (3-5pm)',
-      17: 'After Work (5-7pm)',
-      18: 'After Work (5-7pm)',
-      21: 'Before Bedtime (9-10pm)'
+      6: 'early morning',
+      7: 'early morning',
+      8: 'mid-morning',
+      9: 'mid-morning',
+      12: 'lunch time',
+      13: 'early afternoon',
+      14: 'early afternoon',
+      15: 'afternoon',
+      16: 'afternoon',
+      17: 'after work',
+      18: 'after work',
+      21: 'before bedtime'
     }
 
     // Group habits by habit_name
@@ -176,7 +176,7 @@ export default function Dashboard() {
 
     // Format each habit group
     return Object.entries(habitGroups).map(([habitName, habits]) => {
-      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+      const dayNames = ['Sun', 'Mon', 'Tues', 'Weds', 'Thurs', 'Fri', 'Sat']
       const days = habits.map(h => dayNames[h.day_of_week])
       
       // Get time label from mapping
@@ -185,12 +185,12 @@ export default function Dashboard() {
       const hour = parseInt(hours)
       const timeLabel = timeSlotMap[hour] || `${hour}:00`
       
-      // Use utility function to format days
-      const daysStr = formatDaysDisplay(days)
+      // Format days as comma-separated list
+      const daysStr = days.join(', ')
       
       return {
         habit: habitName,
-        schedule: `${daysStr} between ${timeLabel}.`
+        schedule: `${daysStr} ${timeLabel}.`
       }
     })
   }
