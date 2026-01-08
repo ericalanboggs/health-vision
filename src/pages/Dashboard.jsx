@@ -12,7 +12,7 @@ import {
   getWeekEndDate,
 } from '../utils/weekCalculator'
 import { formatDaysDisplay } from '../utils/formatDays'
-import { Calendar, Beaker, Clock, ArrowRight, Mountain, CheckCircle, ExternalLink } from 'lucide-react'
+import { Calendar, Beaker, Clock, ArrowRight, Mountain, CheckCircle, ExternalLink, HelpCircle } from 'lucide-react'
 import TopNav from '../components/TopNav'
 import WelcomeModal from '../components/WelcomeModal'
 import coachEric from '../assets/coach-eric.jpeg'
@@ -406,9 +406,19 @@ export default function Dashboard() {
             
             {/* Content */}
             <div className="flex-1">
-              <h2 className="text-2xl font-bold text-stone-800 mb-1">
-                Coaching
-              </h2>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-2xl font-bold text-stone-800">
+                  Coaching
+                </h2>
+                <div className="relative group/tooltip">
+                  <HelpCircle className="w-5 h-5 text-stone-400 hover:text-stone-600 cursor-help transition" />
+                  <div className="absolute left-0 top-8 w-80 bg-stone-800 text-white p-4 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-10">
+                    <p className="font-semibold mb-2">What coaching means in Summit</p>
+                    <p className="text-sm leading-relaxed">This isn't someone telling you how to live your life. Coaching is about being heard, thinking things through together, and recognizing that you already have the answers—you just may need space and support to uncover them.</p>
+                    <div className="absolute -top-2 left-4 w-4 h-4 bg-stone-800 transform rotate-45"></div>
+                  </div>
+                </div>
+              </div>
               <p className="text-stone-600 font-medium mb-3">
                 Optional 30 minute session
               </p>
