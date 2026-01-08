@@ -35,26 +35,13 @@ interface VisionData {
 }
 
 /**
- * Convert UTC time to user's local time and format as 12-hour with AM/PM
+ * Convert 24-hour time to 12-hour format with AM/PM
  */
 function formatTime12Hour(time24: string, userTimezone: string = 'America/Chicago'): string {
   const [hours, minutes] = time24.split(':').map(Number)
-  
-  // Create a date object with the time in the user's timezone
-  const now = new Date()
-  now.setHours(hours, minutes, 0, 0)
-  
-  // Format in user's timezone
-  const options: Intl.DateTimeFormatOptions = {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-    timeZone: userTimezone
-  }
-  
-  return new Intl.DateTimeFormat('en-US', options).format(now)
-    .replace(' ', '')
-    .toLowerCase()
+  const period = hours >= 12 ? 'pm' : 'am'
+  const hours12 = hours % 12 || 12
+  return `${hours12}${minutes > 0 ? ':' + minutes.toString().padStart(2, '0') : ''}${period}`
 }
 
 /**
@@ -278,8 +265,8 @@ serve(async (req) => {
 
       console.log(`Habit ${habit.id}: time=${habitTime}, userTZ=${userTimezone}, currentLocal=${currentHourLocal}:${currentMinuteLocal}, minutesUntil=${minutesUntilHabit}`)
 
-      // Send reminder 30-60 minutes before habit time
-      return minutesUntilHabit >= 30 && minutesUntilHabit <= 60
+      // Send reminder 15-60 minutes before habit time
+      return minutesUntilHabit >= 15 && minutesUntilHabit <= 60
     })
 
     console.log(`${habitsToRemind.length} habits need reminders now`)
