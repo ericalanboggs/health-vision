@@ -530,14 +530,14 @@ const VisionDisplay = ({ formData: initialFormData }) => {
                 <div>
                   <label className="block text-sm font-semibold text-stone-700 mb-2">🔧 Skills/Habits to Navigate Terrain</label>
                   <div className="flex flex-wrap gap-2">
-                    {['Sleep', 'Nutrition', 'Movement', 'Stress Management', 'Hydration', 'Consistency'].map((habit) => (
+                    {['Movement/Exercise', 'Nutrition', 'Sleep', 'Stress Management', 'Alcohol/Substance Moderation', 'Planning/Organization', 'Tech Boundaries', 'Social Connection'].map((habit) => (
                       <button
                         key={habit}
                         onClick={() => toggleArrayItem('habitsToImprove', habit)}
                         className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
                           (formData.habitsToImprove || []).includes(habit)
-                            ? 'bg-stone-100 text-stone-700'
-                            : 'bg-stone-50 text-stone-500 hover:bg-stone-100'
+                            ? 'bg-green-100 text-green-900'
+                            : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                         }`}
                       >
                         {habit}
