@@ -382,25 +382,26 @@ serve(async (req) => {
         continue
       }
 
-      // Check if we already sent a reminder for this user today
+      // Check if we already sent a reminder for this user recently
       const isTestUser = userId === 'a4286912-80dc-4b17-b04b-33ce776c1026'
       
-      if (!isTestUser) {
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
-        const { data: existingReminder } = await supabase
-          .from('sms_reminders')
-          .select('id')
-          .eq('user_id', userId)
-          .gte('sent_at', todayStart)
-          .limit(1)
-          .maybeSingle()
+      // For test users, check last hour to allow multiple tests per day but prevent spam
+      // For regular users, check entire day
+      const checkSince = isTestUser 
+        ? new Date(now.getTime() - 60 * 60 * 1000).toISOString() // Last hour
+        : new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString() // Today
+      
+      const { data: existingReminder } = await supabase
+        .from('sms_reminders')
+        .select('id')
+        .eq('user_id', userId)
+        .gte('sent_at', checkSince)
+        .limit(1)
+        .maybeSingle()
 
-        if (existingReminder) {
-          console.log(`Already sent reminder for user ${userId} today`)
-          continue
-        }
-      } else {
-        console.log(`Test user detected - skipping duplicate check`)
+      if (existingReminder) {
+        console.log(`Already sent reminder for user ${userId} ${isTestUser ? 'in last hour' : 'today'}`)
+        continue
       }
 
       const visionData = visionMap.get(userId) || {}
