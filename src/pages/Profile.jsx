@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { User, Phone, Mail, CheckCircle, Loader2, ArrowLeft } from 'lucide-react'
 import { getCurrentUser, getProfile, upsertProfile } from '../services/authService'
 import TopNav from '../components/TopNav'
+import { formatPhoneToE164, isValidUSPhoneNumber } from '../utils/phoneFormatter'
 
 export default function Profile() {
   const navigate = useNavigate()
@@ -82,11 +83,8 @@ export default function Profile() {
 
     if (!formData.phone.trim()) {
       newErrors.phone = 'Mobile phone is required'
-    } else {
-      const phoneRegex = /^[\d\s\-\(\)]+$/
-      if (!phoneRegex.test(formData.phone)) {
-        newErrors.phone = 'Please enter a valid phone number'
-      }
+    } else if (!isValidUSPhoneNumber(formData.phone)) {
+      newErrors.phone = 'Please enter a valid 10-digit US phone number'
     }
 
     setErrors(newErrors)
@@ -109,10 +107,12 @@ export default function Profile() {
     setSaving(true)
 
     try {
+      // Save profile to database with formatted phone number
+      const formattedPhone = formatPhoneToE164(formData.phone.trim())
       const result = await upsertProfile(user.id, {
         first_name: formData.firstName.trim(),
         last_name: formData.lastName.trim(),
-        phone: formData.phone.trim(),
+        phone: formattedPhone,
         sms_opt_in: formData.smsConsent,
         pilot_reason: formData.pilotReason.trim(),
         profile_completed: true,

@@ -35,6 +35,35 @@ interface VisionData {
 }
 
 /**
+ * Format phone number to E.164 format for Twilio
+ * Assumes US numbers if no country code is present
+ */
+function formatPhoneNumber(phone: string): string {
+  if (!phone) return ''
+  
+  // Remove all non-digit characters
+  const digits = phone.replace(/\D/g, '')
+  
+  // If already has country code (11 digits starting with 1), add +
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return `+${digits}`
+  }
+  
+  // If 10 digits, assume US and add +1
+  if (digits.length === 10) {
+    return `+1${digits}`
+  }
+  
+  // If already starts with +, return as is
+  if (phone.startsWith('+')) {
+    return phone
+  }
+  
+  // Default: add +1 prefix for US numbers
+  return `+1${digits}`
+}
+
+/**
  * Convert 24-hour time to 12-hour format with AM/PM
  */
 function formatTime12Hour(time24: string, userTimezone: string = 'America/Chicago'): string {
@@ -184,26 +213,6 @@ serve(async (req) => {
     console.log(`Running reminder check at ${now.toISOString()}`)
     console.log(`Day: ${currentDayOfWeek}`)
 
-    // Check pilot date range
-    const pilotStartDate = new Date(PILOT_START_DATE)
-    const pilotEndDate = new Date(pilotStartDate)
-    pilotEndDate.setDate(pilotEndDate.getDate() + 21)
-    
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    
-    if (today < pilotStartDate || today > pilotEndDate) {
-      console.log(`Outside pilot date range`)
-      return new Response(
-        JSON.stringify({ 
-          message: 'Outside pilot date range - no reminders sent',
-          pilotStartDate: pilotStartDate.toISOString(),
-          pilotEndDate: pilotEndDate.toISOString(),
-          currentDate: today.toISOString()
-        }),
-        { headers: { 'Content-Type': 'application/json' } }
-      )
-    }
-
     // Query ALL habits scheduled for today
     const { data: habits, error: habitsError } = await supabase
       .from('weekly_habits')
@@ -222,6 +231,36 @@ serve(async (req) => {
         JSON.stringify({ message: 'No habits scheduled for today', count: 0 }),
         { headers: { 'Content-Type': 'application/json' } }
       )
+    }
+
+    // Check pilot date range (but allow test user to bypass)
+    const pilotStartDate = new Date(PILOT_START_DATE)
+    const pilotEndDate = new Date(pilotStartDate)
+    pilotEndDate.setDate(pilotEndDate.getDate() + 21)
+    
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const TEST_USER_ID = 'a4286912-80dc-4b17-b04b-33ce776c1026'
+    
+    if (today < pilotStartDate || today > pilotEndDate) {
+      // Filter out non-test users if outside pilot range
+      const testUserHabits = habits.filter((h: Habit) => h.user_id === TEST_USER_ID)
+      
+      if (testUserHabits.length === 0) {
+        console.log(`Outside pilot date range and no test user habits`)
+        return new Response(
+          JSON.stringify({ 
+            message: 'Outside pilot date range - no reminders sent',
+            pilotStartDate: pilotStartDate.toISOString(),
+            pilotEndDate: pilotEndDate.toISOString(),
+            currentDate: today.toISOString()
+          }),
+          { headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      console.log(`Outside pilot range but allowing ${testUserHabits.length} test user habits`)
+      // Continue with only test user habits
+      habits.splice(0, habits.length, ...testUserHabits)
     }
 
     // Get user profiles to access timezones
@@ -376,7 +415,9 @@ serve(async (req) => {
       )
 
       // Send ONE SMS per user
-      const smsResult = await sendSMS(profile.phone, message)
+      const formattedPhone = formatPhoneNumber(profile.phone || '')
+      console.log(`Sending SMS to ${formattedPhone} (original: ${profile.phone})`)
+      const smsResult = await sendSMS(formattedPhone, message)
 
       if (smsResult.success) {
         // Log successful reminder for ALL habits (consolidated)
@@ -384,7 +425,7 @@ serve(async (req) => {
           await supabase.from('sms_reminders').insert({
             user_id: userId,
             habit_id: habit.id,
-            phone: profile.phone,
+            phone: formattedPhone,
             message,
             scheduled_for: new Date(now.setHours(
               parseInt((habit.time_of_day || habit.reminder_time || '00:00').split(':')[0]), 
@@ -399,17 +440,17 @@ serve(async (req) => {
           userId, 
           habitCount: userHabits.length,
           status: 'sent', 
-          phone: profile.phone,
+          phone: formattedPhone,
           message 
         })
-        console.log(`✓ Sent consolidated reminder to ${profile.phone} for ${userHabits.length} habits`)
+        console.log(`✓ Sent consolidated reminder to ${formattedPhone} for ${userHabits.length} habits`)
       } else {
         // Log failed reminder for ALL habits
         for (const habit of userHabits) {
           await supabase.from('sms_reminders').insert({
             user_id: userId,
             habit_id: habit.id,
-            phone: profile.phone,
+            phone: formattedPhone,
             message,
             scheduled_for: new Date(now.setHours(
               parseInt((habit.time_of_day || habit.reminder_time || '00:00').split(':')[0]), 
