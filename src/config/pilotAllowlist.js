@@ -9,7 +9,7 @@ const PILOT_ALLOWLIST = [
   'gabiaron@gmail.com',
   'vamsi.namburi@gmail.com',
   'jen.m.cutler@gmail.com',
-  'TimGAnnis@gmail.com',
+  'timgannis@gmail.com',
   'mkatemcnamara@gmail.com',
   'kevin.gentry@gmail.com',
   'julie.sandschafer@gmail.com',
