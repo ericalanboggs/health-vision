@@ -41,7 +41,7 @@ export default function AuthCallback() {
 
         // Retry session check multiple times with increasing delays
         let session = null
-        const delays = [0, 1500, 2000, 2500, 3000] // 5 attempts with progressive delays
+        const delays = [0, 1500, 2000, 2500, 3000, 3500, 4000] // 7 attempts with progressive delays (up to 16.5s total)
         
         for (let i = 0; i < delays.length; i++) {
           if (delays[i] > 0) {
@@ -52,15 +52,26 @@ export default function AuthCallback() {
           
           if (error) {
             console.error(`Session check attempt ${i + 1} error:`, error)
+            trackEvent('auth_callback_session_error', { 
+              attempt: i + 1, 
+              error: error.message 
+            })
           }
           
           if (data?.session) {
             session = data.session
-            console.log(`Session found on attempt ${i + 1}`)
+            console.log(`Session found on attempt ${i + 1}`, {
+              userId: session.user.id,
+              email: session.user.email
+            })
+            trackEvent('auth_callback_session_found', { 
+              attempt: i + 1,
+              totalWaitTime: delays.slice(0, i + 1).reduce((a, b) => a + b, 0) + 2000
+            })
             break
           }
           
-          console.log(`Session check attempt ${i + 1}: No session yet`)
+          console.log(`Session check attempt ${i + 1}: No session yet, waiting...`)
         }
         
         if (session) {
@@ -91,7 +102,17 @@ export default function AuthCallback() {
           }, 1500)
         } else {
           console.error('No session found after all retry attempts')
-          trackEvent('auth_callback_failed', { error: 'No session found after retries' })
+          console.error('Debug info:', {
+            hasCode: !!code,
+            currentUrl,
+            userAgent: navigator.userAgent
+          })
+          trackEvent('auth_callback_failed', { 
+            error: 'No session found after retries',
+            hasCode: !!code,
+            attempts: delays.length,
+            userAgent: navigator.userAgent
+          })
           setStatus('error')
         }
       } catch (error) {
@@ -150,13 +171,18 @@ export default function AuthCallback() {
               Authentication Failed
             </h1>
             <p className="text-stone-600 mb-6">
-              We couldn't verify your magic link. It may have expired or already been used.
+              We couldn't verify your magic link. This can happen if:
+              <br />• The link expired (links are valid for 60 seconds)
+              <br />• The link was already used
+              <br />• Your connection was slow
+              <br /><br />
+              Try requesting a new link and clicking it immediately.
             </p>
             <button
               onClick={() => navigate('/login')}
               className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition"
             >
-              Try Again
+              Request New Link
             </button>
           </>
         )}
