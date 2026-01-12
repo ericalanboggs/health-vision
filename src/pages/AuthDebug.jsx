@@ -32,7 +32,7 @@ export default function AuthDebug() {
         const { error } = await supabase.auth.signInWithOtp({
           email,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: `${window.location.origin}/`,
           },
         })
         diagnostics.magicLinkTest = error ? `Error: ${error.message}` : 'Success'
