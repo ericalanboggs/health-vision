@@ -1,3 +1,4 @@
+// All emails stored in lowercase for case-insensitive matching
 const PILOT_ALLOWLIST = [
   'eric.alan.boggs@gmail.com',
   'jsears023@gmail.com',
