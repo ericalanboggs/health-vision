@@ -18,37 +18,43 @@ export default function Home() {
       }
 
       const hash = window.location.hash
-      const hasToken = hash.includes('access_token')
+      const search = window.location.search
+      const hasHashToken = hash.includes('access_token')
+      const hasCodeParam = search.includes('code=')
+      const hasAuthToken = hasHashToken || hasCodeParam
       
-      if (hasToken) {
+      if (hasAuthToken) {
         // Magic link callback - process authentication
-        console.log('Home: Magic link detected in URL hash')
+        console.log('Home: Auth token detected', { hasHashToken, hasCodeParam })
         setDebugInfo('Processing magic link...')
         
-        // Give Supabase more time to process the hash, especially on mobile
+        // Give Supabase more time to process the token, especially on mobile
         // Supabase's detectSessionInUrl should automatically handle this
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        console.log('Home: Finished waiting for Supabase to process hash')
+        await new Promise(resolve => setTimeout(resolve, 3000))
+        console.log('Home: Finished waiting for Supabase to process token')
         
-        // Retry session check up to 3 times with delays (for slow mobile connections)
+        // Retry session check up to 5 times with progressive delays (for slow mobile connections)
         let session = null
-        for (let i = 0; i < 3; i++) {
+        const delays = [0, 1500, 2000, 2500, 3000]
+        for (let i = 0; i < delays.length; i++) {
+          if (delays[i] > 0) {
+            await new Promise(resolve => setTimeout(resolve, delays[i]))
+          }
+          
           const { data, error } = await supabase.auth.getSession()
           
           if (error) {
-            console.error('Error getting session:', error)
+            console.error(`Session check attempt ${i + 1} error:`, error)
             setDebugInfo(`Authentication error: ${error.message}`)
           }
           
           if (data.session) {
             session = data.session
+            console.log(`Session found on attempt ${i + 1}`)
             break
           }
           
-          // Wait before retrying
-          if (i < 2) {
-            await new Promise(resolve => setTimeout(resolve, 1000))
-          }
+          console.log(`Session check attempt ${i + 1}: No session yet, waiting...`)
         }
         
         if (session) {
