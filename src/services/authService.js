@@ -248,6 +248,19 @@ export const signInWithGoogle = async () => {
       return { success: false, error }
     }
 
+    // Check if Google user email is on allowlist
+    if (data?.user?.email) {
+      const hasAccess = isPilotApproved(data.user.email)
+      if (!hasAccess) {
+        // Sign out user if not on allowlist
+        await supabase.auth.signOut()
+        return { 
+          success: false, 
+          error: { message: 'Email not approved for pilot program. Please contact eric.alan.boggs@gmail.com for access.' }
+        }
+      }
+    }
+
     trackEvent('google_sign_in_success')
     return { success: true, data }
   } catch (error) {

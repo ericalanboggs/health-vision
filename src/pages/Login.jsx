@@ -133,7 +133,7 @@ export default function Login() {
             {loading ? (
               <>
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Sending magic link...
+                Loading...
               </>
             ) : (
               <>
@@ -143,6 +143,12 @@ export default function Login() {
             )}
           </button>
         </form>
+
+        <div className="mt-4">
+          <p className="text-xs text-stone-500 text-center">
+            No password needed. We'll send you a secure link to sign in.
+          </p>
+        </div>
 
         <div className="mt-6">
           <div className="relative">
@@ -167,12 +173,6 @@ export default function Login() {
             </svg>
             Continue with Google
           </button>
-        </div>
-
-        <div className="mt-6 pt-6 border-t border-stone-200">
-          <p className="text-xs text-stone-500 text-center">
-            No password needed. We'll send you a secure link to sign in.
-          </p>
         </div>
       </div>
     </div>
