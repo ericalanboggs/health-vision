@@ -223,6 +223,41 @@ export const getProfile = async (userId) => {
 }
 
 /**
+ * Sign in with Google OAuth
+ * @returns {Promise<{success: boolean, data?: any, error?: any}>}
+ */
+export const signInWithGoogle = async () => {
+  try {
+    if (!supabase) {
+      const error = new Error('Supabase is not configured')
+      console.error('Error signing in with Google:', error)
+      trackEvent('google_sign_in_failed', { error: error.message })
+      return { success: false, error }
+    }
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    })
+
+    if (error) {
+      console.error('Error signing in with Google:', error)
+      trackEvent('google_sign_in_failed', { error: error.message })
+      return { success: false, error }
+    }
+
+    trackEvent('google_sign_in_success')
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error in signInWithGoogle:', error)
+    trackEvent('google_sign_in_failed', { error: error.message })
+    return { success: false, error }
+  }
+}
+
+/**
  * Update last login timestamp for user
  * @param {string} userId - User ID
  * @param {string} email - User email
