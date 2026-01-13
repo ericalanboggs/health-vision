@@ -25,17 +25,36 @@ export default function Home() {
       
       if (hasAuthToken) {
         // Magic link callback - process authentication
-        console.log('Home: Auth token detected', { hasHashToken, hasCodeParam })
+        console.log('Home: Auth token detected', { hasHashToken, hasCodeParam, hash, search })
         setDebugInfo('Processing magic link...')
         
-        // Give Supabase more time to process the token, especially on mobile
-        // Supabase's detectSessionInUrl should automatically handle this
-        await new Promise(resolve => setTimeout(resolve, 3000))
+        // If we have a PKCE code, explicitly exchange it for a session
+        if (hasCodeParam) {
+          console.log('Home: PKCE code detected, triggering explicit exchange')
+          // Supabase should auto-exchange, but let's give it time
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          
+          // Force a session refresh to trigger the exchange
+          try {
+            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+            if (refreshError) {
+              console.error('Home: Refresh session error:', refreshError)
+            } else {
+              console.log('Home: Session refresh result:', refreshData)
+            }
+          } catch (err) {
+            console.error('Home: Exception during refresh:', err)
+          }
+        } else {
+          // Hash token - give Supabase time to process
+          await new Promise(resolve => setTimeout(resolve, 3000))
+        }
+        
         console.log('Home: Finished waiting for Supabase to process token')
         
-        // Retry session check up to 5 times with progressive delays (for slow mobile connections)
+        // Retry session check up to 7 times with progressive delays (for slow mobile connections)
         let session = null
-        const delays = [0, 1500, 2000, 2500, 3000]
+        const delays = [0, 1000, 1500, 2000, 2500, 3000, 4000]
         for (let i = 0; i < delays.length; i++) {
           if (delays[i] > 0) {
             await new Promise(resolve => setTimeout(resolve, delays[i]))
@@ -50,7 +69,7 @@ export default function Home() {
           
           if (data.session) {
             session = data.session
-            console.log(`Session found on attempt ${i + 1}`)
+            console.log(`Session found on attempt ${i + 1}`, { userId: session.user.id, email: session.user.email })
             break
           }
           
