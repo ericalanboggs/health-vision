@@ -54,6 +54,7 @@ export class ContentRecommendationEngine {
   /**
    * Get real-time content from APIs based on user context
    * Uses improved YouTube API with quality filtering and fallbacks
+   * Always aims for 6 recommendations minimum
    */
   private async getRealTimeContent(context: UserContext, habitCategories: string[], goalSignals: string[]): Promise<ContentRecommendation[]> {
     const recommendations: ContentRecommendation[] = []
@@ -65,7 +66,7 @@ export class ContentRecommendationEngine {
     const primaryCategory = YouTubeAPI.getContentCategory(context)
     console.log('🎯 Primary content category:', primaryCategory)
 
-    // YouTube content for mindfulness/meditation habits (highest priority for this user's habits)
+    // YouTube content for mindfulness/meditation habits
     if (habitCategories.includes('mindfulness') || goalSignals.includes('stress_management')) {
       console.log('🧘 Fetching mindfulness videos...')
       try {
@@ -127,6 +128,21 @@ export class ContentRecommendationEngine {
       }
     }
 
+    // YouTube content for nutrition/healthy eating habits
+    if (habitCategories.includes('nutrition') || goalSignals.includes('health')) {
+      console.log('🥗 Fetching nutrition videos...')
+      try {
+        const nutritionVideos = await this.youtubeAPI.searchWorkoutVideos('healthy meal prep easy nutrition tips', 2)
+        console.log('📺 Nutrition videos found:', nutritionVideos.length)
+        recommendations.push(...this.transformVideosToRecommendations(
+          nutritionVideos,
+          'Supports your healthy eating goals with practical meal ideas.'
+        ))
+      } catch (error) {
+        console.error('❌ Error fetching nutrition videos:', error)
+      }
+    }
+
     // YouTube content for productivity/focus habits
     if (habitCategories.includes('productivity') || goalSignals.includes('focus')) {
       console.log('⚡ Fetching productivity videos...')
@@ -142,19 +158,32 @@ export class ContentRecommendationEngine {
       }
     }
 
-    // Add curated podcast content for mindfulness (real Spotify show)
-    if (habitCategories.includes('mindfulness') || goalSignals.includes('stress_management')) {
-      console.log('🎙️ Adding mindfulness podcast...')
-      recommendations.push({
-        type: 'podcast' as const,
-        title: 'Ten Percent Happier with Dan Harris',
-        url: 'https://open.spotify.com/show/1CfW319UkBMVhCXfei8huv',
-        brief_description: 'Practical meditation guidance from experts',
-        why_this_for_you: 'Supports your mindfulness practice with expert guidance.',
-        duration_minutes: 45,
-        source: 'Ten Percent Happier',
-        thumbnail_url: 'https://i.scdn.co/image/ab6765630000ba8a7a4e4b9b8b9b8b9b8b9b8b9b'
-      })
+    // YouTube content for sleep/recovery habits
+    if (habitCategories.includes('sleep')) {
+      console.log('😴 Fetching sleep videos...')
+      try {
+        const sleepVideos = await this.youtubeAPI.searchWorkoutVideos('better sleep tips sleep hygiene', 2)
+        console.log('📺 Sleep videos found:', sleepVideos.length)
+        recommendations.push(...this.transformVideosToRecommendations(
+          sleepVideos,
+          'Helps improve your sleep quality and recovery.'
+        ))
+      } catch (error) {
+        console.error('❌ Error fetching sleep videos:', error)
+      }
+    }
+
+    // Add curated podcast based on user's focus area
+    const podcastContent = this.getCuratedPodcast(habitCategories, goalSignals)
+    if (podcastContent) {
+      console.log('🎙️ Adding curated podcast...')
+      recommendations.push(podcastContent)
+    }
+
+    // Add complementary content to ensure variety (aim for 6 total)
+    if (recommendations.length < 5) {
+      console.log('📦 Adding complementary content to reach 6 recommendations...')
+      await this.addComplementaryContent(recommendations, habitCategories, goalSignals, context)
     }
 
     // Add motivational article content for all users
@@ -166,6 +195,152 @@ export class ContentRecommendationEngine {
     console.log('📊 Recommendation types:', recommendations.map(r => r.type))
 
     return recommendations
+  }
+
+  /**
+   * Get a curated podcast based on user's habit categories
+   */
+  private getCuratedPodcast(habitCategories: string[], goalSignals: string[]): ContentRecommendation | null {
+    // Mindfulness/stress focused
+    if (habitCategories.includes('mindfulness') || goalSignals.includes('stress_management')) {
+      return {
+        type: 'podcast' as const,
+        title: 'Ten Percent Happier with Dan Harris',
+        url: 'https://open.spotify.com/show/1CfW319UkBMVhCXfei8huv',
+        brief_description: 'Practical meditation guidance from experts',
+        why_this_for_you: 'Supports your mindfulness practice with expert guidance.',
+        duration_minutes: 45,
+        source: 'Ten Percent Happier',
+        thumbnail_url: 'https://i.scdn.co/image/ab6765630000ba8a7a4e4b9b8b9b8b9b8b9b8b9b'
+      }
+    }
+
+    // Fitness/health focused
+    if (habitCategories.includes('strengthTraining') || habitCategories.includes('nutrition') || goalSignals.includes('health') || goalSignals.includes('energy')) {
+      return {
+        type: 'podcast' as const,
+        title: 'Huberman Lab',
+        url: 'https://open.spotify.com/show/79CkJF3UJTHFV8Dse3Ez0P',
+        brief_description: 'Science-based tools for everyday life, health, and performance',
+        why_this_for_you: 'Science-backed insights to optimize your health and fitness goals.',
+        duration_minutes: 120,
+        source: 'Andrew Huberman',
+        thumbnail_url: 'https://i.scdn.co/image/ab6765630000ba8a7a4e4b9b8b9b8b9b8b9b8b9b'
+      }
+    }
+
+    // Productivity focused
+    if (habitCategories.includes('productivity') || goalSignals.includes('focus')) {
+      return {
+        type: 'podcast' as const,
+        title: 'Deep Questions with Cal Newport',
+        url: 'https://open.spotify.com/show/0e9lFr3AdJByoBpM6tAbxD',
+        brief_description: 'Building a focused life in a distracted world',
+        why_this_for_you: 'Strategies for deep work and focused productivity.',
+        duration_minutes: 60,
+        source: 'Cal Newport',
+        thumbnail_url: 'https://i.scdn.co/image/ab6765630000ba8a7a4e4b9b8b9b8b9b8b9b8b9b'
+      }
+    }
+
+    // Family/relationships focused
+    if (goalSignals.includes('family')) {
+      return {
+        type: 'podcast' as const,
+        title: 'Good Inside with Dr. Becky Kennedy',
+        url: 'https://open.spotify.com/show/69su0q4Xfwq3mQdFC0eMjA',
+        brief_description: 'Practical strategies for parenting and relationships',
+        why_this_for_you: 'Supports your goal of being present with your family.',
+        duration_minutes: 45,
+        source: 'Dr. Becky Kennedy',
+        thumbnail_url: 'https://i.scdn.co/image/ab6765630000ba8a7a4e4b9b8b9b8b9b8b9b8b9b'
+      }
+    }
+
+    // Default wellness podcast
+    return {
+      type: 'podcast' as const,
+      title: 'The Happiness Lab with Dr. Laurie Santos',
+      url: 'https://open.spotify.com/show/3i5TCKhc6GY42pOWkpWveG',
+      brief_description: 'Science-based insights on what actually makes us happy',
+      why_this_for_you: 'Research-backed strategies for well-being and fulfillment.',
+      duration_minutes: 40,
+      source: 'Dr. Laurie Santos',
+      thumbnail_url: 'https://i.scdn.co/image/ab6765630000ba8a7a4e4b9b8b9b8b9b8b9b8b9b'
+    }
+  }
+
+  /**
+   * Add complementary content to ensure variety and reach target count
+   */
+  private async addComplementaryContent(
+    recommendations: ContentRecommendation[],
+    habitCategories: string[],
+    goalSignals: string[],
+    context: UserContext
+  ): Promise<void> {
+    const existingTypes = new Set(recommendations.map(r => r.url))
+
+    // If user has fitness habits, add mindfulness as complement
+    if ((habitCategories.includes('strengthTraining') || habitCategories.includes('nutrition')) &&
+        !habitCategories.includes('mindfulness') && recommendations.length < 5) {
+      console.log('🧘 Adding complementary mindfulness content...')
+      try {
+        const mindfulnessVideos = await this.youtubeAPI.searchWorkoutVideos('5 minute meditation for energy recovery', 1)
+        const newRecs = this.transformVideosToRecommendations(
+          mindfulnessVideos,
+          'Recovery and mental clarity complement your physical training.'
+        ).filter(r => !existingTypes.has(r.url))
+        recommendations.push(...newRecs)
+      } catch (error) {
+        console.error('❌ Error fetching complementary mindfulness:', error)
+      }
+    }
+
+    // If user has mindfulness habits, add movement as complement
+    if (habitCategories.includes('mindfulness') && !habitCategories.includes('strengthTraining') && recommendations.length < 5) {
+      console.log('🏃 Adding complementary movement content...')
+      try {
+        const movementVideos = await this.youtubeAPI.searchWorkoutVideos('gentle yoga morning stretch routine', 1)
+        const newRecs = this.transformVideosToRecommendations(
+          movementVideos,
+          'Gentle movement complements your mindfulness practice.'
+        ).filter(r => !existingTypes.has(r.url))
+        recommendations.push(...newRecs)
+      } catch (error) {
+        console.error('❌ Error fetching complementary movement:', error)
+      }
+    }
+
+    // Add motivation/mindset content for everyone if still under target
+    if (recommendations.length < 5) {
+      console.log('💡 Adding motivation content...')
+      try {
+        const motivationVideos = await this.youtubeAPI.searchWorkoutVideos('building habits motivation science', 1)
+        const newRecs = this.transformVideosToRecommendations(
+          motivationVideos,
+          'Insights to keep you motivated on your journey.'
+        ).filter(r => !existingTypes.has(r.url))
+        recommendations.push(...newRecs)
+      } catch (error) {
+        console.error('❌ Error fetching motivation content:', error)
+      }
+    }
+
+    // Add family/presence content if it's in their vision
+    if (goalSignals.includes('family') && recommendations.length < 5) {
+      console.log('👨‍👩‍👧 Adding family wellness content...')
+      try {
+        const familyVideos = await this.youtubeAPI.searchWorkoutVideos('work life balance present parenting', 1)
+        const newRecs = this.transformVideosToRecommendations(
+          familyVideos,
+          'Supports your goal of being present with your family.'
+        ).filter(r => !existingTypes.has(r.url))
+        recommendations.push(...newRecs)
+      } catch (error) {
+        console.error('❌ Error fetching family content:', error)
+      }
+    }
   }
 
   /**
