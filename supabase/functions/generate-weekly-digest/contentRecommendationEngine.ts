@@ -173,23 +173,14 @@ export class ContentRecommendationEngine {
       }
     }
 
-    // Add curated podcast based on user's focus area
-    const podcastContent = this.getCuratedPodcast(habitCategories, goalSignals)
-    if (podcastContent) {
-      console.log('🎙️ Adding curated podcast...')
-      recommendations.push(podcastContent)
-    }
-
     // Add complementary content to ensure variety (aim for 6 total)
     if (recommendations.length < 5) {
       console.log('📦 Adding complementary content to reach 6 recommendations...')
       await this.addComplementaryContent(recommendations, habitCategories, goalSignals, context)
     }
 
-    // Add motivational article content for all users
-    console.log('💪 Adding motivational content...')
-    const motivationalContent = this.getMotivationalContent(context)
-    recommendations.push(motivationalContent)
+    // TODO: Re-enable podcasts and articles once links are verified
+    // Podcasts and articles temporarily disabled
 
     console.log('✅ Total recommendations generated:', recommendations.length)
     console.log('📊 Recommendation types:', recommendations.map(r => r.type))
