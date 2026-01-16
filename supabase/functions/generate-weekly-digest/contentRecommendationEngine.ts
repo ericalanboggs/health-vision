@@ -115,7 +115,8 @@ export class ContentRecommendationEngine {
     if (habitCategories.includes('strengthTraining') || goalSignals.includes('health')) {
       console.log('🏋️ Fetching fitness videos...')
       try {
-        const workoutQuery = YouTubeAPI.generatePersonalizedQuery(context)
+        const baseQuery = YouTubeAPI.generatePersonalizedQuery(context)
+        const workoutQuery = this.buildGenderAwareQuery(baseQuery, context)
         console.log('🔍 Workout query:', workoutQuery)
         const youtubeVideos = await this.youtubeAPI.searchWorkoutVideos(workoutQuery, 2)
         console.log('📺 Fitness videos found:', youtubeVideos.length)
@@ -132,7 +133,8 @@ export class ContentRecommendationEngine {
     if (habitCategories.includes('nutrition') || goalSignals.includes('health')) {
       console.log('🥗 Fetching nutrition videos...')
       try {
-        const nutritionVideos = await this.youtubeAPI.searchWorkoutVideos('healthy meal prep easy nutrition tips', 2)
+        const nutritionQuery = this.buildGenderAwareQuery('healthy meal prep batch cooking beginner', context)
+        const nutritionVideos = await this.youtubeAPI.searchWorkoutVideos(nutritionQuery, 2)
         console.log('📺 Nutrition videos found:', nutritionVideos.length)
         recommendations.push(...this.transformVideosToRecommendations(
           nutritionVideos,
@@ -332,6 +334,29 @@ export class ContentRecommendationEngine {
         console.error('❌ Error fetching family content:', error)
       }
     }
+  }
+
+  /**
+   * Build a gender-aware search query based on user's profile
+   * Uses sex field if available, otherwise returns gender-neutral query
+   */
+  private buildGenderAwareQuery(baseQuery: string, context: UserContext): string {
+    const sex = context.sex
+
+    if (!sex || sex === 'prefer_not_to_say') {
+      // Gender-neutral: avoid triggering gendered results
+      return baseQuery
+    }
+
+    if (sex === 'male') {
+      return `${baseQuery} for men`
+    }
+
+    if (sex === 'female') {
+      return `${baseQuery} for women`
+    }
+
+    return baseQuery
   }
 
   /**

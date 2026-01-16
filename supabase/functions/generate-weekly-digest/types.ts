@@ -1,5 +1,7 @@
 // Type definitions for Weekly Digest system
 
+export type Sex = 'male' | 'female' | 'prefer_not_to_say' | null
+
 export interface Profile {
   id: string
   first_name: string
@@ -7,6 +9,7 @@ export interface Profile {
   email: string
   timezone: string
   pilot_start_date: string
+  sex: Sex
 }
 
 export interface VisionData {
@@ -53,6 +56,7 @@ export interface UserContext {
   user_name: string
   email: string
   timezone: string
+  sex: Sex
   vision: VisionData | null
   habits: Habit[]
   reflection: Reflection | null

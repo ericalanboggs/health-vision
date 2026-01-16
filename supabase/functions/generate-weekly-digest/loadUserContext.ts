@@ -69,6 +69,7 @@ export async function loadUserContext(
     user_name: userName,
     email: profile.email,
     timezone: profile.timezone || 'America/Chicago',
+    sex: profile.sex || null,
     vision: visionData,
     habits: habits || [],
     reflection: reflection || null,
