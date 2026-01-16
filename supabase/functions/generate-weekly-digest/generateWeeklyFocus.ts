@@ -33,12 +33,12 @@ Return as JSON:
 {
   "theme": "Focus theme here",
   "patterns_to_reinforce": ["pattern1", "pattern2"],
-  "top_blockers": ["blocker1", "blocker2"], 
+  "top_blockers": ["blocker1", "blocker2"],
   "strategies": [
     {"blocker": "blocker1", "strategy": "strategy1"},
     {"blocker": "blocker2", "strategy": "strategy2"}
   ]
-}`
+}
 
 Keep it practical and actionable.`
 
