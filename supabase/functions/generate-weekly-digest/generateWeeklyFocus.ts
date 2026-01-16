@@ -72,7 +72,14 @@ Keep it practical and actionable.`
     }
 
     const data = await response.json()
-    const focus = JSON.parse(data.choices[0].message.content.trim())
+    let content = data.choices[0].message.content.trim()
+
+    // Strip markdown code fences if present (```json ... ```)
+    if (content.startsWith('```')) {
+      content = content.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
+    }
+
+    const focus = JSON.parse(content)
 
     console.log('Generated weekly focus:', focus)
     return focus
