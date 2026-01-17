@@ -126,8 +126,10 @@ export default function Reflection() {
 
   const isCurrentWeek = selectedWeek === currentWeek
   const isPastWeek = hasWeekPassed(selectedWeek)
-  const isComplete = reflection.went_well.trim() && 
-                   reflection.friction.trim() && 
+  const isFutureWeek = selectedWeek > currentWeek
+  const isEditable = !isFutureWeek // Past and current weeks are always editable
+  const isComplete = reflection.went_well.trim() &&
+                   reflection.friction.trim() &&
                    reflection.adjustment.trim()
   const hasExistingReflection = weekReflections[selectedWeek]
 
@@ -220,15 +222,17 @@ export default function Reflection() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-6 sm:p-8">
-          {/* Show form only for current week */}
-          {isCurrentWeek ? (
+          {/* Show form for current and past weeks (always editable) */}
+          {isEditable ? (
             <>
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-3 bg-amber-100 rounded-xl">
                   <Calendar className="w-6 h-6 text-amber-600" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-stone-900">This Week's Check-In</h2>
+                  <h2 className="text-2xl font-bold text-stone-900">
+                    {isPastWeek ? `Week ${selectedWeek} Check-In` : "This Week's Check-In"}
+                  </h2>
                   <p className="text-sm text-stone-600 mt-1">
                     Take a moment to reflect on your week. No judgment—just learning.
                   </p>
@@ -318,8 +322,8 @@ export default function Reflection() {
             </div>
           )}
 
-          {/* Save Button - Only show for current week */}
-          {isCurrentWeek && (
+          {/* Save Button - Show for editable weeks (current and past) */}
+          {isEditable && (
             <div className="mt-8 pt-6 border-t border-stone-200">
               {saved ? (
                 <div className="bg-green-50 border-2 border-green-500 rounded-lg p-4">
