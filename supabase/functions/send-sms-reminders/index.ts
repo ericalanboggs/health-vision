@@ -15,6 +15,7 @@ interface Habit {
   habit_name: string
   day_of_week: number
   time_of_day: string
+  reminder_time: string
   week_number: number
 }
 
@@ -197,12 +198,12 @@ serve(async (req) => {
       )
     }
 
-    // Filter out habits without time_of_day set
-    const habitsWithTime = habits.filter((h: Habit) => h.time_of_day)
-    
+    // Filter out habits without reminder_time set (use reminder_time, fallback to time_of_day)
+    const habitsWithTime = habits.filter((h: Habit) => h.reminder_time || h.time_of_day)
+
     if (habitsWithTime.length === 0) {
       return new Response(
-        JSON.stringify({ message: 'No habits with times set for today', count: 0 }),
+        JSON.stringify({ message: 'No habits with reminder times set for today', count: 0 }),
         { headers: { 'Content-Type': 'application/json' } }
       )
     }
@@ -293,38 +294,42 @@ serve(async (req) => {
         continue
       }
 
+      // Helper to get the effective reminder time (prefer reminder_time, fallback to time_of_day)
+      const getEffectiveTime = (habit: Habit): string => habit.reminder_time || habit.time_of_day
+
       // Sort habits by time to find the earliest one
-      const sortedHabits = userHabits.sort((a, b) => a.time_of_day.localeCompare(b.time_of_day))
+      const sortedHabits = userHabits.sort((a, b) => getEffectiveTime(a).localeCompare(getEffectiveTime(b)))
 
       // Get the earliest habit time
       const firstHabit = sortedHabits[0]
-      const [firstHabitHour, firstHabitMinute] = firstHabit.time_of_day.split(':').map(Number)
+      const effectiveTime = getEffectiveTime(firstHabit)
+      const [firstHabitHour, firstHabitMinute] = effectiveTime.split(':').map(Number)
       const firstHabitTimeInMinutes = firstHabitHour * 60 + firstHabitMinute
       const minutesUntilFirstHabit = firstHabitTimeInMinutes - currentTimeInMinutes
 
       // Only send if we're 15-30 minutes before the first habit
       if (minutesUntilFirstHabit < 15 || minutesUntilFirstHabit > 30) {
-        console.log(`User ${userId}: First habit at ${firstHabit.time_of_day}, ${minutesUntilFirstHabit} min away - outside reminder window`)
+        console.log(`User ${userId}: First habit at ${effectiveTime}, ${minutesUntilFirstHabit} min away - outside reminder window`)
         continue
       }
 
-      console.log(`User ${userId}: First habit at ${firstHabit.time_of_day}, ${minutesUntilFirstHabit} min away - sending reminder!`)
+      console.log(`User ${userId}: First habit at ${effectiveTime}, ${minutesUntilFirstHabit} min away - sending reminder!`)
 
       // Get user's vision data
       const visionData = visionMap.get(userId) || {}
       const firstName = profile.first_name || 'there'
 
-      // Build consolidated message
-      let message = `Hi ${firstName}! 🏔️ Your Summit habits for today:\n\n`
-      
-      for (const habit of sortedHabits) {
-        const formattedTime = formatTime12Hour(habit.time_of_day)
-        message += `• ${habit.habit_name} at ${formattedTime}\n`
-      }
-      
-      message += `\nYou've got this! Reply STOP to opt out.`
+      // Build short message (under 160 chars for single SMS segment - better deliverability)
+      const formattedTime = formatTime12Hour(getEffectiveTime(firstHabit))
 
-      // Ensure message is under 160 characters for single SMS, or allow multi-part
+      // Truncate habit name if needed to keep message under 160 chars
+      let habitName = firstHabit.habit_name.toLowerCase()
+      if (habitName.length > 45) {
+        habitName = habitName.substring(0, 42) + '...'
+      }
+
+      const message = `Hi ${firstName}! 🏔️ Time for your ${habitName} at ${formattedTime} - one step closer to your Summit! You've got this! Reply STOP to opt out.`
+
       console.log(`Message length: ${message.length} characters`)
 
       try {
