@@ -35,34 +35,35 @@ export async function loadUserContext(
 
   const visionData: VisionData | null = journey?.form_data || null
 
-  // Load active habits for current week
+  // Load all active habits (habits now persist across weeks)
   const { data: habits, error: habitsError } = await supabase
     .from('weekly_habits')
     .select('*')
     .eq('user_id', userId)
-    .eq('week_number', weekNumber)
     .order('created_at', { ascending: true })
 
   if (habitsError) {
     throw new Error(`Failed to load habits: ${habitsError.message}`)
   }
 
-  // Load reflection for previous week (if available)
-  const previousWeek = weekNumber - 1
-  const { data: reflection, error: reflectionError } = await supabase
+  // Load ALL reflections for pattern analysis
+  const { data: allReflections, error: allReflectionsError } = await supabase
     .from('weekly_reflections')
     .select('*')
     .eq('user_id', userId)
-    .eq('week_number', previousWeek)
-    .maybeSingle()
+    .order('week_number', { ascending: true })
 
-  if (reflectionError && reflectionError.code !== 'PGRST116') {
-    console.error('Error loading reflection:', reflectionError)
+  if (allReflectionsError && allReflectionsError.code !== 'PGRST116') {
+    console.error('Error loading all reflections:', allReflectionsError)
   }
+
+  // Get previous week's reflection specifically (for backward compatibility)
+  const previousWeek = weekNumber - 1
+  const reflection = allReflections?.find(r => r.week_number === previousWeek) || null
 
   const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'there'
 
-  console.log(`Context loaded: ${habits?.length || 0} habits, vision: ${!!visionData}, reflection: ${!!reflection}`)
+  console.log(`Context loaded: ${habits?.length || 0} habits, vision: ${!!visionData}, reflections: ${allReflections?.length || 0}`)
 
   return {
     user_id: userId,
@@ -72,7 +73,8 @@ export async function loadUserContext(
     sex: profile.sex || null,
     vision: visionData,
     habits: habits || [],
-    reflection: reflection || null,
+    reflection: reflection,
+    all_reflections: allReflections || [],
     reflection_signals: null, // Will be populated by normalizeReflection
     week_number: weekNumber,
   }

@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { loadUserContext } from './loadUserContext.ts'
 import { normalizeReflection } from './normalizeReflection.ts'
 import { generateWeeklyFocus } from './generateWeeklyFocus.ts'
+import { generateInsight, getReflectionPrompt } from './generateInsight.ts'
 import { ContentRecommendationEngine } from './contentRecommendationEngine.ts'
 import { assembleMarkdown, generateSubject } from './assembleMarkdown.ts'
 import { refineEmailCopy } from './refineEmailCopy.ts'
@@ -73,16 +74,21 @@ serve(async (req) => {
     const contentEngine = new ContentRecommendationEngine(YOUTUBE_API_KEY!, SPOTIFY_ACCESS_TOKEN!)
     const recommendations = await contentEngine.generateRecommendations(context)
 
-    // Step 5: Assemble email markdown
-    console.log('Step 5: Assembling email...')
-    const draftMarkdown = assembleMarkdown(context, focus, recommendations)
-    
-    // Step 6: Refine email copy for natural voice
-    console.log('Step 6: Refining email copy...')
+    // Step 5: Generate personal insight ("What I Noticed")
+    console.log('Step 5: Generating personal insight...')
+    const insight = await generateInsight(context, OPENAI_API_KEY!)
+    const reflectionPrompt = getReflectionPrompt(context)
+
+    // Step 6: Assemble email markdown
+    console.log('Step 6: Assembling email...')
+    const draftMarkdown = assembleMarkdown(context, focus, recommendations, insight, reflectionPrompt)
+
+    // Step 7: Refine email copy for natural voice
+    console.log('Step 7: Refining email copy...')
     const emailMarkdown = await refineEmailCopy(draftMarkdown, OPENAI_API_KEY!)
     const subject = generateSubject(context, focus)
 
-    // Step 7: Create digest output
+    // Step 8: Create digest output
     const output: DigestOutput = {
       user_id: context.user_id,
       week_number: targetWeek,
@@ -98,8 +104,8 @@ serve(async (req) => {
       },
     }
 
-    // Step 8: Save to database for review
-    console.log('Step 8: Saving digest to database...')
+    // Step 9: Save to database for review
+    console.log('Step 9: Saving digest to database...')
     const { data: savedDigest, error: saveError } = await supabase
       .from('weekly_digests')
       .upsert({

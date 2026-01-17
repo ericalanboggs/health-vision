@@ -60,8 +60,15 @@ export interface UserContext {
   vision: VisionData | null
   habits: Habit[]
   reflection: Reflection | null
+  all_reflections: Reflection[]
   reflection_signals: ReflectionSignals | null
   week_number: number
+}
+
+export interface PersonalInsight {
+  observation: string
+  connection_to_vision: string | null
+  milestone: string | null
 }
 
 export interface Strategy {

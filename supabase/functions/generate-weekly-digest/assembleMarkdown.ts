@@ -1,4 +1,4 @@
-import { UserContext, WeeklyFocus, ContentRecommendation } from './types.ts'
+import { UserContext, WeeklyFocus, ContentRecommendation, PersonalInsight } from './types.ts'
 
 /**
  * Assemble final email in Markdown format
@@ -7,15 +7,43 @@ import { UserContext, WeeklyFocus, ContentRecommendation } from './types.ts'
 export function assembleMarkdown(
   context: UserContext,
   focus: WeeklyFocus,
-  recommendations: ContentRecommendation[]
+  recommendations: ContentRecommendation[],
+  insight: PersonalInsight | null = null,
+  reflectionPrompt: string | null = null
 ): string {
   const sections: string[] = []
 
   // Greeting
   sections.push(`# Hi ${context.user_name}! 👋\n`)
 
-  // Vision anchor (if available)
-  if (context.vision?.visionStatement) {
+  // TL;DR for skimmers
+  const topRecommendation = recommendations[0]
+  sections.push(`## This Week in 30 Seconds\n`)
+  sections.push(`- **Focus:** ${focus.theme}`)
+  if (focus.strategies.length > 0) {
+    sections.push(`- **Try:** ${focus.strategies[0].strategy}`)
+  }
+  if (topRecommendation) {
+    sections.push(`- **Watch/Listen:** [${topRecommendation.title}](${topRecommendation.url})`)
+  }
+  sections.push(`\n`)
+
+  // Milestone celebration (if applicable)
+  if (insight?.milestone) {
+    sections.push(`> 🎉 **${insight.milestone}**\n`)
+  }
+
+  // What I Noticed (AI-generated insight)
+  if (insight?.observation) {
+    sections.push(`## What I Noticed 💡\n`)
+    sections.push(`${insight.observation}\n`)
+    if (insight.connection_to_vision) {
+      sections.push(`${insight.connection_to_vision}\n`)
+    }
+  }
+
+  // Vision anchor (if available and no insight already connected to it)
+  if (context.vision?.visionStatement && !insight?.connection_to_vision) {
     sections.push(`## Your Summit ⛰️\n`)
     sections.push(`Remember why you're here:\n`)
     sections.push(`> ${context.vision.visionStatement}\n`)
@@ -34,17 +62,17 @@ export function assembleMarkdown(
   // This week's focus
   sections.push(`## This Week's Focus 🎯\n`)
   sections.push(`**${focus.theme}**\n`)
-  
+
   // List habits with their scheduled days (consolidated)
   if (context.habits.length > 0) {
-    sections.push(`Here's what you're working on this week:\n`)
+    sections.push(`Here's what you're working on:\n`)
     const consolidatedHabits = consolidateHabits(context.habits)
     consolidatedHabits.forEach(({ habitName, days }) => {
       sections.push(`- ${habitName} (${days})`)
     })
     sections.push(`\n`)
   }
-  
+
   sections.push(`[Modify these in your app](https://summit-pilot.vercel.app)\n`)
 
   // Patterns to reinforce
@@ -59,12 +87,12 @@ export function assembleMarkdown(
   // Roadblocks & strategies
   if (focus.potential_challenges_narrative || focus.strategies.length > 0) {
     sections.push(`### Navigating Potential Challenges\n`)
-    
+
     // Add narrative if available
     if (focus.potential_challenges_narrative) {
       sections.push(`${focus.potential_challenges_narrative}\n`)
     }
-    
+
     // Add specific strategies
     if (focus.strategies.length > 0) {
       focus.strategies.forEach(({ blocker, strategy }) => {
@@ -75,46 +103,58 @@ export function assembleMarkdown(
   }
 
   // Content recommendations
-  sections.push(`## This Week's Picks 📚\n`)
-  sections.push(`A few resources for you this week:\n`)
+  if (recommendations.length > 0) {
+    sections.push(`## This Week's Picks 📚\n`)
+    sections.push(`A few resources for you this week:\n`)
 
-  // Group by type
-  const podcasts = recommendations.filter(r => r.type === 'podcast')
-  const videos = recommendations.filter(r => r.type === 'youtube')
-  const articles = recommendations.filter(r => r.type === 'article')
+    // Group by type
+    const podcasts = recommendations.filter(r => r.type === 'podcast')
+    const videos = recommendations.filter(r => r.type === 'youtube')
+    const articles = recommendations.filter(r => r.type === 'article')
 
-  if (podcasts.length > 0) {
-    sections.push(`### 🎙️ Podcasts\n`)
-    podcasts.forEach(rec => {
-      sections.push(formatRecommendationSimple(rec))
-    })
+    if (podcasts.length > 0) {
+      sections.push(`### 🎙️ Podcasts\n`)
+      podcasts.forEach(rec => {
+        sections.push(formatRecommendationSimple(rec))
+      })
+    }
+
+    if (videos.length > 0) {
+      sections.push(`### 🎥 Videos\n`)
+      videos.forEach(rec => {
+        sections.push(formatRecommendationSimple(rec))
+      })
+    }
+
+    if (articles.length > 0) {
+      sections.push(`### 📖 Articles\n`)
+      articles.forEach(rec => {
+        sections.push(formatRecommendationSimple(rec))
+      })
+    }
   }
 
-  if (videos.length > 0) {
-    sections.push(`### 🎥 Videos\n`)
-    videos.forEach(rec => {
-      sections.push(formatRecommendationSimple(rec))
-    })
-  }
-
-  if (articles.length > 0) {
-    sections.push(`### 📖 Articles\n`)
-    articles.forEach(rec => {
-      sections.push(formatRecommendationSimple(rec))
-    })
+  // Reflection prompt for the week ahead
+  if (reflectionPrompt) {
+    sections.push(`## Something to Consider 🤔\n`)
+    sections.push(`*${reflectionPrompt}*\n`)
   }
 
   // One-minute action plan
   sections.push(`## Your One-Minute Action Plan ⚡\n`)
   sections.push(`Before this week starts:\n`)
-  sections.push(`1. Review your habits for Week ${context.week_number}`)
+  sections.push(`1. Review your habits in the app`)
   sections.push(`2. Pick ONE strategy from above to try`)
-  sections.push(`3. Choose ONE piece of content to consume this week\n`)
+  if (recommendations.length > 0) {
+    sections.push(`3. Choose ONE piece of content to consume this week`)
+  }
+  sections.push(`\n`)
 
   // Footer
   sections.push(`---\n`)
   sections.push(`You're building something meaningful, ${context.user_name}. One week at a time.\n`)
   sections.push(`— Your Summit Coach\n`)
+  sections.push(`\n*Reply to this email anytime — I read every response.*\n`)
 
   return sections.join('\n')
 }
