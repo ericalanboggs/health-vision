@@ -45,6 +45,44 @@ function formatTime12Hour(time24: string): string {
 }
 
 /**
+ * Get current time in a specific timezone
+ * Returns { hours, minutes, dayOfWeek }
+ */
+function getCurrentTimeInTimezone(timezone: string): { hours: number; minutes: number; dayOfWeek: number } {
+  try {
+    const now = new Date()
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      hour: 'numeric',
+      minute: 'numeric',
+      weekday: 'short',
+      hour12: false,
+    })
+
+    const parts = formatter.formatToParts(now)
+    const hours = parseInt(parts.find(p => p.type === 'hour')?.value || '0')
+    const minutes = parseInt(parts.find(p => p.type === 'minute')?.value || '0')
+    const weekdayStr = parts.find(p => p.type === 'weekday')?.value || 'Sun'
+
+    const dayMap: Record<string, number> = {
+      'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6
+    }
+    const dayOfWeek = dayMap[weekdayStr] ?? 0
+
+    return { hours, minutes, dayOfWeek }
+  } catch (error) {
+    console.error(`Error getting time for timezone ${timezone}:`, error)
+    // Fallback to UTC
+    const now = new Date()
+    return {
+      hours: now.getUTCHours(),
+      minutes: now.getUTCMinutes(),
+      dayOfWeek: now.getUTCDay()
+    }
+  }
+}
+
+/**
  * Generate a personalized reminder message using OpenAI
  */
 async function generatePersonalizedMessage(
@@ -281,6 +319,20 @@ serve(async (req) => {
         continue
       }
 
+      // Get current time in USER'S timezone (habit times are stored in user's local time)
+      const userTimezone = profile.timezone || 'America/Chicago'
+      const userLocalTime = getCurrentTimeInTimezone(userTimezone)
+      const userCurrentTimeInMinutes = userLocalTime.hours * 60 + userLocalTime.minutes
+
+      console.log(`User ${profile.first_name} (${userId}): Local time ${userLocalTime.hours}:${userLocalTime.minutes.toString().padStart(2, '0')} (${userTimezone})`)
+
+      // Filter habits to only those for today in user's timezone
+      const todayHabits = userHabits.filter(h => h.day_of_week === userLocalTime.dayOfWeek)
+      if (todayHabits.length === 0) {
+        console.log(`User ${userId}: No habits for today (${userLocalTime.dayOfWeek}) in their timezone`)
+        continue
+      }
+
       // Check if we already sent a daily reminder to this user today
       const { data: existingReminder } = await supabase
         .from('sms_reminders')
@@ -298,22 +350,22 @@ serve(async (req) => {
       const getEffectiveTime = (habit: Habit): string => habit.reminder_time || habit.time_of_day
 
       // Sort habits by time to find the earliest one
-      const sortedHabits = userHabits.sort((a, b) => getEffectiveTime(a).localeCompare(getEffectiveTime(b)))
+      const sortedHabits = todayHabits.sort((a, b) => getEffectiveTime(a).localeCompare(getEffectiveTime(b)))
 
       // Get the earliest habit time
       const firstHabit = sortedHabits[0]
       const effectiveTime = getEffectiveTime(firstHabit)
       const [firstHabitHour, firstHabitMinute] = effectiveTime.split(':').map(Number)
       const firstHabitTimeInMinutes = firstHabitHour * 60 + firstHabitMinute
-      const minutesUntilFirstHabit = firstHabitTimeInMinutes - currentTimeInMinutes
+      const minutesUntilFirstHabit = firstHabitTimeInMinutes - userCurrentTimeInMinutes
 
       // Only send if we're 15-30 minutes before the first habit
       if (minutesUntilFirstHabit < 15 || minutesUntilFirstHabit > 30) {
-        console.log(`User ${userId}: First habit at ${effectiveTime}, ${minutesUntilFirstHabit} min away - outside reminder window`)
+        console.log(`User ${userId}: First habit at ${effectiveTime}, ${minutesUntilFirstHabit} min away (local time) - outside reminder window`)
         continue
       }
 
-      console.log(`User ${userId}: First habit at ${effectiveTime}, ${minutesUntilFirstHabit} min away - sending reminder!`)
+      console.log(`User ${userId}: First habit at ${effectiveTime}, ${minutesUntilFirstHabit} min away (local time) - sending reminder!`)
 
       // Get user's vision data
       const visionData = visionMap.get(userId) || {}
