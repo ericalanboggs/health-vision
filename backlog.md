@@ -81,17 +81,29 @@ Instead of:
 ## 3. Weekly Digest
 
 **Priority:** High
-**Status:** Idea (infrastructure exists: `generate-weekly-digest` folder)
+**Status:** Built (not yet automated)
 **Value:** Low-effort, high-touch. Brings users back weekly.
 
 ### Description
-A Sunday summary email or SMS: "You experimented with 8 habits this week. Here's what you reflected on..." Creates anticipation and feels like a personal coach checking in.
+A personalized weekly email generated via `generate-weekly-digest` edge function. Currently runs manually with coach review before sending.
 
-### What to Include
-- Habits attempted and experience ratings
-- Key phrases from their reflection
-- A prompt for the week ahead
-- Encouragement tied to their vision
+### Current Features
+- Loads user context (habits, vision, reflections)
+- AI-generated weekly focus theme (OpenAI)
+- Personalized content recommendations (Spotify, YouTube)
+- Celebrates wins from reflection
+- Lists habits with scheduled days
+- Provides challenge strategies
+- One-minute action plan
+- Saved as draft for review before sending
+
+### Suggested Enhancements
+1. **"What I Noticed" insight** — AI-synthesized pattern across weeks ("You mentioned feeling tired twice, but your best days start with movement...")
+2. **Connect habits to vision explicitly** — "Your morning walks are building the energy you want for your kids"
+3. **Celebrate milestones** — "You've been at this for 2 weeks. That's real momentum."
+4. **End with a reflection prompt** — "What's one thing you could let go of this week?"
+5. **TL;DR summary at top** — For skimmers: focus + one strategy + one content pick
+6. **"Reply to this email" CTA** — Invite engagement when automated
 
 ---
 
