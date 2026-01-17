@@ -127,7 +127,7 @@ export const deleteHabitsForWeek = async (weekNumber) => {
     }
 
     const { data: { user } } = await supabase.auth.getUser()
-    
+
     if (!user) {
       return { success: false, error: 'User not authenticated' }
     }
@@ -147,6 +147,40 @@ export const deleteHabitsForWeek = async (weekNumber) => {
     return { success: true }
   } catch (error) {
     console.error('Error in deleteHabitsForWeek:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Delete all habits for the current user (across all weeks)
+ * @returns {Promise<{success: boolean, error?: any}>}
+ */
+export const deleteAllUserHabits = async () => {
+  try {
+    if (!supabase) {
+      return { success: false, error: 'Supabase is not configured' }
+    }
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    const { error } = await supabase
+      .from('weekly_habits')
+      .delete()
+      .eq('user_id', user.id)
+
+    if (error) {
+      console.error('Error deleting all habits:', error)
+      return { success: false, error }
+    }
+
+    trackEvent('all_habits_deleted', { userId: user.id })
+    return { success: true }
+  } catch (error) {
+    console.error('Error in deleteAllUserHabits:', error)
     return { success: false, error }
   }
 }

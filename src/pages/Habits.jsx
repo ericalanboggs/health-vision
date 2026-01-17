@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Beaker, Save, Loader2, Edit2, CheckCircle, Trash2, Plus, Calendar, Copy, Check, MoreVertical } from 'lucide-react'
-import { getCurrentWeekHabits, deleteHabitsForWeek, saveHabitsForWeek } from '../services/habitService'
-import { getCurrentWeekNumber, getCurrentWeekDateRange } from '../utils/weekCalculator'
+import { getAllUserHabits, deleteAllUserHabits, saveHabitsForWeek } from '../services/habitService'
+import { getCurrentWeekNumber } from '../utils/weekCalculator'
 import { formatDaysDisplay, convertShortToFullDays } from '../utils/formatDays'
 import { getCurrentUser, getProfile } from '../services/authService'
 
@@ -13,7 +13,6 @@ export default function Habits() {
   const [saving, setSaving] = useState(false)
   const [editingHabitIndex, setEditingHabitIndex] = useState(null)
   const [weekNumber, setWeekNumber] = useState(1)
-  const [weekDateRange, setWeekDateRange] = useState('')
   const [dayCommitments, setDayCommitments] = useState({})
   const [timePreferences, setTimePreferences] = useState({})
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, habitIndex: null, habitName: '' })
@@ -59,11 +58,9 @@ export default function Habits() {
   const loadHabits = async () => {
     setLoading(true)
     const week = getCurrentWeekNumber()
-    const dateRange = getCurrentWeekDateRange()
     setWeekNumber(week)
-    setWeekDateRange(dateRange)
 
-    const { success, data } = await getCurrentWeekHabits()
+    const { success, data } = await getAllUserHabits()
     if (success && data && data.length > 0) {
       setHabits(data)
       
@@ -127,10 +124,10 @@ export default function Habits() {
 
   const handleSaveHabit = async (habitIndex) => {
     setSaving(true)
-    
+
     try {
-      // Delete existing habits for this week
-      await deleteHabitsForWeek(weekNumber)
+      // Delete all existing habits and re-save (habits persist across weeks)
+      await deleteAllUserHabits()
 
       // Get unique habit names
       const habitGroups = {}
@@ -194,7 +191,7 @@ export default function Habits() {
     const { habitIndex, habitName } = deleteModal
     closeDeleteModal()
     setSaving(true)
-    
+
     try {
       // Get all habits except the one being deleted
       const habitGroups = {}
@@ -206,8 +203,8 @@ export default function Habits() {
 
       const uniqueHabitNames = Object.keys(habitGroups).filter((_, idx) => idx !== habitIndex)
 
-      // Delete all habits for this week
-      await deleteHabitsForWeek(weekNumber)
+      // Delete all habits and re-save remaining ones
+      await deleteAllUserHabits()
 
       // Re-save remaining habits
       if (uniqueHabitNames.length > 0) {
@@ -470,9 +467,9 @@ END:VEVENT
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-stone-900 mb-2">Weekly Habits</h1>
+          <h1 className="text-3xl font-bold text-stone-900 mb-2">Your Habits</h1>
           <p className="text-stone-600">
-            Week {weekNumber} ({weekDateRange})
+            These habits repeat each week on the days you've scheduled.
           </p>
         </div>
 
@@ -480,7 +477,7 @@ END:VEVENT
           <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
             <Beaker className="w-16 h-16 text-stone-300 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-stone-800 mb-2">
-              No Habits Set for This Week
+              No Habits Set Yet
             </h2>
             <p className="text-stone-600 mb-6">
               Create your vision and build your habit plan to get started.
@@ -628,7 +625,7 @@ END:VEVENT
               {groupedHabits.length >= 3 ? (
                 <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-center">
                   <p className="text-sm text-amber-900">
-                    You've reached your weekly limit of 3 habit experiments. Great work! 🎉
+                    You've reached your limit of 3 habit experiments. Great work! 🎉
                   </p>
                 </div>
               ) : (
