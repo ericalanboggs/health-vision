@@ -1,7 +1,62 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getUserDetail } from '../services/adminService'
-import { ArrowLeft, CheckCircle, XCircle, Loader2, Calendar } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, Loader2, Calendar, Lightbulb, Target, AlertTriangle, Zap } from 'lucide-react'
+
+/**
+ * Derive coaching archetype from form data
+ */
+function getCoachingArchetype(formData) {
+  if (!formData) return null
+
+  const readiness = formData.readiness || 0
+  const hasSpecificBarrier = formData.barriersNotes && formData.barriersNotes.length > 20
+  const motivationDrivers = formData.motivationDrivers || []
+  const feelingState = (formData.feelingState || '').toLowerCase()
+
+  // Determine archetype
+  if (readiness >= 4 && hasSpecificBarrier) {
+    return {
+      type: 'Optimizer',
+      description: 'High readiness, specific barriers identified. Needs tactical precision, not motivation.',
+      tone: 'Be specific and tactical. They know what they want—help them dial it in.'
+    }
+  }
+  if (feelingState.includes('plateau') || feelingState.includes('stuck') || feelingState.includes('maintain')) {
+    return {
+      type: 'Restarter',
+      description: 'Feeling stuck or plateaued. Has likely succeeded before.',
+      tone: 'Acknowledge their frustration. Focus on breakthrough, not basics.'
+    }
+  }
+  if (motivationDrivers.includes('Appearance') || motivationDrivers.includes('Energy')) {
+    return {
+      type: 'Performer',
+      description: 'Motivated by visible results and energy.',
+      tone: 'Goal-focused, measurable wins. Show them progress.'
+    }
+  }
+  if (motivationDrivers.includes('Health') || motivationDrivers.includes('Longevity')) {
+    return {
+      type: 'Protector',
+      description: 'Motivated by long-term health and sustainability.',
+      tone: 'Reassuring, sustainable. Small steps compound.'
+    }
+  }
+  if (readiness <= 2) {
+    return {
+      type: 'Seeker',
+      description: 'Still exploring what works. Lower readiness.',
+      tone: 'Exploratory, validating. Help them discover their path.'
+    }
+  }
+
+  return {
+    type: 'Explorer',
+    description: 'Open to finding what works.',
+    tone: 'Curious, supportive. Help them experiment.'
+  }
+}
 
 export default function AdminUserDetail() {
   const { userId } = useParams()
@@ -90,6 +145,113 @@ export default function AdminUserDetail() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Coach Summary Card */}
+        {healthVision && (
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg shadow-sm border border-amber-200 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Lightbulb className="w-5 h-5 text-amber-600" />
+              <h2 className="text-xl font-bold text-stone-900">Coach Summary</h2>
+            </div>
+
+            {/* Archetype */}
+            {(() => {
+              const archetype = getCoachingArchetype(healthVision)
+              return archetype ? (
+                <div className="mb-4 p-3 bg-white rounded-lg border border-amber-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-medium text-stone-600">Archetype:</span>
+                    <span className="font-bold text-amber-700">{archetype.type}</span>
+                    {healthVision.readiness && (
+                      <span className="ml-auto text-sm text-stone-500">
+                        Readiness: {healthVision.readiness}/5
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-stone-600 mb-2">{archetype.description}</p>
+                  <p className="text-sm text-amber-800 font-medium">{archetype.tone}</p>
+                </div>
+              ) : null
+            })()}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Primary Driver */}
+              {healthVision.whyMatters && (
+                <div className="flex items-start gap-2">
+                  <Target className="w-4 h-4 text-green-600 mt-1 flex-shrink-0" />
+                  <div>
+                    <span className="text-sm font-medium text-stone-700">Primary Driver:</span>
+                    <p className="text-sm text-stone-900">{healthVision.whyMatters}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Focus Area / Barrier */}
+              {healthVision.barriersNotes && (
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 mt-1 flex-shrink-0" />
+                  <div>
+                    <span className="text-sm font-medium text-stone-700">Main Blocker:</span>
+                    <p className="text-sm text-stone-900">{healthVision.barriersNotes}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Non-negotiables */}
+              {healthVision.nonNegotiables && (
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-red-500 mt-1 flex-shrink-0" />
+                  <div>
+                    <span className="text-sm font-medium text-stone-700">Don't Touch:</span>
+                    <p className="text-sm text-stone-900">{healthVision.nonNegotiables}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Energizers */}
+              {healthVision.energizers && (
+                <div className="flex items-start gap-2">
+                  <Zap className="w-4 h-4 text-yellow-500 mt-1 flex-shrink-0" />
+                  <div>
+                    <span className="text-sm font-medium text-stone-700">What Energizes Them:</span>
+                    <p className="text-sm text-stone-900">{healthVision.energizers}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Strengths */}
+              {healthVision.strengths && (
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-600 mt-1 flex-shrink-0" />
+                  <div>
+                    <span className="text-sm font-medium text-stone-700">What's Working:</span>
+                    <p className="text-sm text-stone-900">{healthVision.strengths}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Motivation Drivers */}
+              {healthVision.motivationDrivers && healthVision.motivationDrivers.length > 0 && (
+                <div className="flex items-start gap-2">
+                  <Target className="w-4 h-4 text-blue-500 mt-1 flex-shrink-0" />
+                  <div>
+                    <span className="text-sm font-medium text-stone-700">Motivated By:</span>
+                    <p className="text-sm text-stone-900">{healthVision.motivationDrivers.join(', ')}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Key Quote */}
+            {(healthVision.feelingState || healthVision.gapsWants) && (
+              <div className="mt-4 pt-4 border-t border-amber-200">
+                <p className="text-sm text-stone-600 italic">
+                  "{healthVision.feelingState || healthVision.gapsWants}"
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* User Snapshot */}
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
           <h2 className="text-xl font-bold text-stone-900 mb-4">User Snapshot</h2>
