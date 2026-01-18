@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Beaker, Save, Loader2, Edit2, CheckCircle, Trash2, Plus, Calendar, Copy, Check, MoreVertical } from 'lucide-react'
+import { ArrowLeft, Beaker, Save, Loader2, Edit2, CheckCircle, Trash2, Plus, Calendar, Copy, Check, MoreVertical, BarChart3, ChevronDown, ChevronUp } from 'lucide-react'
 import { getAllUserHabits, deleteAllUserHabits, saveHabitsForWeek } from '../services/habitService'
 import { getCurrentWeekNumber } from '../utils/weekCalculator'
 import { formatDaysDisplay, convertShortToFullDays } from '../utils/formatDays'
 import { getCurrentUser, getProfile } from '../services/authService'
+import { getAllTrackingConfigs, disableTracking } from '../services/trackingService'
+import HabitTrackingConfig from '../components/HabitTrackingConfig'
+import WeeklyTracker from '../components/WeeklyTracker'
 
 export default function Habits() {
   const navigate = useNavigate()
@@ -19,6 +22,9 @@ export default function Habits() {
   const [userTimezone, setUserTimezone] = useState('America/Chicago')
   const [copied, setCopied] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [trackingConfigs, setTrackingConfigs] = useState({})
+  const [showTrackingConfig, setShowTrackingConfig] = useState(null)
+  const [expandedTrackers, setExpandedTrackers] = useState({})
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const dayMap = {
@@ -53,7 +59,19 @@ export default function Habits() {
     }
     fetchUserTimezone()
     loadHabits()
+    loadTrackingConfigs()
   }, [])
+
+  const loadTrackingConfigs = async () => {
+    const { success, data } = await getAllTrackingConfigs()
+    if (success && data) {
+      const configMap = {}
+      data.forEach(config => {
+        configMap[config.habit_name] = config
+      })
+      setTrackingConfigs(configMap)
+    }
+  }
 
   const loadHabits = async () => {
     setLoading(true)
@@ -380,6 +398,33 @@ END:VEVENT
     return Object.entries(groups)
   }
 
+  const handleTrackingConfigSaved = (habitName, config) => {
+    setTrackingConfigs(prev => ({
+      ...prev,
+      [habitName]: { ...config, habit_name: habitName }
+    }))
+    setShowTrackingConfig(null)
+    setExpandedTrackers(prev => ({ ...prev, [habitName]: true }))
+  }
+
+  const handleDisableTracking = async (habitName) => {
+    const { success } = await disableTracking(habitName)
+    if (success) {
+      setTrackingConfigs(prev => ({
+        ...prev,
+        [habitName]: { ...prev[habitName], tracking_enabled: false }
+      }))
+      setExpandedTrackers(prev => ({ ...prev, [habitName]: false }))
+    }
+  }
+
+  const toggleTracker = (habitName) => {
+    setExpandedTrackers(prev => ({
+      ...prev,
+      [habitName]: !prev[habitName]
+    }))
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50 flex items-center justify-center">
@@ -608,14 +653,76 @@ END:VEVENT
                         </div>
                       </>
                     ) : (
-                      <div className="text-sm text-stone-700">
-                        <p className="mb-1">
-                          <strong>Days:</strong> {committedDays.length > 0 ? formatDaysDisplay(convertShortToFullDays(committedDays)) : 'Not set'}
-                        </p>
-                        <p>
-                          <strong>Time:</strong> {timeOfDayOptions.find(opt => opt.value === timeSlot)?.label || 'Not set'}
-                        </p>
-                      </div>
+                      <>
+                        <div className="text-sm text-stone-700">
+                          <p className="mb-1">
+                            <strong>Days:</strong> {committedDays.length > 0 ? formatDaysDisplay(convertShortToFullDays(committedDays)) : 'Not set'}
+                          </p>
+                          <p>
+                            <strong>Time:</strong> {timeOfDayOptions.find(opt => opt.value === timeSlot)?.label || 'Not set'}
+                          </p>
+                        </div>
+
+                        {/* Tracking Section */}
+                        <div className="mt-4 pt-4 border-t border-stone-200">
+                          {trackingConfigs[habitName]?.tracking_enabled ? (
+                            <>
+                              {/* Tracking Enabled - Show Tracker Toggle */}
+                              <div className="flex items-center justify-between mb-3">
+                                <button
+                                  onClick={() => toggleTracker(habitName)}
+                                  className="flex items-center gap-2 text-sm font-medium text-green-700 hover:text-green-800"
+                                >
+                                  <BarChart3 className="w-4 h-4" />
+                                  <span>
+                                    Track Progress ({trackingConfigs[habitName].tracking_type === 'metric'
+                                      ? trackingConfigs[habitName].metric_unit
+                                      : 'Yes/No'})
+                                  </span>
+                                  {expandedTrackers[habitName] ? (
+                                    <ChevronUp className="w-4 h-4" />
+                                  ) : (
+                                    <ChevronDown className="w-4 h-4" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => handleDisableTracking(habitName)}
+                                  className="text-xs text-stone-500 hover:text-stone-700"
+                                >
+                                  Disable
+                                </button>
+                              </div>
+
+                              {/* Expanded Weekly Tracker */}
+                              {expandedTrackers[habitName] && (
+                                <WeeklyTracker
+                                  habitName={habitName}
+                                  trackingType={trackingConfigs[habitName].tracking_type}
+                                  metricUnit={trackingConfigs[habitName].metric_unit}
+                                  metricTarget={trackingConfigs[habitName].metric_target}
+                                  onClose={() => toggleTracker(habitName)}
+                                />
+                              )}
+                            </>
+                          ) : showTrackingConfig === habitName ? (
+                            /* Tracking Config Panel */
+                            <HabitTrackingConfig
+                              habitName={habitName}
+                              onConfigSaved={(config) => handleTrackingConfigSaved(habitName, config)}
+                              onCancel={() => setShowTrackingConfig(null)}
+                            />
+                          ) : (
+                            /* Enable Tracking Button */
+                            <button
+                              onClick={() => setShowTrackingConfig(habitName)}
+                              className="flex items-center gap-2 text-sm text-stone-500 hover:text-green-600 transition"
+                            >
+                              <BarChart3 className="w-4 h-4" />
+                              <span>Enable detailed tracking</span>
+                            </button>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
                 )
