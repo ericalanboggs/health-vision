@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Loader2, Check, X } from 'lucide-react'
+import { ChevronLeft, Loader2, Check } from 'lucide-react'
 import { getEntriesForWeek, saveEntry } from '../services/trackingService'
 import { getHabitScheduleDays } from '../services/habitService'
 import {
   getCurrentWeekStart,
   getWeekDates,
-  formatWeekRange,
   formatDateForDB,
-  getDayWithDate,
+  getFullDayName,
+  formatWeekOfHeader,
   isDateInPast,
   isToday,
   isDateInFuture,
@@ -20,19 +20,19 @@ import {
 import { getUnitByValue } from '../constants/metricUnits'
 
 /**
- * WeeklyTracker - Visual week grid for tracking habit completion
+ * WeeklyTracker - Vertical list for tracking habit completion
  * Shows only scheduled days with navigation between weeks
  */
 export default function WeeklyTracker({
   habitName,
   trackingType,
   metricUnit,
-  metricTarget,
-  onClose
+  metricTarget
 }) {
   const [weekStart, setWeekStart] = useState(getCurrentWeekStart())
   const [scheduledDays, setScheduledDays] = useState([])
   const [entries, setEntries] = useState({})
+  const [localInputs, setLocalInputs] = useState({}) // Track typing separately
   const [loading, setLoading] = useState(true)
   const [savingDate, setSavingDate] = useState(null)
 
@@ -98,27 +98,69 @@ export default function WeeklyTracker({
     setSavingDate(null)
   }
 
-  const handleMetricChange = async (date, value) => {
+  // Handle typing - just update local state, don't save yet
+  const handleMetricChange = (date, value) => {
     const dateStr = formatDateForDB(date)
-    const numValue = value === '' ? null : parseFloat(value)
+    setLocalInputs(prev => ({
+      ...prev,
+      [dateStr]: value
+    }))
+  }
 
-    // Only save if value is valid
-    if (value !== '' && (isNaN(numValue) || numValue < 0)) return
+  // Handle blur - save to database when user clicks out
+  const handleMetricBlur = async (date) => {
+    const dateStr = formatDateForDB(date)
+    const value = localInputs[dateStr]
 
-    // Debounce saves for better UX
-    setSavingDate(dateStr)
+    // If no local change, nothing to save
+    if (value === undefined) return
 
-    if (numValue !== null) {
-      const { success, data } = await saveEntry(habitName, date, numValue, 'metric')
-
-      if (success) {
-        setEntries(prev => ({
-          ...prev,
-          [dateStr]: data
-        }))
-      }
+    // Empty value - clear the entry
+    if (value === '') {
+      setEntries(prev => ({
+        ...prev,
+        [dateStr]: { ...prev[dateStr], metric_value: null }
+      }))
+      // Clear local input after updating entries
+      setLocalInputs(prev => {
+        const { [dateStr]: _, ...rest } = prev
+        return rest
+      })
+      return
     }
 
+    const numValue = parseFloat(value)
+
+    // Invalid value - revert to previous, clear local
+    if (isNaN(numValue) || numValue < 0) {
+      setLocalInputs(prev => {
+        const { [dateStr]: _, ...rest } = prev
+        return rest
+      })
+      return
+    }
+
+    // Update entries immediately with the new value (optimistic update)
+    setEntries(prev => ({
+      ...prev,
+      [dateStr]: { ...prev[dateStr], metric_value: numValue }
+    }))
+
+    // Clear local input now that entries has the value
+    setLocalInputs(prev => {
+      const { [dateStr]: _, ...rest } = prev
+      return rest
+    })
+
+    // Save to database in background
+    setSavingDate(dateStr)
+    const { success, data } = await saveEntry(habitName, date, numValue, 'metric')
+    if (success) {
+      setEntries(prev => ({
+        ...prev,
+        [dateStr]: data
+      }))
+    }
     setSavingDate(null)
   }
 
@@ -131,8 +173,8 @@ export default function WeeklyTracker({
 
   if (loading) {
     return (
-      <div className="border border-stone-200 rounded-lg p-4 bg-white">
-        <div className="flex items-center justify-center py-8">
+      <div className="py-4">
+        <div className="flex items-center justify-center py-6">
           <Loader2 className="w-5 h-5 animate-spin text-stone-400" />
           <span className="ml-2 text-stone-600 text-sm">Loading tracker...</span>
         </div>
@@ -141,48 +183,32 @@ export default function WeeklyTracker({
   }
 
   return (
-    <div className="border border-stone-200 rounded-lg p-4 bg-white">
-      {/* Week Navigation Header */}
-      <div className="flex items-center justify-between mb-4">
+    <div className="py-2">
+      {/* Week Header with Navigation */}
+      <div className="flex items-center gap-2 mb-4">
         <button
           onClick={handlePreviousWeek}
           disabled={!canNavigateToPreviousWeek(weekStart)}
-          className="p-1.5 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-1 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label="Previous week"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-4 h-4" />
         </button>
-
-        <div className="text-center">
-          <span className="text-sm font-medium text-stone-900">
-            {formatWeekRange(weekStart)}
-          </span>
-          {isCurrentWeek && (
-            <span className="ml-2 text-xs text-green-600 font-medium">This Week</span>
-          )}
-        </div>
-
-        <button
-          onClick={handleNextWeek}
-          disabled={!canNavigateToNextWeek(weekStart)}
-          className="p-1.5 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition disabled:opacity-30 disabled:cursor-not-allowed"
-          aria-label="Next week"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
+        <span className="text-sm font-medium text-stone-700">
+          {formatWeekOfHeader(weekStart)}
+        </span>
       </div>
 
-      {/* Days Grid */}
+      {/* Vertical Day List */}
       {scheduledDates.length === 0 ? (
-        <div className="text-center py-6 text-stone-500 text-sm">
+        <div className="text-center py-4 text-stone-500 text-sm">
           No scheduled days this week
         </div>
       ) : (
-        <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(scheduledDates.length, 7)}, 1fr)` }}>
+        <div className="space-y-2">
           {scheduledDates.map(date => {
             const dateStr = formatDateForDB(date)
             const entry = entries[dateStr]
-            const isPast = isDateInPast(date)
             const isTodayDate = isToday(date)
             const isFuture = isDateInFuture(date)
             const isSaving = savingDate === dateStr
@@ -191,112 +217,73 @@ export default function WeeklyTracker({
             return (
               <div
                 key={dateStr}
-                className={`relative flex flex-col items-center p-2 rounded-lg border transition ${
-                  isTodayDate
-                    ? 'border-green-500 bg-green-50'
-                    : isPast
-                    ? 'border-stone-200 bg-stone-50'
-                    : 'border-stone-200 bg-white opacity-60'
-                }`}
+                className={`flex items-center justify-between py-2 ${
+                  isTodayDate ? 'bg-green-50 -mx-2 px-2 rounded-lg' : ''
+                } ${isFuture ? 'opacity-50' : ''}`}
               >
-                {/* Day Label */}
-                <span className={`text-xs font-medium mb-2 ${
-                  isTodayDate ? 'text-green-700' : 'text-stone-600'
+                {/* Full Day Name with Date */}
+                <span className={`text-sm ${
+                  isTodayDate ? 'font-medium text-green-700' : 'text-stone-700'
                 }`}>
-                  {getDayWithDate(date)}
+                  {getFullDayName(date)}
+                  {isTodayDate ? (
+                    <span className="ml-2 text-xs text-green-600">(Today)</span>
+                  ) : (
+                    <span className="ml-2 text-stone-500">({date.getMonth() + 1}/{date.getDate()})</span>
+                  )}
                 </span>
 
-                {/* Boolean Tracking */}
+                {/* Boolean Tracking - Checkbox */}
                 {trackingType === 'boolean' && (
                   <button
                     onClick={() => canEdit && handleBooleanToggle(date)}
                     disabled={!canEdit || isSaving}
-                    className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition ${
+                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition ${
                       entry?.completed === true
                         ? 'bg-green-500 border-green-500 text-white'
-                        : entry?.completed === false
-                        ? 'bg-red-100 border-red-300 text-red-600'
-                        : 'bg-white border-stone-300 text-stone-400 hover:border-green-400'
+                        : 'bg-white border-stone-300 hover:border-green-400'
                     } ${!canEdit || isSaving ? 'cursor-not-allowed opacity-50' : ''}`}
                     aria-label={entry?.completed ? 'Completed' : 'Not completed'}
                   >
                     {isSaving ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-3 h-3 animate-spin" />
                     ) : entry?.completed === true ? (
-                      <Check className="w-5 h-5" />
-                    ) : entry?.completed === false ? (
-                      <X className="w-5 h-5" />
+                      <Check className="w-4 h-4" />
                     ) : null}
                   </button>
                 )}
 
-                {/* Metric Tracking */}
+                {/* Metric Tracking - Input Field */}
                 {trackingType === 'metric' && (
-                  <div className="w-full">
+                  <div className="flex items-center gap-2">
                     <input
-                      type="number"
-                      value={entry?.metric_value ?? ''}
+                      type="text"
+                      inputMode="decimal"
+                      value={localInputs[dateStr] !== undefined ? localInputs[dateStr] : (entry?.metric_value ?? '')}
                       onChange={(e) => handleMetricChange(date, e.target.value)}
+                      onBlur={() => handleMetricBlur(date)}
                       disabled={!canEdit || isSaving}
                       placeholder="—"
-                      min="0"
-                      step="any"
-                      className={`w-full text-center text-sm py-1.5 px-1 border rounded-lg transition ${
+                      className={`w-20 text-center text-sm py-1.5 px-2 border rounded-lg transition ${
                         entry?.metric_value !== undefined && entry?.metric_value !== null
                           ? metricTarget && entry.metric_value >= metricTarget
                             ? 'border-green-500 bg-green-50 text-green-700'
                             : 'border-stone-300 bg-white'
-                          : 'border-stone-200 bg-stone-50 text-stone-400'
-                      } ${!canEdit ? 'cursor-not-allowed' : ''} focus:ring-2 focus:ring-green-500 focus:border-green-500`}
-                      aria-label={`${getDayWithDate(date)} value`}
+                          : 'border-stone-200 bg-white text-stone-400'
+                      } ${!canEdit ? 'cursor-not-allowed opacity-50' : ''} focus:ring-2 focus:ring-green-500 focus:border-green-500`}
+                      aria-label={`${getFullDayName(date)} value`}
                     />
                     {unitLabel && (
-                      <span className="block text-xs text-stone-500 text-center mt-1">
+                      <span className="text-xs text-stone-500 w-12">
                         {unitLabel}
                       </span>
                     )}
-                  </div>
-                )}
-
-                {/* Target indicator for metrics */}
-                {trackingType === 'metric' && metricTarget && entry?.metric_value !== undefined && entry?.metric_value !== null && (
-                  <div className="absolute -top-1 -right-1">
-                    {entry.metric_value >= metricTarget ? (
-                      <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                        <Check className="w-2.5 h-2.5 text-white" />
-                      </div>
-                    ) : null}
                   </div>
                 )}
               </div>
             )
           })}
         </div>
-      )}
-
-      {/* Legend / Help Text */}
-      <div className="mt-4 pt-3 border-t border-stone-200">
-        <div className="flex items-center justify-between text-xs text-stone-500">
-          <span>
-            {trackingType === 'boolean' ? 'Tap to toggle completion' : 'Enter your daily value'}
-          </span>
-          {metricTarget && trackingType === 'metric' && (
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 bg-green-500 rounded-full inline-block" />
-              Target: {metricTarget} {unitLabel}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Close Button */}
-      {onClose && (
-        <button
-          onClick={onClose}
-          className="w-full mt-4 px-4 py-2 text-sm text-stone-600 hover:text-stone-700 hover:bg-stone-100 rounded-lg border border-stone-300 transition"
-        >
-          Close Tracker
-        </button>
       )}
     </div>
   )

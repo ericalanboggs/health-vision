@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Beaker, Save, Loader2, Edit2, CheckCircle, Trash2, Plus, Calendar, Copy, Check, MoreVertical, BarChart3, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, Beaker, Save, Loader2, Edit2, CheckCircle, Trash2, Plus, Calendar, Copy, Check, MoreVertical, ToggleLeft, ToggleRight } from 'lucide-react'
 import { getAllUserHabits, deleteAllUserHabits, saveHabitsForWeek } from '../services/habitService'
 import { getCurrentWeekNumber } from '../utils/weekCalculator'
 import { formatDaysDisplay, convertShortToFullDays } from '../utils/formatDays'
 import { getCurrentUser, getProfile } from '../services/authService'
-import { getAllTrackingConfigs, disableTracking } from '../services/trackingService'
-import HabitTrackingConfig from '../components/HabitTrackingConfig'
+import { getAllTrackingConfigs, disableTracking, saveTrackingConfig, getAiSuggestion } from '../services/trackingService'
+import { METRIC_UNITS } from '../constants/metricUnits'
 import WeeklyTracker from '../components/WeeklyTracker'
 
 export default function Habits() {
@@ -23,8 +23,7 @@ export default function Habits() {
   const [copied, setCopied] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [trackingConfigs, setTrackingConfigs] = useState({})
-  const [showTrackingConfig, setShowTrackingConfig] = useState(null)
-  const [expandedTrackers, setExpandedTrackers] = useState({})
+  const [togglingTracking, setTogglingTracking] = useState(null) // habitName being toggled
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const dayMap = {
@@ -398,31 +397,82 @@ END:VEVENT
     return Object.entries(groups)
   }
 
-  const handleTrackingConfigSaved = (habitName, config) => {
-    setTrackingConfigs(prev => ({
-      ...prev,
-      [habitName]: { ...config, habit_name: habitName }
-    }))
-    setShowTrackingConfig(null)
-    setExpandedTrackers(prev => ({ ...prev, [habitName]: true }))
-  }
+  // Toggle tracking on/off with auto AI suggestion when enabling
+  const handleToggleTracking = async (habitName) => {
+    const currentConfig = trackingConfigs[habitName]
+    const isCurrentlyEnabled = currentConfig?.tracking_enabled
 
-  const handleDisableTracking = async (habitName) => {
-    const { success } = await disableTracking(habitName)
-    if (success) {
-      setTrackingConfigs(prev => ({
-        ...prev,
-        [habitName]: { ...prev[habitName], tracking_enabled: false }
-      }))
-      setExpandedTrackers(prev => ({ ...prev, [habitName]: false }))
+    if (isCurrentlyEnabled) {
+      // Disable tracking
+      setTogglingTracking(habitName)
+      const { success } = await disableTracking(habitName)
+      if (success) {
+        setTrackingConfigs(prev => ({
+          ...prev,
+          [habitName]: { ...prev[habitName], tracking_enabled: false }
+        }))
+      }
+      setTogglingTracking(null)
+    } else {
+      // Enable tracking - fetch AI suggestion and auto-apply
+      setTogglingTracking(habitName)
+
+      // Get AI suggestion
+      const { success: aiSuccess, data: suggestion } = await getAiSuggestion(habitName)
+
+      const config = {
+        tracking_enabled: true,
+        tracking_type: aiSuccess && suggestion ? suggestion.tracking_type : 'boolean',
+        metric_unit: aiSuccess && suggestion?.unit ? suggestion.unit : null,
+        metric_target: aiSuccess && suggestion?.suggested_target ? suggestion.suggested_target : null,
+        ai_suggested_unit: aiSuccess && suggestion?.unit ? suggestion.unit : null
+      }
+
+      const { success } = await saveTrackingConfig(habitName, config)
+      if (success) {
+        setTrackingConfigs(prev => ({
+          ...prev,
+          [habitName]: { ...config, habit_name: habitName }
+        }))
+      }
+      setTogglingTracking(null)
     }
   }
 
-  const toggleTracker = (habitName) => {
-    setExpandedTrackers(prev => ({
-      ...prev,
-      [habitName]: !prev[habitName]
-    }))
+  // Update tracking type (Y/N vs Metrics)
+  const handleTrackingTypeChange = async (habitName, newType) => {
+    const currentConfig = trackingConfigs[habitName]
+    const config = {
+      ...currentConfig,
+      tracking_type: newType,
+      metric_unit: newType === 'metric' ? (currentConfig?.metric_unit || 'minutes') : null,
+      metric_target: newType === 'metric' ? currentConfig?.metric_target : null
+    }
+
+    const { success } = await saveTrackingConfig(habitName, config)
+    if (success) {
+      setTrackingConfigs(prev => ({
+        ...prev,
+        [habitName]: { ...config, habit_name: habitName }
+      }))
+    }
+  }
+
+  // Update metric unit
+  const handleMetricUnitChange = async (habitName, newUnit) => {
+    const currentConfig = trackingConfigs[habitName]
+    const config = {
+      ...currentConfig,
+      metric_unit: newUnit
+    }
+
+    const { success } = await saveTrackingConfig(habitName, config)
+    if (success) {
+      setTrackingConfigs(prev => ({
+        ...prev,
+        [habitName]: { ...config, habit_name: habitName }
+      }))
+    }
   }
 
   if (loading) {
@@ -663,63 +713,86 @@ END:VEVENT
                           </p>
                         </div>
 
-                        {/* Tracking Section */}
+                        {/* Track Details Section */}
                         <div className="mt-4 pt-4 border-t border-stone-200">
-                          {trackingConfigs[habitName]?.tracking_enabled ? (
-                            <>
-                              {/* Tracking Enabled - Show Tracker Toggle */}
-                              <div className="flex items-center justify-between mb-3">
-                                <button
-                                  onClick={() => toggleTracker(habitName)}
-                                  className="flex items-center gap-2 text-sm font-medium text-green-700 hover:text-green-800"
-                                >
-                                  <BarChart3 className="w-4 h-4" />
-                                  <span>
-                                    Track Progress ({trackingConfigs[habitName].tracking_type === 'metric'
-                                      ? trackingConfigs[habitName].metric_unit
-                                      : 'Yes/No'})
-                                  </span>
-                                  {expandedTrackers[habitName] ? (
-                                    <ChevronUp className="w-4 h-4" />
-                                  ) : (
-                                    <ChevronDown className="w-4 h-4" />
-                                  )}
-                                </button>
-                                <button
-                                  onClick={() => handleDisableTracking(habitName)}
-                                  className="text-xs text-stone-500 hover:text-stone-700"
-                                >
-                                  Disable
-                                </button>
+                          {/* Track Details Toggle Row */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-stone-700">Track Details</span>
+                            <button
+                              onClick={() => handleToggleTracking(habitName)}
+                              disabled={togglingTracking === habitName}
+                              className="flex items-center gap-1 text-sm transition disabled:opacity-50"
+                            >
+                              {togglingTracking === habitName ? (
+                                <Loader2 className="w-5 h-5 animate-spin text-stone-400" />
+                              ) : trackingConfigs[habitName]?.tracking_enabled ? (
+                                <ToggleRight className="w-8 h-8 text-green-600" />
+                              ) : (
+                                <ToggleLeft className="w-8 h-8 text-stone-400" />
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Expanded Tracking Controls (when enabled) */}
+                          {trackingConfigs[habitName]?.tracking_enabled && (
+                            <div className="mt-4 space-y-4">
+                              {/* Tracking Type Segmented Button + Unit Dropdown */}
+                              <div className="flex items-center gap-3">
+                                {/* Y/N | Metrics Segmented Button */}
+                                <div className="flex rounded-lg border border-stone-300 overflow-hidden">
+                                  <button
+                                    onClick={() => handleTrackingTypeChange(habitName, 'boolean')}
+                                    className={`px-4 py-2 text-sm font-medium transition ${
+                                      trackingConfigs[habitName].tracking_type === 'boolean'
+                                        ? 'bg-green-600 text-white'
+                                        : 'bg-white text-stone-600 hover:bg-stone-50'
+                                    }`}
+                                  >
+                                    Y/N
+                                  </button>
+                                  <button
+                                    onClick={() => handleTrackingTypeChange(habitName, 'metric')}
+                                    className={`px-4 py-2 text-sm font-medium transition border-l border-stone-300 ${
+                                      trackingConfigs[habitName].tracking_type === 'metric'
+                                        ? 'bg-green-600 text-white'
+                                        : 'bg-white text-stone-600 hover:bg-stone-50'
+                                    }`}
+                                  >
+                                    Metrics
+                                  </button>
+                                </div>
+
+                                {/* Unit Dropdown (only for metrics) */}
+                                {trackingConfigs[habitName].tracking_type === 'metric' && (
+                                  <select
+                                    value={trackingConfigs[habitName].metric_unit || 'minutes'}
+                                    onChange={(e) => handleMetricUnitChange(habitName, e.target.value)}
+                                    className="px-3 py-2 text-sm border border-stone-300 rounded-lg bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                  >
+                                    {METRIC_UNITS.map(unit => (
+                                      <option key={unit.value} value={unit.value}>
+                                        {unit.value}
+                                      </option>
+                                    ))}
+                                  </select>
+                                )}
                               </div>
 
-                              {/* Expanded Weekly Tracker */}
-                              {expandedTrackers[habitName] && (
-                                <WeeklyTracker
-                                  habitName={habitName}
-                                  trackingType={trackingConfigs[habitName].tracking_type}
-                                  metricUnit={trackingConfigs[habitName].metric_unit}
-                                  metricTarget={trackingConfigs[habitName].metric_target}
-                                  onClose={() => toggleTracker(habitName)}
-                                />
-                              )}
-                            </>
-                          ) : showTrackingConfig === habitName ? (
-                            /* Tracking Config Panel */
-                            <HabitTrackingConfig
-                              habitName={habitName}
-                              onConfigSaved={(config) => handleTrackingConfigSaved(habitName, config)}
-                              onCancel={() => setShowTrackingConfig(null)}
-                            />
-                          ) : (
-                            /* Enable Tracking Button */
-                            <button
-                              onClick={() => setShowTrackingConfig(habitName)}
-                              className="flex items-center gap-2 text-sm text-stone-500 hover:text-green-600 transition"
-                            >
-                              <BarChart3 className="w-4 h-4" />
-                              <span>Enable detailed tracking</span>
-                            </button>
+                              {/* Helper Text */}
+                              <p className="text-xs text-stone-500">
+                                {trackingConfigs[habitName].tracking_type === 'boolean'
+                                  ? 'Track you did it, yes or no.'
+                                  : 'Enter an amount or unit each day.'}
+                              </p>
+
+                              {/* Weekly Tracker */}
+                              <WeeklyTracker
+                                habitName={habitName}
+                                trackingType={trackingConfigs[habitName].tracking_type}
+                                metricUnit={trackingConfigs[habitName].metric_unit}
+                                metricTarget={trackingConfigs[habitName].metric_target}
+                              />
+                            </div>
                           )}
                         </div>
                       </>

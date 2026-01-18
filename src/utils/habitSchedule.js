@@ -268,3 +268,31 @@ export const getDayWithDate = (date) => {
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   return `${dayNames[date.getDay()]} ${date.getDate()}`
 }
+
+/**
+ * Get full day name (e.g., "Monday")
+ * @param {Date} date - The date
+ * @returns {string} Full day name
+ */
+export const getFullDayName = (date) => {
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  return dayNames[date.getDay()]
+}
+
+/**
+ * Format week header as "Week of January 19th"
+ * @param {Date} weekStart - Monday of the week
+ * @returns {string} Formatted week header
+ */
+export const formatWeekOfHeader = (weekStart) => {
+  const day = weekStart.getDate()
+  const month = weekStart.toLocaleDateString('en-US', { month: 'long' })
+
+  // Add ordinal suffix
+  const suffix = (day === 1 || day === 21 || day === 31) ? 'st'
+    : (day === 2 || day === 22) ? 'nd'
+    : (day === 3 || day === 23) ? 'rd'
+    : 'th'
+
+  return `Week of ${month} ${day}${suffix}`
+}
