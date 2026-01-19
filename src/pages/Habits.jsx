@@ -19,6 +19,7 @@ export default function Habits() {
   const [userTimezone, setUserTimezone] = useState('America/Chicago')
   const [copied, setCopied] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [editedHabitNames, setEditedHabitNames] = useState({})
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const dayMap = {
@@ -141,7 +142,9 @@ export default function Habits() {
 
       // Create new habits array based on selections
       const newHabits = []
-      uniqueHabitNames.forEach((habitName, index) => {
+      uniqueHabitNames.forEach((originalHabitName, index) => {
+        // Use edited name if available, otherwise use original
+        const habitName = editedHabitNames[index] || originalHabitName
         const selectedDays = dayCommitments[index] || []
         const timeSlot = timePreferences[index] || 'mid-morning'
         const timeOption = timeOfDayOptions.find(opt => opt.value === timeSlot)
@@ -174,8 +177,21 @@ export default function Habits() {
     }
   }
 
+  const handleStartEdit = (index, habitName) => {
+    setEditingHabitIndex(index)
+    setEditedHabitNames(prev => ({ ...prev, [index]: habitName }))
+  }
+
+  const handleHabitNameChange = (index, newName) => {
+    setEditedHabitNames(prev => ({ ...prev, [index]: newName }))
+  }
+
   const handleCancelEdit = (habitIndex) => {
     setEditingHabitIndex(null)
+    setEditedHabitNames(prev => {
+      const { [habitIndex]: _, ...rest } = prev
+      return rest
+    })
     loadHabits() // Reload to reset changes
   }
 
@@ -509,12 +525,21 @@ END:VEVENT
                 return (
                   <div key={index} className="border border-stone-200 rounded-lg p-5">
                     <div className="flex items-start justify-between mb-4">
-                      <p className="font-semibold text-stone-900">{habitName}</p>
-                      
+                      {isEditing ? (
+                        <textarea
+                          value={editedHabitNames[index] || habitName}
+                          onChange={(e) => handleHabitNameChange(index, e.target.value)}
+                          className="flex-1 font-semibold text-stone-900 p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none mr-2"
+                          rows={2}
+                        />
+                      ) : (
+                        <p className="font-semibold text-stone-900">{habitName}</p>
+                      )}
+
                       {!isEditing && (
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => setEditingHabitIndex(index)}
+                            onClick={() => handleStartEdit(index, habitName)}
                             className="p-2 text-stone-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition"
                             title="Edit habit"
                           >
@@ -531,7 +556,7 @@ END:VEVENT
                         </div>
                       )}
                     </div>
-                    
+
                     {isEditing ? (
                       <>
                         <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3">
