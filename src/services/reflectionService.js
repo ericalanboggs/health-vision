@@ -30,7 +30,7 @@ export const saveReflection = async (weekNumber, reflection) => {
       .select('id')
       .eq('user_id', user.id)
       .eq('week_number', weekNumber)
-      .single()
+      .maybeSingle()
 
     let result
 
@@ -114,9 +114,9 @@ export const getReflectionForWeek = async (weekNumber) => {
       .select('*')
       .eq('user_id', user.id)
       .eq('week_number', weekNumber)
-      .single()
+      .maybeSingle()
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+    if (error) {
       console.error('Error fetching reflection:', error)
       return { success: false, error }
     }
