@@ -80,23 +80,40 @@ async function sendSMS(to: string, message: string): Promise<{ success: boolean;
 
 /**
  * Parse incoming SMS body for tracking response
+ * Returns both possible interpretations so caller can use the right one based on habit type
  */
-function parseTrackingResponse(body: string): { type: 'boolean'; value: boolean } | { type: 'metric'; value: number } | null {
+function parseTrackingResponse(body: string, expectedType: 'boolean' | 'metric'): { type: 'boolean'; value: boolean } | { type: 'metric'; value: number } | null {
   const trimmed = body.trim().toLowerCase()
 
-  // Check for boolean responses
-  if (['y', 'yes', 'yeah', 'yep', 'done', '1', 'true'].includes(trimmed)) {
-    return { type: 'boolean', value: true }
-  }
-  if (['n', 'no', 'nope', 'nah', '0', 'false', 'skip', 'skipped'].includes(trimmed)) {
-    return { type: 'boolean', value: false }
-  }
-
-  // Check for numeric responses
-  const numMatch = trimmed.match(/^[\d.]+/)
+  // Check for pure numeric values first (including "1" and "0")
+  const numMatch = trimmed.match(/^[\d.]+$/)
   if (numMatch) {
     const num = parseFloat(numMatch[0])
     if (!isNaN(num) && num >= 0) {
+      // If expecting boolean, convert: 0 = false, anything else = true
+      if (expectedType === 'boolean') {
+        return { type: 'boolean', value: num !== 0 }
+      }
+      return { type: 'metric', value: num }
+    }
+  }
+
+  // Check for boolean keyword responses (y, yes, n, no, etc.)
+  if (['y', 'yes', 'yeah', 'yep', 'done', 'true'].includes(trimmed)) {
+    return { type: 'boolean', value: true }
+  }
+  if (['n', 'no', 'nope', 'nah', 'false', 'skip', 'skipped'].includes(trimmed)) {
+    return { type: 'boolean', value: false }
+  }
+
+  // Check for numbers with units (e.g., "30 min", "8 oz")
+  const numWithUnitMatch = trimmed.match(/^[\d.]+/)
+  if (numWithUnitMatch) {
+    const num = parseFloat(numWithUnitMatch[0])
+    if (!isNaN(num) && num >= 0) {
+      if (expectedType === 'boolean') {
+        return { type: 'boolean', value: num !== 0 }
+      }
       return { type: 'metric', value: num }
     }
   }
@@ -191,32 +208,17 @@ serve(async (req) => {
       )
     }
 
-    // Parse the response
-    const parsed = parseTrackingResponse(body)
+    // Parse the response based on expected type
+    const configType = trackingConfig.tracking_type as 'boolean' | 'metric'
+    const parsed = parseTrackingResponse(body, configType)
 
     if (!parsed) {
       // Send error message
       let helpMessage: string
-      if (trackingConfig.tracking_type === 'boolean') {
+      if (configType === 'boolean') {
         helpMessage = `I didn't understand that. Reply Y or N for "${habitName}".`
       } else {
         helpMessage = `I didn't understand that. Reply with a number for "${habitName}".`
-      }
-      await sendSMS(from, helpMessage)
-      return new Response(
-        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
-        { headers: { 'Content-Type': 'text/xml' } }
-      )
-    }
-
-    // Check if types match
-    const configType = trackingConfig.tracking_type
-    if (parsed.type !== configType) {
-      let helpMessage: string
-      if (configType === 'boolean') {
-        helpMessage = `"${habitName}" is tracked as yes/no. Reply Y or N.`
-      } else {
-        helpMessage = `"${habitName}" is tracked as a number. Reply with a number (e.g., 30).`
       }
       await sendSMS(from, helpMessage)
       return new Response(
