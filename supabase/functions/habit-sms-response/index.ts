@@ -259,27 +259,23 @@ serve(async (req) => {
       )
     }
 
-    // Send confirmation
+    // Send confirmation with login URL
     let confirmationMessage: string
     const firstName = profile.first_name || 'there'
+    const loginUrl = 'summit-pilot.vercel.app'
 
     if (parsed.type === 'boolean') {
       if (parsed.value) {
-        confirmationMessage = `Great job, ${firstName}! Logged "${habitName}" as complete for today.`
+        confirmationMessage = `Got it, ${firstName}! ✓ Logged. See your progress at ${loginUrl}`
       } else {
-        confirmationMessage = `Got it, ${firstName}. "${habitName}" marked as not done today. Tomorrow's a new day!`
+        confirmationMessage = `Got it, ${firstName}. Tomorrow's a new day! Track at ${loginUrl}`
       }
     } else {
       const unit = trackingConfig.metric_unit || 'units'
-      confirmationMessage = `Logged ${parsed.value} ${unit} for "${habitName}". `
-
       if (trackingConfig.metric_target && parsed.value >= trackingConfig.metric_target) {
-        confirmationMessage += `You hit your target! Great job, ${firstName}!`
-      } else if (trackingConfig.metric_target) {
-        const remaining = trackingConfig.metric_target - parsed.value
-        confirmationMessage += `${remaining} more to hit your daily goal of ${trackingConfig.metric_target}.`
+        confirmationMessage = `Got it, ${firstName}! ${parsed.value} ${unit} ✓ Target hit! See progress at ${loginUrl}`
       } else {
-        confirmationMessage += `Keep it up, ${firstName}!`
+        confirmationMessage = `Got it, ${firstName}! ${parsed.value} ${unit} logged. See progress at ${loginUrl}`
       }
     }
 
