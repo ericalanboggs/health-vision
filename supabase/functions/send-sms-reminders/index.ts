@@ -83,6 +83,57 @@ function getCurrentTimeInTimezone(timezone: string): { hours: number; minutes: n
 }
 
 /**
+ * Pick a relevant emoji for a habit based on its name
+ */
+function getHabitEmoji(habitName: string): string {
+  const name = habitName.toLowerCase()
+
+  // Meditation / mindfulness
+  if (name.includes('meditat') || name.includes('mindful') || name.includes('breath')) return '🧘'
+  // Water / hydration
+  if (name.includes('water') || name.includes('hydrat') || name.includes('drink')) return '🚰'
+  // Running / cardio
+  if (name.includes('run') || name.includes('jog') || name.includes('cardio')) return '🏃'
+  // Walking
+  if (name.includes('walk') || name.includes('step')) return '🚶'
+  // Exercise / workout
+  if (name.includes('exercis') || name.includes('workout') || name.includes('gym') || name.includes('lift') || name.includes('strength')) return '💪'
+  // Yoga / stretching
+  if (name.includes('yoga') || name.includes('stretch')) return '🧘'
+  // Journaling / writing
+  if (name.includes('journal') || name.includes('writ') || name.includes('diary')) return '📝'
+  // Reading
+  if (name.includes('read') || name.includes('book')) return '📚'
+  // Sleep / rest
+  if (name.includes('sleep') || name.includes('bed') || name.includes('rest')) return '😴'
+  // Vitamins / supplements / medication
+  if (name.includes('vitamin') || name.includes('supplement') || name.includes('medic') || name.includes('pill')) return '💊'
+  // Eating / nutrition
+  if (name.includes('eat') || name.includes('food') || name.includes('meal') || name.includes('nutrition') || name.includes('vegetable') || name.includes('fruit')) return '🥗'
+  // Prayer / spiritual
+  if (name.includes('pray') || name.includes('spiritual') || name.includes('gratitude') || name.includes('thank')) return '🙏'
+  // Cycling / biking
+  if (name.includes('bike') || name.includes('cycl')) return '🚴'
+  // Swimming
+  if (name.includes('swim')) return '🏊'
+  // Cleaning / organizing
+  if (name.includes('clean') || name.includes('organiz') || name.includes('tidy')) return '🧹'
+  // Learning / studying
+  if (name.includes('learn') || name.includes('study') || name.includes('course')) return '🎓'
+  // Music / practice
+  if (name.includes('music') || name.includes('piano') || name.includes('guitar') || name.includes('practic')) return '🎵'
+  // Cooking
+  if (name.includes('cook') || name.includes('recipe')) return '👨‍🍳'
+  // Phone / screen time
+  if (name.includes('phone') || name.includes('screen')) return '📱'
+  // Nature / outdoors
+  if (name.includes('nature') || name.includes('outdoor') || name.includes('hike')) return '🌲'
+
+  // Default fallback
+  return '✨'
+}
+
+/**
  * Generate a personalized reminder message using OpenAI
  * Supports multiple habits with emoji representation
  */
@@ -95,8 +146,11 @@ async function generatePersonalizedMessage(
   const habitNames = habits.map(h => h.name).join(', ')
   const firstHabitTime = formatTime12Hour(habits[0].time)
 
-  // Fallback message generator
-  const generateFallback = (emojis: string = '🏔️') => {
+  // Generate emojis for all habits
+  const emojis = habits.map(h => getHabitEmoji(h.name)).join('')
+
+  // Fallback message generator (uses smart emoji selection)
+  const generateFallback = () => {
     if (habitCount === 1) {
       return `Hi ${firstName}! ${emojis} Time for ${habits[0].name.toLowerCase()} at ${firstHabitTime}. You've got this!`
     }
@@ -105,7 +159,7 @@ async function generatePersonalizedMessage(
 
   // Fallback if OpenAI is not configured
   if (!OPENAI_API_KEY) {
-    console.log('OpenAI not configured, using generic message')
+    console.log('OpenAI not configured, using fallback with smart emojis')
     return generateFallback()
   }
 
