@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Loader2, Check } from 'lucide-react'
-import { getEntriesForWeek, saveEntry, getStreak } from '../services/trackingService'
+import { getEntriesForWeek, saveEntry, deleteEntry, getStreak } from '../services/trackingService'
 import { getHabitScheduleDays } from '../services/habitService'
 import {
   getCurrentWeekStart,
@@ -221,7 +221,7 @@ export default function WeeklyTracker({
     // If no local change, nothing to save
     if (value === undefined) return
 
-    // Empty value - clear the entry
+    // Empty value - delete the entry from database
     if (value === '') {
       setEntries(prev => ({
         ...prev,
@@ -232,6 +232,14 @@ export default function WeeklyTracker({
         const { [dateStr]: _, ...rest } = prev
         return rest
       })
+      // Remove celebration
+      setCelebrations(prev => {
+        const { [dateStr]: _, ...rest } = prev
+        return rest
+      })
+      // Delete from database and reload streak
+      await deleteEntry(habitName, date)
+      loadStreak(scheduledDays)
       return
     }
 
