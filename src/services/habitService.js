@@ -320,3 +320,77 @@ export const hasCurrentWeekHabits = async () => {
   const { success, data } = await getCurrentWeekHabits()
   return success && data && data.length > 0
 }
+
+/**
+ * Get all scheduled days (day_of_week values) for a specific habit
+ * @param {string} habitName - Name of the habit
+ * @returns {Promise<{success: boolean, data?: number[], error?: any}>}
+ */
+export const getHabitScheduleDays = async (habitName) => {
+  try {
+    if (!supabase) {
+      return { success: false, error: 'Supabase is not configured' }
+    }
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    const { data, error } = await supabase
+      .from('weekly_habits')
+      .select('day_of_week')
+      .eq('user_id', user.id)
+      .eq('habit_name', habitName)
+
+    if (error) {
+      console.error('Error fetching habit schedule days:', error)
+      return { success: false, error }
+    }
+
+    // Extract unique day_of_week values
+    const days = [...new Set(data.map(h => h.day_of_week))]
+
+    return { success: true, data: days }
+  } catch (error) {
+    console.error('Error in getHabitScheduleDays:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Get all unique habit names for the current user
+ * @returns {Promise<{success: boolean, data?: string[], error?: any}>}
+ */
+export const getUniqueHabitNames = async () => {
+  try {
+    if (!supabase) {
+      return { success: false, error: 'Supabase is not configured' }
+    }
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    const { data, error } = await supabase
+      .from('weekly_habits')
+      .select('habit_name')
+      .eq('user_id', user.id)
+
+    if (error) {
+      console.error('Error fetching unique habit names:', error)
+      return { success: false, error }
+    }
+
+    // Extract unique habit names
+    const names = [...new Set(data.map(h => h.habit_name))]
+
+    return { success: true, data: names }
+  } catch (error) {
+    console.error('Error in getUniqueHabitNames:', error)
+    return { success: false, error }
+  }
+}

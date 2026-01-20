@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Beaker, Save, Loader2, Edit2, CheckCircle, Trash2, Plus, Calendar, Copy, Check, MoreVertical } from 'lucide-react'
+import { ArrowLeft, Beaker, Save, Loader2, Edit2, CheckCircle, Trash2, Plus, Calendar, Copy, Check, MoreVertical, ToggleLeft, ToggleRight } from 'lucide-react'
 import { getAllUserHabits, deleteAllUserHabits, saveHabitsForWeek } from '../services/habitService'
 import { getCurrentWeekNumber } from '../utils/weekCalculator'
 import { formatDaysDisplay, convertShortToFullDays } from '../utils/formatDays'
 import { getCurrentUser, getProfile } from '../services/authService'
+import { getAllTrackingConfigs, disableTracking, saveTrackingConfig, getAiSuggestion } from '../services/trackingService'
+import { METRIC_UNITS } from '../constants/metricUnits'
+import WeeklyTracker from '../components/WeeklyTracker'
 
 export default function Habits() {
   const navigate = useNavigate()
@@ -20,6 +23,9 @@ export default function Habits() {
   const [copied, setCopied] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [editedHabitNames, setEditedHabitNames] = useState({})
+  const [trackingConfigs, setTrackingConfigs] = useState({})
+  const [togglingTracking, setTogglingTracking] = useState(null) // habitName being toggled
+  const [customUnitInputs, setCustomUnitInputs] = useState({}) // Local state for custom unit typing
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const dayMap = {
@@ -54,7 +60,19 @@ export default function Habits() {
     }
     fetchUserTimezone()
     loadHabits()
+    loadTrackingConfigs()
   }, [])
+
+  const loadTrackingConfigs = async () => {
+    const { success, data } = await getAllTrackingConfigs()
+    if (success && data) {
+      const configMap = {}
+      data.forEach(config => {
+        configMap[config.habit_name] = config
+      })
+      setTrackingConfigs(configMap)
+    }
+  }
 
   const loadHabits = async () => {
     setLoading(true)
@@ -396,6 +414,84 @@ END:VEVENT
     return Object.entries(groups)
   }
 
+  // Toggle tracking on/off with auto AI suggestion when enabling
+  const handleToggleTracking = async (habitName) => {
+    const currentConfig = trackingConfigs[habitName]
+    const isCurrentlyEnabled = currentConfig?.tracking_enabled
+
+    if (isCurrentlyEnabled) {
+      // Disable tracking
+      setTogglingTracking(habitName)
+      const { success } = await disableTracking(habitName)
+      if (success) {
+        setTrackingConfigs(prev => ({
+          ...prev,
+          [habitName]: { ...prev[habitName], tracking_enabled: false }
+        }))
+      }
+      setTogglingTracking(null)
+    } else {
+      // Enable tracking - fetch AI suggestion and auto-apply
+      setTogglingTracking(habitName)
+
+      // Get AI suggestion
+      const { success: aiSuccess, data: suggestion } = await getAiSuggestion(habitName)
+
+      const config = {
+        tracking_enabled: true,
+        tracking_type: aiSuccess && suggestion ? suggestion.tracking_type : 'boolean',
+        metric_unit: aiSuccess && suggestion?.unit ? suggestion.unit : null,
+        metric_target: aiSuccess && suggestion?.suggested_target ? suggestion.suggested_target : null,
+        ai_suggested_unit: aiSuccess && suggestion?.unit ? suggestion.unit : null
+      }
+
+      const { success } = await saveTrackingConfig(habitName, config)
+      if (success) {
+        setTrackingConfigs(prev => ({
+          ...prev,
+          [habitName]: { ...config, habit_name: habitName }
+        }))
+      }
+      setTogglingTracking(null)
+    }
+  }
+
+  // Update tracking type (Y/N vs Metrics)
+  const handleTrackingTypeChange = async (habitName, newType) => {
+    const currentConfig = trackingConfigs[habitName]
+    const config = {
+      ...currentConfig,
+      tracking_type: newType,
+      metric_unit: newType === 'metric' ? (currentConfig?.metric_unit || 'minutes') : null,
+      metric_target: newType === 'metric' ? currentConfig?.metric_target : null
+    }
+
+    const { success } = await saveTrackingConfig(habitName, config)
+    if (success) {
+      setTrackingConfigs(prev => ({
+        ...prev,
+        [habitName]: { ...config, habit_name: habitName }
+      }))
+    }
+  }
+
+  // Update metric unit
+  const handleMetricUnitChange = async (habitName, newUnit) => {
+    const currentConfig = trackingConfigs[habitName]
+    const config = {
+      ...currentConfig,
+      metric_unit: newUnit
+    }
+
+    const { success } = await saveTrackingConfig(habitName, config)
+    if (success) {
+      setTrackingConfigs(prev => ({
+        ...prev,
+        [habitName]: { ...config, habit_name: habitName }
+      }))
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50 flex items-center justify-center">
@@ -633,14 +729,142 @@ END:VEVENT
                         </div>
                       </>
                     ) : (
-                      <div className="text-sm text-stone-700">
-                        <p className="mb-1">
-                          <strong>Days:</strong> {committedDays.length > 0 ? formatDaysDisplay(convertShortToFullDays(committedDays)) : 'Not set'}
-                        </p>
-                        <p>
-                          <strong>Time:</strong> {timeOfDayOptions.find(opt => opt.value === timeSlot)?.label || 'Not set'}
-                        </p>
-                      </div>
+                      <>
+                        <div className="text-sm text-stone-700">
+                          <p className="mb-1">
+                            <strong>Days:</strong> {committedDays.length > 0 ? formatDaysDisplay(convertShortToFullDays(committedDays)) : 'Not set'}
+                          </p>
+                          <p>
+                            <strong>Time:</strong> {timeOfDayOptions.find(opt => opt.value === timeSlot)?.label || 'Not set'}
+                          </p>
+                        </div>
+
+                        {/* Track Details Section */}
+                        <div className="mt-4 pt-4 border-t border-stone-200">
+                          {/* Track Details Toggle Row */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-stone-700">Track Details</span>
+                            <button
+                              onClick={() => handleToggleTracking(habitName)}
+                              disabled={togglingTracking === habitName}
+                              className="flex items-center gap-1 text-sm transition disabled:opacity-50"
+                            >
+                              {togglingTracking === habitName ? (
+                                <Loader2 className="w-5 h-5 animate-spin text-stone-400" />
+                              ) : trackingConfigs[habitName]?.tracking_enabled ? (
+                                <ToggleRight className="w-8 h-8 text-green-600" />
+                              ) : (
+                                <ToggleLeft className="w-8 h-8 text-stone-400" />
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Expanded Tracking Controls (when enabled) */}
+                          {trackingConfigs[habitName]?.tracking_enabled && (
+                            <div className="mt-4 space-y-4">
+                              {/* Tracking Type Segmented Button + Unit Dropdown */}
+                              <div className="flex items-center gap-3">
+                                {/* Y/N | Metrics Segmented Button */}
+                                <div className="flex rounded-lg border border-stone-300 overflow-hidden">
+                                  <button
+                                    onClick={() => handleTrackingTypeChange(habitName, 'boolean')}
+                                    className={`px-4 py-2 text-sm font-medium transition ${
+                                      trackingConfigs[habitName].tracking_type === 'boolean'
+                                        ? 'bg-green-600 text-white'
+                                        : 'bg-white text-stone-600 hover:bg-stone-50'
+                                    }`}
+                                  >
+                                    Y/N
+                                  </button>
+                                  <button
+                                    onClick={() => handleTrackingTypeChange(habitName, 'metric')}
+                                    className={`px-4 py-2 text-sm font-medium transition border-l border-stone-300 ${
+                                      trackingConfigs[habitName].tracking_type === 'metric'
+                                        ? 'bg-green-600 text-white'
+                                        : 'bg-white text-stone-600 hover:bg-stone-50'
+                                    }`}
+                                  >
+                                    Metrics
+                                  </button>
+                                </div>
+
+                                {/* Unit Dropdown (only for metrics) */}
+                                {trackingConfigs[habitName].tracking_type === 'metric' && (() => {
+                                  const currentUnit = trackingConfigs[habitName].metric_unit || 'minutes'
+                                  const isCustomUnit = !METRIC_UNITS.find(u => u.value === currentUnit)
+                                  const showCustomInput = currentUnit === 'other' || isCustomUnit
+                                  const localCustomValue = customUnitInputs[habitName]
+
+                                  return (
+                                    <div className="flex items-center gap-2">
+                                      <select
+                                        value={isCustomUnit && currentUnit !== 'other' ? 'other' : currentUnit}
+                                        onChange={(e) => {
+                                          if (e.target.value === 'other') {
+                                            // Just show the input, don't save yet
+                                            setCustomUnitInputs(prev => ({ ...prev, [habitName]: '' }))
+                                            handleMetricUnitChange(habitName, 'other')
+                                          } else {
+                                            // Clear any custom input and save the selected unit
+                                            setCustomUnitInputs(prev => {
+                                              const { [habitName]: _, ...rest } = prev
+                                              return rest
+                                            })
+                                            handleMetricUnitChange(habitName, e.target.value)
+                                          }
+                                        }}
+                                        className="px-3 py-2 text-sm border border-stone-300 rounded-lg bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                      >
+                                        {METRIC_UNITS.map(unit => (
+                                          <option key={unit.value} value={unit.value}>
+                                            {unit.value}
+                                          </option>
+                                        ))}
+                                        <option value="other">Other...</option>
+                                      </select>
+                                      {showCustomInput && (
+                                        <input
+                                          type="text"
+                                          value={localCustomValue !== undefined ? localCustomValue : (currentUnit === 'other' ? '' : currentUnit)}
+                                          onChange={(e) => setCustomUnitInputs(prev => ({ ...prev, [habitName]: e.target.value }))}
+                                          onBlur={() => {
+                                            const value = customUnitInputs[habitName]
+                                            if (value !== undefined && value.trim()) {
+                                              handleMetricUnitChange(habitName, value.trim())
+                                            }
+                                            setCustomUnitInputs(prev => {
+                                              const { [habitName]: _, ...rest } = prev
+                                              return rest
+                                            })
+                                          }}
+                                          placeholder="e.g., things"
+                                          className="px-3 py-2 text-sm border border-stone-300 rounded-lg bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 w-28"
+                                          autoFocus
+                                        />
+                                      )}
+                                    </div>
+                                  )
+                                })()}
+                              </div>
+
+                              {/* Helper Text */}
+                              <p className="text-xs text-stone-500">
+                                {trackingConfigs[habitName].tracking_type === 'boolean'
+                                  ? 'Track you did it, yes or no.'
+                                  : 'Enter an amount or unit each day.'}
+                              </p>
+
+                              {/* Weekly Tracker */}
+                              <WeeklyTracker
+                                habitName={habitName}
+                                trackingType={trackingConfigs[habitName].tracking_type}
+                                metricUnit={trackingConfigs[habitName].metric_unit}
+                                metricTarget={trackingConfigs[habitName].metric_target}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
                 )
