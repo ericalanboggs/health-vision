@@ -84,42 +84,56 @@ function getCurrentTimeInTimezone(timezone: string): { hours: number; minutes: n
 
 /**
  * Generate a personalized reminder message using OpenAI
+ * Supports multiple habits with emoji representation
  */
 async function generatePersonalizedMessage(
   firstName: string,
-  habitName: string,
-  timeOfDay: string,
+  habits: { name: string; time: string }[],
   visionData: VisionData
 ): Promise<string> {
-  // Convert time to 12-hour format with AM/PM
-  const formattedTime = formatTime12Hour(timeOfDay)
-  
-  // Fallback to generic message if OpenAI is not configured
+  const habitCount = habits.length
+  const habitNames = habits.map(h => h.name).join(', ')
+  const firstHabitTime = formatTime12Hour(habits[0].time)
+
+  // Fallback message generator
+  const generateFallback = (emojis: string = '🏔️') => {
+    if (habitCount === 1) {
+      return `Hi ${firstName}! ${emojis} Time for ${habits[0].name.toLowerCase()} at ${firstHabitTime}. You've got this!`
+    }
+    return `Hi ${firstName}! ${habitCount} habits today ${emojis}. Starting at ${firstHabitTime}. You've got this!`
+  }
+
+  // Fallback if OpenAI is not configured
   if (!OPENAI_API_KEY) {
     console.log('OpenAI not configured, using generic message')
-    return `Hi ${firstName}! 🏔️ Reminder: "${habitName}" is coming up at ${formattedTime}. You've got this!`
+    return generateFallback()
   }
 
   try {
-    const prompt = `You are a supportive health coach sending a brief SMS reminder. Generate a personalized, motivating reminder message (max 160 characters) for this habit.
+    const prompt = `You are a supportive health coach sending a brief SMS reminder. Generate a personalized message.
 
-User's Health Vision: ${visionData.visionStatement || 'Not provided'}
-Why It Matters: ${visionData.whyMatters || 'Not provided'}
 User's Name: ${firstName}
-Habit: ${habitName}
-Time: ${formattedTime}
+Number of Habits Today: ${habitCount}
+Habits: ${habitNames}
+First Habit Time: ${firstHabitTime}
+User's Health Vision: ${visionData.visionStatement || 'Living healthier'}
+Why It Matters: ${visionData.whyMatters || 'To feel better'}
 
 Requirements:
-- Keep it under 160 characters (SMS-friendly)
-- Include the 🏔️ emoji
-- Connect the habit to their vision/why
-- Be encouraging and personal
+- MUST be under 155 characters total
 - Start with "Hi ${firstName}!"
-- Don't use quotes around the habit name
+- Choose 1 relevant emoji per habit (e.g., 🧘 for meditation, 🚰 for water, 🏃 for running, 📝 for journaling, 💊 for vitamins, 🥗 for healthy eating, 😴 for sleep, 📚 for reading)
+- If multiple habits: "Hi ${firstName}! ${habitCount} habits today [emojis]. [Brief vision connection]. You've got this!"
+- If single habit: "Hi ${firstName}! [emoji] Time for [habit] at ${firstHabitTime}. [Brief encouragement]"
+- Keep the vision connection SHORT (5-8 words max)
+- End with "You've got this!" or similar short encouragement
 
-Example: "Hi ${firstName}! 🏔️ Your walk at ${formattedTime} is a step toward that energized, clear-headed version of you. Let's go!"
+Examples:
+- "Hi ${firstName}! 2 habits today 🧘🚰. Building your calm, energized self. You've got this!"
+- "Hi ${firstName}! 🏃 Time for your run at ${firstHabitTime}. One step closer to your summit!"
+- "Hi ${firstName}! 3 habits today 📝🥗💊. Investing in future you. Let's go!"
 
-Generate the message:`
+Generate the message (under 155 chars):`
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -132,14 +146,14 @@ Generate the message:`
         messages: [
           {
             role: 'system',
-            content: 'You are a supportive health coach who writes brief, personalized SMS reminders that connect habits to users\' health visions.'
+            content: 'You are a supportive health coach. Write very brief SMS reminders under 155 characters. Always pick relevant emojis for each habit.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_tokens: 100,
+        max_tokens: 80,
         temperature: 0.7,
       }),
     })
@@ -149,25 +163,27 @@ Generate the message:`
     }
 
     const data = await response.json()
-    const message = data.choices[0]?.message?.content?.trim()
+    let message = data.choices[0]?.message?.content?.trim()
 
     if (!message) {
       throw new Error('No message generated')
     }
 
-    // Ensure message is under 160 characters
-    if (message.length > 160) {
-      console.log('Generated message too long, using generic')
-      return `Hi ${firstName}! 🏔️ Reminder: "${habitName}" is coming up at ${formattedTime}. You've got this!`
+    // Remove any quotes that might wrap the message
+    message = message.replace(/^["']|["']$/g, '')
+
+    // Ensure message is under 160 characters (leave room for "Reply STOP to opt out")
+    if (message.length > 155) {
+      console.log('Generated message too long, using fallback')
+      return generateFallback()
     }
 
-    console.log(`✨ Generated personalized message: ${message}`)
+    console.log(`✨ Generated message (${message.length} chars): ${message}`)
     return message
 
   } catch (error) {
     console.error('Error generating personalized message:', error)
-    // Fallback to generic message
-    return `Hi ${firstName}! 🏔️ Reminder: "${habitName}" is coming up at ${formattedTime}. You've got this!`
+    return generateFallback()
   }
 }
 
@@ -371,18 +387,19 @@ serve(async (req) => {
       const visionData = visionMap.get(userId) || {}
       const firstName = profile.first_name || 'there'
 
-      // Build short message (under 160 chars for single SMS segment - better deliverability)
-      const formattedTime = formatTime12Hour(getEffectiveTime(firstHabit))
+      // Build habits array for message generation
+      const habitsForMessage = sortedHabits.map(h => ({
+        name: h.habit_name,
+        time: getEffectiveTime(h)
+      }))
 
-      // Truncate habit name if needed to keep message under 160 chars
-      let habitName = firstHabit.habit_name.toLowerCase()
-      if (habitName.length > 45) {
-        habitName = habitName.substring(0, 42) + '...'
-      }
+      // Generate personalized message with emojis for all habits
+      const personalizedMessage = await generatePersonalizedMessage(firstName, habitsForMessage, visionData)
 
-      const message = `Hi ${firstName}! 🏔️ Time for your ${habitName} at ${formattedTime} - one step closer to your Summit! You've got this! Reply STOP to opt out.`
+      // Add opt-out footer
+      const message = `${personalizedMessage} Reply STOP to opt out.`
 
-      console.log(`Message length: ${message.length} characters`)
+      console.log(`Message length: ${message.length} characters (${sortedHabits.length} habits)`)
 
       try {
         // Send SMS via Twilio
