@@ -429,6 +429,104 @@ export const getAiSuggestion = async (habitName) => {
 // ============================================================================
 
 /**
+ * Calculate streak (consecutive scheduled days completed) for a habit
+ * @param {string} habitName - Name of the habit
+ * @param {number[]} scheduledDays - Array of scheduled day numbers (0=Sun, 1=Mon, etc.)
+ * @param {string} trackingType - 'boolean' or 'metric'
+ * @returns {Promise<{success: boolean, data?: {streak: number}, error?: any}>}
+ */
+export const getStreak = async (habitName, scheduledDays, trackingType) => {
+  try {
+    if (!supabase) {
+      return { success: false, error: 'Supabase is not configured' }
+    }
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    // Get entries for the last 90 days (should be plenty for streak calculation)
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - 90)
+
+    const { data: entries, error } = await supabase
+      .from('habit_tracking_entries')
+      .select('entry_date, completed, metric_value')
+      .eq('user_id', user.id)
+      .eq('habit_name', habitName)
+      .gte('entry_date', formatDateForDB(startDate))
+      .lte('entry_date', formatDateForDB(endDate))
+      .order('entry_date', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching entries for streak:', error)
+      return { success: false, error }
+    }
+
+    // Create a map of entry dates for quick lookup
+    const entryMap = {}
+    ;(entries || []).forEach(entry => {
+      entryMap[entry.entry_date] = entry
+    })
+
+    // Helper to check if an entry is "completed"
+    const isCompleted = (entry) => {
+      if (!entry) return false
+      if (trackingType === 'boolean') {
+        return entry.completed === true
+      } else {
+        // For metrics, any non-null value counts as completed
+        return entry.metric_value !== null
+      }
+    }
+
+    // Calculate streak by going backwards from today through scheduled days
+    let streak = 0
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    // Start from today and go backwards
+    let currentDate = new Date(today)
+
+    // If today is not a scheduled day, start from the most recent scheduled day
+    while (!scheduledDays.includes(currentDate.getDay())) {
+      currentDate.setDate(currentDate.getDate() - 1)
+      // Safety check - don't go back more than 7 days looking for a scheduled day
+      if (today - currentDate > 7 * 24 * 60 * 60 * 1000) {
+        return { success: true, data: { streak: 0 } }
+      }
+    }
+
+    // Now count backwards through scheduled days
+    while (currentDate >= startDate) {
+      const dateStr = formatDateForDB(currentDate)
+      const entry = entryMap[dateStr]
+
+      // If this is a scheduled day
+      if (scheduledDays.includes(currentDate.getDay())) {
+        if (isCompleted(entry)) {
+          streak++
+        } else {
+          // Streak broken - stop counting
+          break
+        }
+      }
+
+      // Move to previous day
+      currentDate.setDate(currentDate.getDate() - 1)
+    }
+
+    return { success: true, data: { streak } }
+  } catch (error) {
+    console.error('Error in getStreak:', error)
+    return { success: false, error }
+  }
+}
+
+/**
  * Get completion statistics for a habit
  * @param {string} habitName - Name of the habit
  * @param {Date} startDate - Start of date range
