@@ -243,21 +243,27 @@ serve(async (req) => {
         continue
       }
 
-      // Check if we already sent a followup today
-      const { data: existingFollowup } = await supabase
+      // Check which habits already have a followup sent today (per-habit, not per-user)
+      const { data: existingFollowups } = await supabase
         .from('sms_followup_log')
-        .select('id')
+        .select('habit_name')
         .eq('user_id', profile.id)
         .gte('sent_at', `${userLocalTime.dateStr}T00:00:00`)
-        .maybeSingle()
 
-      if (existingFollowup) {
-        console.log(`User ${profile.id}: Already sent followup today`)
+      const habitsWithFollowupSent = new Set(existingFollowups?.map(f => f.habit_name) || [])
+
+      // Filter to habits that haven't had a followup sent yet today
+      const habitsNeedingFirstFollowup = habitsNeedingFollowup.filter(
+        (habit: Habit) => !habitsWithFollowupSent.has(habit.habit_name)
+      )
+
+      if (habitsNeedingFirstFollowup.length === 0) {
+        console.log(`User ${profile.id}: All tracked habits already have followups sent today`)
         continue
       }
 
       // Send followup SMS for the first habit needing followup
-      const habitToFollowup = habitsNeedingFollowup[0]
+      const habitToFollowup = habitsNeedingFirstFollowup[0]
       const trackingConfig = trackingConfigs.find(
         (c: TrackingConfig) => c.habit_name === habitToFollowup.habit_name
       )

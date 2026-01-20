@@ -26,6 +26,26 @@ function getTodayInTimezone(timezone: string): string {
 }
 
 /**
+ * Get day of week (0-6, Sunday=0) in a specific timezone
+ */
+function getDayOfWeekInTimezone(timezone: string): number {
+  try {
+    const now = new Date()
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      weekday: 'short',
+    })
+    const weekdayStr = formatter.format(now)
+    const dayMap: Record<string, number> = {
+      'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6
+    }
+    return dayMap[weekdayStr] ?? 0
+  } catch (error) {
+    return new Date().getDay()
+  }
+}
+
+/**
  * Send SMS via Twilio
  */
 async function sendSMS(to: string, message: string): Promise<{ success: boolean; sid?: string; error?: string }> {
@@ -264,6 +284,76 @@ serve(async (req) => {
     await sendSMS(from, confirmationMessage)
 
     console.log(`Successfully logged ${parsed.type} entry for ${habitName}`)
+
+    // Check if there are more habits to follow up on (conversational chaining)
+    try {
+      const dayOfWeek = getDayOfWeekInTimezone(userTimezone)
+
+      // Get all habits scheduled for today
+      const { data: todayHabits } = await supabase
+        .from('weekly_habits')
+        .select('habit_name')
+        .eq('user_id', profile.id)
+        .eq('day_of_week', dayOfWeek)
+
+      if (todayHabits && todayHabits.length > 0) {
+        // Get all tracking configs that are enabled
+        const { data: allTrackingConfigs } = await supabase
+          .from('habit_tracking_config')
+          .select('*')
+          .eq('user_id', profile.id)
+          .eq('tracking_enabled', true)
+
+        if (allTrackingConfigs && allTrackingConfigs.length > 0) {
+          // Get existing entries for today
+          const { data: existingEntries } = await supabase
+            .from('habit_tracking_entries')
+            .select('habit_name')
+            .eq('user_id', profile.id)
+            .eq('entry_date', todayStr)
+
+          const habitsWithEntries = new Set(existingEntries?.map(e => e.habit_name) || [])
+
+          // Find habits that: are scheduled today, have tracking enabled, don't have entries yet
+          const habitsNeedingFollowup = todayHabits.filter(habit =>
+            allTrackingConfigs.some(config => config.habit_name === habit.habit_name) &&
+            !habitsWithEntries.has(habit.habit_name)
+          )
+
+          if (habitsNeedingFollowup.length > 0) {
+            const nextHabit = habitsNeedingFollowup[0]
+            const nextConfig = allTrackingConfigs.find(c => c.habit_name === nextHabit.habit_name)
+
+            if (nextConfig) {
+              // Build the next follow-up message
+              let nextMessage: string
+              if (nextConfig.tracking_type === 'boolean') {
+                nextMessage = `Did you complete "${nextConfig.habit_name}" today? Reply Y or N`
+              } else {
+                const unit = nextConfig.metric_unit || 'units'
+                nextMessage = `How many ${unit} for "${nextConfig.habit_name}" today? Reply with a number`
+              }
+
+              // Send the next follow-up
+              await sendSMS(from, nextMessage)
+
+              // Log the follow-up
+              await supabase.from('sms_followup_log').insert({
+                user_id: profile.id,
+                habit_name: nextConfig.habit_name,
+                sent_at: new Date().toISOString(),
+                message_sent: nextMessage,
+              })
+
+              console.log(`Sent chained followup for "${nextConfig.habit_name}"`)
+            }
+          }
+        }
+      }
+    } catch (chainError) {
+      // Don't fail the response if chaining fails
+      console.error('Error in followup chaining:', chainError)
+    }
 
     return new Response(
       '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
