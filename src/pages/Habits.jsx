@@ -796,54 +796,61 @@ END:VEVENT
                                   const localCustomValue = customUnitInputs[habitName]
 
                                   return (
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <select
-                                        value={isCustomUnit && currentUnit !== 'other' ? 'other' : currentUnit}
-                                        onChange={(e) => {
-                                          if (e.target.value === 'other') {
-                                            // Just show the input, don't save yet
-                                            setCustomUnitInputs(prev => ({ ...prev, [habitName]: '' }))
-                                            handleMetricUnitChange(habitName, 'other')
-                                          } else {
-                                            // Clear any custom input and save the selected unit
-                                            setCustomUnitInputs(prev => {
-                                              const { [habitName]: _, ...rest } = prev
-                                              return rest
-                                            })
-                                            handleMetricUnitChange(habitName, e.target.value)
-                                          }
-                                        }}
-                                        className="px-3 py-2 text-sm border border-stone-300 rounded-lg bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                      >
-                                        {METRIC_UNITS.map(unit => (
-                                          <option key={unit.value} value={unit.value}>
-                                            {unit.value}
-                                          </option>
-                                        ))}
-                                        <option value="other">Other...</option>
-                                      </select>
-                                      {showCustomInput && (
-                                        <input
-                                          type="text"
-                                          value={localCustomValue !== undefined ? localCustomValue : (currentUnit === 'other' ? '' : currentUnit)}
-                                          onChange={(e) => setCustomUnitInputs(prev => ({ ...prev, [habitName]: e.target.value }))}
-                                          onBlur={() => {
-                                            const value = customUnitInputs[habitName]
-                                            if (value !== undefined && value.trim()) {
-                                              handleMetricUnitChange(habitName, value.trim())
-                                            }
-                                            setCustomUnitInputs(prev => {
-                                              const { [habitName]: _, ...rest } = prev
-                                              return rest
-                                            })
-                                          }}
-                                          placeholder="e.g., things"
-                                          className="px-3 py-2 text-sm border border-stone-300 rounded-lg bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 w-full sm:w-28"
-                                          autoFocus
-                                        />
-                                      )}
-                                    </div>
+                                    <select
+                                      value={isCustomUnit && currentUnit !== 'other' ? 'other' : currentUnit}
+                                      onChange={(e) => {
+                                        if (e.target.value === 'other') {
+                                          // Just show the input, don't save yet
+                                          setCustomUnitInputs(prev => ({ ...prev, [habitName]: '' }))
+                                          handleMetricUnitChange(habitName, 'other')
+                                        } else {
+                                          // Clear any custom input and save the selected unit
+                                          setCustomUnitInputs(prev => {
+                                            const { [habitName]: _, ...rest } = prev
+                                            return rest
+                                          })
+                                          handleMetricUnitChange(habitName, e.target.value)
+                                        }
+                                      }}
+                                      className="px-3 py-2 text-sm border border-stone-300 rounded-lg bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                    >
+                                      {METRIC_UNITS.map(unit => (
+                                        <option key={unit.value} value={unit.value}>
+                                          {unit.value}
+                                        </option>
+                                      ))}
+                                      <option value="other">Other...</option>
+                                    </select>
                                   )
+                                })()}
+
+                                {/* Custom Unit Input (on its own line) */}
+                                {trackingConfigs[habitName].tracking_type === 'metric' && (() => {
+                                  const currentUnit = trackingConfigs[habitName].metric_unit || 'minutes'
+                                  const isCustomUnit = !METRIC_UNITS.find(u => u.value === currentUnit)
+                                  const showCustomInput = currentUnit === 'other' || isCustomUnit
+                                  const localCustomValue = customUnitInputs[habitName]
+
+                                  return showCustomInput ? (
+                                    <input
+                                      type="text"
+                                      value={localCustomValue !== undefined ? localCustomValue : (currentUnit === 'other' ? '' : currentUnit)}
+                                      onChange={(e) => setCustomUnitInputs(prev => ({ ...prev, [habitName]: e.target.value }))}
+                                      onBlur={() => {
+                                        const value = customUnitInputs[habitName]
+                                        if (value !== undefined && value.trim()) {
+                                          handleMetricUnitChange(habitName, value.trim())
+                                        }
+                                        setCustomUnitInputs(prev => {
+                                          const { [habitName]: _, ...rest } = prev
+                                          return rest
+                                        })
+                                      }}
+                                      placeholder="e.g., things"
+                                      className="basis-full px-3 py-2 text-sm border border-stone-300 rounded-lg bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                      autoFocus
+                                    />
+                                  ) : null
                                 })()}
                               </div>
 
