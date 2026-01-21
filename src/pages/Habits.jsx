@@ -763,7 +763,7 @@ END:VEVENT
                           {trackingConfigs[habitName]?.tracking_enabled && (
                             <div className="mt-4 space-y-4">
                               {/* Tracking Type Segmented Button + Unit Dropdown */}
-                              <div className="flex items-center gap-3">
+                              <div className="flex flex-wrap items-center gap-3">
                                 {/* Y/N | Metrics Segmented Button */}
                                 <div className="flex rounded-lg border border-stone-300 overflow-hidden">
                                   <button
@@ -796,7 +796,7 @@ END:VEVENT
                                   const localCustomValue = customUnitInputs[habitName]
 
                                   return (
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-wrap items-center gap-2">
                                       <select
                                         value={isCustomUnit && currentUnit !== 'other' ? 'other' : currentUnit}
                                         onChange={(e) => {
@@ -838,7 +838,7 @@ END:VEVENT
                                             })
                                           }}
                                           placeholder="e.g., things"
-                                          className="px-3 py-2 text-sm border border-stone-300 rounded-lg bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 w-28"
+                                          className="px-3 py-2 text-sm border border-stone-300 rounded-lg bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 w-full sm:w-28"
                                           autoFocus
                                         />
                                       )}
