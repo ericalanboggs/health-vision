@@ -139,7 +139,10 @@ serve(async (req) => {
     const from = formData.get('From')?.toString() || ''
     const body = formData.get('Body')?.toString() || ''
 
-    console.log(`Received SMS from ${from}: "${body}"`)
+    console.log(`=== INCOMING SMS ===`)
+    console.log(`From: ${from}`)
+    console.log(`Body: "${body}"`)
+    console.log(`Timestamp: ${new Date().toISOString()}`)
 
     if (!from || !body) {
       // Return empty TwiML response
@@ -160,15 +163,19 @@ serve(async (req) => {
       .maybeSingle()
 
     if (profileError || !profile) {
-      console.log(`No user found for phone ${from}`)
+      console.log(`❌ No user found for phone ${from}`)
+      console.log(`Profile error: ${profileError?.message || 'none'}`)
       return new Response(
         '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
         { headers: { 'Content-Type': 'text/xml' } }
       )
     }
 
+    console.log(`✓ Found user: ${profile.id} (${profile.first_name})`)
+
     const userTimezone = profile.timezone || 'America/Chicago'
     const todayStr = getTodayInTimezone(userTimezone)
+    console.log(`User timezone: ${userTimezone}, today: ${todayStr}`)
 
     // Get the most recent followup sent to this user today
     const { data: recentFollowup, error: followupError } = await supabase
@@ -180,8 +187,11 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle()
 
+    console.log(`Followup query result: ${recentFollowup ? recentFollowup.habit_name : 'none'}`)
+    if (followupError) console.log(`Followup error: ${followupError.message}`)
+
     if (!recentFollowup) {
-      console.log(`No recent followup found for user ${profile.id}`)
+      console.log(`❌ No recent followup found for user ${profile.id} on ${todayStr}`)
       // Send a helpful response
       await sendSMS(from, `Thanks for your message! You can track habits through the app at any time.`)
       return new Response(
@@ -200,8 +210,10 @@ serve(async (req) => {
       .eq('habit_name', habitName)
       .maybeSingle()
 
+    console.log(`Tracking config: ${trackingConfig ? `type=${trackingConfig.tracking_type}, enabled=${trackingConfig.tracking_enabled}` : 'not found'}`)
+
     if (!trackingConfig || !trackingConfig.tracking_enabled) {
-      console.log(`Tracking not enabled for habit "${habitName}"`)
+      console.log(`❌ Tracking not enabled for habit "${habitName}"`)
       return new Response(
         '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
         { headers: { 'Content-Type': 'text/xml' } }
@@ -211,6 +223,7 @@ serve(async (req) => {
     // Parse the response based on expected type
     const configType = trackingConfig.tracking_type as 'boolean' | 'metric'
     const parsed = parseTrackingResponse(body, configType)
+    console.log(`Parsed response: ${parsed ? `type=${parsed.type}, value=${parsed.value}` : 'null'}`)
 
     if (!parsed) {
       // Send error message
