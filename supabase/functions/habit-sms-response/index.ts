@@ -275,7 +275,7 @@ serve(async (req) => {
     // Send confirmation with login URL
     let confirmationMessage: string
     const firstName = profile.first_name || 'there'
-    const loginUrl = 'summit-pilot.vercel.app'
+    const loginUrl = 'https://summit-pilot.vercel.app'
 
     if (parsed.type === 'boolean') {
       if (parsed.value) {
