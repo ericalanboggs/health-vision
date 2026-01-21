@@ -286,7 +286,7 @@ export const getFullDayName = (date) => {
  */
 export const formatWeekOfHeader = (weekStart) => {
   const day = weekStart.getDate()
-  const month = weekStart.toLocaleDateString('en-US', { month: 'long' })
+  const month = weekStart.toLocaleDateString('en-US', { month: 'short' })
 
   // Add ordinal suffix
   const suffix = (day === 1 || day === 21 || day === 31) ? 'st'

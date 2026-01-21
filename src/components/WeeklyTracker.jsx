@@ -336,7 +336,7 @@ export default function WeeklyTracker({
           <div className="flex items-center gap-1">
             <span className="text-base">🔥</span>
             <span className="text-sm font-medium text-stone-600">
-              {streak} day streak
+              {streak} {streak === 1 ? 'day' : 'days'}
             </span>
           </div>
         )}
