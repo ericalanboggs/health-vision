@@ -18,7 +18,8 @@ const PILOT_ALLOWLIST = [
   'davegottlieb@gmail.com',
   'andria.govoni@gmail.com',
   'dboggs.arlington@gmail.com',
-  'ariellebernstein@gmail.com'
+  'ariellebernstein@gmail.com',
+  'annatharayil@gmail.com'
 ]
 
 export const isPilotApproved = (email) => {
