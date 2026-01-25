@@ -72,6 +72,25 @@ export default function DashboardSummit() {
       return utcDate.toLocaleDateString('en-US', options)
     }
 
+    const formatDateLong = (date) => {
+      const utcDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000))
+      const month = utcDate.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })
+      const day = utcDate.getUTCDate()
+      const year = utcDate.getUTCFullYear()
+
+      const ordinal = (d) => {
+        if (d > 3 && d < 21) return 'th'
+        switch (d % 10) {
+          case 1: return 'st'
+          case 2: return 'nd'
+          case 3: return 'rd'
+          default: return 'th'
+        }
+      }
+
+      return `${month} ${day}${ordinal(day)}, ${year}`
+    }
+
     if (todayMidnight < pilotStart) {
       return `Pilot Week 1: Starts ${formatDate(pilotStart, true)}`
     }
@@ -102,7 +121,7 @@ export default function DashboardSummit() {
       return `Pilot Week 3: Monday ${formatDate(week3Start)} - Sunday ${formatDate(week3End)}`
     }
 
-    return 'Pilot Complete'
+    return `Pilot complete ${formatDateLong(week3End)}`
   }
 
   useEffect(() => {

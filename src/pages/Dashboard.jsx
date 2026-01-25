@@ -154,17 +154,37 @@ export default function Dashboard() {
     const formatDate = (date, includeYear = false) => {
       // Use UTC-based formatting to avoid timezone issues
       const utcDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000))
-      const options = { 
-        month: 'numeric', 
+      const options = {
+        month: 'numeric',
         day: 'numeric',
         timeZone: 'UTC'
       }
-      
+
       if (includeYear) {
         options.year = '2-digit'
       }
-      
+
       return utcDate.toLocaleDateString('en-US', options)
+    }
+
+    const formatDateLong = (date) => {
+      const utcDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000))
+      const month = utcDate.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })
+      const day = utcDate.getUTCDate()
+      const year = utcDate.getUTCFullYear()
+
+      // Add ordinal suffix
+      const ordinal = (d) => {
+        if (d > 3 && d < 21) return 'th'
+        switch (d % 10) {
+          case 1: return 'st'
+          case 2: return 'nd'
+          case 3: return 'rd'
+          default: return 'th'
+        }
+      }
+
+      return `${month} ${day}${ordinal(day)}, ${year}`
     }
 
     // Before Week 1 starts
@@ -203,7 +223,7 @@ export default function Dashboard() {
     }
 
     // After Week 3
-    return 'Pilot Complete'
+    return `Pilot complete ${formatDateLong(week3End)}`
   }
 
   useEffect(() => {
