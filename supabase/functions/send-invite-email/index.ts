@@ -9,7 +9,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 /**
  * Build the invitation email HTML
  */
-function buildEmailHtml(email: string): string {
+function buildEmailHtml(): string {
   const appUrl = 'https://summit-pilot.vercel.app/login'
   const logoUrl = 'https://summit-pilot.vercel.app/summit-logo.png'
 
@@ -148,17 +148,6 @@ function buildEmailHtml(email: string): string {
             </td>
           </tr>
 
-          <!-- Note -->
-          <tr>
-            <td style="padding: 0 40px 30px 40px;">
-              <div style="background-color: #f0fdfa; border-radius: 8px; padding: 16px; border-left: 4px solid #10B981;">
-                <p style="margin: 0; font-size: 14px; color: #047857; line-height: 1.6;">
-                  <strong>Getting Started:</strong> Click the button above to sign in with this email address (${email}). You'll receive a magic link - no password needed!
-                </p>
-              </div>
-            </td>
-          </tr>
-
           <!-- Footer -->
           <tr>
             <td style="padding: 20px 40px 40px 40px; background-color: #f9fafb; border-radius: 0 0 12px 12px;">
@@ -234,7 +223,7 @@ serve(async (req) => {
 
     // Send the invitation email
     const subject = "You've Been Granted Access to Summit!"
-    const html = buildEmailHtml(email.toLowerCase())
+    const html = buildEmailHtml()
 
     console.log(`Sending invitation email to ${email}`)
 
