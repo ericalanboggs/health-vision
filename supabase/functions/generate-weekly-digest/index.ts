@@ -69,9 +69,36 @@ serve(async (req) => {
     console.log('Step 3: Generating weekly focus...')
     const focus = await generateWeeklyFocus(context, OPENAI_API_KEY!)
 
+    // Step 3.5: Load past recommendations to avoid duplicates
+    console.log('Step 3.5: Loading past recommendations to avoid duplicates...')
+    const { data: pastDigests } = await supabase
+      .from('weekly_digests')
+      .select('recommendations')
+      .eq('user_id', user_id)
+      .lt('week_number', targetWeek)
+      .not('recommendations', 'is', null)
+
+    const pastVideoIds: string[] = []
+    if (pastDigests) {
+      for (const digest of pastDigests) {
+        if (digest.recommendations && Array.isArray(digest.recommendations)) {
+          for (const rec of digest.recommendations) {
+            if (rec.url && rec.url.includes('youtube.com')) {
+              const match = rec.url.match(/[?&]v=([^&]+)/)
+              if (match) {
+                pastVideoIds.push(match[1])
+              }
+            }
+          }
+        }
+      }
+    }
+    console.log(`Found ${pastVideoIds.length} previously sent video IDs to exclude`)
+
     // Step 4: Generate personalized content recommendations
     console.log('Step 4: Generating personalized content recommendations...')
     const contentEngine = new ContentRecommendationEngine(YOUTUBE_API_KEY!, SPOTIFY_ACCESS_TOKEN!)
+    contentEngine.setExcludedVideoIds(pastVideoIds)
     const recommendations = await contentEngine.generateRecommendations(context)
 
     // Step 5: Generate personal insight ("What I Noticed")

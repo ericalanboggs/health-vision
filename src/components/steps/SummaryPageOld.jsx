@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { FileText, Printer, Download, Flag, Backpack, TrendingUp, Footprints, Edit2, Bell, ChevronDown } from 'lucide-react'
+import { Description, Print, FileDownload, Flag, Inventory2, TrendingUp, DirectionsWalk, Edit, Notifications, ExpandMore } from '@mui/icons-material'
 
 const SummaryPage = ({ formData, onNavigate }) => {
   const [showReminderDropdown, setShowReminderDropdown] = useState(false)
@@ -206,7 +206,7 @@ END:VCALENDAR`.trim()
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 no-print">
         <div className="flex items-center gap-3 mb-4 sm:mb-0">
           <div className="p-3 bg-amber-100 rounded-xl">
-            <FileText className="w-8 h-8 text-amber-600" />
+            <Description className="w-8 h-8 text-amber-600" />
           </div>
           <h2 className="text-4xl font-bold text-stone-900">My Health Vision</h2>
         </div>
@@ -217,9 +217,9 @@ END:VCALENDAR`.trim()
               onClick={() => setShowReminderDropdown(!showReminderDropdown)}
               className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold px-5 py-3 rounded-lg shadow-md hover:shadow-lg transition-all"
             >
-              <Bell className="w-4 h-4" />
+              <Notifications className="w-4 h-4" />
               Remind Me
-              <ChevronDown className="w-4 h-4" />
+              <ExpandMore className="w-4 h-4" />
             </button>
             
             {showReminderDropdown && (
@@ -256,14 +256,14 @@ END:VCALENDAR`.trim()
             onClick={handlePrint}
             className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold px-5 py-3 rounded-lg shadow-md hover:shadow-lg transition-all"
           >
-            <Printer className="w-4 h-4" />
+            <Print className="w-4 h-4" />
             Print
           </button>
           <button
             onClick={handleDownload}
             className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold px-5 py-3 rounded-lg shadow-md hover:shadow-lg transition-all"
           >
-            <Download className="w-4 h-4" />
+            <FileDownload className="w-4 h-4" />
             Download
           </button>
         </div>
@@ -294,7 +294,7 @@ END:VCALENDAR`.trim()
               className="no-print flex items-center gap-1 text-sm text-stone-600 hover:text-amber-600 transition-colors"
               title="Edit this section"
             >
-              <Edit2 className="w-4 h-4" />
+              <Edit className="w-4 h-4" />
               Edit
             </button>
           </div>
@@ -328,7 +328,7 @@ END:VCALENDAR`.trim()
         <section className="p-6 border-b border-stone-200">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-amber-800 flex items-center gap-2">
-              <Backpack className="w-5 h-5" />
+              <Inventory2 className="w-5 h-5" />
               Step 2: Base Camp Inventory (Your Resources)
             </h3>
             <button
@@ -336,7 +336,7 @@ END:VCALENDAR`.trim()
               className="no-print flex items-center gap-1 text-sm text-stone-600 hover:text-amber-600 transition-colors"
               title="Edit this section"
             >
-              <Edit2 className="w-4 h-4" />
+              <Edit className="w-4 h-4" />
               Edit
             </button>
           </div>
@@ -400,7 +400,7 @@ END:VCALENDAR`.trim()
               className="no-print flex items-center gap-1 text-sm text-stone-600 hover:text-amber-600 transition-colors"
               title="Edit this section"
             >
-              <Edit2 className="w-4 h-4" />
+              <Edit className="w-4 h-4" />
               Edit
             </button>
           </div>
@@ -445,7 +445,7 @@ END:VCALENDAR`.trim()
         <section className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-amber-800 flex items-center gap-2">
-              <Footprints className="w-5 h-5" />
+              <DirectionsWalk className="w-5 h-5" />
               Step 4: First Steps (0–90 Days)
             </h3>
             <button
@@ -453,7 +453,7 @@ END:VCALENDAR`.trim()
               className="no-print flex items-center gap-1 text-sm text-stone-600 hover:text-amber-600 transition-colors"
               title="Edit this section"
             >
-              <Edit2 className="w-4 h-4" />
+              <Edit className="w-4 h-4" />
               Edit
             </button>
           </div>

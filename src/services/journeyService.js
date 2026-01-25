@@ -126,27 +126,31 @@ export const saveJourney = async (formData, currentStep) => {
 
 /**
  * Load the current user's journey
+ * @param {string} [userId] - Optional user ID (if not provided, will fetch from auth)
  */
-export const loadJourney = async () => {
+export const loadJourney = async (userId = null) => {
   if (!isSupabaseConfigured()) {
     console.warn('Supabase not configured')
     return { success: false, error: 'Supabase not configured' }
   }
 
   try {
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser()
-    const userId = user?.id || null
+    // Get current user if not provided
+    let uid = userId
+    if (!uid) {
+      const { data: { user } } = await supabase.auth.getUser()
+      uid = user?.id || null
+    }
     const sessionId = getSessionId()
 
-    console.log('🔍 Loading journey:', { userId, sessionId })
+    console.log('🔍 Loading journey:', { userId: uid, sessionId })
 
     // For authenticated users, query by user_id; for anonymous, use session_id
     let query = supabase.from('health_journeys').select('*')
-    
-    if (userId) {
-      console.log('📊 Querying by user_id:', userId)
-      query = query.eq('user_id', userId)
+
+    if (uid) {
+      console.log('📊 Querying by user_id:', uid)
+      query = query.eq('user_id', uid)
     } else {
       console.log('📊 Querying by session_id:', sessionId)
       query = query.eq('session_id', sessionId)

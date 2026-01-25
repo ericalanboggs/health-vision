@@ -13,8 +13,9 @@ export function assembleMarkdown(
 ): string {
   const sections: string[] = []
 
-  // Greeting
-  sections.push(`# Hi ${context.user_name}! 👋\n`)
+  // Greeting (first name only)
+  const firstName = context.user_name.split(' ')[0]
+  sections.push(`# Hi ${firstName}! 👋\n`)
 
   // TL;DR for skimmers
   const topRecommendation = recommendations[0]
@@ -84,7 +85,7 @@ export function assembleMarkdown(
     sections.push(`\n`)
   }
 
-  // Roadblocks & strategies
+  // Roadblocks & strategies (as a table)
   if (focus.potential_challenges_narrative || focus.strategies.length > 0) {
     sections.push(`### Navigating Potential Challenges\n`)
 
@@ -93,12 +94,14 @@ export function assembleMarkdown(
       sections.push(`${focus.potential_challenges_narrative}\n`)
     }
 
-    // Add specific strategies
+    // Add specific strategies as a markdown table
     if (focus.strategies.length > 0) {
+      sections.push(`| Challenge | Strategy |`)
+      sections.push(`|-----------|----------|`)
       focus.strategies.forEach(({ blocker, strategy }) => {
-        sections.push(`**Challenge:** ${blocker}`)
-        sections.push(`**Strategy:** ${strategy}\n`)
+        sections.push(`| ${blocker} | ${strategy} |`)
       })
+      sections.push(`\n`)
     }
   }
 
@@ -152,7 +155,7 @@ export function assembleMarkdown(
 
   // Footer
   sections.push(`---\n`)
-  sections.push(`You're building something meaningful, ${context.user_name}. One week at a time.\n`)
+  sections.push(`You're building something meaningful, ${firstName}. One week at a time.\n`)
   sections.push(`— Your Summit Coach\n`)
   sections.push(`\n*Reply to this email anytime — I read every response.*\n`)
 

@@ -1,12 +1,69 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileText, Sparkles, Heart, Map, Clock3, Edit2, Bell, Beaker, TrendingUp, Lightbulb, Wand2, Loader2, RefreshCw, Copy, Check, CheckCircle, Mountain } from 'lucide-react'
+import { Description, AutoAwesome, Favorite, Map, Schedule, Edit, Notifications, Science, TrendingUp, TipsAndUpdates, AutoFixHigh, Autorenew, Refresh, ContentCopy, Check, CheckCircle, Terrain } from '@mui/icons-material'
 import { generateActionPlan, generateMotivationalMessage } from '../../utils/planGenerator'
 import { enhanceActionPlan } from '../../utils/aiService'
 import { saveHabitsForWeek } from '../../services/habitService'
 import { getCurrentWeekNumber } from '../../utils/weekCalculator'
 import { getCurrentUser } from '../../services/authService'
 import jsPDF from 'jspdf'
+
+// Cache key for AI suggestions
+const AI_CACHE_KEY = 'health_summit_ai_suggestions'
+
+// Create a simple hash of form data to detect changes
+const getFormDataHash = (formData) => {
+  const relevantFields = [
+    formData.visionStatement || '',
+    formData.feelingState || '',
+    formData.whyMatters || '',
+    formData.currentScore || 5,
+    formData.timeCapacity || '',
+    formData.readiness || 5,
+    (formData.barriers || []).join(','),
+    formData.barriersNotes || '',
+    formData.preferredTimes || '',
+    formData.sustainableNotes || ''
+  ].join('|')
+
+  // Simple hash function
+  let hash = 0
+  for (let i = 0; i < relevantFields.length; i++) {
+    const char = relevantFields.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash
+  }
+  return hash.toString()
+}
+
+// Load cached AI suggestions
+const loadCachedSuggestions = (formDataHash) => {
+  try {
+    const cached = localStorage.getItem(AI_CACHE_KEY)
+    if (cached) {
+      const { hash, suggestions } = JSON.parse(cached)
+      if (hash === formDataHash && suggestions) {
+        return suggestions
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load cached AI suggestions:', e)
+  }
+  return null
+}
+
+// Save AI suggestions to cache
+const saveCachedSuggestions = (formDataHash, suggestions) => {
+  try {
+    localStorage.setItem(AI_CACHE_KEY, JSON.stringify({
+      hash: formDataHash,
+      suggestions,
+      timestamp: Date.now()
+    }))
+  } catch (e) {
+    console.warn('Failed to cache AI suggestions:', e)
+  }
+}
 
 const SummaryPage = ({ formData, onNavigate }) => {
   const navigate = useNavigate()
@@ -60,10 +117,22 @@ const SummaryPage = ({ formData, onNavigate }) => {
     )
   }
 
-  // Auto-run AI enhancement on mount if user has sufficient data
+  // Memoize the form data hash to detect changes
+  const formDataHash = useMemo(() => getFormDataHash(formData), [formData])
+
+  // Load cached suggestions or fetch new ones on mount
   useEffect(() => {
     if (!aiEnhanced && !isEnhancing && hasSufficientData()) {
-      handleAIEnhancement()
+      // Try to load from cache first
+      const cached = loadCachedSuggestions(formDataHash)
+      if (cached) {
+        console.log('✅ Loaded AI suggestions from cache')
+        setAiEnhanced(cached)
+        setShowAiView(true)
+      } else {
+        // No cache or hash mismatch - fetch fresh
+        handleAIEnhancement()
+      }
     }
   }, []) // Run once on mount
 
@@ -450,11 +519,14 @@ END:VEVENT
   const handleAIEnhancement = async () => {
     setIsEnhancing(true)
     setEnhancementError(null)
-    
+
     try {
       const enhanced = await enhanceActionPlan(formData, actionPlan)
       setAiEnhanced(enhanced)
       setShowAiView(true)
+      // Cache the results
+      saveCachedSuggestions(formDataHash, enhanced)
+      console.log('✅ AI suggestions cached')
     } catch (error) {
       console.error('Enhancement error:', error)
       setEnhancementError(error.message || 'Failed to enhance plan. Please check your API key.')
@@ -467,26 +539,29 @@ END:VEVENT
     setIsRefreshing(true)
     setIsEnhancing(true)
     setEnhancementError(null)
-    
+
     try {
       // Save currently selected actions before refreshing
       const currentlySelected = selectedActions.map(index => aiEnhanced[index])
-      
+
       // Clear the selected indices FIRST to prevent index conflicts
       setSelectedActions([])
-      
+
       // Then merge with previously selected actions
       setSelectedAiActions(prev => {
         const combined = [...prev, ...currentlySelected]
-        const unique = combined.filter((item, index, self) => 
+        const unique = combined.filter((item, index, self) =>
           index === self.findIndex(t => t.action === item.action)
         )
         return unique
       })
-      
+
       // Get new suggestions
       const enhanced = await enhanceActionPlan(formData, actionPlan)
       setAiEnhanced(enhanced)
+      // Cache the new results
+      saveCachedSuggestions(formDataHash, enhanced)
+      console.log('✅ Refreshed AI suggestions cached')
     } catch (error) {
       console.error('Enhancement error:', error)
       setEnhancementError(error.message || 'Failed to refresh suggestions. Please check your API key.')
@@ -583,7 +658,7 @@ END:VEVENT
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
         <div className="p-3 bg-green-100 rounded-xl">
-          <FileText className="w-8 h-8 text-green-600" />
+          <Description className="w-8 h-8 text-green-600" />
         </div>
         <h2 className="text-4xl font-bold text-stone-900">My Personal Health Plan</h2>
       </div>
@@ -599,7 +674,7 @@ END:VEVENT
           }`}
         >
           <div className="flex items-center gap-2">
-            <Beaker className="w-4 h-4" />
+            <Science className="w-4 h-4" />
             My Plan
           </div>
         </button>
@@ -612,7 +687,7 @@ END:VEVENT
           }`}
         >
           <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
+            <Description className="w-4 h-4" />
             My Vision
           </div>
         </button>
@@ -630,7 +705,7 @@ END:VEVENT
           {/* Motivational Message */}
           <div className="bg-gradient-to-r from-green-50 to-blue-50 border-l-4 border-green-500 p-6 rounded-r-xl mb-8">
             <div className="flex items-start gap-3">
-              <Lightbulb className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
+              <TipsAndUpdates className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
               <div>
                 <h3 className="font-semibold text-stone-900 mb-2">Your Starting Point</h3>
                 <p className="text-stone-700 leading-relaxed">{motivationalMessage}</p>
@@ -678,7 +753,7 @@ END:VEVENT
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-green-100 rounded-xl">
-                  <Beaker className="w-6 h-6 text-green-600" />
+                  <Science className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold text-stone-900">Habit Experiments</h3>
@@ -689,7 +764,7 @@ END:VEVENT
                   onClick={handleEditPlan}
                   className="flex items-center gap-2 px-4 py-2 text-green-600 hover:text-green-700 font-semibold transition-colors no-print"
                 >
-                  <Edit2 className="w-4 h-4" />
+                  <Edit className="w-4 h-4" />
                   Edit
                 </button>
               )}
@@ -742,7 +817,7 @@ END:VEVENT
             {isEnhancing && !isRefreshing && (
               <div className="flex items-center justify-center py-12">
                 <div className="text-center">
-                  <Loader2 className="w-8 h-8 animate-spin text-purple-600 mx-auto mb-3" />
+                  <Autorenew className="w-8 h-8 animate-spin text-purple-600 mx-auto mb-3" />
                   <p className="text-stone-600">Building your personalized plan...</p>
                 </div>
               </div>
@@ -766,7 +841,7 @@ END:VEVENT
                 onClick={handleAIEnhancement}
                 className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
               >
-                <Wand2 className="w-5 h-5" />
+                <AutoFixHigh className="w-5 h-5" />
                 Generate Personalized Plan
               </button>
             )}
@@ -788,7 +863,7 @@ END:VEVENT
               <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border-2 border-purple-200 mb-6">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-purple-600" />
+                    <AutoAwesome className="w-5 h-5 text-purple-600" />
                     <h4 className="font-semibold text-purple-900">AI-Personalized Suggestions</h4>
                   </div>
                   <button
@@ -797,9 +872,9 @@ END:VEVENT
                     className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-700 bg-white hover:bg-purple-50 border border-purple-300 rounded-lg transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isEnhancing ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Autorenew className="w-4 h-4 animate-spin" />
                     ) : (
-                      <RefreshCw className="w-4 h-4" />
+                      <Refresh className="w-4 h-4" />
                     )}
                     Refresh ideas
                   </button>
@@ -904,7 +979,7 @@ END:VEVENT
                       >
                         {isConfirmingHabits ? (
                           <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <Autorenew className="w-5 h-5 animate-spin" />
                             Saving...
                           </>
                         ) : (
@@ -1095,11 +1170,11 @@ END:VEVENT
         <section className="p-6 border-b border-stone-200">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-green-800 flex items-center gap-2">
-              <Mountain className="w-5 h-5" />
+              <Terrain className="w-5 h-5" />
               Health Summit
             </h3>
             <button onClick={() => onNavigate('vision')} className="no-print flex items-center gap-1 text-sm text-stone-600 hover:text-green-600 transition-colors" title="Edit this section">
-              <Edit2 className="w-4 h-4" />
+              <Edit className="w-4 h-4" />
               Edit
             </button>
           </div>
@@ -1144,11 +1219,11 @@ END:VEVENT
         <section className="p-6 border-b border-stone-200">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-green-800 flex items-center gap-2">
-              <Heart className="w-5 h-5" />
+              <Favorite className="w-5 h-5" />
               Step 2: Base Camp (Resources)
             </h3>
             <button onClick={() => onNavigate('basecamp')} className="no-print flex items-center gap-1 text-sm text-stone-600 hover:text-green-600 transition-colors" title="Edit this section">
-              <Edit2 className="w-4 h-4" />
+              <Edit className="w-4 h-4" />
               Edit
             </button>
           </div>
@@ -1192,7 +1267,7 @@ END:VEVENT
               Step 3: Assess the Route
             </h3>
             <button onClick={() => onNavigate('current')} className="no-print flex items-center gap-1 text-sm text-stone-600 hover:text-green-600 transition-colors" title="Edit this section">
-              <Edit2 className="w-4 h-4" />
+              <Edit className="w-4 h-4" />
               Edit
             </button>
           </div>
@@ -1238,11 +1313,11 @@ END:VEVENT
         <section className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-green-800 flex items-center gap-2">
-              <Clock3 className="w-5 h-5" />
+              <Schedule className="w-5 h-5" />
               Step 4: Capacity & Support
             </h3>
             <button onClick={() => onNavigate('capacity')} className="no-print flex items-center gap-1 text-sm text-stone-600 hover:text-green-600 transition-colors" title="Edit this section">
-              <Edit2 className="w-4 h-4" />
+              <Edit className="w-4 h-4" />
               Edit
             </button>
           </div>

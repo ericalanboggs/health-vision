@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Loader2, Lightbulb, Check, Hash } from 'lucide-react'
+import { Autorenew, TipsAndUpdates, Check, Tag } from '@mui/icons-material'
 import MetricUnitSelector from './MetricUnitSelector'
 import { getTrackingConfig, saveTrackingConfig, getAiSuggestion } from '../services/trackingService'
 import { getUnitByValue } from '../constants/metricUnits'
@@ -90,7 +90,7 @@ export default function HabitTrackingConfig({
   if (loading) {
     return (
       <div className="p-4 flex items-center justify-center">
-        <Loader2 className="w-5 h-5 animate-spin text-stone-400" />
+        <Autorenew className="w-5 h-5 animate-spin text-stone-400" />
         <span className="ml-2 text-stone-600 text-sm">Loading...</span>
       </div>
     )
@@ -104,7 +104,7 @@ export default function HabitTrackingConfig({
       {aiSuggestion && !loadingAiSuggestion && (
         <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
           <div className="flex items-start gap-2">
-            <Lightbulb className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <TipsAndUpdates className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
               <p className="text-sm text-amber-900">
                 <strong>Suggestion:</strong>{' '}
@@ -133,7 +133,7 @@ export default function HabitTrackingConfig({
 
       {loadingAiSuggestion && (
         <div className="mb-4 p-3 bg-stone-100 border border-stone-200 rounded-lg flex items-center gap-2">
-          <Loader2 className="w-4 h-4 animate-spin text-stone-400" />
+          <Autorenew className="w-4 h-4 animate-spin text-stone-400" />
           <span className="text-sm text-stone-600">Getting smart suggestion...</span>
         </div>
       )}
@@ -168,7 +168,7 @@ export default function HabitTrackingConfig({
             }`}
           >
             <div className="flex items-center justify-center gap-2">
-              <Hash className="w-4 h-4" />
+              <Tag className="w-4 h-4" />
               <span>Number</span>
             </div>
           </button>
@@ -220,7 +220,7 @@ export default function HabitTrackingConfig({
         >
           {saving ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Autorenew className="w-4 h-4 animate-spin" />
               Saving...
             </>
           ) : (

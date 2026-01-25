@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { getCurrentUser } from '../services/authService'
-import { Loader2 } from 'lucide-react'
+import { Autorenew } from '@mui/icons-material'
 
 const ADMIN_EMAIL = 'eric.alan.boggs@gmail.com'
 
@@ -28,7 +28,7 @@ export default function AdminRoute({ children }) {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+        <Autorenew className="w-8 h-8 animate-spin text-green-600" />
       </div>
     )
   }

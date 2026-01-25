@@ -1,17 +1,31 @@
-import { UserContext, ReflectionSignals, ContentRecommendation } from './types.ts'
+import { UserContext, ReflectionSignals, ContentRecommendation, FrictionTheme } from './types.ts'
 import { YouTubeAPI } from './youtubeApi.ts'
 
 /**
  * Content Recommendation Engine
  * Generates personalized content based on user context, goals, and reflection signals
  * Uses improved YouTube API with two-step search, quality filtering, and fallbacks
+ *
+ * Priority order:
+ * 1. Friction-based content (2+ pieces addressing what didn't go well)
+ * 2. Habit-based content
+ * 3. Complementary content
  */
 export class ContentRecommendationEngine {
   private readonly youtubeAPI: YouTubeAPI
+  private excludeVideoIds: Set<string> = new Set()
 
   constructor(youtubeApiKey: string, spotifyAccessToken?: string) {
     this.youtubeAPI = new YouTubeAPI(youtubeApiKey)
     // Spotify integration disabled for now
+  }
+
+  /**
+   * Set video IDs to exclude (from previous weeks)
+   */
+  setExcludedVideoIds(videoIds: string[]): void {
+    this.excludeVideoIds = new Set(videoIds)
+    console.log(`📋 Excluding ${this.excludeVideoIds.size} previously sent videos`)
   }
 
   /**
@@ -24,14 +38,24 @@ export class ContentRecommendationEngine {
     const habitCategories = this.analyzeHabits(context.habits)
     const goalSignals = this.extractGoalSignals(context)
     const challengeAreas = this.identifyChallenges(context.reflection_signals)
+    const frictionThemes = context.reflection_signals?.friction_themes || []
 
     console.log(`📊 Content analysis:`, {
       habitCategories,
       goalSignals,
-      challengeAreas
+      challengeAreas,
+      frictionThemes: frictionThemes.map(t => t.theme)
     })
 
-    // Generate recommendations from real APIs with improved quality
+    // PRIORITY 1: Friction-based content (at least 2 pieces)
+    if (frictionThemes.length > 0) {
+      console.log(`🎯 Fetching friction-based content (${frictionThemes.length} themes)...`)
+      const frictionContent = await this.getFrictionBasedContent(frictionThemes)
+      recommendations.push(...frictionContent)
+      console.log(`✅ Added ${frictionContent.length} friction-based recommendations`)
+    }
+
+    // PRIORITY 2: Habit-based and complementary content
     recommendations.push(...await this.getRealTimeContent(context, habitCategories, goalSignals))
 
     // Deduplicate by video ID and limit to top 6
@@ -40,13 +64,77 @@ export class ContentRecommendationEngine {
   }
 
   /**
-   * Remove duplicate recommendations based on URL
+   * Get content specifically addressing friction/challenges from reflection
+   * Aims for at least 2 pieces of content
+   */
+  private async getFrictionBasedContent(frictionThemes: FrictionTheme[]): Promise<ContentRecommendation[]> {
+    const recommendations: ContentRecommendation[] = []
+
+    // Get content for top 2 friction themes
+    const themesToSearch = frictionThemes.slice(0, 2)
+
+    for (const theme of themesToSearch) {
+      try {
+        console.log(`🔍 Searching for: "${theme.searchQuery}"`)
+        const videos = await this.youtubeAPI.searchWorkoutVideos(theme.searchQuery, 2)
+
+        // Filter out previously sent videos
+        const freshVideos = videos.filter(v => !this.excludeVideoIds.has(v.videoId))
+
+        if (freshVideos.length > 0) {
+          recommendations.push(...this.transformVideosToRecommendations(
+            freshVideos.slice(0, 1), // Take 1 video per theme
+            theme.whyRelevant
+          ))
+        }
+      } catch (error) {
+        console.error(`❌ Error fetching content for theme "${theme.theme}":`, error)
+      }
+    }
+
+    // If we didn't get at least 2, try generic resilience/motivation content
+    if (recommendations.length < 2) {
+      try {
+        const fallbackQuery = 'building resilience habits positive psychology'
+        console.log(`🔍 Fetching fallback content: "${fallbackQuery}"`)
+        const fallbackVideos = await this.youtubeAPI.searchWorkoutVideos(fallbackQuery, 2)
+        const freshFallback = fallbackVideos.filter(v =>
+          !this.excludeVideoIds.has(v.videoId) &&
+          !recommendations.some(r => r.url.includes(v.videoId))
+        )
+
+        if (freshFallback.length > 0) {
+          const needed = 2 - recommendations.length
+          recommendations.push(...this.transformVideosToRecommendations(
+            freshFallback.slice(0, needed),
+            'Supports you through challenges with science-backed strategies.'
+          ))
+        }
+      } catch (error) {
+        console.error('❌ Error fetching fallback content:', error)
+      }
+    }
+
+    return recommendations
+  }
+
+  /**
+   * Remove duplicate recommendations and filter out previously sent content
    */
   private deduplicateRecommendations(recommendations: ContentRecommendation[]): ContentRecommendation[] {
     const seen = new Set<string>()
     return recommendations.filter(rec => {
+      // Check for duplicates in current batch
       if (seen.has(rec.url)) return false
       seen.add(rec.url)
+
+      // Check if this video was sent in previous weeks
+      const videoIdMatch = rec.url.match(/[?&]v=([^&]+)/)
+      if (videoIdMatch && this.excludeVideoIds.has(videoIdMatch[1])) {
+        console.log(`🚫 Filtering out previously sent video: ${videoIdMatch[1]}`)
+        return false
+      }
+
       return true
     })
   }

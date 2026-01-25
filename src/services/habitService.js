@@ -61,24 +61,28 @@ export const saveHabitsForWeek = async (weekNumber, habits) => {
 /**
  * Get habits for a specific week
  * @param {number} weekNumber - Week number
+ * @param {string} [userId] - Optional user ID (if not provided, will fetch from auth)
  * @returns {Promise<{success: boolean, data?: any, error?: any}>}
  */
-export const getHabitsForWeek = async (weekNumber) => {
+export const getHabitsForWeek = async (weekNumber, userId = null) => {
   try {
     if (!supabase) {
       return { success: false, error: 'Supabase is not configured' }
     }
 
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      return { success: false, error: 'User not authenticated' }
+    let uid = userId
+    if (!uid) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+      uid = user.id
     }
 
     const { data, error } = await supabase
       .from('weekly_habits')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', uid)
       .eq('week_number', weekNumber)
       .order('created_at', { ascending: true })
 
@@ -96,11 +100,12 @@ export const getHabitsForWeek = async (weekNumber) => {
 
 /**
  * Get habits for current week
+ * @param {string} [userId] - Optional user ID (if not provided, will fetch from auth)
  * @returns {Promise<{success: boolean, data?: any, error?: any}>}
  */
-export const getCurrentWeekHabits = async () => {
+export const getCurrentWeekHabits = async (userId = null) => {
   const weekNumber = getCurrentWeekNumber()
-  return getHabitsForWeek(weekNumber)
+  return getHabitsForWeek(weekNumber, userId)
 }
 
 /**
@@ -281,22 +286,25 @@ export const copyHabitsToWeek = async (fromWeek, toWeek) => {
  * Get all habits for the current user (across all weeks)
  * @returns {Promise<{success: boolean, data?: any, error?: any}>}
  */
-export const getAllUserHabits = async () => {
+export const getAllUserHabits = async (userId = null) => {
   try {
     if (!supabase) {
       return { success: false, error: 'Supabase is not configured' }
     }
 
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      return { success: false, error: 'User not authenticated' }
+    let uid = userId
+    if (!uid) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+      uid = user.id
     }
 
     const { data, error } = await supabase
       .from('weekly_habits')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', uid)
       .order('week_number', { ascending: false })
       .order('created_at', { ascending: true })
 

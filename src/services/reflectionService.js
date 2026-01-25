@@ -97,22 +97,25 @@ export const saveReflection = async (weekNumber, reflection) => {
  * @param {number} weekNumber - Week number
  * @returns {Promise<{success: boolean, data?: any, error?: any}>}
  */
-export const getReflectionForWeek = async (weekNumber) => {
+export const getReflectionForWeek = async (weekNumber, userId = null) => {
   try {
     if (!supabase) {
       return { success: false, error: 'Supabase is not configured' }
     }
 
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      return { success: false, error: 'User not authenticated' }
+    let uid = userId
+    if (!uid) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+      uid = user.id
     }
 
     const { data, error } = await supabase
       .from('weekly_reflections')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', uid)
       .eq('week_number', weekNumber)
       .maybeSingle()
 
@@ -137,11 +140,12 @@ export const getReflectionByWeek = getReflectionForWeek
 
 /**
  * Get reflection for current week
+ * @param {string} [userId] - Optional user ID (if not provided, will fetch from auth)
  * @returns {Promise<{success: boolean, data?: any, error?: any}>}
  */
-export const getCurrentWeekReflection = async () => {
+export const getCurrentWeekReflection = async (userId = null) => {
   const weekNumber = getCurrentWeekNumber()
-  return getReflectionForWeek(weekNumber)
+  return getReflectionForWeek(weekNumber, userId)
 }
 
 /**

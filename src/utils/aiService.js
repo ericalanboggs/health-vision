@@ -141,7 +141,7 @@ Format as a JSON object:
 export const generateMotivationalMessage = async (formData) => {
   try {
     const client = getOpenAIClient()
-    
+
     const prompt = `Create a brief, personalized motivational message for someone starting their health journey.
 
 Their vision: ${formData.visionStatement || 'Not specified'}
@@ -177,5 +177,100 @@ Just return the message text, no JSON.`
   } catch (error) {
     console.error('AI Motivational Message Error:', error)
     throw error
+  }
+}
+
+/**
+ * Summarize a habit into a short verb + noun phrase (2-3 words)
+ */
+export const summarizeHabitAction = async (habitText) => {
+  try {
+    const client = getOpenAIClient()
+
+    const prompt = `Summarize this habit into a short, actionable phrase of 2-3 words maximum. Start with a verb, followed by a noun.
+
+Habit: "${habitText}"
+
+Examples:
+- "Write a short personal story or anecdote from your life" → "Write stories"
+- "Limit coffee to one cup each day to reduce anxiety" → "Limit coffee"
+- "Take a 10-minute walk around the neighborhood" → "Walk daily"
+- "Meditate for 5 minutes using a guided app" → "Meditate daily"
+
+Return ONLY the short phrase in title case, no quotes or punctuation at the end.`
+
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You create concise, actionable summaries. Return only the requested format.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 10
+    })
+
+    const result = response.choices[0].message.content.trim()
+    return result
+  } catch (error) {
+    console.error('AI Habit Summary Error:', error)
+    // Return first 2-3 words as fallback
+    const words = habitText.split(' ')
+    return words.slice(0, 2).join(' ')
+  }
+}
+
+/**
+ * Extract 3 key adjectives from a vision statement
+ */
+export const extractVisionAdjectives = async (visionText) => {
+  try {
+    const client = getOpenAIClient()
+
+    const prompt = `Extract exactly 3 key adjectives from this vision statement that capture the person's desired state or feelings. Choose the most powerful and distinctive words.
+
+Vision: "${visionText}"
+
+Return ONLY the 3 adjectives separated by commas, in title case (first letter capitalized, rest lowercase). For example: "Calmer, Confident, Authentic"
+
+Do not include any other text or explanation.`
+
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You extract key adjectives from text with precision. Return only the requested format.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 20
+    })
+
+    const result = response.choices[0].message.content.trim()
+
+    // Ensure title case (capitalize first letter of each word, rest lowercase)
+    const titleCased = result
+      .split(',')
+      .map(word => {
+        const trimmed = word.trim()
+        return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase()
+      })
+      .join(', ')
+
+    return titleCased
+  } catch (error) {
+    console.error('AI Vision Adjectives Error:', error)
+    // Return fallback if API fails
+    return 'Your Health Vision'
   }
 }

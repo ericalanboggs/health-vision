@@ -1,5 +1,5 @@
 import React from 'react'
-import { Map, ArrowRight } from 'lucide-react'
+import { Map, ArrowForward } from '@mui/icons-material'
 
 const TerrainStep = ({ formData, updateFormData, onNext }) => {
   const barrierOptions = [
@@ -158,7 +158,7 @@ const TerrainStep = ({ formData, updateFormData, onNext }) => {
           className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold text-lg px-8 py-4 rounded-lg shadow-lg hover:shadow-xl transition-all"
         >
           Continue to Capacity & Support
-          <ArrowRight className="w-5 h-5" />
+          <ArrowForward className="w-5 h-5" />
         </button>
       </div>
     </div>

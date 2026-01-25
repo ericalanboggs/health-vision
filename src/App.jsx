@@ -17,6 +17,7 @@ import AuthCallback from './pages/AuthCallback'
 import AuthTest from './pages/AuthTest'
 import AuthDebug from './pages/AuthDebug'
 import Dashboard from './pages/Dashboard'
+import DashboardSummit from './pages/DashboardSummit'
 import Admin from './pages/Admin'
 import AdminUserDetail from './pages/AdminUserDetail'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -87,13 +88,22 @@ function App() {
         />
         
         {/* Protected routes */}
-        <Route 
-          path="/dashboard" 
+        <Route
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
-          } 
+          }
+        />
+        {/* Summit Design System Preview */}
+        <Route
+          path="/dashboard-summit"
+          element={
+            <ProtectedRoute>
+              <DashboardSummit />
+            </ProtectedRoute>
+          }
         />
         {/* Profile - Public for Twilio verification */}
         <Route 

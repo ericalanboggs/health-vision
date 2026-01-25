@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Mountain, Flag, Backpack, TrendingUp, Footprints, ArrowRight } from 'lucide-react'
+import { Terrain, Flag, Inventory2, TrendingUp, DirectionsWalk, ArrowForward } from '@mui/icons-material'
 
 const LandingPage = ({ onStart }) => {
   const [wiggle, setWiggle] = useState(false)
@@ -66,7 +66,7 @@ const LandingPage = ({ onStart }) => {
               className="group inline-flex items-center gap-3 bg-green-600 hover:bg-green-700 text-white font-bold text-lg px-10 py-5 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
             >
               Begin Your Ascent
-              <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+              <ArrowForward className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
             </button>
             <p className="mt-4 text-stone-600">5 minutes or less</p>
           </div>
@@ -109,7 +109,7 @@ const LandingPage = ({ onStart }) => {
             {/* Base Camp Inventory */}
             <div className="flex flex-col items-center text-center max-w-md relative">
               <div className="w-16 h-16 bg-green-100 rounded-full mb-6 flex items-center justify-center shadow-lg">
-                <Backpack className="w-8 h-8 text-green-600" />
+                <Inventory2 className="w-8 h-8 text-green-600" />
               </div>
               <h3 className="text-3xl font-bold text-stone-900 mb-2">Base Camp Inventory</h3>
               <p className="text-base text-stone-600 mb-4">Your Resources</p>
@@ -133,7 +133,7 @@ const LandingPage = ({ onStart }) => {
             {/* First Steps */}
             <div className="flex flex-col items-center text-center max-w-md">
               <div className="w-16 h-16 bg-green-100 rounded-full mb-6 flex items-center justify-center shadow-lg">
-                <Footprints className="w-8 h-8 text-green-600" />
+                <DirectionsWalk className="w-8 h-8 text-green-600" />
               </div>
               <h3 className="text-3xl font-bold text-stone-900 mb-2">First Steps</h3>
               <p className="text-base text-stone-600 mb-4">Habit experimentation</p>

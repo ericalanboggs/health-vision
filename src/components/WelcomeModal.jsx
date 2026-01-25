@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { Close } from '@mui/icons-material'
 
 export default function WelcomeModal({ isOpen, onClose }) {
   if (!isOpen) return null
@@ -21,7 +21,7 @@ export default function WelcomeModal({ isOpen, onClose }) {
               className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition"
               aria-label="Close"
             >
-              <X className="w-5 h-5" />
+              <Close className="w-5 h-5" />
             </button>
             <div className="pr-8">
               <p className="text-sm font-semibold text-green-600 uppercase tracking-wide mb-1">

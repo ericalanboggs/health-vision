@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Loader2, Check } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Autorenew, Check } from '@mui/icons-material'
 import { getEntriesForWeek, saveEntry, deleteEntry, getStreak } from '../services/trackingService'
 import { getHabitScheduleDays } from '../services/habitService'
 import {
@@ -298,7 +298,7 @@ export default function WeeklyTracker({
     return (
       <div className="py-4">
         <div className="flex items-center justify-center py-6">
-          <Loader2 className="w-5 h-5 animate-spin text-stone-400" />
+          <Autorenew className="w-5 h-5 animate-spin text-stone-400" />
           <span className="ml-2 text-stone-600 text-sm">Loading tracker...</span>
         </div>
       </div>
@@ -401,7 +401,7 @@ export default function WeeklyTracker({
                       aria-label={entry?.completed ? 'Completed' : 'Not completed'}
                     >
                       {isSaving ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <Autorenew className="w-3 h-3 animate-spin" />
                       ) : entry?.completed === true ? (
                         <Check className="w-4 h-4" />
                       ) : null}

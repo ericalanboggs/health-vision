@@ -1,5 +1,5 @@
 import React from 'react'
-import { Clock3, ArrowRight, Check } from 'lucide-react'
+import { Schedule, ArrowForward, Check } from '@mui/icons-material'
 
 const RouteStep = ({ formData, updateFormData, onNext }) => {
   const timeOptions = [
@@ -74,7 +74,7 @@ const RouteStep = ({ formData, updateFormData, onNext }) => {
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <div className="p-3 bg-green-100 rounded-xl">
-          <Clock3 className="w-8 h-8 text-green-600" />
+          <Schedule className="w-8 h-8 text-green-600" />
         </div>
         <div>
           <h2 className="text-4xl font-bold text-stone-900">Step 4: Capacity & Support</h2>
@@ -244,7 +244,7 @@ const RouteStep = ({ formData, updateFormData, onNext }) => {
           className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold text-lg px-8 py-4 rounded-lg shadow-lg hover:shadow-xl transition-all"
         >
           View My Personal Plan
-          <ArrowRight className="w-5 h-5" />
+          <ArrowForward className="w-5 h-5" />
         </button>
       </div>
     </div>

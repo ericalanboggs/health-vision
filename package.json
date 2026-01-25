@@ -1,16 +1,26 @@
 {
-  "name": "climb-your-health-summit",
+  "name": "summit-health",
   "private": true,
   "version": "1.0.0",
-  "description": "A beautiful health planning app with analytics and data persistence",
+  "description": "Summit Health - A beautiful health planning app with analytics and data persistence",
   "type": "module",
+  "workspaces": [
+    "design-system"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "storybook": "npm run dev --workspace=design-system",
+    "build-storybook": "npm run build-storybook --workspace=design-system",
+    "dev:all": "concurrently \"npm run dev\" \"npm run storybook\""
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.84.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.7",
+    "@mui/material": "^7.3.7",
+    "@supabase/supabase-js": "^2.91.1",
     "jspdf": "^3.0.4",
     "lucide-react": "^0.294.0",
     "openai": "^6.9.1",

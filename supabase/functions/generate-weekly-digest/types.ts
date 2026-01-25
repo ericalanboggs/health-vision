@@ -40,6 +40,12 @@ export interface Reflection {
   created_at: string
 }
 
+export interface FrictionTheme {
+  theme: string
+  searchQuery: string
+  whyRelevant: string
+}
+
 export interface ReflectionSignals {
   worked_well: string[]
   wins: string[]
@@ -49,6 +55,7 @@ export interface ReflectionSignals {
   mood_energy_signal: 'low' | 'medium' | 'high' | 'unknown'
   time_constraint_signal: 'low' | 'medium' | 'high' | 'unknown'
   freeform_summary: string
+  friction_themes: FrictionTheme[]
 }
 
 export interface UserContext {

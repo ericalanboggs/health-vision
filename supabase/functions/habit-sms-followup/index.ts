@@ -243,7 +243,7 @@ serve(async (req) => {
         continue
       }
 
-      // Check which habits already have a followup sent today (per-habit, not per-user)
+      // Check which habits already have a followup sent today
       const { data: existingFollowups } = await supabase
         .from('sms_followup_log')
         .select('habit_name')
@@ -251,6 +251,17 @@ serve(async (req) => {
         .gte('sent_at', `${userLocalTime.dateStr}T00:00:00`)
 
       const habitsWithFollowupSent = new Set(existingFollowups?.map(f => f.habit_name) || [])
+
+      // Check if there's a PENDING followup (sent but not yet answered)
+      // A followup is pending if: it was sent today AND no entry exists for that habit
+      const pendingFollowups = (existingFollowups || []).filter(
+        f => !existingHabitNames.has(f.habit_name)
+      )
+
+      if (pendingFollowups.length > 0) {
+        console.log(`User ${profile.id}: Has ${pendingFollowups.length} pending followup(s) awaiting response - skipping`)
+        continue
+      }
 
       // Filter to habits that haven't had a followup sent yet today
       const habitsNeedingFirstFollowup = habitsNeedingFollowup.filter(

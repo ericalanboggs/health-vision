@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Home, Flag, Backpack, TrendingUp, Clock3, FileText, ChevronLeft, Mountain } from 'lucide-react'
+import { Home, Flag, Inventory2, TrendingUp, Schedule, Description, ChevronLeft, Terrain } from '@mui/icons-material'
 import NorthStarStep from './steps/NorthStarStep'
 import CardinalDirectionsStep from './steps/CardinalDirectionsStep'
 import TerrainStep from './steps/TerrainStep'
@@ -73,10 +73,10 @@ const CompassApp = ({ onBack }) => {
   const steps = [
     { id: 'intro', label: 'Welcome', icon: Home },
     { id: 'vision', label: 'Vision Setting', icon: Flag },
-    { id: 'basecamp', label: 'Base Camp', icon: Backpack },
+    { id: 'basecamp', label: 'Base Camp', icon: Inventory2 },
     { id: 'current', label: 'Map the Ascent', icon: TrendingUp },
-    { id: 'capacity', label: 'Capacity & Support', icon: Clock3 },
-    { id: 'summary', label: 'Personal Plan', icon: FileText },
+    { id: 'capacity', label: 'Capacity & Support', icon: Schedule },
+    { id: 'summary', label: 'Personal Plan', icon: Description },
   ]
 
   const renderStep = () => {
@@ -104,7 +104,7 @@ const CompassApp = ({ onBack }) => {
       <nav className="w-full md:w-64 bg-stone-100 border-b md:border-b-0 md:border-r border-stone-200 p-4 no-print">
         <div className="flex items-center justify-between md:block mb-6">
           <h1 className="text-2xl font-bold text-green-800 flex items-center gap-2">
-            <Mountain className="w-7 h-7" />
+            <Terrain className="w-7 h-7" />
             Health Summit
           </h1>
           <button

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Flag, ArrowRight, Check } from 'lucide-react'
+import { Flag, ArrowForward, Check } from '@mui/icons-material'
 
 const NorthStarStep = ({ formData, updateFormData, onNext }) => {
   const motivationOptions = [
@@ -229,7 +229,7 @@ const NorthStarStep = ({ formData, updateFormData, onNext }) => {
           className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold text-lg px-8 py-4 rounded-lg shadow-lg hover:shadow-xl transition-all"
         >
           Continue to Base Camp
-          <ArrowRight className="w-5 h-5" />
+          <ArrowForward className="w-5 h-5" />
         </button>
       </div>
     </div>
