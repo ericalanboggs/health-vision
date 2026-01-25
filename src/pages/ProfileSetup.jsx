@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, Phone, Mail, CheckCircle, Loader2 } from 'lucide-react'
+import { Person, Phone, Email, CheckCircle, Autorenew } from '@mui/icons-material'
 import { getCurrentUser } from '../services/authService'
 import { upsertProfile } from '../services/authService'
 import { trackEvent } from '../lib/posthog'
@@ -121,22 +121,22 @@ export default function ProfileSetup() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Autorenew className="w-8 h-8 animate-spin text-summit-emerald" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50">
+    <div className="min-h-screen bg-white">
       <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <User className="w-8 h-8 text-green-600" />
+            <div className="w-16 h-16 bg-summit-mint rounded-full flex items-center justify-center mx-auto mb-4">
+              <Person className="w-8 h-8 text-summit-emerald" />
             </div>
-            <h1 className="text-3xl font-bold text-stone-900 mb-2">
+            <h1 className="text-3xl font-bold text-summit-forest mb-2">
               Welcome to the Summit Pilot
             </h1>
             <p className="text-stone-600">
@@ -148,7 +148,7 @@ export default function ProfileSetup() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* First Name */}
             <div>
-              <label htmlFor="firstName" className="block text-sm font-semibold text-stone-900 mb-2">
+              <label htmlFor="firstName" className="block text-sm font-semibold text-summit-forest mb-2">
                 First Name <span className="text-red-600">*</span>
               </label>
               <input
@@ -156,7 +156,7 @@ export default function ProfileSetup() {
                 id="firstName"
                 value={formData.firstName}
                 onChange={(e) => handleChange('firstName', e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition ${
                   errors.firstName ? 'border-red-500' : 'border-stone-300'
                 }`}
                 placeholder="Enter your first name"
@@ -168,7 +168,7 @@ export default function ProfileSetup() {
 
             {/* Last Name */}
             <div>
-              <label htmlFor="lastName" className="block text-sm font-semibold text-stone-900 mb-2">
+              <label htmlFor="lastName" className="block text-sm font-semibold text-summit-forest mb-2">
                 Last Name <span className="text-red-600">*</span>
               </label>
               <input
@@ -176,7 +176,7 @@ export default function ProfileSetup() {
                 id="lastName"
                 value={formData.lastName}
                 onChange={(e) => handleChange('lastName', e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition ${
                   errors.lastName ? 'border-red-500' : 'border-stone-300'
                 }`}
                 placeholder="Enter your last name"
@@ -188,11 +188,11 @@ export default function ProfileSetup() {
 
             {/* Email (Read-only) */}
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-stone-900 mb-2">
+              <label htmlFor="email" className="block text-sm font-semibold text-summit-forest mb-2">
                 Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-stone-400" />
+                <Email className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-stone-400" />
                 <input
                   type="email"
                   id="email"
@@ -205,7 +205,7 @@ export default function ProfileSetup() {
 
             {/* Mobile Phone */}
             <div>
-              <label htmlFor="phone" className="block text-sm font-semibold text-stone-900 mb-2">
+              <label htmlFor="phone" className="block text-sm font-semibold text-summit-forest mb-2">
                 Mobile Phone <span className="text-red-600">*</span>
               </label>
               <div className="relative">
@@ -215,7 +215,7 @@ export default function ProfileSetup() {
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => handleChange('phone', e.target.value)}
-                  className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${
+                  className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition ${
                     errors.phone ? 'border-red-500' : 'border-stone-300'
                   }`}
                   placeholder="(555) 123-4567"
@@ -234,10 +234,10 @@ export default function ProfileSetup() {
                   id="smsConsent"
                   checked={formData.smsConsent}
                   onChange={(e) => handleChange('smsConsent', e.target.checked)}
-                  className="mt-1 w-5 h-5 text-green-600 rounded border-stone-300 focus:ring-green-500 cursor-pointer"
+                  className="mt-1 w-5 h-5 text-summit-emerald rounded border-stone-300 focus:ring-summit-emerald cursor-pointer"
                 />
                 <div className="flex-1">
-                  <label htmlFor="smsConsent" className="block text-sm font-semibold text-stone-900 mb-1 cursor-pointer">
+                  <label htmlFor="smsConsent" className="block text-sm font-semibold text-summit-forest mb-1 cursor-pointer">
                     Enable SMS Habit Reminders <span className="text-sm font-normal text-stone-500">(Optional)</span>
                   </label>
                   <p className="text-sm text-stone-700">
@@ -250,7 +250,7 @@ export default function ProfileSetup() {
 
             {/* Pilot Reason */}
             <div>
-              <label htmlFor="pilotReason" className="block text-sm font-semibold text-stone-900 mb-2">
+              <label htmlFor="pilotReason" className="block text-sm font-semibold text-summit-forest mb-2">
                 Why are you interested in this pilot? <span className="text-red-600">*</span>
               </label>
               <textarea
@@ -258,7 +258,7 @@ export default function ProfileSetup() {
                 value={formData.pilotReason}
                 onChange={(e) => handleChange('pilotReason', e.target.value)}
                 rows={4}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition resize-none ${
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition resize-none ${
                   errors.pilotReason ? 'border-red-500' : 'border-stone-300'
                 }`}
                 placeholder="Tell us what motivated you to join and what you hope to achieve..."
@@ -279,11 +279,11 @@ export default function ProfileSetup() {
             <button
               type="submit"
               disabled={saving}
-              className="w-full py-4 bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+              className="w-full py-4 bg-summit-emerald hover:bg-emerald-700 disabled:bg-summit-sage disabled:cursor-not-allowed text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
             >
               {saving ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Autorenew className="w-5 h-5 animate-spin" />
                   Saving...
                 </>
               ) : (

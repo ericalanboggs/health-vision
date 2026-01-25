@@ -1,14 +1,25 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Flag, Backpack, TrendingUp, Clock3, FileText, ArrowRight, ArrowLeft, Check } from 'lucide-react'
+import {
+  Flag,
+  Backpack,
+  TrendingUp,
+  Schedule,
+  Description,
+  ArrowForward,
+  ArrowBack,
+  Check,
+} from '@mui/icons-material'
 import { trackEvent } from '../lib/posthog'
 import { saveJourney, loadJourney } from '../services/journeyService'
+import { getCurrentUser } from '../services/authService'
 import NorthStarStep from '../components/steps/NorthStarStep'
 import CardinalDirectionsStep from '../components/steps/CardinalDirectionsStep'
 import TerrainStep from '../components/steps/TerrainStep'
 import RouteStep from '../components/steps/RouteStep'
 import SummaryPage from '../components/steps/SummaryPage'
 import VisionDisplay from '../components/VisionDisplay'
+import { Card, Button } from '@summit/design-system'
 
 export default function Vision() {
   const navigate = useNavigate()
@@ -37,6 +48,24 @@ export default function Vision() {
     readiness: 5,
     supportNeeds: [],
   })
+  const [headerVisible, setHeaderVisible] = useState(true)
+  const lastScrollY = useRef(0)
+
+  // Headroom behavior for nav
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      if (currentScrollY > lastScrollY.current && currentScrollY > 60) {
+        setHeaderVisible(false)
+      } else {
+        setHeaderVisible(true)
+      }
+      lastScrollY.current = currentScrollY
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const steps = [
     { 
@@ -63,16 +92,16 @@ export default function Vision() {
       icon: TrendingUp,
       shortLabel: 'Map'
     },
-    { 
-      id: 'capacity', 
-      label: 'Capacity & Support', 
-      icon: Clock3,
+    {
+      id: 'capacity',
+      label: 'Capacity & Support',
+      icon: Schedule,
       shortLabel: 'Capacity'
     },
-    { 
-      id: 'summary', 
-      label: 'Personal Plan', 
-      icon: FileText,
+    {
+      id: 'summary',
+      label: 'Personal Plan',
+      icon: Description,
       shortLabel: 'Plan'
     },
   ]
@@ -80,19 +109,23 @@ export default function Vision() {
   // Load saved journey on mount
   useEffect(() => {
     const loadSavedJourney = async () => {
-      const result = await loadJourney()
+      // Get user first for optimized loading
+      const { user } = await getCurrentUser()
+      const userId = user?.id
+
+      const result = await loadJourney(userId)
       if (result.success && result.data) {
         setFormData(result.data.form_data)
-        
+
         // If in display mode, don't change the step
         if (viewMode === 'display') {
           return
         }
-        
+
         // Check if vision has been completed (has visionStatement)
-        const hasCompletedVision = result.data.form_data?.visionStatement && 
+        const hasCompletedVision = result.data.form_data?.visionStatement &&
                                     result.data.form_data.visionStatement.trim().length > 0
-        
+
         if (hasCompletedVision) {
           // If vision exists, go directly to summary page
           const summaryIndex = steps.findIndex(s => s.id === 'summary')
@@ -179,10 +212,10 @@ export default function Vision() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50">
+    <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
       {/* Progress Stepper */}
-      <div className="bg-white border-b border-stone-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-4">
+      <div className={`bg-transparent sticky top-0 z-10 transition-transform duration-300 ${headerVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           {/* Desktop Stepper */}
           <div className="hidden md:flex items-center justify-between">
             {steps.map((step, index) => {
@@ -203,10 +236,10 @@ export default function Vision() {
                     <div
                       className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
                         isActive
-                          ? 'bg-green-600 text-white ring-4 ring-green-100'
+                          ? 'bg-summit-lime text-summit-forest ring-4 ring-summit-sage'
                           : isCompleted
-                          ? 'bg-green-100 text-green-600'
-                          : 'bg-stone-200 text-stone-500'
+                          ? 'bg-summit-sage text-summit-emerald'
+                          : 'bg-gray-200 text-text-muted'
                       }`}
                     >
                       {isCompleted ? (
@@ -218,7 +251,7 @@ export default function Vision() {
                     <div className="text-left">
                       <div
                         className={`text-sm font-semibold ${
-                          isActive ? 'text-green-600' : isCompleted ? 'text-stone-700' : 'text-stone-500'
+                          isActive ? 'text-summit-emerald' : isCompleted ? 'text-summit-forest' : 'text-text-muted'
                         }`}
                       >
                         {step.label}
@@ -228,7 +261,7 @@ export default function Vision() {
                   {index < steps.length - 1 && (
                     <div
                       className={`flex-1 h-0.5 mx-4 transition-all ${
-                        isCompleted ? 'bg-green-600' : 'bg-stone-200'
+                        isCompleted ? 'bg-summit-emerald' : 'bg-gray-200'
                       }`}
                     />
                   )}
@@ -240,16 +273,16 @@ export default function Vision() {
           {/* Mobile Stepper */}
           <div className="md:hidden">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-stone-600">
+              <span className="text-body-sm text-text-secondary">
                 Step {currentStep + 1} of {steps.length}
               </span>
-              <span className="text-sm font-semibold text-green-600">
+              <span className="text-body-sm font-semibold text-summit-emerald">
                 {steps[currentStep].label}
               </span>
             </div>
-            <div className="w-full bg-stone-200 rounded-full h-2">
+            <div className="w-full bg-summit-sage rounded-full h-2">
               <div
-                className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                className="bg-summit-lime h-2 rounded-full transition-all duration-300"
                 style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
               />
             </div>
@@ -258,19 +291,19 @@ export default function Vision() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {renderStepContent()}
 
         {/* Navigation Buttons */}
         {currentStep > 0 && steps[currentStep].id !== 'summary' && (
           <div className="mt-8 flex justify-between items-center">
-            <button
+            <Button
+              variant="ghost"
               onClick={handleBack}
-              className="flex items-center gap-2 text-stone-600 hover:text-stone-900 font-medium transition-colors"
+              leftIcon={<ArrowBack className="w-5 h-5" />}
             >
-              <ArrowLeft className="w-5 h-5" />
               Back
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -283,66 +316,66 @@ const IntroPage = ({ onNext }) => {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="text-center mb-8">
-        <h1 className="text-4xl sm:text-5xl font-bold text-stone-900 mb-4">
+        <h1 className="text-h1 text-summit-forest mb-4">
           Create Your Health Vision
         </h1>
-        <p className="text-xl text-stone-600 leading-relaxed">
+        <p className="text-body-lg text-text-secondary leading-relaxed">
           Building sustainable health habits starts with a clear vision of where you're going and why it matters.
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-        <h2 className="text-2xl font-bold text-stone-900 mb-4">
+      <Card className="mb-8 border border-summit-sage">
+        <h2 className="text-h2 text-summit-forest mb-4">
           Why Vision Matters for Health Habits
         </h2>
-        
-        <div className="space-y-4 text-stone-700 leading-relaxed mb-6">
+
+        <div className="space-y-4 text-body text-summit-forest leading-relaxed mb-6">
           <p>
             Research shows that people who connect their daily actions to a compelling future vision are{' '}
-            <strong>3x more likely to stick with new habits</strong>. Your vision becomes your North Star—a 
+            <strong>3x more likely to stick with new habits</strong>. Your vision becomes your North Star—a
             reference point when motivation wanes and obstacles arise.
           </p>
-          
+
           <p>
-            Without a clear vision, health habits feel like arbitrary tasks on a to-do list. With a vivid vision, 
+            Without a clear vision, health habits feel like arbitrary tasks on a to-do list. With a vivid vision,
             they become meaningful steps toward the life you want to live.
           </p>
-          
+
           <p>
-            In the next few minutes, you'll create a personalized health vision and map out a realistic path 
+            In the next few minutes, you'll create a personalized health vision and map out a realistic path
             to get there. Your words and vision will guide your entire experience.
           </p>
         </div>
 
-        <div className="bg-green-50 rounded-xl border border-green-200 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-green-900 mb-3">What You'll Do</h3>
-          <ul className="space-y-2 text-green-900">
+        <div className="bg-summit-mint rounded-xl border border-summit-sage p-6 mb-6">
+          <h3 className="text-h3 text-summit-forest mb-3">What You'll Do</h3>
+          <ul className="space-y-2 text-body text-summit-forest">
             <li className="flex items-start gap-2">
-              <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-green-600" />
+              <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-summit-emerald" />
               <span><strong>Vision:</strong> Define your ideal health state 1-2 years from now</span>
             </li>
             <li className="flex items-start gap-2">
-              <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-green-600" />
+              <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-summit-emerald" />
               <span><strong>Base Camp:</strong> Assess where you are today and what drives you</span>
             </li>
             <li className="flex items-start gap-2">
-              <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-green-600" />
+              <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-summit-emerald" />
               <span><strong>Map the Ascent:</strong> Identify barriers and areas for improvement</span>
             </li>
             <li className="flex items-start gap-2">
-              <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-green-600" />
+              <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-summit-emerald" />
               <span><strong>Capacity & Support:</strong> Determine what's realistic for you right now</span>
             </li>
             <li className="flex items-start gap-2">
-              <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-green-600" />
+              <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-summit-emerald" />
               <span><strong>Personal Plan:</strong> Review your complete health roadmap</span>
             </li>
           </ul>
         </div>
 
-        <div className="bg-amber-50 rounded-xl border border-amber-200 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-amber-900 mb-3">Tips for Success</h3>
-          <ul className="space-y-2 text-amber-900 text-sm">
+        <div className="bg-summit-sage/50 rounded-xl border border-summit-sage p-6 mb-6">
+          <h3 className="text-h3 text-summit-forest mb-3">Tips for Success</h3>
+          <ul className="space-y-2 text-body-sm text-summit-forest">
             <li>• <strong>Be honest:</strong> This is for you, not anyone else</li>
             <li>• <strong>Think big:</strong> Your vision should inspire you</li>
             <li>• <strong>Be specific:</strong> Vivid details make your vision more powerful</li>
@@ -350,16 +383,17 @@ const IntroPage = ({ onNext }) => {
           </ul>
         </div>
 
-        <button
+        <Button
           onClick={onNext}
-          className="w-full bg-green-600 hover:bg-green-700 text-white font-bold text-lg px-8 py-4 rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+          size="lg"
+          className="w-full"
+          rightIcon={<ArrowForward className="w-5 h-5" />}
         >
           Start Creating Your Vision
-          <ArrowRight className="w-6 h-6" />
-        </button>
-      </div>
+        </Button>
+      </Card>
 
-      <div className="text-center text-sm text-stone-500">
+      <div className="text-center text-body-sm text-text-muted">
         <p>Takes about 5-10 minutes • Progress is automatically saved</p>
       </div>
     </div>

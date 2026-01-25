@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Beaker, Sparkles, RefreshCw, Plus, Loader2 } from 'lucide-react'
+import { ArrowBack, Science, AutoAwesome, Refresh, Add, Autorenew } from '@mui/icons-material'
 import { getCurrentWeekNumber } from '../utils/weekCalculator'
 import { getCurrentWeekHabits, saveHabitsForWeek } from '../services/habitService'
 import { loadJourney } from '../services/journeyService'
@@ -18,6 +18,24 @@ export default function AddHabit() {
   const [showCustomInput, setShowCustomInput] = useState(false)
   const [currentHabitsCount, setCurrentHabitsCount] = useState(0)
   const [visionData, setVisionData] = useState(null)
+  const [headerVisible, setHeaderVisible] = useState(true)
+  const lastScrollY = useRef(0)
+
+  // Headroom behavior for nav
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      if (currentScrollY > lastScrollY.current && currentScrollY > 60) {
+        setHeaderVisible(false)
+      } else {
+        setHeaderVisible(true)
+      }
+      lastScrollY.current = currentScrollY
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const dayMap = {
@@ -194,22 +212,22 @@ export default function AddHabit() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50 flex items-center justify-center">
-        <p className="text-stone-600">Loading...</p>
+      <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint flex items-center justify-center">
+        <p className="text-text-secondary">Loading...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50">
+    <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-stone-200">
+      <header className={`bg-transparent sticky top-0 z-10 transition-transform duration-300 ${headerVisible ? 'translate-y-0' : '-translate-y-full'}`}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <button
             onClick={() => navigate('/habits')}
-            className="flex items-center gap-2 text-stone-600 hover:text-stone-900 font-medium transition-colors"
+            className="flex items-center gap-2 text-text-secondary hover:text-summit-forest font-medium transition-colors"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowBack className="w-5 h-5" />
             Back to Habits
           </button>
         </div>
@@ -217,41 +235,41 @@ export default function AddHabit() {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-6 mb-6">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 mb-6">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-100 rounded-xl">
-                <Beaker className="w-6 h-6 text-green-600" />
+              <div className="p-3 bg-summit-sage rounded-xl">
+                <Science className="w-6 h-6 text-summit-emerald" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-stone-900">Add New Habit</h3>
+                <h3 className="text-h2 text-summit-forest">Add New Habit</h3>
               </div>
             </div>
           </div>
-          
-          <p className="text-sm text-stone-600 mb-6">
-            You currently have {currentHabitsCount} habit{currentHabitsCount !== 1 ? 's' : ''}. 
+
+          <p className="text-body-sm text-text-secondary mb-6">
+            You currently have {currentHabitsCount} habit{currentHabitsCount !== 1 ? 's' : ''}.
             Choose up to {3 - currentHabitsCount} more to add this week.
           </p>
 
           {/* AI Suggestions Section */}
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border-2 border-purple-200 mb-6">
+          <div className="bg-gradient-to-r from-summit-mint to-summit-sage p-4 rounded-lg border-2 border-summit-emerald mb-6">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-purple-600" />
-                <h4 className="font-semibold text-purple-900">AI-Personalized Suggestions</h4>
+                <AutoAwesome className="w-5 h-5 text-summit-emerald" />
+                <h4 className="font-semibold text-summit-forest">AI-Personalized Suggestions</h4>
               </div>
               <button
                 onClick={handleRefresh}
                 disabled={generating}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-700 bg-white hover:bg-purple-50 border border-purple-300 rounded-lg transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-summit-forest bg-white hover:bg-summit-mint border border-summit-emerald rounded-lg transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <RefreshCw className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
+                <Refresh className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
                 Refresh ideas
               </button>
             </div>
-            <p className="text-sm text-purple-800">
-              {visionData 
+            <p className="text-body-sm text-summit-forest">
+              {visionData
                 ? 'These actions are tailored to your vision and goals. Choose 1–2 new ideas to focus on.'
                 : 'These are general healthy habit suggestions. Create your vision for personalized recommendations.'}
             </p>
@@ -260,8 +278,8 @@ export default function AddHabit() {
           {/* Habit Suggestions */}
           {generating ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
-              <p className="ml-3 text-stone-600">Building your personalized plan...</p>
+              <Autorenew className="w-8 h-8 animate-spin text-summit-emerald" />
+              <p className="ml-3 text-text-secondary">Building your personalized plan...</p>
             </div>
           ) : (
             <div className="space-y-3 mb-4">
@@ -271,10 +289,10 @@ export default function AddHabit() {
                   onClick={() => !maxHabitsReached || selectedHabits.includes(index) ? toggleHabitSelection(index) : null}
                   className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
                     selectedHabits.includes(index)
-                      ? 'bg-green-50 border-green-600'
+                      ? 'bg-summit-mint border-summit-emerald'
                       : maxHabitsReached
-                      ? 'bg-stone-50 border-stone-200 opacity-50 cursor-not-allowed'
-                      : 'bg-white border-stone-200 hover:border-stone-300'
+                      ? 'bg-summit-sage border-gray-200 opacity-50 cursor-not-allowed'
+                      : 'bg-white border-gray-200 hover:border-summit-emerald'
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -283,15 +301,15 @@ export default function AddHabit() {
                       checked={selectedHabits.includes(index)}
                       onChange={() => {}}
                       disabled={maxHabitsReached && !selectedHabits.includes(index)}
-                      className="mt-1 w-5 h-5 text-green-600 rounded border-stone-300 focus:ring-green-500 cursor-pointer disabled:cursor-not-allowed"
+                      className="mt-1 w-5 h-5 text-summit-emerald rounded border-gray-300 focus:ring-summit-emerald cursor-pointer disabled:cursor-not-allowed"
                     />
                     <div className="flex-1">
-                      <p className="font-semibold text-stone-900 mb-2">{suggestion.action}</p>
-                      <p className="text-sm text-purple-800 mb-2">
+                      <p className="font-semibold text-summit-forest mb-2">{suggestion.action}</p>
+                      <p className="text-body-sm text-summit-forest mb-2">
                         <strong>Why this works:</strong> {suggestion.why}
                       </p>
-                      <p className="text-sm text-stone-600">
-                        <strong>💡 Tip:</strong> {suggestion.tip}
+                      <p className="text-body-sm text-text-secondary">
+                        <strong>Tip:</strong> {suggestion.tip}
                       </p>
                     </div>
                   </div>
@@ -305,14 +323,14 @@ export default function AddHabit() {
             <button
               onClick={() => setShowCustomInput(true)}
               disabled={maxHabitsReached}
-              className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center gap-2 transition-colors mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-summit-emerald hover:text-summit-forest font-medium text-sm flex items-center gap-2 transition-colors mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="text-lg">+</span>
               Create my own
             </button>
           ) : (
-            <div className="mb-6 p-4 bg-stone-50 rounded-lg border border-stone-200">
-              <label className="block text-sm font-semibold text-stone-900 mb-2">
+            <div className="mb-6 p-4 bg-summit-mint rounded-lg border border-summit-sage">
+              <label className="block text-sm font-semibold text-summit-forest mb-2">
                 What habit would you like to add?
               </label>
               <input
@@ -321,14 +339,14 @@ export default function AddHabit() {
                 onChange={(e) => setCustomHabit(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleAddCustomHabit()}
                 placeholder="e.g., Meditate for 5 minutes each morning"
-                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 mb-3"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald mb-3"
                 autoFocus
               />
               <div className="flex gap-2">
                 <button
                   onClick={handleAddCustomHabit}
                   disabled={!customHabit.trim()}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-stone-300 text-white font-medium rounded-lg transition text-sm"
+                  className="px-4 py-2 bg-summit-lime hover:bg-summit-lime-dark disabled:bg-summit-sage text-summit-forest font-medium rounded-lg transition text-sm"
                 >
                   Add Habit
                 </button>
@@ -337,7 +355,7 @@ export default function AddHabit() {
                     setShowCustomInput(false)
                     setCustomHabit('')
                   }}
-                  className="px-4 py-2 text-stone-600 hover:bg-stone-100 font-medium rounded-lg transition text-sm"
+                  className="px-4 py-2 text-text-secondary hover:bg-summit-mint font-medium rounded-lg transition text-sm"
                 >
                   Cancel
                 </button>
@@ -352,14 +370,14 @@ export default function AddHabit() {
               disabled={selectedHabits.length === 0}
               className={`w-full py-3 font-bold rounded-lg shadow-md transition-all ${
                 selectedHabits.length > 0
-                  ? 'bg-green-600 hover:bg-green-700 text-white'
-                  : 'bg-stone-300 text-stone-500 cursor-not-allowed'
+                  ? 'bg-summit-lime hover:bg-summit-lime-dark text-summit-forest'
+                  : 'bg-summit-sage text-text-muted cursor-not-allowed'
               }`}
             >
               Next: Schedule Your Habits
             </button>
             {selectedHabits.length === 0 && (
-              <p className="text-xs text-stone-500 text-center mt-2">
+              <p className="text-xs text-text-muted text-center mt-2">
                 Select at least one habit to continue
               </p>
             )}

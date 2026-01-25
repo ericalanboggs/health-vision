@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getProfile } from '../services/authService'
 import { trackEvent } from '../lib/posthog'
-import { Loader2, CheckCircle, XCircle } from 'lucide-react'
+import { Autorenew, CheckCircle, Cancel } from '@mui/icons-material'
 
 export default function AuthCallback() {
   const navigate = useNavigate()
@@ -126,16 +126,16 @@ export default function AuthCallback() {
   }, [navigate])
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-100 p-8 text-center">
         {status === 'processing' && (
           <>
             <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
+              <div className="w-16 h-16 bg-summit-mint rounded-full flex items-center justify-center">
+                <Autorenew className="w-10 h-10 text-summit-emerald animate-spin" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-stone-800 mb-3">
+            <h1 className="text-2xl font-bold text-summit-forest mb-3">
               Signing you in...
             </h1>
             <p className="text-stone-600">
@@ -147,11 +147,11 @@ export default function AuthCallback() {
         {status === 'success' && (
           <>
             <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-10 h-10 text-green-600" />
+              <div className="w-16 h-16 bg-summit-mint rounded-full flex items-center justify-center">
+                <CheckCircle className="w-10 h-10 text-summit-emerald" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-stone-800 mb-3">
+            <h1 className="text-2xl font-bold text-summit-forest mb-3">
               Welcome back!
             </h1>
             <p className="text-stone-600">
@@ -164,10 +164,10 @@ export default function AuthCallback() {
           <>
             <div className="flex justify-center mb-6">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-                <XCircle className="w-10 h-10 text-red-600" />
+                <Cancel className="w-10 h-10 text-red-600" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-stone-800 mb-3">
+            <h1 className="text-2xl font-bold text-summit-forest mb-3">
               Authentication Failed
             </h1>
             <p className="text-stone-600 mb-6">
@@ -180,7 +180,7 @@ export default function AuthCallback() {
             </p>
             <button
               onClick={() => navigate('/login')}
-              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition"
+              className="bg-summit-emerald hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-lg transition"
             >
               Request New Link
             </button>

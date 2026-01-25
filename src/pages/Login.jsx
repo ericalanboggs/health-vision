@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { sendMagicLink, signInWithGoogle } from '../services/authService'
-import { Mail, ArrowRight, CheckCircle } from 'lucide-react'
+import { ArrowForward, CheckCircle } from '@mui/icons-material'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -43,15 +43,15 @@ export default function Login() {
 
   if (sent) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+      <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-100 p-8 text-center">
           <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircle className="w-10 h-10 text-green-600" />
+            <div className="w-16 h-16 bg-summit-mint rounded-full flex items-center justify-center">
+              <CheckCircle className="w-10 h-10 text-summit-emerald" />
             </div>
           </div>
           
-          <h1 className="text-2xl font-bold text-stone-800 mb-3">
+          <h1 className="text-2xl font-bold text-summit-forest mb-3">
             Check Your Email
           </h1>
           
@@ -75,7 +75,7 @@ export default function Login() {
               setSent(false)
               setEmail('')
             }}
-            className="mt-6 text-sm text-green-600 hover:text-green-700 font-medium"
+            className="mt-6 text-sm text-summit-emerald hover:text-summit-forest font-medium"
           >
             Use a different email
           </button>
@@ -85,16 +85,16 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+    <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-              <Mail className="w-8 h-8 text-green-600" />
+            <div className="w-16 h-16 bg-summit-mint rounded-full flex items-center justify-center">
+              <span className="text-4xl">🏔️</span>
             </div>
           </div>
           
-          <h1 className="text-3xl font-bold text-stone-800 mb-2">
+          <h1 className="text-3xl font-bold text-summit-forest mb-2">
             Welcome to Summit
           </h1>
           
@@ -115,7 +115,7 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
-              className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition"
+              className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-transparent outline-none transition"
             />
           </div>
 
@@ -128,7 +128,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading || !isValidEmail(email)}
-            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-stone-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition flex items-center justify-center gap-2"
+            className="w-full bg-summit-emerald hover:bg-emerald-700 disabled:bg-stone-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
@@ -138,7 +138,7 @@ export default function Login() {
             ) : (
               <>
                 Send Magic Link
-                <ArrowRight className="w-5 h-5" />
+                <ArrowForward className="w-5 h-5" />
               </>
             )}
           </button>

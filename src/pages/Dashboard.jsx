@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCurrentUser } from '../services/authService'
 import { getCurrentWeekHabits } from '../services/habitService'
 import { getCurrentWeekReflection } from '../services/reflectionService'
 import { loadJourney } from '../services/journeyService'
+import { getStreak, getHabitStats, getAllTrackingConfigs } from '../services/trackingService'
 import {
   getCurrentWeekNumber,
   getCurrentWeekDateRange,
@@ -12,10 +13,91 @@ import {
   getWeekEndDate,
 } from '../utils/weekCalculator'
 import { formatDaysDisplay } from '../utils/formatDays'
-import { Calendar, Beaker, Clock, ArrowRight, Mountain, CheckCircle, ExternalLink, HelpCircle } from 'lucide-react'
+import { extractVisionAdjectives, summarizeHabitAction } from '../utils/aiService'
+
+// Cache keys
+const HABIT_SUMMARIES_CACHE_KEY = 'health_summit_habit_summaries'
+const VISION_ADJECTIVES_CACHE_KEY = 'health_summit_vision_adjectives'
+
+// Load cached habit summaries
+const loadCachedHabitSummaries = () => {
+  try {
+    const cached = localStorage.getItem(HABIT_SUMMARIES_CACHE_KEY)
+    return cached ? JSON.parse(cached) : {}
+  } catch (e) {
+    return {}
+  }
+}
+
+// Save habit summary to cache
+const saveCachedHabitSummary = (habitName, summary) => {
+  try {
+    const cached = loadCachedHabitSummaries()
+    cached[habitName] = summary
+    localStorage.setItem(HABIT_SUMMARIES_CACHE_KEY, JSON.stringify(cached))
+  } catch (e) {
+    console.warn('Failed to cache habit summary:', e)
+  }
+}
+
+// Load cached vision adjectives
+const loadCachedVisionAdjectives = (visionHash) => {
+  try {
+    const cached = localStorage.getItem(VISION_ADJECTIVES_CACHE_KEY)
+    if (cached) {
+      const { hash, adjectives } = JSON.parse(cached)
+      if (hash === visionHash) return adjectives
+    }
+  } catch (e) {
+    console.warn('Failed to load cached vision adjectives:', e)
+  }
+  return null
+}
+
+// Save vision adjectives to cache
+const saveCachedVisionAdjectives = (visionHash, adjectives) => {
+  try {
+    localStorage.setItem(VISION_ADJECTIVES_CACHE_KEY, JSON.stringify({
+      hash: visionHash,
+      adjectives
+    }))
+  } catch (e) {
+    console.warn('Failed to cache vision adjectives:', e)
+  }
+}
+
+// Simple hash function for vision text
+const hashString = (str) => {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash
+  }
+  return hash.toString()
+}
+import {
+  CalendarMonth,
+  Science,
+  Schedule,
+  ArrowForward,
+  Terrain,
+  CheckCircle,
+  OpenInNew,
+  HelpOutline,
+} from '@mui/icons-material'
 import TopNav from '../components/TopNav'
 import WelcomeModal from '../components/WelcomeModal'
 import coachEric from '../assets/coach-eric.jpeg'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Button,
+  Tag,
+} from '@summit/design-system'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -34,6 +116,27 @@ export default function Dashboard() {
     futureAbilities: '',
     whyMatters: ''
   })
+  const [visionAdjectives, setVisionAdjectives] = useState('Your Health Vision')
+  const [habitSummaries, setHabitSummaries] = useState({})
+  const [habitStats, setHabitStats] = useState({})
+  const [headerVisible, setHeaderVisible] = useState(true)
+  const lastScrollY = useRef(0)
+
+  // Headroom behavior for nav
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      if (currentScrollY > lastScrollY.current && currentScrollY > 60) {
+        setHeaderVisible(false)
+      } else {
+        setHeaderVisible(true)
+      }
+      lastScrollY.current = currentScrollY
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const formatPilotTimeline = () => {
     const pilotStart = getPilotStartDate()
@@ -105,29 +208,42 @@ export default function Dashboard() {
 
   useEffect(() => {
     const loadDashboardData = async () => {
-      const { user } = await getCurrentUser()
-      setUser(user)
-      
-      // Get current week info
+      // Get current week info (sync - instant)
       const week = getCurrentWeekNumber()
       const dateRange = getCurrentWeekDateRange()
       setWeekNumber(week)
       setWeekDateRange(dateRange)
-      
-      // Load current week's habits
-      const { success, data } = await getCurrentWeekHabits()
-      if (success && data) {
-        setCurrentHabits(data)
+      setPilotTimelineText(formatPilotTimeline())
+
+      // Get user first (single auth call)
+      const userResult = await getCurrentUser()
+      const userId = userResult.user?.id
+      setUser(userResult.user)
+
+      if (!userId) {
+        setLoading(false)
+        return
       }
-      
-      // Load current week's reflection
-      const reflectionResult = await getCurrentWeekReflection()
+
+      // Run all data fetches in parallel, passing userId to avoid duplicate auth calls
+      const [
+        habitsResult,
+        reflectionResult,
+        journeyResult,
+        configsResult
+      ] = await Promise.all([
+        getCurrentWeekHabits(userId),
+        getCurrentWeekReflection(userId),
+        loadJourney(userId),
+        getAllTrackingConfigs(userId)
+      ])
+
+      // Process reflection
       if (reflectionResult.success && reflectionResult.data) {
         setCurrentReflection(reflectionResult.data)
       }
-      
-      // Load user's vision
-      const journeyResult = await loadJourney()
+
+      // Process vision (with caching for adjectives)
       if (journeyResult.success && journeyResult.data?.form_data) {
         const formData = journeyResult.data.form_data
         setVisionData({
@@ -137,16 +253,121 @@ export default function Dashboard() {
           futureAbilities: formData.futureAbilities || '',
           whyMatters: formData.whyMatters || ''
         })
+
+        // Extract adjectives from vision statement (with caching)
+        const fullVisionText = [
+          formData.visionStatement,
+          formData.feelingState,
+          formData.appearanceConfidence,
+          formData.futureAbilities,
+          formData.whyMatters
+        ].filter(Boolean).join(' ')
+
+        if (fullVisionText) {
+          const visionHash = hashString(fullVisionText)
+          const cachedAdjectives = loadCachedVisionAdjectives(visionHash)
+
+          if (cachedAdjectives) {
+            setVisionAdjectives(cachedAdjectives)
+          } else {
+            // Don't block on this - fire and forget
+            extractVisionAdjectives(fullVisionText)
+              .then(adjectives => {
+                setVisionAdjectives(adjectives)
+                saveCachedVisionAdjectives(visionHash, adjectives)
+              })
+              .catch(error => console.error('Failed to extract vision adjectives:', error))
+          }
+        }
       }
-      
-      setPilotTimelineText(formatPilotTimeline())
-      
+
+      // Process habits
+      if (habitsResult.success && habitsResult.data) {
+        const data = habitsResult.data
+        setCurrentHabits(data)
+
+        const uniqueHabits = [...new Set(data.map(h => h.habit_name))]
+        const cachedSummaries = loadCachedHabitSummaries()
+
+        // Process habit summaries in parallel (only uncached ones call API)
+        const summaryPromises = uniqueHabits.map(async habitName => {
+          if (cachedSummaries[habitName]) {
+            return { habitName, summary: cachedSummaries[habitName] }
+          }
+          try {
+            const summary = await summarizeHabitAction(habitName)
+            saveCachedHabitSummary(habitName, summary)
+            return { habitName, summary }
+          } catch (error) {
+            console.error(`Failed to summarize habit: ${habitName}`, error)
+            return { habitName, summary: habitName.split(' ').slice(0, 2).join(' ') }
+          }
+        })
+
+        // Process habit stats in parallel
+        const weekStart = getWeekStartDate(week)
+        const weekEnd = getWeekEndDate(week)
+
+        const statsPromises = uniqueHabits.map(async habitName => {
+          try {
+            const habitData = data.filter(h => h.habit_name === habitName)
+            const scheduledDays = habitData.map(h => h.day_of_week)
+
+            const config = configsResult.success
+              ? configsResult.data.find(c => c.habit_name === habitName)
+              : null
+
+            if (config && config.tracking_enabled) {
+              const [streakResult, statsResult] = await Promise.all([
+                getStreak(habitName, scheduledDays, config.tracking_type, userId),
+                getHabitStats(habitName, weekStart, weekEnd, userId)
+              ])
+
+              return {
+                habitName,
+                stats: {
+                  streak: streakResult.success ? streakResult.data.streak : 0,
+                  weekStats: statsResult.success ? statsResult.data : null,
+                  config
+                }
+              }
+            }
+            return { habitName, stats: null }
+          } catch (error) {
+            console.error(`Failed to fetch stats for ${habitName}:`, error)
+            return { habitName, stats: null }
+          }
+        })
+
+        // Wait for summaries and stats in parallel
+        const [summaryResults, statsResults] = await Promise.all([
+          Promise.all(summaryPromises),
+          Promise.all(statsPromises)
+        ])
+
+        // Build summaries object
+        const summaries = {}
+        summaryResults.forEach(({ habitName, summary }) => {
+          summaries[habitName] = summary
+        })
+        setHabitSummaries(summaries)
+
+        // Build stats object
+        const stats = {}
+        statsResults.forEach(({ habitName, stats: habitStats }) => {
+          if (habitStats) {
+            stats[habitName] = habitStats
+          }
+        })
+        setHabitStats(stats)
+      }
+
       // Check if this is the user's first time on dashboard
       const hasSeenWelcome = localStorage.getItem('hasSeenWelcome')
       if (!hasSeenWelcome) {
         setShowWelcomeModal(true)
       }
-      
+
       setLoading(false)
     }
 
@@ -162,22 +383,6 @@ export default function Dashboard() {
   const formatHabits = () => {
     if (currentHabits.length === 0) return []
 
-    // Time slot mapping (hour -> simplified label)
-    const timeSlotMap = {
-      6: 'early morning',
-      7: 'early morning',
-      8: 'mid-morning',
-      9: 'mid-morning',
-      12: 'lunch time',
-      13: 'early afternoon',
-      14: 'early afternoon',
-      15: 'afternoon',
-      16: 'afternoon',
-      17: 'after work',
-      18: 'after work',
-      21: 'before bedtime'
-    }
-
     // Group habits by habit_name
     const habitGroups = {}
     currentHabits.forEach(habit => {
@@ -189,21 +394,41 @@ export default function Dashboard() {
 
     // Format each habit group
     return Object.entries(habitGroups).map(([habitName, habits]) => {
-      const dayNames = ['Sun', 'Mon', 'Tues', 'Weds', 'Thurs', 'Fri', 'Sat']
-      const days = habits.map(h => dayNames[h.day_of_week])
-      
-      // Get time label from mapping
-      const time = habits[0].reminder_time
-      const [hours] = time.split(':')
-      const hour = parseInt(hours)
-      const timeLabel = timeSlotMap[hour] || `${hour}:00`
-      
-      // Format days as comma-separated list
-      const daysStr = days.join(', ')
-      
+      const dayIndices = habits.map(h => h.day_of_week).sort((a, b) => a - b)
+      const dayCount = dayIndices.length
+
+      let daysStr = ''
+
+      // Check for special cases
+      const isWeekdays = dayIndices.length === 5 &&
+        dayIndices.every(d => d >= 1 && d <= 5)
+      const isWeekend = dayIndices.length === 2 &&
+        dayIndices.includes(0) && dayIndices.includes(6)
+      const isDaily = dayIndices.length === 7
+
+      if (isDaily) {
+        daysStr = 'Daily'
+      } else if (isWeekdays) {
+        daysStr = 'Weekdays'
+      } else if (isWeekend) {
+        daysStr = 'Weekends'
+      } else if (dayCount === 1) {
+        // Full day name for single day
+        const fullDayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        daysStr = fullDayNames[dayIndices[0]]
+      } else if (dayCount === 2) {
+        // Abbreviated for 2 days
+        const abbrevNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+        daysStr = dayIndices.map(d => abbrevNames[d]).join(', ')
+      } else {
+        // Single letter for 3+ days
+        const singleLetter = ['S', 'M', 'T', 'W', 'Th', 'F', 'S']
+        daysStr = dayIndices.map(d => singleLetter[d]).join(',')
+      }
+
       return {
         habit: habitName,
-        schedule: `${daysStr} ${timeLabel}.`
+        schedule: daysStr
       }
     })
   }
@@ -212,233 +437,231 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50 flex items-center justify-center">
-        <p className="text-stone-600">Loading...</p>
+      <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint flex items-center justify-center">
+        <p className="text-text-secondary">Loading your journey...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50">
-      <TopNav />
-      
-      {/* Welcome Modal */}
+    <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
+      <div className={`sticky top-0 z-10 transition-transform duration-300 ${headerVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+        <TopNav />
+      </div>
+
       <WelcomeModal isOpen={showWelcomeModal} onClose={handleCloseWelcomeModal} />
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section - Moved to Top */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-stone-800 mb-2">
-            Welcome to Your Summit Pilot 🏔️
-          </h3>
-          <p className="text-stone-600 mb-2">
-            This is a 4-week pilot program to help you build sustainable health habits. 
-            Each week, commit to 1-2 habits and reflect on your progress. 
-            You'll receive gentle SMS reminders at the times you choose.
-          </p>
-          <p className="text-stone-600">
-            <span className="font-semibold">Pilot Timeline:</span>{' '}
-            {pilotTimelineText || `Week ${weekNumber} (${weekDateRange})`}
-          </p>
-        </div>
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header */}
+        <h1 className="text-h1 text-summit-forest mb-8">Welcome to Your Summit</h1>
 
         {/* Vision Section */}
-        <button
+        <Card
+          interactive
+          className="mb-8 cursor-pointer border border-gray-200"
           onClick={() => navigate('/vision?view=display')}
-          className="w-full bg-white rounded-2xl shadow-lg p-8 text-left hover:shadow-xl transition group mb-6"
         >
           <div className="flex items-start gap-4">
-            {/* Vision Icon */}
-            <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-200 transition flex-shrink-0">
-              <Mountain className="w-8 h-8 text-blue-600" />
+            <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-summit-sage">
+              <Terrain className="h-8 w-8 text-summit-emerald" />
             </div>
-            
-            {/* Content */}
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold text-stone-800 mb-2">
-                Your Vision
-              </h2>
-              
-              {visionData.visionStatement || visionData.feelingState || visionData.whyMatters ? (
-                <p className="text-stone-600 mb-4 line-clamp-3">
-                  {visionData.visionStatement && visionData.visionStatement}
-                  {visionData.feelingState && (
-                    <>{visionData.visionStatement && ' '}{visionData.feelingState}</>
-                  )}
-                  {visionData.appearanceConfidence && (
-                    <>{(visionData.visionStatement || visionData.feelingState) && ' '}{visionData.appearanceConfidence}</>
-                  )}
-                  {visionData.futureAbilities && (
-                    <>{(visionData.visionStatement || visionData.feelingState || visionData.appearanceConfidence) && ' '}{visionData.futureAbilities}</>
-                  )}
-                  {visionData.whyMatters && (
-                    <>{(visionData.visionStatement || visionData.feelingState || visionData.appearanceConfidence || visionData.futureAbilities) && ' '}This matters because {visionData.whyMatters}</>
-                  )}
-                </p>
-              ) : (
-                <p className="text-stone-600 mb-4">
-                  Create your health vision to guide your journey. Define where you want to be in 1-2 years.
-                </p>
-              )}
-              
-              <div className="text-blue-600 font-semibold group-hover:gap-2 flex items-center gap-1 transition-all">
+
+            <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <CardHeader>
+                <div className="text-meta text-summit-moss mb-1">YOUR HEALTH VISION</div>
+                <CardTitle className="text-h3">
+                  {visionData.visionStatement || visionData.feelingState || visionData.whyMatters ? visionAdjectives : 'Create Your Vision'}
+                </CardTitle>
+              </CardHeader>
+
+              <Button variant="ghost" rightIcon={<ArrowForward className="h-4 w-4" />} className="flex-shrink-0">
                 {visionData.visionStatement ? 'View & Edit Vision' : 'Create Vision'}
-                <span className="group-hover:translate-x-1 transition-transform">→</span>
-              </div>
+              </Button>
             </div>
           </div>
-        </button>
+        </Card>
 
-        {/* Weekly Sections - Grouped Side by Side */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Pilot Program Stats Card */}
+        <Card variant="feature" className="mb-8 border border-gray-200">
+          <div className="mb-4">
+            <div className="text-meta text-summit-moss mb-2">PILOT PROGRAM</div>
+            <CardTitle className="mb-1">{4 - weekNumber} Week{4 - weekNumber !== 1 ? 's' : ''} Remaining</CardTitle>
+            <p className="text-body-sm text-text-muted">
+              {pilotTimelineText || weekDateRange}
+            </p>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="w-full bg-summit-sage rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-summit-lime h-full transition-all duration-500 ease-out"
+              style={{ width: `${(weekNumber / 4) * 100}%` }}
+            />
+          </div>
+        </Card>
+
+        {/* This Week's Climb Section */}
+        <div className="mb-8">
+          <h2 className="text-h2 text-summit-forest mb-4">This Week's Climb</h2>
+
+          {/* Weekly Sections Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Weekly Habits */}
-          <button
+          <Card
+            interactive
+            className="cursor-pointer border border-gray-200"
             onClick={() => navigate('/habits')}
-            className="bg-white rounded-2xl shadow-lg p-8 text-left hover:shadow-xl transition group"
           >
-            <div className="flex items-start gap-4">
-              {/* Habits Icon */}
-              <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition flex-shrink-0">
-                <Beaker className="w-8 h-8 text-green-600" />
+            <CardHeader className="mb-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-summit-sage">
+                  <Science className="h-5 w-5 text-summit-emerald" />
+                </div>
+                <CardTitle className="text-h3">Your Habits</CardTitle>
               </div>
-              
-              {/* Content */}
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-stone-800 mb-2">
-                  Weekly Habits
-                </h2>
-                
-                {formattedHabits.length > 0 ? (
-                  <div className="mb-4 space-y-3">
-                    {formattedHabits.map((habitData, index) => (
-                      <div key={index} className="flex flex-col gap-1">
-                        <p className="text-base leading-6 text-stone-700">
-                          {habitData.habit}
-                        </p>
+
+              {formattedHabits.length > 0 ? (
+                <div className="space-y-3">
+                  {formattedHabits.map((habitData, index) => {
+                    const stats = habitStats[habitData.habit]
+                    const hasStreak = stats && stats.streak > 0
+                    const weekTotal = stats?.weekStats?.totalMetric
+
+                    return (
+                      <div
+                        key={index}
+                        className="flex flex-col gap-2 p-3 rounded-lg bg-summit-mint border border-summit-sage"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-body text-summit-forest font-semibold">
+                            {habitSummaries[habitData.habit] || habitData.habit}
+                          </p>
+                          {hasStreak ? (
+                            <span className="text-body-sm text-summit-emerald font-semibold flex-shrink-0">
+                              🔥 {stats.streak} {stats.streak === 1 ? 'day' : 'days'}
+                            </span>
+                          ) : weekTotal ? (
+                            <span className="text-body-sm text-text-muted flex-shrink-0">
+                              ✓ {Math.round(weekTotal)} {stats.config.metric_unit}
+                            </span>
+                          ) : null}
+                        </div>
                         <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-stone-600" />
-                          <p className="text-sm leading-6 text-stone-600">
+                          <Schedule className="h-4 w-4 text-text-muted" />
+                          <p className="text-body-sm text-text-muted">
                             {habitData.schedule}
                           </p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-stone-600 mb-4">
-                    Set your commitments for this week. Choose 1-2 habits with specific days and times.
-                  </p>
-                )}
-                
-                <div className="text-green-600 font-semibold group-hover:gap-2 flex items-center gap-1 transition-all">
-                  Manage Habits
-                  <span className="group-hover:translate-x-1 transition-transform">→</span>
+                    )
+                  })}
                 </div>
-              </div>
-            </div>
-          </button>
+              ) : (
+                <CardDescription className="text-body">
+                  Set your commitments for this week. Choose 1-2 habits with specific days and times.
+                </CardDescription>
+              )}
+            </CardHeader>
+
+            <Button variant="ghost" rightIcon={<ArrowForward className="h-4 w-4" />}>
+              {formattedHabits.length > 0 ? 'Manage Habits' : 'Add Habits'}
+            </Button>
+          </Card>
 
           {/* Weekly Reflection */}
-          <button
+          <Card
+            interactive
+            className="cursor-pointer border border-gray-200"
             onClick={() => navigate('/reflection')}
-            className="bg-white rounded-2xl shadow-lg p-8 text-left hover:shadow-xl transition group"
           >
-            <div className="flex items-start gap-4">
-              {/* Reflection Icon */}
-              <div className="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center group-hover:bg-amber-200 transition flex-shrink-0">
-                <Calendar className="w-8 h-8 text-amber-600" />
-              </div>
-              
-              {/* Content */}
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-stone-800 mb-2">
-                  Weekly Reflection
-                </h2>
-                
-                {currentReflection ? (
-                  <>
-                    <div className="flex items-center gap-2 mb-3">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                      <p className="text-green-700 font-medium">
-                        Completed {new Date(currentReflection.created_at).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric' 
-                        })}
-                      </p>
-                    </div>
-                    <p className="text-stone-600 mb-4">
-                      You can update your reflection anytime this week.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-stone-600 mb-4">
-                      Reflect on your week. What went well? What was challenging? What will you adjust?
-                    </p>
-                    <div className="flex items-center gap-2 mb-4">
-                      <Clock className="w-4 h-4 text-stone-600" />
-                      <p className="text-sm text-stone-600">
-                        Complete by Sunday each week
-                      </p>
-                    </div>
-                  </>
-                )}
-                
-                <div className="text-amber-600 font-semibold group-hover:gap-2 flex items-center gap-1 transition-all">
-                  {currentReflection ? 'Update Reflection' : 'Start Reflection'}
-                  <span className="group-hover:translate-x-1 transition-transform">→</span>
+            <CardHeader className="mb-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-summit-sage">
+                  <CalendarMonth className="h-5 w-5 text-summit-moss" />
                 </div>
+                <CardTitle className="text-h3">Weekly Reflection</CardTitle>
               </div>
-            </div>
-          </button>
+
+              {currentReflection ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-summit-emerald" />
+                    <Tag variant="success" size="sm">
+                      Completed {new Date(currentReflection.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </Tag>
+                  </div>
+                  <CardDescription className="text-body">
+                    You can update your reflection anytime this week.
+                  </CardDescription>
+                </div>
+              ) : (
+                <>
+                  <CardDescription className="text-body mb-3">
+                    Reflect on your week. What went well? What was challenging? What will you adjust?
+                  </CardDescription>
+                  <div className="flex items-center gap-2">
+                    <Schedule className="h-4 w-4 text-text-muted" />
+                    <p className="text-body-sm text-text-muted">
+                      Complete by Sunday each week
+                    </p>
+                  </div>
+                </>
+              )}
+            </CardHeader>
+
+            <Button variant="ghost" rightIcon={<ArrowForward className="h-4 w-4" />}>
+              {currentReflection ? 'Update Reflection' : 'Start Reflection'}
+            </Button>
+          </Card>
+          </div>
         </div>
 
         {/* Coaching Section */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 text-left hover:shadow-xl transition group mt-6">
+        <Card className="border border-gray-200">
           <div className="flex items-start gap-4">
-            {/* Coach Avatar */}
-            <img 
-              src={coachEric} 
-              alt="Coach Eric" 
-              className="w-14 h-14 rounded-xl object-cover group-hover:shadow-lg transition"
+            <img
+              src={coachEric}
+              alt="Coach Eric"
+              className="h-14 w-14 rounded-xl object-cover flex-shrink-0"
             />
-            
-            {/* Content */}
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-2xl font-bold text-stone-800">
-                  Coaching
-                </h2>
-                <div className="relative group/tooltip">
-                  <HelpCircle className="w-5 h-5 text-stone-400 hover:text-stone-600 cursor-help transition" />
-                  <div className="absolute left-0 top-8 w-80 bg-stone-800 text-white p-4 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-10">
-                    <p className="font-semibold mb-2">What coaching means in Summit</p>
-                    <p className="text-sm leading-relaxed">This isn't someone telling you how to live your life. Coaching is about being heard, thinking things through together, and recognizing that you already have the answers—you just may need space and support to uncover them.</p>
-                    <div className="absolute -top-2 left-4 w-4 h-4 bg-stone-800 transform rotate-45"></div>
+
+            <div className="flex-1 min-w-0">
+              <CardHeader className="mb-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <CardTitle className="text-h2">Coaching</CardTitle>
+                  <div className="relative group/tooltip">
+                    <HelpOutline className="h-5 w-5 text-text-muted hover:text-summit-forest cursor-help transition" />
+                    <div className="absolute left-0 top-8 w-80 bg-summit-forest text-white p-4 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-10">
+                      <p className="font-semibold mb-2">What coaching means in Summit</p>
+                      <p className="text-sm leading-relaxed">This isn't someone telling you how to live your life. Coaching is about being heard, thinking things through together, and recognizing that you already have the answers—you just may need space and support to uncover them.</p>
+                      <div className="absolute -top-2 left-4 w-4 h-4 bg-summit-forest transform rotate-45"></div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <p className="text-stone-600 font-medium mb-3">
-                Optional 30 minute session
-              </p>
-              
-              <p className="text-stone-600 mb-4 leading-relaxed">
-                Need a hand? Schedule a session with Coach Eric to workshop challenges and make a plan.
-              </p>
-              
-              <a 
-                href="https://cal.com/eric-boggs/30min"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-amber-600 font-semibold group-hover:gap-3 transition-all hover:text-amber-700"
+                <Tag size="sm" variant="secondary" className="w-fit mb-2">
+                  Optional 30 minute session
+                </Tag>
+                <CardDescription className="leading-relaxed">
+                  Need a hand? Schedule a session with Coach Eric to workshop challenges and make a plan.
+                </CardDescription>
+              </CardHeader>
+
+              <Button
+                variant="ghost"
+                rightIcon={<OpenInNew className="h-4 w-4" />}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  window.open('https://cal.com/eric-boggs/30min', '_blank', 'noopener,noreferrer')
+                }}
               >
                 Schedule Session
-                <ExternalLink className="w-4 h-4" />
-              </a>
+              </Button>
             </div>
           </div>
-        </div>
+        </Card>
       </main>
     </div>
   )

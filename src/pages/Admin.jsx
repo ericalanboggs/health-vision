@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAllUsers } from '../services/adminService'
-import { CheckCircle, AlertTriangle, Loader2, ArrowUpDown } from 'lucide-react'
+import { CheckCircle, Warning, Autorenew, SwapVert } from '@mui/icons-material'
 
 export default function Admin() {
   const navigate = useNavigate()
@@ -89,17 +89,17 @@ export default function Admin() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Autorenew className="w-8 h-8 animate-spin text-summit-emerald" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50">
+    <div className="min-h-screen bg-white">
       <header className="bg-white shadow-sm border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-stone-900">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold text-summit-forest">Admin Dashboard</h1>
           <p className="text-stone-600 mt-1">Summit Pilot User Overview</p>
         </div>
       </header>
@@ -133,7 +133,7 @@ export default function Admin() {
                   >
                     <div className="flex items-center gap-1">
                       Name
-                      <ArrowUpDown className="w-3 h-3" />
+                      <SwapVert className="w-3 h-3" />
                     </div>
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">
@@ -151,7 +151,7 @@ export default function Admin() {
                   >
                     <div className="flex items-center gap-1">
                       Last Login
-                      <ArrowUpDown className="w-3 h-3" />
+                      <SwapVert className="w-3 h-3" />
                     </div>
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-stone-600 uppercase tracking-wider">
@@ -163,7 +163,7 @@ export default function Admin() {
                   >
                     <div className="flex items-center gap-1 justify-center">
                       Status
-                      <ArrowUpDown className="w-3 h-3" />
+                      <SwapVert className="w-3 h-3" />
                     </div>
                   </th>
                 </tr>
@@ -175,7 +175,7 @@ export default function Admin() {
                     onClick={() => navigate(`/admin/users/${user.id}`)}
                     className="hover:bg-stone-50 cursor-pointer transition-colors"
                   >
-                    <td className="px-4 py-3 text-sm font-medium text-stone-900">
+                    <td className="px-4 py-3 text-sm font-medium text-summit-forest">
                       {user.name}
                     </td>
                     <td className="px-4 py-3 text-sm text-stone-600">
@@ -186,7 +186,7 @@ export default function Admin() {
                     </td>
                     <td className="px-4 py-3 text-sm text-center">
                       {user.smsOptIn ? (
-                        <span className="text-green-600 font-medium">Y</span>
+                        <span className="text-summit-emerald font-medium">Y</span>
                       ) : (
                         <span className="text-stone-400">N</span>
                       )}
@@ -201,7 +201,7 @@ export default function Admin() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       {user.pilotReady ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-summit-mint text-summit-forest">
                           <CheckCircle className="w-3 h-3" />
                           Pilot Ready
                         </span>
@@ -210,7 +210,7 @@ export default function Admin() {
                           className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800"
                           title={`Missing: ${!user.hasLoggedIn ? 'Login, ' : ''}${!user.hasHealthVision ? 'Health Vision, ' : ''}${!user.hasActiveHabits ? 'Habits' : ''}`}
                         >
-                          <AlertTriangle className="w-3 h-3" />
+                          <Warning className="w-3 h-3" />
                           Needs Setup
                         </span>
                       )}

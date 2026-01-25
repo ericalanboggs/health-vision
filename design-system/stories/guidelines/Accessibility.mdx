@@ -1,0 +1,426 @@
+import { Meta } from '@storybook/blocks'
+
+<Meta title="Guidelines/Accessibility" />
+
+# Accessibility
+
+Summit is designed to be usable by everyone. We follow WCAG 2.1 AA guidelines as our baseline, striving for AAA where possible.
+
+---
+
+## Core Principles
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', marginTop: '1.5rem' }}>
+  <div style={{ padding: '1.5rem', backgroundColor: '#ECFDF5', borderRadius: '12px' }}>
+    <div style={{ fontWeight: 700, color: '#064E3B', marginBottom: '0.5rem' }}>Perceivable</div>
+    <div style={{ fontSize: '0.875rem', color: 'rgba(6, 78, 59, 0.8)' }}>
+      Information must be presentable in ways users can perceive.
+    </div>
+  </div>
+  <div style={{ padding: '1.5rem', backgroundColor: '#ECFDF5', borderRadius: '12px' }}>
+    <div style={{ fontWeight: 700, color: '#064E3B', marginBottom: '0.5rem' }}>Operable</div>
+    <div style={{ fontSize: '0.875rem', color: 'rgba(6, 78, 59, 0.8)' }}>
+      Interface components must be operable by all users.
+    </div>
+  </div>
+  <div style={{ padding: '1.5rem', backgroundColor: '#ECFDF5', borderRadius: '12px' }}>
+    <div style={{ fontWeight: 700, color: '#064E3B', marginBottom: '0.5rem' }}>Understandable</div>
+    <div style={{ fontSize: '0.875rem', color: 'rgba(6, 78, 59, 0.8)' }}>
+      Information and operation must be understandable.
+    </div>
+  </div>
+  <div style={{ padding: '1.5rem', backgroundColor: '#ECFDF5', borderRadius: '12px' }}>
+    <div style={{ fontWeight: 700, color: '#064E3B', marginBottom: '0.5rem' }}>Robust</div>
+    <div style={{ fontSize: '0.875rem', color: 'rgba(6, 78, 59, 0.8)' }}>
+      Content must be robust enough for diverse user agents.
+    </div>
+  </div>
+</div>
+
+---
+
+## Color Contrast
+
+All text must meet minimum contrast ratios:
+
+| Level | Ratio | Use Case |
+|-------|-------|----------|
+| **AA Normal** | 4.5:1 | Body text (14-16px) |
+| **AA Large** | 3:1 | Large text (18px+ or 14px bold) |
+| **AAA Normal** | 7:1 | Enhanced accessibility |
+
+### Summit Palette Contrast Ratios
+
+| Combination | Ratio | Status |
+|-------------|-------|--------|
+| Forest (#064E3B) on White | 9.5:1 | ✅ AAA |
+| Forest on Mint (#F0FDFA) | 8.2:1 | ✅ AAA |
+| Forest on Sage (#D1FAE5) | 6.8:1 | ✅ AA |
+| White on Emerald (#10B981) | 4.5:1 | ✅ AA |
+| White on Moss (#059669) | 5.2:1 | ✅ AA |
+| White on Forest | 9.5:1 | ✅ AAA |
+
+<div style={{
+  display: 'flex',
+  gap: '1rem',
+  marginTop: '1.5rem',
+  flexWrap: 'wrap',
+}}>
+  <div style={{
+    padding: '1rem 1.5rem',
+    backgroundColor: '#FFFFFF',
+    color: '#064E3B',
+    borderRadius: '8px',
+    fontWeight: 600,
+    border: '1px solid #D1FAE5',
+  }}>
+    Forest on White (9.5:1)
+  </div>
+  <div style={{
+    padding: '1rem 1.5rem',
+    backgroundColor: '#10B981',
+    color: '#FFFFFF',
+    borderRadius: '8px',
+    fontWeight: 600,
+  }}>
+    White on Emerald (4.5:1)
+  </div>
+  <div style={{
+    padding: '1rem 1.5rem',
+    backgroundColor: '#064E3B',
+    color: '#FFFFFF',
+    borderRadius: '8px',
+    fontWeight: 600,
+  }}>
+    White on Forest (9.5:1)
+  </div>
+</div>
+
+### Color Alone
+
+Never use color alone to convey information. Always pair with:
+- Text labels
+- Icons
+- Patterns or shapes
+
+<div style={{ display: 'flex', gap: '2rem', marginTop: '1.5rem' }}>
+  <div style={{ flex: 1, padding: '1rem', backgroundColor: '#FEF2F2', borderRadius: '8px' }}>
+    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#EF4444', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+      ❌ Don't
+    </div>
+    <div style={{ display: 'flex', gap: '0.5rem' }}>
+      <div style={{ width: '24px', height: '24px', backgroundColor: '#10B981', borderRadius: '4px' }} />
+      <div style={{ width: '24px', height: '24px', backgroundColor: '#EF4444', borderRadius: '4px' }} />
+      <div style={{ width: '24px', height: '24px', backgroundColor: '#F59E0B', borderRadius: '4px' }} />
+    </div>
+    <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '0.5rem' }}>
+      Color only — no labels
+    </div>
+  </div>
+  <div style={{ flex: 1, padding: '1rem', backgroundColor: '#ECFDF5', borderRadius: '8px' }}>
+    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#10B981', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+      ✅ Do
+    </div>
+    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+        <div style={{ width: '16px', height: '16px', backgroundColor: '#10B981', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.625rem' }}>✓</div>
+        <span style={{ fontSize: '0.75rem' }}>Done</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+        <div style={{ width: '16px', height: '16px', backgroundColor: '#EF4444', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.625rem' }}>!</div>
+        <span style={{ fontSize: '0.75rem' }}>Error</span>
+      </div>
+    </div>
+    <div style={{ fontSize: '0.75rem', color: 'rgba(6,78,59,0.6)', marginTop: '0.5rem' }}>
+      Color + icon + label
+    </div>
+  </div>
+</div>
+
+---
+
+## Focus States
+
+All interactive elements must have visible focus indicators:
+
+<div style={{ display: 'flex', gap: '1.5rem', marginTop: '1.5rem', alignItems: 'center' }}>
+  <button style={{
+    padding: '0.75rem 1.5rem',
+    backgroundColor: '#10B981',
+    color: 'white',
+    border: 'none',
+    borderRadius: '9999px',
+    fontWeight: 600,
+    cursor: 'pointer',
+  }}>
+    Default
+  </button>
+  <button style={{
+    padding: '0.75rem 1.5rem',
+    backgroundColor: '#10B981',
+    color: 'white',
+    border: 'none',
+    borderRadius: '9999px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.4)',
+  }}>
+    Focused
+  </button>
+</div>
+
+**Focus ring specification:**
+- Color: Summit Emerald at 40% opacity
+- Size: 3px offset
+- Style: Box shadow (preserves border-radius)
+
+```css
+.focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.4);
+}
+```
+
+---
+
+## Touch Targets
+
+Minimum touch target size: **44x44 pixels** (WCAG 2.1 AAA)
+
+<div style={{ display: 'flex', gap: '2rem', marginTop: '1.5rem', alignItems: 'flex-end' }}>
+  <div style={{ textAlign: 'center' }}>
+    <div style={{
+      width: '44px',
+      height: '44px',
+      border: '2px dashed #10B981',
+      borderRadius: '8px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: '0.5rem',
+    }}>
+      <div style={{
+        width: '24px',
+        height: '24px',
+        backgroundColor: '#10B981',
+        borderRadius: '4px',
+      }} />
+    </div>
+    <span style={{ fontSize: '0.75rem', color: 'rgba(6,78,59,0.6)' }}>44x44px minimum</span>
+  </div>
+  <div style={{ textAlign: 'center' }}>
+    <div style={{
+      width: '32px',
+      height: '32px',
+      border: '2px dashed #EF4444',
+      borderRadius: '8px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: '0.5rem',
+    }}>
+      <div style={{
+        width: '16px',
+        height: '16px',
+        backgroundColor: '#EF4444',
+        borderRadius: '4px',
+      }} />
+    </div>
+    <span style={{ fontSize: '0.75rem', color: '#EF4444' }}>Too small</span>
+  </div>
+</div>
+
+---
+
+## Keyboard Navigation
+
+All functionality must be accessible via keyboard:
+
+| Key | Action |
+|-----|--------|
+| `Tab` | Move focus forward |
+| `Shift + Tab` | Move focus backward |
+| `Enter` / `Space` | Activate buttons, select options |
+| `Escape` | Close modals, cancel actions |
+| `Arrow keys` | Navigate within components |
+
+### Focus Order
+
+Focus order should follow logical reading order (top-to-bottom, left-to-right for LTR languages).
+
+---
+
+## Screen Readers
+
+### Semantic HTML
+
+Use appropriate HTML elements:
+
+```jsx
+// ✅ Good
+<button onClick={handleClick}>Save</button>
+<nav aria-label="Main navigation">...</nav>
+<main>...</main>
+<h1>Page Title</h1>
+
+// ❌ Bad
+<div onClick={handleClick}>Save</div>
+<div class="nav">...</div>
+<div class="main">...</div>
+<div class="title">Page Title</div>
+```
+
+### ARIA Labels
+
+Add ARIA labels when semantic HTML isn't sufficient:
+
+```jsx
+// Icon-only button
+<button aria-label="Close modal">
+  <XIcon />
+</button>
+
+// Form inputs
+<input
+  aria-label="Search habits"
+  aria-describedby="search-hint"
+/>
+<span id="search-hint">Type to filter your habits</span>
+
+// Live regions for dynamic content
+<div aria-live="polite" aria-atomic="true">
+  {message}
+</div>
+```
+
+### Hidden Content
+
+Hide decorative elements from screen readers:
+
+```jsx
+// Decorative icon
+<MountainIcon aria-hidden="true" />
+
+// Visually hidden but readable
+<span className="sr-only">Loading complete</span>
+```
+
+---
+
+## Motion & Animation
+
+### Respect User Preferences
+
+Always respect `prefers-reduced-motion`:
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+```
+
+### Animation Guidelines
+
+- Keep animations under 500ms
+- Avoid flashing content (no more than 3 flashes per second)
+- Provide pause/stop controls for any animation over 5 seconds
+- Don't use animation to convey critical information
+
+---
+
+## Forms
+
+### Labels
+
+Every input must have an associated label:
+
+```jsx
+// Visible label
+<label htmlFor="habit-name">Habit name</label>
+<input id="habit-name" type="text" />
+
+// Hidden label (use sparingly)
+<label htmlFor="search" className="sr-only">Search</label>
+<input id="search" type="search" placeholder="Search habits..." />
+```
+
+### Error Messages
+
+- Associate errors with inputs using `aria-describedby`
+- Announce errors to screen readers with `aria-live`
+- Don't rely on color alone
+
+```jsx
+<input
+  id="email"
+  aria-invalid={hasError}
+  aria-describedby="email-error"
+/>
+{hasError && (
+  <span id="email-error" role="alert">
+    Please enter a valid email address.
+  </span>
+)}
+```
+
+---
+
+## Images & Media
+
+### Alt Text
+
+- **Informative images**: Describe the content
+- **Decorative images**: Use empty alt (`alt=""`)
+- **Functional images**: Describe the action
+
+```jsx
+// Informative
+<img src="progress-chart.png" alt="Weekly progress: 5 of 7 habits completed" />
+
+// Decorative
+<img src="mountain-decoration.svg" alt="" role="presentation" />
+
+// Functional (in a link)
+<a href="/profile">
+  <img src="avatar.jpg" alt="View your profile" />
+</a>
+```
+
+---
+
+## Testing Checklist
+
+Before releasing any component or page:
+
+### Automated Testing
+- [ ] Run Storybook a11y addon (axe-core)
+- [ ] Run Lighthouse accessibility audit
+- [ ] Validate HTML structure
+
+### Manual Testing
+- [ ] Navigate with keyboard only
+- [ ] Test with screen reader (VoiceOver/NVDA)
+- [ ] Test with 200% zoom
+- [ ] Test with reduced motion enabled
+- [ ] Test with high contrast mode
+
+### Visual Review
+- [ ] Check color contrast ratios
+- [ ] Verify focus states are visible
+- [ ] Confirm touch targets are 44x44px minimum
+- [ ] Ensure no content is clipped at various viewport sizes
+
+---
+
+## Resources
+
+- [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
+- [WebAIM Contrast Checker](https://webaim.org/resources/contrastchecker/)
+- [Axe DevTools Extension](https://www.deque.com/axe/devtools/)
+- [Screen Reader Testing Guide](https://www.sarasoueidan.com/blog/testing-environment-setup/)

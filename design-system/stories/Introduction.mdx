@@ -1,0 +1,212 @@
+import { Meta } from '@storybook/blocks'
+
+<Meta title="Introduction" />
+
+<div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+  <div style={{
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '80px',
+    height: '80px',
+    backgroundColor: '#D1FAE5',
+    borderRadius: '20px',
+    marginBottom: '1.5rem',
+  }}>
+    <span style={{ fontSize: '2.5rem' }}>🏔️</span>
+  </div>
+  <h1 style={{ fontSize: '2.5rem', fontWeight: 700, color: '#064E3B', marginBottom: '0.5rem' }}>
+    Summit Design System
+  </h1>
+  <p style={{ fontSize: '1.25rem', color: 'rgba(6, 78, 59, 0.8)', maxWidth: '600px', margin: '0 auto' }}>
+    A "Nature-Tech" design system for aspirational health experiences
+  </p>
+</div>
+
+---
+
+## Welcome to Summit
+
+Summit is transforming from a utility-first pilot into an **aspirational health platform**. This design system captures our evolution:
+
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', margin: '2rem 0' }}>
+  <div style={{ padding: '1.5rem', backgroundColor: '#FEF2F2', borderRadius: '12px' }}>
+    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#EF4444', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+      From
+    </div>
+    <ul style={{ margin: 0, paddingLeft: '1.25rem', color: '#374151', lineHeight: 1.8 }}>
+      <li>Card-heavy, text-dense layouts</li>
+      <li>Warm beige utility aesthetic</li>
+      <li>Functional, clinical feel</li>
+      <li>Standard checkboxes</li>
+    </ul>
+  </div>
+  <div style={{ padding: '1.5rem', backgroundColor: '#ECFDF5', borderRadius: '12px' }}>
+    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#10B981', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+      To
+    </div>
+    <ul style={{ margin: 0, paddingLeft: '1.25rem', color: '#064E3B', lineHeight: 1.8 }}>
+      <li>Fluid, open canvas layouts</li>
+      <li>Crisp whites with vibrant greens</li>
+      <li>Aspirational, encouraging feel</li>
+      <li>Tactile, energetic interactions</li>
+    </ul>
+  </div>
+</div>
+
+---
+
+## Brand Keywords
+
+<div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center', margin: '2rem 0' }}>
+  {['Ascent', 'Clarity', 'Sustainable', 'Growth', 'North Star'].map((word) => (
+    <span key={word} style={{
+      padding: '0.75rem 1.5rem',
+      backgroundColor: '#D1FAE5',
+      color: '#064E3B',
+      borderRadius: '9999px',
+      fontWeight: 600,
+    }}>
+      {word}
+    </span>
+  ))}
+</div>
+
+---
+
+## Getting Started
+
+### Explore the Foundations
+
+Start with our design foundations to understand the visual language:
+
+- **[Colors](/docs/foundations-colors--docs)** — The Summit palette with vibrant greens
+- **[Typography](/docs/foundations-typography--docs)** — Bold, expressive type scale
+- **[Spacing](/docs/foundations-spacing--docs)** — Generous whitespace system
+- **[Layout](/docs/foundations-layout--docs)** — Fluid, open canvas principles
+
+### Read the Guidelines
+
+Understand the philosophy behind Summit:
+
+- **[Brand](/docs/guidelines-brand--docs)** — Core principles and keywords
+- **[Voice & Tone](/docs/guidelines-voice-tone--docs)** — How Summit communicates
+- **[Accessibility](/docs/guidelines-accessibility--docs)** — Inclusive design standards
+- **[Motion](/docs/guidelines-motion--docs)** — Animation principles
+
+### Use the Components
+
+Build with our React components:
+
+- **[Button](/docs/components-button--docs)** — Primary, secondary, ghost variants
+- **[Input](/docs/components-input--docs)** — Text inputs with focus glow
+- **[Checkbox](/docs/components-checkbox--docs)** — Tactile circular design
+- **[Tag](/docs/components-tag--docs)** — Tone-on-tone categorization
+- **[Card](/docs/components-card--docs)** — Floating, shadow-based containers
+
+---
+
+## Installation
+
+```bash
+# In the design-system directory
+npm install
+
+# Start Storybook
+npm run dev
+```
+
+### Using in Your App
+
+```jsx
+// Import the Tailwind preset
+// tailwind.config.js
+import summitPreset from '@summit/design-system/tailwind-preset'
+
+export default {
+  presets: [summitPreset],
+  // ...
+}
+
+// Import components
+import { Button, Card, Checkbox } from '@summit/design-system'
+
+function MyComponent() {
+  return (
+    <Card>
+      <Checkbox label="Morning meditation" />
+      <Button>Complete Habit</Button>
+    </Card>
+  )
+}
+```
+
+---
+
+## The Summit Palette
+
+<div style={{ display: 'flex', gap: '0.5rem', margin: '1.5rem 0' }}>
+  {[
+    { name: 'Emerald', color: '#10B981' },
+    { name: 'Moss', color: '#059669' },
+    { name: 'Forest', color: '#064E3B' },
+    { name: 'Sage', color: '#D1FAE5' },
+    { name: 'Mint', color: '#F0FDFA' },
+  ].map((item) => (
+    <div key={item.name} style={{ flex: 1, textAlign: 'center' }}>
+      <div style={{
+        height: '60px',
+        backgroundColor: item.color,
+        borderRadius: '8px',
+        marginBottom: '0.5rem',
+        border: item.name === 'Mint' ? '1px solid #D1FAE5' : 'none',
+      }} />
+      <div style={{ fontSize: '0.75rem', color: '#064E3B', fontWeight: 500 }}>{item.name}</div>
+      <div style={{ fontSize: '0.625rem', color: 'rgba(6,78,59,0.5)' }}>{item.color}</div>
+    </div>
+  ))}
+</div>
+
+---
+
+## Philosophy
+
+> "We don't push you to the summit — we walk alongside you on the ascent."
+
+Summit believes in:
+
+1. **Positive regard** — Assume good intent, celebrate progress
+2. **Wholeness** — People have the answers within themselves
+3. **Sustainability** — Long-term habits over quick fixes
+4. **Clarity** — Clean interfaces, clear communication
+5. **Uplifting** — Encouraging language, vibrant visuals
+
+---
+
+## Contributing
+
+This design system is maintained by the Summit team. To contribute:
+
+1. Check existing components and patterns
+2. Follow the established design tokens
+3. Ensure accessibility compliance
+4. Add Storybook stories for new components
+5. Update documentation as needed
+
+---
+
+<div style={{ textAlign: 'center', marginTop: '3rem', padding: '2rem', backgroundColor: '#F0FDFA', borderRadius: '12px' }}>
+  <p style={{ fontSize: '1.125rem', color: '#064E3B', marginBottom: '1rem' }}>
+    Ready to begin your ascent?
+  </p>
+  <div style={{
+    display: 'inline-block',
+    padding: '0.75rem 2rem',
+    backgroundColor: '#10B981',
+    color: 'white',
+    borderRadius: '9999px',
+    fontWeight: 600,
+  }}>
+    Explore Components →
+  </div>
+</div>

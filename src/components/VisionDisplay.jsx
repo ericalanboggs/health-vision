@@ -1,14 +1,44 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Mountain, Heart, Map, Clock3, Edit2, ArrowLeft, FileDown, Printer, Save, X } from 'lucide-react'
+import {
+  Terrain,
+  Favorite,
+  Map,
+  Schedule,
+  Edit,
+  ArrowBack,
+  FileDownload,
+  Print,
+  Save,
+  Close,
+} from '@mui/icons-material'
 import jsPDF from 'jspdf'
 import { saveJourney } from '../services/journeyService'
+import { Card, Button } from '@summit/design-system'
 
 const VisionDisplay = ({ formData: initialFormData }) => {
   const navigate = useNavigate()
   const [formData, setFormData] = useState(initialFormData || {})
   const [editingSection, setEditingSection] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [headerVisible, setHeaderVisible] = useState(true)
+  const lastScrollY = useRef(0)
+
+  // Headroom behavior for nav
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      if (currentScrollY > lastScrollY.current && currentScrollY > 60) {
+        setHeaderVisible(false)
+      } else {
+        setHeaderVisible(true)
+      }
+      lastScrollY.current = currentScrollY
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   // Update local state when prop changes (after data loads)
   useEffect(() => {
@@ -154,88 +184,89 @@ const VisionDisplay = ({ formData: initialFormData }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50">
+    <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
       {/* Header */}
-      <div className="bg-white border-b border-stone-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-4">
+      <div className={`bg-transparent sticky top-0 z-10 transition-transform duration-300 ${headerVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between gap-2">
-            {/* Back Button - Icon only on mobile, text on desktop */}
-            <button
+            {/* Back Button */}
+            <Button
+              variant="ghost"
               onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2 text-stone-600 hover:text-stone-900 font-medium transition-colors"
+              leftIcon={<ArrowBack className="w-5 h-5" />}
             >
-              <ArrowLeft className="w-5 h-5 flex-shrink-0" />
               <span className="hidden sm:inline">Back to Dashboard</span>
-            </button>
-            
-            {/* Action Buttons - Icon only on mobile, text on desktop */}
+            </Button>
+
+            {/* Action Buttons */}
             <div className="flex items-center gap-2 no-print">
-              <button
+              <Button
+                variant="ghost"
                 onClick={handlePrint}
-                className="flex items-center gap-2 px-3 py-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition"
-                title="Print"
+                leftIcon={<Print className="w-5 h-5" />}
               >
-                <Printer className="w-5 h-5 flex-shrink-0" />
                 <span className="hidden sm:inline">Print</span>
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
                 onClick={handleDownloadPDF}
-                className="flex items-center gap-2 px-3 py-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition"
-                title="Download PDF"
+                leftIcon={<FileDownload className="w-5 h-5" />}
               >
-                <FileDown className="w-5 h-5 flex-shrink-0" />
                 <span className="hidden sm:inline">Download PDF</span>
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="text-center mb-8">
-          <h1 className="text-4xl sm:text-5xl font-bold text-stone-900 mb-4">
+          <h1 className="text-h1 text-summit-forest mb-4">
             My Health Vision
           </h1>
-          <p className="text-lg text-stone-600">
+          <p className="text-body-lg text-text-secondary">
             Your personalized roadmap to better health
           </p>
         </div>
 
         {/* Vision Content */}
-        <div className="bg-white rounded-2xl shadow-xl border border-stone-200 overflow-hidden">
+        <Card className="border border-summit-sage overflow-hidden">
           {/* Health Summit */}
-          <section className="p-6 border-b border-stone-200">
+          <section className="p-6 border-b border-summit-sage">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-green-800 flex items-center gap-2">
-                <Mountain className="w-5 h-5" />
+              <h3 className="text-h3 text-summit-forest flex items-center gap-2">
+                <Terrain className="w-5 h-5 text-summit-emerald" />
                 Health Summit
               </h3>
               {editingSection !== 'summit' ? (
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleEditSection('summit')}
-                  className="flex items-center gap-2 px-3 py-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition no-print"
+                  leftIcon={<Edit className="w-4 h-4" />}
+                  className="no-print"
                 >
-                  <Edit2 className="w-4 h-4" />
                   Edit
-                </button>
+                </Button>
               ) : (
                 <div className="flex items-center gap-2 no-print">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={handleCancelEdit}
-                    className="flex items-center gap-2 px-3 py-1.5 text-stone-600 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition"
+                    leftIcon={<Close className="w-4 h-4" />}
                   >
-                    <X className="w-4 h-4" />
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    size="sm"
                     onClick={() => handleSaveSection('summit')}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg transition"
+                    leftIcon={<Save className="w-4 h-4" />}
                   >
-                    <Save className="w-4 h-4" />
                     {isSaving ? 'Saving...' : 'Save'}
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -243,43 +274,43 @@ const VisionDisplay = ({ formData: initialFormData }) => {
             {editingSection === 'summit' ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">
+                  <label className="block text-sm font-semibold text-summit-forest mb-2">
                     Vision Statement (1-2 years from now)
                   </label>
                   <textarea
                     value={formData.visionStatement || ''}
                     onChange={(e) => updateFormData('visionStatement', e.target.value)}
-                    className="w-full h-32 p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
+                    className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald resize-none"
                     placeholder="Describe your ideal health state..."
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">
+                  <label className="block text-sm font-semibold text-summit-forest mb-2">
                     How You Feel
                   </label>
                   <textarea
                     value={formData.feelingState || ''}
                     onChange={(e) => updateFormData('feelingState', e.target.value)}
-                    className="w-full h-24 p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
+                    className="w-full h-24 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald resize-none"
                     placeholder="Describe your energy, mood, confidence..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">
+                  <label className="block text-sm font-semibold text-summit-forest mb-2">
                     Why This Matters
                   </label>
                   <textarea
                     value={formData.whyMatters || ''}
                     onChange={(e) => updateFormData('whyMatters', e.target.value)}
-                    className="w-full h-24 p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
+                    className="w-full h-24 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald resize-none"
                     placeholder="Why is this important to you?"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">
+                  <label className="block text-sm font-semibold text-summit-forest mb-2">
                     Motivation Drivers
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -289,8 +320,8 @@ const VisionDisplay = ({ formData: initialFormData }) => {
                         onClick={() => toggleArrayItem('motivationDrivers', driver)}
                         className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
                           (formData.motivationDrivers || []).includes(driver)
-                            ? 'bg-green-200 text-green-900'
-                            : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                            ? 'bg-summit-sage text-summit-forest'
+                            : 'bg-gray-100 text-text-secondary hover:bg-stone-200'
                         }`}
                       >
                         {driver}
@@ -301,9 +332,9 @@ const VisionDisplay = ({ formData: initialFormData }) => {
               </div>
             ) : (
               <div className="space-y-4">
-                <p className="text-stone-800 leading-relaxed text-lg">
+                <p className="text-summit-forest leading-relaxed text-lg">
                   {isEmpty(formData.visionStatement) && isEmpty(formData.feelingState) && isEmpty(formData.whyMatters) ? (
-                    <span className="text-stone-400 italic text-sm">Not yet defined</span>
+                    <span className="text-text-muted italic text-sm">Not yet defined</span>
                   ) : (
                     <>
                       {!isEmpty(formData.visionStatement) && formData.visionStatement}
@@ -325,10 +356,10 @@ const VisionDisplay = ({ formData: initialFormData }) => {
 
                 {!isArrayEmpty(formData.motivationDrivers) && (
                   <div>
-                    <p className="text-sm font-semibold text-stone-600 mb-2">My Biggest Drivers:</p>
+                    <p className="text-sm font-semibold text-text-secondary mb-2">My Biggest Drivers:</p>
                     <div className="flex flex-wrap gap-2">
                       {formData.motivationDrivers.map((driver) => (
-                        <span key={driver} className="px-3 py-1 bg-green-200 text-green-900 text-xs font-medium rounded-full">{driver}</span>
+                        <span key={driver} className="px-3 py-1 bg-summit-sage text-summit-forest text-xs font-medium rounded-full">{driver}</span>
                       ))}
                     </div>
                   </div>
@@ -338,27 +369,27 @@ const VisionDisplay = ({ formData: initialFormData }) => {
           </section>
 
           {/* Base Camp */}
-          <section className="p-6 border-b border-stone-200">
+          <section className="p-6 border-b border-summit-sage">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-green-800 flex items-center gap-2">
-                <Heart className="w-5 h-5" />
+              <h3 className="text-xl font-bold text-summit-forest flex items-center gap-2">
+                <Favorite className="w-5 h-5" />
                 Base Camp (Resources)
               </h3>
               {editingSection !== 'basecamp' ? (
                 <button
                   onClick={() => handleEditSection('basecamp')}
-                  className="flex items-center gap-2 px-3 py-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition no-print"
+                  className="flex items-center gap-2 px-3 py-1.5 text-summit-emerald hover:text-green-700 hover:bg-summit-mint rounded-lg transition no-print"
                 >
-                  <Edit2 className="w-4 h-4" />
+                  <Edit className="w-4 h-4" />
                   Edit
                 </button>
               ) : (
                 <div className="flex items-center gap-2 no-print">
                   <button
                     onClick={handleCancelEdit}
-                    className="flex items-center gap-2 px-3 py-1.5 text-stone-600 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition"
+                    className="flex items-center gap-2 px-3 py-1.5 text-text-secondary hover:text-summit-forest hover:bg-gray-100 rounded-lg transition"
                   >
-                    <X className="w-4 h-4" />
+                    <Close className="w-4 h-4" />
                     Cancel
                   </button>
                   <button
@@ -376,41 +407,41 @@ const VisionDisplay = ({ formData: initialFormData }) => {
             {editingSection === 'basecamp' ? (
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">⛔ Non-negotiables</label>
+                  <label className="block text-sm font-semibold text-summit-forest mb-2">⛔ Non-negotiables</label>
                   <textarea
                     value={formData.nonNegotiables || ''}
                     onChange={(e) => updateFormData('nonNegotiables', e.target.value)}
-                    className="w-full h-20 p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none text-sm"
+                    className="w-full h-20 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald resize-none text-sm"
                     placeholder="What must stay in place?"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">💪 Strengths & Resources</label>
+                  <label className="block text-sm font-semibold text-summit-forest mb-2">💪 Strengths & Resources</label>
                   <textarea
                     value={formData.strengths || ''}
                     onChange={(e) => updateFormData('strengths', e.target.value)}
-                    className="w-full h-20 p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none text-sm"
+                    className="w-full h-20 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald resize-none text-sm"
                     placeholder="What's already working?"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">⚡ Energizers</label>
+                  <label className="block text-sm font-semibold text-summit-forest mb-2">⚡ Energizers</label>
                   <textarea
                     value={formData.energizers || ''}
                     onChange={(e) => updateFormData('energizers', e.target.value)}
-                    className="w-full h-20 p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none text-sm"
+                    className="w-full h-20 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald resize-none text-sm"
                     placeholder="What gives you energy?"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">🎯 Gaps & Needs</label>
+                  <label className="block text-sm font-semibold text-summit-forest mb-2">🎯 Gaps & Needs</label>
                   <textarea
                     value={formData.gapsWants || ''}
                     onChange={(e) => updateFormData('gapsWants', e.target.value)}
-                    className="w-full h-20 p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none text-sm"
+                    className="w-full h-20 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald resize-none text-sm"
                     placeholder="What's missing or needed?"
                   />
                 </div>
@@ -418,30 +449,30 @@ const VisionDisplay = ({ formData: initialFormData }) => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h4 className="text-sm font-semibold text-stone-600 mb-1">⛔ Non-negotiables</h4>
-                  <p className="text-stone-800 text-sm leading-relaxed">
-                    {isEmpty(formData.nonNegotiables) ? <span className="text-stone-400 italic">Not yet defined</span> : formData.nonNegotiables}
+                  <h4 className="text-sm font-semibold text-text-secondary mb-1">⛔ Non-negotiables</h4>
+                  <p className="text-summit-forest text-sm leading-relaxed">
+                    {isEmpty(formData.nonNegotiables) ? <span className="text-text-muted italic">Not yet defined</span> : formData.nonNegotiables}
                   </p>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-semibold text-stone-600 mb-1">💪 Strengths & Resources</h4>
-                  <p className="text-stone-800 text-sm leading-relaxed">
-                    {isEmpty(formData.strengths) ? <span className="text-stone-400 italic">Not yet defined</span> : formData.strengths}
+                  <h4 className="text-sm font-semibold text-text-secondary mb-1">💪 Strengths & Resources</h4>
+                  <p className="text-summit-forest text-sm leading-relaxed">
+                    {isEmpty(formData.strengths) ? <span className="text-text-muted italic">Not yet defined</span> : formData.strengths}
                   </p>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-semibold text-stone-600 mb-1">⚡ Energizers</h4>
-                  <p className="text-stone-800 text-sm leading-relaxed">
-                    {isEmpty(formData.energizers) ? <span className="text-stone-400 italic">Not yet defined</span> : formData.energizers}
+                  <h4 className="text-sm font-semibold text-text-secondary mb-1">⚡ Energizers</h4>
+                  <p className="text-summit-forest text-sm leading-relaxed">
+                    {isEmpty(formData.energizers) ? <span className="text-text-muted italic">Not yet defined</span> : formData.energizers}
                   </p>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-semibold text-stone-600 mb-1">🎯 Gaps & Needs</h4>
-                  <p className="text-stone-800 text-sm leading-relaxed">
-                    {isEmpty(formData.gapsWants) ? <span className="text-stone-400 italic">Not yet defined</span> : formData.gapsWants}
+                  <h4 className="text-sm font-semibold text-text-secondary mb-1">🎯 Gaps & Needs</h4>
+                  <p className="text-summit-forest text-sm leading-relaxed">
+                    {isEmpty(formData.gapsWants) ? <span className="text-text-muted italic">Not yet defined</span> : formData.gapsWants}
                   </p>
                 </div>
               </div>
@@ -449,27 +480,27 @@ const VisionDisplay = ({ formData: initialFormData }) => {
           </section>
 
           {/* Assess the Route */}
-          <section className="p-6 border-b border-stone-200">
+          <section className="p-6 border-b border-summit-sage">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-green-800 flex items-center gap-2">
+              <h3 className="text-xl font-bold text-summit-forest flex items-center gap-2">
                 <Map className="w-5 h-5" />
                 Assess the Route
               </h3>
               {editingSection !== 'route' ? (
                 <button
                   onClick={() => handleEditSection('route')}
-                  className="flex items-center gap-2 px-3 py-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition no-print"
+                  className="flex items-center gap-2 px-3 py-1.5 text-summit-emerald hover:text-green-700 hover:bg-summit-mint rounded-lg transition no-print"
                 >
-                  <Edit2 className="w-4 h-4" />
+                  <Edit className="w-4 h-4" />
                   Edit
                 </button>
               ) : (
                 <div className="flex items-center gap-2 no-print">
                   <button
                     onClick={handleCancelEdit}
-                    className="flex items-center gap-2 px-3 py-1.5 text-stone-600 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition"
+                    className="flex items-center gap-2 px-3 py-1.5 text-text-secondary hover:text-summit-forest hover:bg-gray-100 rounded-lg transition"
                   >
-                    <X className="w-4 h-4" />
+                    <Close className="w-4 h-4" />
                     Cancel
                   </button>
                   <button
@@ -487,7 +518,7 @@ const VisionDisplay = ({ formData: initialFormData }) => {
             {editingSection === 'route' ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">Current Position (1-10)</label>
+                  <label className="block text-sm font-semibold text-summit-forest mb-2">Current Position (1-10)</label>
                   <input
                     type="range"
                     min="1"
@@ -497,13 +528,13 @@ const VisionDisplay = ({ formData: initialFormData }) => {
                     className="w-full"
                   />
                   <div className="text-center">
-                    <span className="text-3xl font-bold text-green-600">{formData.currentScore || 5}</span>
-                    <span className="text-lg text-stone-600"> / 10</span>
+                    <span className="text-3xl font-bold text-summit-emerald">{formData.currentScore || 5}</span>
+                    <span className="text-lg text-text-secondary"> / 10</span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">🚧 Obstacles Blocking Your Path</label>
+                  <label className="block text-sm font-semibold text-summit-forest mb-2">🚧 Obstacles Blocking Your Path</label>
                   <div className="flex flex-wrap gap-2 mb-2">
                     {['Time', 'Energy', 'Motivation', 'Knowledge', 'Resources', 'Support', 'Pain/Injury'].map((barrier) => (
                       <button
@@ -511,8 +542,8 @@ const VisionDisplay = ({ formData: initialFormData }) => {
                         onClick={() => toggleArrayItem('barriers', barrier)}
                         className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
                           (formData.barriers || []).includes(barrier)
-                            ? 'bg-green-100 text-green-900'
-                            : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                            ? 'bg-summit-sage text-summit-forest'
+                            : 'bg-gray-100 text-text-secondary hover:bg-stone-200'
                         }`}
                       >
                         {barrier}
@@ -522,13 +553,13 @@ const VisionDisplay = ({ formData: initialFormData }) => {
                   <textarea
                     value={formData.barriersNotes || ''}
                     onChange={(e) => updateFormData('barriersNotes', e.target.value)}
-                    className="w-full h-20 p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none text-sm"
+                    className="w-full h-20 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald resize-none text-sm"
                     placeholder="Additional notes about obstacles..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">🔧 Skills/Habits to Navigate Terrain</label>
+                  <label className="block text-sm font-semibold text-summit-forest mb-2">🔧 Skills/Habits to Navigate Terrain</label>
                   <div className="flex flex-wrap gap-2">
                     {['Movement/Exercise', 'Nutrition', 'Sleep', 'Stress Management', 'Alcohol/Substance Moderation', 'Planning/Organization', 'Tech Boundaries', 'Social Connection'].map((habit) => (
                       <button
@@ -536,8 +567,8 @@ const VisionDisplay = ({ formData: initialFormData }) => {
                         onClick={() => toggleArrayItem('habitsToImprove', habit)}
                         className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
                           (formData.habitsToImprove || []).includes(habit)
-                            ? 'bg-green-100 text-green-900'
-                            : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                            ? 'bg-summit-sage text-summit-forest'
+                            : 'bg-gray-100 text-text-secondary hover:bg-stone-200'
                         }`}
                       >
                         {habit}
@@ -548,37 +579,37 @@ const VisionDisplay = ({ formData: initialFormData }) => {
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                  <h4 className="text-sm font-semibold text-green-900 mb-1">Current Position on the Mountain</h4>
-                  <p className="text-3xl font-bold text-green-600">{formData.currentScore || 5} <span className="text-lg text-stone-600">/ 10</span></p>
+                <div className="bg-summit-mint p-4 rounded-lg border border-summit-sage">
+                  <h4 className="text-sm font-semibold text-summit-forest mb-1">Current Position on the Mountain</h4>
+                  <p className="text-3xl font-bold text-summit-emerald">{formData.currentScore || 5} <span className="text-lg text-text-secondary">/ 10</span></p>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-semibold text-stone-600 mb-2">🚧 Obstacles Blocking Your Path</h4>
+                  <h4 className="text-sm font-semibold text-text-secondary mb-2">🚧 Obstacles Blocking Your Path</h4>
                   {!isArrayEmpty(formData.barriers) ? (
                     <div className="flex flex-wrap gap-2 mb-2">
                       {formData.barriers.map((barrier) => (
-                        <span key={barrier} className="px-3 py-1 bg-green-100 text-green-900 text-xs font-medium rounded-full">{barrier}</span>
+                        <span key={barrier} className="px-3 py-1 bg-summit-sage text-summit-forest text-xs font-medium rounded-full">{barrier}</span>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-stone-400 italic text-sm">None selected</p>
+                    <p className="text-text-muted italic text-sm">None selected</p>
                   )}
                   {!isEmpty(formData.barriersNotes) && (
-                    <p className="text-stone-700 text-sm mt-2">{formData.barriersNotes}</p>
+                    <p className="text-summit-forest text-sm mt-2">{formData.barriersNotes}</p>
                   )}
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-semibold text-stone-600 mb-2">🔧 Skills/Habits to Navigate Terrain</h4>
+                  <h4 className="text-sm font-semibold text-text-secondary mb-2">🔧 Skills/Habits to Navigate Terrain</h4>
                   {!isArrayEmpty(formData.habitsToImprove) ? (
                     <div className="flex flex-wrap gap-2">
                       {formData.habitsToImprove.map((habit) => (
-                        <span key={habit} className="px-3 py-1 bg-stone-100 text-stone-700 text-xs font-medium rounded-full">{habit}</span>
+                        <span key={habit} className="px-3 py-1 bg-gray-100 text-summit-forest text-xs font-medium rounded-full">{habit}</span>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-stone-400 italic text-sm">None selected</p>
+                    <p className="text-text-muted italic text-sm">None selected</p>
                   )}
                 </div>
               </div>
@@ -588,25 +619,25 @@ const VisionDisplay = ({ formData: initialFormData }) => {
           {/* Capacity & Support */}
           <section className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-green-800 flex items-center gap-2">
-                <Clock3 className="w-5 h-5" />
+              <h3 className="text-xl font-bold text-summit-forest flex items-center gap-2">
+                <Schedule className="w-5 h-5" />
                 Capacity & Support
               </h3>
               {editingSection !== 'capacity' ? (
                 <button
                   onClick={() => handleEditSection('capacity')}
-                  className="flex items-center gap-2 px-3 py-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition no-print"
+                  className="flex items-center gap-2 px-3 py-1.5 text-summit-emerald hover:text-green-700 hover:bg-summit-mint rounded-lg transition no-print"
                 >
-                  <Edit2 className="w-4 h-4" />
+                  <Edit className="w-4 h-4" />
                   Edit
                 </button>
               ) : (
                 <div className="flex items-center gap-2 no-print">
                   <button
                     onClick={handleCancelEdit}
-                    className="flex items-center gap-2 px-3 py-1.5 text-stone-600 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition"
+                    className="flex items-center gap-2 px-3 py-1.5 text-text-secondary hover:text-summit-forest hover:bg-gray-100 rounded-lg transition"
                   >
-                    <X className="w-4 h-4" />
+                    <Close className="w-4 h-4" />
                     Cancel
                   </button>
                   <button
@@ -624,11 +655,11 @@ const VisionDisplay = ({ formData: initialFormData }) => {
             {editingSection === 'capacity' ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">⏰ Time Capacity</label>
+                  <label className="block text-sm font-semibold text-summit-forest mb-2">⏰ Time Capacity</label>
                   <select
                     value={formData.timeCapacity || ''}
                     onChange={(e) => updateFormData('timeCapacity', e.target.value)}
-                    className="w-full p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald text-sm"
                   >
                     <option value="">Select time capacity...</option>
                     <option value="5-10 min/day">5-10 min/day</option>
@@ -640,27 +671,27 @@ const VisionDisplay = ({ formData: initialFormData }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">📅 Preferred Times</label>
+                  <label className="block text-sm font-semibold text-summit-forest mb-2">📅 Preferred Times</label>
                   <textarea
                     value={formData.preferredTimes || ''}
                     onChange={(e) => updateFormData('preferredTimes', e.target.value)}
-                    className="w-full h-20 p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none text-sm"
+                    className="w-full h-20 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald resize-none text-sm"
                     placeholder="When do you prefer to work on health habits?"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">🌱 What Feels Sustainable</label>
+                  <label className="block text-sm font-semibold text-summit-forest mb-2">🌱 What Feels Sustainable</label>
                   <textarea
                     value={formData.sustainableNotes || ''}
                     onChange={(e) => updateFormData('sustainableNotes', e.target.value)}
-                    className="w-full h-20 p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none text-sm"
+                    className="w-full h-20 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald resize-none text-sm"
                     placeholder="What approach feels realistic for you?"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">Readiness Level (1-10)</label>
+                  <label className="block text-sm font-semibold text-summit-forest mb-2">Readiness Level (1-10)</label>
                   <input
                     type="range"
                     min="1"
@@ -670,13 +701,13 @@ const VisionDisplay = ({ formData: initialFormData }) => {
                     className="w-full"
                   />
                   <div className="text-center">
-                    <span className="text-3xl font-bold text-green-600">{formData.readiness || 5}</span>
-                    <span className="text-lg text-stone-600"> / 10</span>
+                    <span className="text-3xl font-bold text-summit-emerald">{formData.readiness || 5}</span>
+                    <span className="text-lg text-text-secondary"> / 10</span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-stone-700 mb-2">🤝 Support Needs</label>
+                  <label className="block text-sm font-semibold text-summit-forest mb-2">🤝 Support Needs</label>
                   <div className="flex flex-wrap gap-2">
                     {['Accountability', 'Education', 'Community', 'Professional Guidance', 'Tools/Apps', 'Family Support'].map((need) => (
                       <button
@@ -684,8 +715,8 @@ const VisionDisplay = ({ formData: initialFormData }) => {
                         onClick={() => toggleArrayItem('supportNeeds', need)}
                         className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
                           (formData.supportNeeds || []).includes(need)
-                            ? 'bg-green-100 text-green-900'
-                            : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                            ? 'bg-summit-sage text-summit-forest'
+                            : 'bg-gray-100 text-text-secondary hover:bg-stone-200'
                         }`}
                       >
                         {need}
@@ -697,58 +728,58 @@ const VisionDisplay = ({ formData: initialFormData }) => {
             ) : (
               <div className="space-y-3">
                 <div>
-                  <h4 className="text-sm font-semibold text-stone-600 mb-1">⏰ Time Capacity</h4>
-                  <p className="text-stone-800 text-sm font-medium">
-                    {formData.timeCapacity || <span className="text-stone-400 italic">Not yet defined</span>}
+                  <h4 className="text-sm font-semibold text-text-secondary mb-1">⏰ Time Capacity</h4>
+                  <p className="text-summit-forest text-sm font-medium">
+                    {formData.timeCapacity || <span className="text-text-muted italic">Not yet defined</span>}
                   </p>
                 </div>
 
                 {!isEmpty(formData.preferredTimes) && (
                   <div>
-                    <h4 className="text-sm font-semibold text-stone-600 mb-1">📅 Preferred Times</h4>
-                    <p className="text-stone-800 text-sm">{formData.preferredTimes}</p>
+                    <h4 className="text-sm font-semibold text-text-secondary mb-1">📅 Preferred Times</h4>
+                    <p className="text-summit-forest text-sm">{formData.preferredTimes}</p>
                   </div>
                 )}
 
                 {!isEmpty(formData.sustainableNotes) && (
                   <div>
-                    <h4 className="text-sm font-semibold text-stone-600 mb-1">🌱 What Feels Sustainable</h4>
-                    <p className="text-stone-800 text-sm">{formData.sustainableNotes}</p>
+                    <h4 className="text-sm font-semibold text-text-secondary mb-1">🌱 What Feels Sustainable</h4>
+                    <p className="text-summit-forest text-sm">{formData.sustainableNotes}</p>
                   </div>
                 )}
 
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                  <h4 className="text-sm font-semibold text-green-900 mb-1">Readiness Level</h4>
-                  <p className="text-3xl font-bold text-green-600">{formData.readiness || 5} <span className="text-lg text-stone-600">/ 10</span></p>
+                <div className="bg-summit-mint p-4 rounded-lg border border-summit-sage">
+                  <h4 className="text-sm font-semibold text-summit-forest mb-1">Readiness Level</h4>
+                  <p className="text-3xl font-bold text-summit-emerald">{formData.readiness || 5} <span className="text-lg text-text-secondary">/ 10</span></p>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-semibold text-stone-600 mb-2">🤝 Support Needs</h4>
+                  <h4 className="text-sm font-semibold text-text-secondary mb-2">🤝 Support Needs</h4>
                   {!isArrayEmpty(formData.supportNeeds) ? (
                     <div className="flex flex-wrap gap-2">
                       {formData.supportNeeds.map((need) => (
-                        <span key={need} className="px-3 py-1 bg-green-100 text-green-900 text-xs font-medium rounded-full">{need}</span>
+                        <span key={need} className="px-3 py-1 bg-summit-sage text-summit-forest text-xs font-medium rounded-full">{need}</span>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-stone-400 italic text-sm">None selected</p>
+                    <p className="text-text-muted italic text-sm">None selected</p>
                   )}
                 </div>
               </div>
             )}
           </section>
-        </div>
+        </Card>
 
         {/* Footer Note */}
-        <div className="mt-8 bg-green-50 border-l-4 border-green-500 p-6 rounded-r-xl no-print">
-          <h4 className="font-semibold text-stone-900 mb-2">💡 Tips for Using Your Vision</h4>
-          <ul className="text-sm text-stone-700 space-y-1">
+        <Card className="mt-8 border-l-4 border-summit-emerald no-print">
+          <h4 className="text-h3 text-summit-forest mb-2">Tips for Using Your Vision</h4>
+          <ul className="text-body-sm text-summit-forest space-y-1">
             <li>• Review your vision regularly to stay connected to your "why"</li>
             <li>• Update it every 3-6 months as you grow and learn</li>
             <li>• Share it with your health coach or accountability partner</li>
             <li>• Use it to guide your weekly habit choices</li>
           </ul>
-        </div>
+        </Card>
       </div>
     </div>
   )

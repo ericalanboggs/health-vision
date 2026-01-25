@@ -50,12 +50,12 @@ export default function AuthDebug() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50 p-8">
+    <div className="min-h-screen bg-white p-8">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-stone-800 mb-6">Auth Debug Tool</h1>
+        <h1 className="text-3xl font-bold text-summit-forest mb-6">Auth Debug Tool</h1>
         
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
-          <h2 className="text-xl font-semibold text-stone-800 mb-4">Test Email</h2>
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-6">
+          <h2 className="text-xl font-semibold text-summit-forest mb-4">Test Email</h2>
           <div className="flex gap-4 mb-4">
             <input
               type="email"
@@ -67,7 +67,7 @@ export default function AuthDebug() {
             <button
               onClick={runDiagnostics}
               disabled={loading}
-              className="bg-green-600 hover:bg-green-700 disabled:bg-stone-300 text-white font-semibold px-6 py-2 rounded-lg"
+              className="bg-summit-emerald hover:bg-emerald-700 disabled:bg-stone-300 text-white font-semibold px-6 py-2 rounded-lg"
             >
               {loading ? 'Testing...' : 'Run Diagnostics'}
             </button>
@@ -75,12 +75,12 @@ export default function AuthDebug() {
         </div>
 
         {Object.keys(results).length > 0 && (
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <h2 className="text-xl font-semibold text-stone-800 mb-4">Diagnostic Results</h2>
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <h2 className="text-xl font-semibold text-summit-forest mb-4">Diagnostic Results</h2>
             <div className="space-y-3">
               {Object.entries(results).map(([key, value]) => (
-                <div key={key} className="border-l-4 border-green-500 pl-4">
-                  <div className="font-medium text-stone-800">{key}:</div>
+                <div key={key} className="border-l-4 border-summit-emerald pl-4">
+                  <div className="font-medium text-summit-forest">{key}:</div>
                   <div className="text-stone-600">{JSON.stringify(value)}</div>
                 </div>
               ))}
@@ -89,7 +89,7 @@ export default function AuthDebug() {
         )}
 
         <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <h3 className="font-semibold text-stone-800 mb-2">Common Issues:</h3>
+          <h3 className="font-semibold text-summit-forest mb-2">Common Issues:</h3>
           <ul className="text-sm text-stone-600 space-y-1 list-disc list-inside">
             <li>Supabase environment variables not set in production</li>
             <li>Email redirect URL doesn't match deployed app URL</li>

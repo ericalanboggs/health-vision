@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, Phone, Mail, CheckCircle, Loader2, ArrowLeft } from 'lucide-react'
+import { Person, Phone, Email, CheckCircle, Autorenew, ArrowBack } from '@mui/icons-material'
 import { getCurrentUser, getProfile, upsertProfile } from '../services/authService'
 import TopNav from '../components/TopNav'
 import { formatPhoneToE164, isValidUSPhoneNumber } from '../utils/phoneFormatter'
@@ -21,6 +21,24 @@ export default function Profile() {
     smsConsent: false,
     pilotReason: ''
   })
+  const [headerVisible, setHeaderVisible] = useState(true)
+  const lastScrollY = useRef(0)
+
+  // Headroom behavior for nav
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      if (currentScrollY > lastScrollY.current && currentScrollY > 60) {
+        setHeaderVisible(false)
+      } else {
+        setHeaderVisible(true)
+      }
+      lastScrollY.current = currentScrollY
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
     loadUserProfile()
@@ -137,39 +155,41 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50">
+      <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
         <TopNav />
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+          <Autorenew className="w-8 h-8 animate-spin text-summit-emerald" />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50">
-      <TopNav />
+    <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
+      <div className={`sticky top-0 z-10 transition-transform duration-300 ${headerVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+        <TopNav />
+      </div>
       
       <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-6">
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 text-stone-600 hover:text-stone-900 font-medium transition-colors mb-4"
+            className="flex items-center gap-2 text-stone-600 hover:text-summit-forest font-medium transition-colors mb-4"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowBack className="w-5 h-5" />
             Back to Dashboard
           </button>
-          <h1 className="text-3xl font-bold text-stone-900">Profile Settings</h1>
+          <h1 className="text-3xl font-bold text-summit-forest">Profile Settings</h1>
           <p className="text-stone-600 mt-2">
             Update your personal information and preferences.
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
           <form onSubmit={handleSave} className="space-y-6">
             {/* First Name */}
             <div>
-              <label htmlFor="firstName" className="block text-sm font-semibold text-stone-900 mb-2">
+              <label htmlFor="firstName" className="block text-sm font-semibold text-summit-forest mb-2">
                 First Name <span className="text-red-600">*</span>
               </label>
               <input
@@ -177,8 +197,8 @@ export default function Profile() {
                 id="firstName"
                 value={formData.firstName}
                 onChange={(e) => handleChange('firstName', e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${
-                  errors.firstName ? 'border-red-500' : 'border-stone-300'
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition ${
+                  errors.firstName ? 'border-red-500' : 'border-gray-200'
                 }`}
                 placeholder="Enter your first name"
               />
@@ -189,7 +209,7 @@ export default function Profile() {
 
             {/* Last Name */}
             <div>
-              <label htmlFor="lastName" className="block text-sm font-semibold text-stone-900 mb-2">
+              <label htmlFor="lastName" className="block text-sm font-semibold text-summit-forest mb-2">
                 Last Name <span className="text-red-600">*</span>
               </label>
               <input
@@ -197,8 +217,8 @@ export default function Profile() {
                 id="lastName"
                 value={formData.lastName}
                 onChange={(e) => handleChange('lastName', e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${
-                  errors.lastName ? 'border-red-500' : 'border-stone-300'
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition ${
+                  errors.lastName ? 'border-red-500' : 'border-gray-200'
                 }`}
                 placeholder="Enter your last name"
               />
@@ -209,17 +229,17 @@ export default function Profile() {
 
             {/* Email (Read-only) */}
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-stone-900 mb-2">
+              <label htmlFor="email" className="block text-sm font-semibold text-summit-forest mb-2">
                 Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-stone-400" />
+                <Email className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-stone-400" />
                 <input
                   type="email"
                   id="email"
                   value={formData.email}
                   readOnly
-                  className="w-full pl-11 pr-4 py-3 border border-stone-300 rounded-lg bg-stone-50 text-stone-600"
+                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-stone-600"
                 />
               </div>
               <p className="mt-1 text-xs text-stone-500">Email cannot be changed</p>
@@ -227,7 +247,7 @@ export default function Profile() {
 
             {/* Mobile Phone */}
             <div>
-              <label htmlFor="phone" className="block text-sm font-semibold text-stone-900 mb-2">
+              <label htmlFor="phone" className="block text-sm font-semibold text-summit-forest mb-2">
                 Mobile Phone <span className="text-red-600">*</span>
               </label>
               <div className="relative">
@@ -237,8 +257,8 @@ export default function Profile() {
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => handleChange('phone', e.target.value)}
-                  className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition ${
-                    errors.phone ? 'border-red-500' : 'border-stone-300'
+                  className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition ${
+                    errors.phone ? 'border-red-500' : 'border-gray-200'
                   }`}
                   placeholder="(555) 123-4567"
                 />
@@ -249,21 +269,21 @@ export default function Profile() {
             </div>
 
             {/* SMS Consent - Optional */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-summit-mint/30 border border-summit-sage rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <input
                   type="checkbox"
                   id="smsConsent"
                   checked={formData.smsConsent}
                   onChange={(e) => handleChange('smsConsent', e.target.checked)}
-                  className="mt-1 w-5 h-5 text-green-600 rounded border-stone-300 focus:ring-green-500 cursor-pointer"
+                  className="mt-1 w-5 h-5 text-summit-emerald rounded border-gray-300 focus:ring-summit-emerald cursor-pointer"
                 />
                 <div className="flex-1">
-                  <label htmlFor="smsConsent" className="block text-sm font-semibold text-stone-900 mb-1 cursor-pointer">
+                  <label htmlFor="smsConsent" className="block text-sm font-semibold text-summit-forest mb-1 cursor-pointer">
                     Enable SMS Habit Reminders <span className="text-sm font-normal text-stone-500">(Optional)</span>
                   </label>
-                  <p className="text-sm text-stone-700">
-                    Get optional text reminders for your Summit habits. You'll receive one message per day, sent 15-30 minutes before your first habit, listing all your habits for that day. 
+                  <p className="text-sm text-stone-600">
+                    Get optional text reminders for your Summit habits. You'll receive one message per day, sent 15-30 minutes before your first habit, listing all your habits for that day.
                     Message and data rates may apply. Reply STOP to unsubscribe anytime.
                   </p>
                 </div>
@@ -272,7 +292,7 @@ export default function Profile() {
 
             {/* Pilot Reason */}
             <div>
-              <label htmlFor="pilotReason" className="block text-sm font-semibold text-stone-900 mb-2">
+              <label htmlFor="pilotReason" className="block text-sm font-semibold text-summit-forest mb-2">
                 Why are you interested in this pilot? <span className="text-sm font-normal text-stone-500">(Optional)</span>
               </label>
               <textarea
@@ -280,7 +300,7 @@ export default function Profile() {
                 value={formData.pilotReason}
                 onChange={(e) => handleChange('pilotReason', e.target.value)}
                 rows={4}
-                className="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition resize-none"
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition resize-none"
                 placeholder="Tell us what motivated you to join and what you hope to achieve..."
               />
             </div>
@@ -294,10 +314,10 @@ export default function Profile() {
 
             {/* Success Message */}
             {saved && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="bg-summit-mint/50 border border-summit-sage rounded-lg p-4">
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <p className="text-sm text-green-800 font-medium">Profile updated successfully!</p>
+                  <CheckCircle className="w-5 h-5 text-summit-emerald" />
+                  <p className="text-sm text-summit-forest font-medium">Profile updated successfully!</p>
                 </div>
               </div>
             )}
@@ -307,18 +327,18 @@ export default function Profile() {
               <button
                 type="button"
                 onClick={() => navigate('/dashboard')}
-                className="flex-1 py-3 bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold rounded-lg transition"
+                className="flex-1 py-3 bg-summit-sage/50 hover:bg-summit-sage text-summit-forest font-semibold rounded-lg transition"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="flex-1 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-summit-emerald hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
               >
                 {saving ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Autorenew className="w-5 h-5 animate-spin" />
                     Saving...
                   </>
                 ) : (

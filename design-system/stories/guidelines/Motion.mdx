@@ -1,0 +1,423 @@
+import { Meta } from '@storybook/blocks'
+
+<Meta title="Guidelines/Motion" />
+
+# Motion & Animation
+
+Summit uses **gentle, encouraging animations** that feel organic, not jarring. Motion should enhance the user experience, never distract from it.
+
+---
+
+## Philosophy
+
+> Motion should feel like a supportive nudge, not an interruption.
+
+Our animations are:
+- **Subtle**: Small movements that don't overwhelm
+- **Purposeful**: Every animation has a reason
+- **Organic**: Natural easing, not mechanical
+- **Respectful**: Always honor `prefers-reduced-motion`
+
+---
+
+## Timing Scale
+
+| Token | Duration | Use Case |
+|-------|----------|----------|
+| `fast` | 100ms | Button clicks, instant feedback |
+| `normal` | 150ms | Button hovers, small transitions |
+| `medium` | 200ms | Checkbox animations, color changes |
+| `slow` | 250ms | Modal entrance, element appearance |
+| `slower` | 300ms | Page transitions, large movements |
+| `slowest` | 500ms | Progress bars, loading states |
+
+<div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
+  {[
+    { name: 'fast', duration: '100ms', width: '10%' },
+    { name: 'normal', duration: '150ms', width: '15%' },
+    { name: 'medium', duration: '200ms', width: '20%' },
+    { name: 'slow', duration: '250ms', width: '25%' },
+    { name: 'slower', duration: '300ms', width: '30%' },
+    { name: 'slowest', duration: '500ms', width: '50%' },
+  ].map((item) => (
+    <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <code style={{ fontSize: '0.75rem', color: '#064E3B', width: '80px' }}>{item.name}</code>
+      <div style={{
+        height: '8px',
+        width: item.width,
+        backgroundColor: '#10B981',
+        borderRadius: '9999px',
+      }} />
+      <span style={{ fontSize: '0.75rem', color: 'rgba(6, 78, 59, 0.5)' }}>{item.duration}</span>
+    </div>
+  ))}
+</div>
+
+---
+
+## Easing Functions
+
+| Token | Curve | Use Case |
+|-------|-------|----------|
+| `ease-out` | `cubic-bezier(0.33, 1, 0.68, 1)` | Elements entering (default) |
+| `ease-in` | `cubic-bezier(0.32, 0, 0.67, 0)` | Elements exiting |
+| `ease-in-out` | `cubic-bezier(0.65, 0, 0.35, 1)` | Continuous motion |
+| `spring` | `cubic-bezier(0.34, 1.56, 0.64, 1)` | Playful feedback (checkbox) |
+
+<div style={{
+  display: 'grid',
+  gridTemplateColumns: 'repeat(4, 1fr)',
+  gap: '1rem',
+  marginTop: '1.5rem',
+}}>
+  {[
+    { name: 'ease-out', desc: 'Fast start, gentle end' },
+    { name: 'ease-in', desc: 'Gentle start, fast end' },
+    { name: 'ease-in-out', desc: 'Gentle both ends' },
+    { name: 'spring', desc: 'Slight overshoot' },
+  ].map((item) => (
+    <div key={item.name} style={{
+      padding: '1rem',
+      backgroundColor: '#F0FDFA',
+      borderRadius: '8px',
+      textAlign: 'center',
+    }}>
+      <div style={{ fontWeight: 600, color: '#064E3B', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
+        {item.name}
+      </div>
+      <div style={{ fontSize: '0.75rem', color: 'rgba(6, 78, 59, 0.6)' }}>
+        {item.desc}
+      </div>
+    </div>
+  ))}
+</div>
+
+---
+
+## Animation Patterns
+
+### Button Interactions
+
+<div style={{ marginTop: '1.5rem' }}>
+  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+    <thead>
+      <tr style={{ borderBottom: '1px solid #D1FAE5' }}>
+        <th style={{ textAlign: 'left', padding: '0.75rem 0', color: '#064E3B' }}>State</th>
+        <th style={{ textAlign: 'left', padding: '0.75rem 0', color: '#064E3B' }}>Duration</th>
+        <th style={{ textAlign: 'left', padding: '0.75rem 0', color: '#064E3B' }}>Easing</th>
+        <th style={{ textAlign: 'left', padding: '0.75rem 0', color: '#064E3B' }}>Effect</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style={{ borderBottom: '1px solid #D1FAE5' }}>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>Hover</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>150ms</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>ease-out</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>Scale 1.02, darken bg</td>
+      </tr>
+      <tr style={{ borderBottom: '1px solid #D1FAE5' }}>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>Active/Click</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>100ms</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>ease-in</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>Scale 0.98</td>
+      </tr>
+      <tr>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>Focus</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>150ms</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>ease-out</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>Add focus ring</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+```css
+.button {
+  transition: transform 150ms ease-out,
+              background-color 150ms ease-out,
+              box-shadow 150ms ease-out;
+}
+
+.button:hover {
+  transform: scale(1.02);
+}
+
+.button:active {
+  transform: scale(0.98);
+  transition-duration: 100ms;
+}
+```
+
+---
+
+### Checkbox Animation
+
+The tactile checkbox uses a "pop" animation for satisfying feedback:
+
+<div style={{
+  display: 'flex',
+  alignItems: 'center',
+  gap: '2rem',
+  marginTop: '1.5rem',
+  padding: '1.5rem',
+  backgroundColor: '#F0FDFA',
+  borderRadius: '12px',
+}}>
+  <div style={{ textAlign: 'center' }}>
+    <div style={{
+      width: '32px',
+      height: '32px',
+      borderRadius: '9999px',
+      border: '2px solid #D1FAE5',
+      margin: '0 auto 0.5rem',
+    }} />
+    <span style={{ fontSize: '0.75rem', color: 'rgba(6, 78, 59, 0.6)' }}>Unchecked</span>
+  </div>
+  <div style={{ color: '#10B981' }}>→</div>
+  <div style={{ textAlign: 'center' }}>
+    <div style={{
+      width: '32px',
+      height: '32px',
+      borderRadius: '9999px',
+      backgroundColor: '#10B981',
+      margin: '0 auto 0.5rem',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'white',
+    }}>✓</div>
+    <span style={{ fontSize: '0.75rem', color: 'rgba(6, 78, 59, 0.6)' }}>Checked (with pop)</span>
+  </div>
+</div>
+
+```css
+@keyframes checkbox-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.checkbox:checked {
+  animation: checkbox-pop 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+```
+
+---
+
+### Modal Entrance
+
+<div style={{ marginTop: '1.5rem' }}>
+  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+    <thead>
+      <tr style={{ borderBottom: '1px solid #D1FAE5' }}>
+        <th style={{ textAlign: 'left', padding: '0.75rem 0', color: '#064E3B' }}>Element</th>
+        <th style={{ textAlign: 'left', padding: '0.75rem 0', color: '#064E3B' }}>Duration</th>
+        <th style={{ textAlign: 'left', padding: '0.75rem 0', color: '#064E3B' }}>Easing</th>
+        <th style={{ textAlign: 'left', padding: '0.75rem 0', color: '#064E3B' }}>Effect</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style={{ borderBottom: '1px solid #D1FAE5' }}>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>Backdrop</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>200ms</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>ease-out</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>Fade in (0 → 50% opacity)</td>
+      </tr>
+      <tr>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>Modal panel</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>250ms</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>ease-out</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>Fade + scale (0.95 → 1)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+```css
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal {
+  animation: modal-enter 250ms ease-out;
+}
+```
+
+---
+
+### Page Transitions
+
+<div style={{ marginTop: '1.5rem' }}>
+  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+    <thead>
+      <tr style={{ borderBottom: '1px solid #D1FAE5' }}>
+        <th style={{ textAlign: 'left', padding: '0.75rem 0', color: '#064E3B' }}>Transition</th>
+        <th style={{ textAlign: 'left', padding: '0.75rem 0', color: '#064E3B' }}>Duration</th>
+        <th style={{ textAlign: 'left', padding: '0.75rem 0', color: '#064E3B' }}>Easing</th>
+        <th style={{ textAlign: 'left', padding: '0.75rem 0', color: '#064E3B' }}>Effect</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>Page change</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>300ms</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>ease-out</td>
+        <td style={{ padding: '0.75rem 0', color: 'rgba(6, 78, 59, 0.8)' }}>Fade + slight slide up</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+```css
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page {
+  animation: page-enter 300ms ease-out;
+}
+```
+
+---
+
+### Progress Bar
+
+Progress bars fill smoothly to show advancement:
+
+<div style={{
+  marginTop: '1.5rem',
+  padding: '1.5rem',
+  backgroundColor: 'white',
+  borderRadius: '12px',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+}}>
+  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+    <span style={{ fontSize: '0.875rem', color: '#064E3B', fontWeight: 600 }}>Week Progress</span>
+    <span style={{ fontSize: '0.875rem', color: 'rgba(6, 78, 59, 0.5)' }}>5 of 7</span>
+  </div>
+  <div style={{
+    height: '4px',
+    backgroundColor: '#D1FAE5',
+    borderRadius: '9999px',
+    overflow: 'hidden',
+  }}>
+    <div style={{
+      width: '71%',
+      height: '100%',
+      backgroundColor: '#10B981',
+      borderRadius: '9999px',
+      transition: 'width 500ms ease-in-out',
+    }} />
+  </div>
+</div>
+
+```css
+.progress-fill {
+  transition: width 500ms ease-in-out;
+}
+```
+
+---
+
+## Celebration Moments
+
+Special animations for achievement moments:
+
+### Habit Completion
+A subtle glow or gentle pulse when marking a habit complete.
+
+### Week Milestone
+When completing all habits for a week, show a small confetti burst or badge animation.
+
+### Vision Saved
+A gentle pulse effect when saving or updating a vision statement.
+
+<div style={{
+  padding: '1.5rem',
+  backgroundColor: '#D1FAE5',
+  borderRadius: '12px',
+  textAlign: 'center',
+  marginTop: '1.5rem',
+}}>
+  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎉</div>
+  <div style={{ fontWeight: 600, color: '#064E3B' }}>Celebration moments should be:</div>
+  <div style={{ color: 'rgba(6, 78, 59, 0.8)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+    Brief (under 2 seconds) • Subtle • Non-blocking • Skippable
+  </div>
+</div>
+
+---
+
+## Reduced Motion
+
+**Always respect `prefers-reduced-motion`.**
+
+For users who prefer reduced motion:
+- Disable animations entirely or reduce to simple fades
+- Keep essential feedback (color changes, focus states)
+- Never remove functionality
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+```
+
+---
+
+## Tailwind Classes
+
+```jsx
+// Duration
+className="duration-fast"     // 100ms
+className="duration-normal"   // 150ms
+className="duration-medium"   // 200ms
+className="duration-slow"     // 250ms
+
+// Easing
+className="ease-out"
+className="ease-in"
+className="ease-in-out"
+className="ease-spring"
+
+// Animations
+className="animate-checkbox-pop"
+className="animate-fade-in"
+className="animate-slide-up"
+className="animate-scale-in"
+
+// Combined
+className="transition-all duration-normal ease-out"
+```
+
+---
+
+## Don'ts
+
+| Don't | Why |
+|-------|-----|
+| Animations over 500ms for micro-interactions | Feels sluggish |
+| Bouncy animations on error states | Trivializes the issue |
+| Auto-playing animations that don't stop | Distracting, accessibility issue |
+| Motion that conveys critical info | Screen readers can't perceive it |
+| Flashing content (> 3 flashes/sec) | Can trigger seizures |

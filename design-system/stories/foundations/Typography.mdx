@@ -1,0 +1,312 @@
+import { Meta } from '@storybook/blocks'
+
+<Meta title="Foundations/Typography" />
+
+<style>{`
+  .type-example {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #D1FAE5;
+    padding-bottom: 2rem;
+  }
+
+  .type-display {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: #022C22;
+    margin-bottom: 1rem;
+  }
+
+  .type-h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: #022C22;
+    margin-bottom: 1rem;
+  }
+
+  .type-h2 {
+    font-size: 1.875rem;
+    font-weight: 800;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    color: #022C22;
+    margin-bottom: 1rem;
+  }
+
+  .type-h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #022C22;
+    margin-bottom: 1rem;
+  }
+
+  .type-body-lg {
+    font-size: 1.125rem;
+    font-weight: 400;
+    line-height: 1.6;
+    color: rgba(2, 44, 34, 0.8);
+    margin-bottom: 1rem;
+  }
+
+  .type-body {
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.6;
+    color: rgba(2, 44, 34, 0.8);
+    margin-bottom: 1rem;
+  }
+
+  .type-body-sm {
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: rgba(2, 44, 34, 0.8);
+    margin-bottom: 1rem;
+  }
+
+  .type-meta {
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #059669;
+    margin-bottom: 1rem;
+  }
+
+  .type-north-star {
+    font-size: 1.5rem;
+    font-weight: 500;
+    line-height: 1.4;
+    color: #022C22;
+    margin-bottom: 1rem;
+  }
+`}</style>
+
+# Typography
+
+Typography is a **design element** at Summit — bold, expressive headlines that feel aspirational and motivating. We use Inter for its excellent readability and modern character.
+
+---
+
+## Font Stack
+
+```css
+font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+```
+
+---
+
+## Type Scale
+
+<div className="type-example">
+
+### Display
+
+<div className="type-display">
+  Welcome to Your Summit
+</div>
+
+**48px+ • Extra Bold (800) • Line Height 1.1 • Letter Spacing -0.02em**
+
+Use for hero headlines on landing pages.
+
+</div>
+
+<div className="type-example">
+
+### Heading 1
+
+<div className="type-h1">
+  This Week's Climb
+</div>
+
+**40px • Extra Bold (800) • Line Height 1.2 • Letter Spacing -0.01em**
+
+Use for page titles and major sections.
+
+</div>
+
+<div className="type-example">
+
+### Heading 2
+
+<div className="type-h2">
+  Your North Star
+</div>
+
+**30px • Extra Bold (800) • Line Height 1.3 • Letter Spacing -0.01em**
+
+Use for section headers.
+
+</div>
+
+<div className="type-example">
+
+### Heading 3
+
+<div className="type-h3">
+  Daily Habits
+</div>
+
+**24px • Semibold (600) • Line Height 1.4**
+
+Use for card headers and sub-sections.
+
+</div>
+
+<div className="type-example">
+
+### Body Large
+
+<div className="type-body-lg">
+  Your vision guides every step of your journey. Take a moment to reflect on what matters most to you and let that clarity light your path forward.
+</div>
+
+**18px • Regular (400) • Line Height 1.6**
+
+Use for vision statements and emphasized body content.
+
+</div>
+
+<div className="type-example">
+
+### Body
+
+<div className="type-body">
+  Small, consistent steps lead to remarkable transformations. Each habit you build today becomes the foundation for the life you're creating.
+</div>
+
+**16px • Regular (400) • Line Height 1.6**
+
+Standard body text for general content.
+
+</div>
+
+<div className="type-example">
+
+### Body Small
+
+<div className="type-body-sm">
+  Track your progress and celebrate each milestone along the way.
+</div>
+
+**14px • Regular (400) • Line Height 1.5**
+
+Secondary text and supporting information.
+
+</div>
+
+<div className="type-example">
+
+### Meta
+
+<div className="type-meta">
+  7 DAYS COMPLETED • 85% PROGRESS
+</div>
+
+**12px • Semibold (600) • Line Height 1.4 • Letter Spacing 0.05em • All Caps**
+
+Use for labels, timestamps, and metadata.
+
+</div>
+
+---
+
+## Special Styles
+
+<div className="type-example">
+
+### "North Star" Style
+
+<div className="type-north-star">
+  "I want to feel energized and present for my family, building a foundation of health that allows me to show up fully in every moment."
+</div>
+
+**24–30px • Medium (500) • Summit Forest**
+
+For vision summaries and motivational quotes.
+
+</div>
+
+<div className="type-example">
+
+### Tech Labels
+
+<div className="type-meta">
+  HABIT TRACKING • WEEKLY DIGEST • REFLECTION
+</div>
+
+**12px • Semibold • All Caps • Summit Moss**
+
+For metadata and category labels.
+
+</div>
+
+---
+
+## Typography Principles
+
+### Headlines as Design
+Headlines should feel aspirational and motivating:
+- ✅ "Welcome to Your Summit, Eric."
+- ✅ "This Week's Climb"
+- ✅ "Your North Star"
+- ✅ "The Ascent Continues"
+
+### Hierarchy
+1. Create clear visual hierarchy with size and weight
+2. Use Forest for headlines, secondary opacity for body
+3. Reserve Moss for accent text and links
+
+### Readability
+- Maximum line length: 65–75 characters for body text
+- Generous line height (1.5–1.6) for comfortable reading
+- Sufficient contrast (Forest on white = 9.5:1)
+
+---
+
+## Tailwind Classes
+
+```jsx
+// Display
+className="text-display font-bold tracking-tighter"
+
+// Headings
+className="text-h1 font-bold tracking-tight"
+className="text-h2 font-bold tracking-tight"
+className="text-h3 font-semibold"
+
+// Body
+className="text-body-lg"
+className="text-body"
+className="text-body-sm"
+
+// Meta
+className="text-meta uppercase tracking-wide"
+
+// Colors
+className="text-text-primary"      // Headlines
+className="text-text-secondary"    // Body
+className="text-text-muted"        // Helper text
+className="text-summit-moss"       // Links, accents
+```
+
+---
+
+## Size Comparison
+
+<div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '2rem' }}>
+  <div className="type-display">Display (48px)</div>
+  <div className="type-h1">Heading 1 (40px)</div>
+  <div className="type-h2">Heading 2 (30px)</div>
+  <div className="type-h3">Heading 3 (24px)</div>
+  <div className="type-body-lg">Body Large (18px)</div>
+  <div className="type-body">Body (16px)</div>
+  <div className="type-body-sm">Body Small (14px)</div>
+  <div className="type-meta">Meta (12px)</div>
+</div>

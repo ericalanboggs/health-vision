@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getUserDetail } from '../services/adminService'
-import { ArrowLeft, CheckCircle, XCircle, Loader2, Calendar, Lightbulb, Target, AlertTriangle, Zap } from 'lucide-react'
+import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt } from '@mui/icons-material'
 
 /**
  * Derive coaching archetype from form data
@@ -104,20 +104,20 @@ export default function AdminUserDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Autorenew className="w-8 h-8 animate-spin text-summit-emerald" />
       </div>
     )
   }
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-stone-600 mb-4">User not found</p>
           <button
             onClick={() => navigate('/admin')}
-            className="text-green-600 hover:text-green-700 font-medium"
+            className="text-summit-emerald hover:text-green-700 font-medium"
           >
             Back to Admin
           </button>
@@ -129,17 +129,17 @@ export default function AdminUserDetail() {
   const { profile, pilotReadiness, healthVision, habits, reflections } = data
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50">
+    <div className="min-h-screen bg-white">
       <header className="bg-white shadow-sm border-b border-stone-200">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <button
             onClick={() => navigate('/admin')}
-            className="flex items-center gap-2 text-stone-600 hover:text-stone-900 font-medium transition-colors mb-2"
+            className="flex items-center gap-2 text-stone-600 hover:text-summit-forest font-medium transition-colors mb-2"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowBack className="w-5 h-5" />
             Back to Admin
           </button>
-          <h1 className="text-3xl font-bold text-stone-900">{profile.name}</h1>
+          <h1 className="text-3xl font-bold text-summit-forest">{profile.name}</h1>
           <p className="text-stone-600 mt-1">{profile.email}</p>
         </div>
       </header>
@@ -149,8 +149,8 @@ export default function AdminUserDetail() {
         {healthVision && (
           <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg shadow-sm border border-amber-200 p-6">
             <div className="flex items-center gap-2 mb-4">
-              <Lightbulb className="w-5 h-5 text-amber-600" />
-              <h2 className="text-xl font-bold text-stone-900">Coach Summary</h2>
+              <TipsAndUpdates className="w-5 h-5 text-amber-600" />
+              <h2 className="text-xl font-bold text-summit-forest">Coach Summary</h2>
             </div>
 
             {/* Archetype */}
@@ -177,10 +177,10 @@ export default function AdminUserDetail() {
               {/* Primary Driver */}
               {healthVision.whyMatters && (
                 <div className="flex items-start gap-2">
-                  <Target className="w-4 h-4 text-green-600 mt-1 flex-shrink-0" />
+                  <TrackChanges className="w-4 h-4 text-summit-emerald mt-1 flex-shrink-0" />
                   <div>
                     <span className="text-sm font-medium text-stone-700">Primary Driver:</span>
-                    <p className="text-sm text-stone-900">{healthVision.whyMatters}</p>
+                    <p className="text-sm text-summit-forest">{healthVision.whyMatters}</p>
                   </div>
                 </div>
               )}
@@ -188,10 +188,10 @@ export default function AdminUserDetail() {
               {/* Focus Area / Barrier */}
               {healthVision.barriersNotes && (
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 mt-1 flex-shrink-0" />
+                  <Warning className="w-4 h-4 text-amber-600 mt-1 flex-shrink-0" />
                   <div>
                     <span className="text-sm font-medium text-stone-700">Main Blocker:</span>
-                    <p className="text-sm text-stone-900">{healthVision.barriersNotes}</p>
+                    <p className="text-sm text-summit-forest">{healthVision.barriersNotes}</p>
                   </div>
                 </div>
               )}
@@ -202,7 +202,7 @@ export default function AdminUserDetail() {
                   <CheckCircle className="w-4 h-4 text-red-500 mt-1 flex-shrink-0" />
                   <div>
                     <span className="text-sm font-medium text-stone-700">Don't Touch:</span>
-                    <p className="text-sm text-stone-900">{healthVision.nonNegotiables}</p>
+                    <p className="text-sm text-summit-forest">{healthVision.nonNegotiables}</p>
                   </div>
                 </div>
               )}
@@ -210,10 +210,10 @@ export default function AdminUserDetail() {
               {/* Energizers */}
               {healthVision.energizers && (
                 <div className="flex items-start gap-2">
-                  <Zap className="w-4 h-4 text-yellow-500 mt-1 flex-shrink-0" />
+                  <Bolt className="w-4 h-4 text-yellow-500 mt-1 flex-shrink-0" />
                   <div>
                     <span className="text-sm font-medium text-stone-700">What Energizes Them:</span>
-                    <p className="text-sm text-stone-900">{healthVision.energizers}</p>
+                    <p className="text-sm text-summit-forest">{healthVision.energizers}</p>
                   </div>
                 </div>
               )}
@@ -221,10 +221,10 @@ export default function AdminUserDetail() {
               {/* Strengths */}
               {healthVision.strengths && (
                 <div className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-600 mt-1 flex-shrink-0" />
+                  <CheckCircle className="w-4 h-4 text-summit-emerald mt-1 flex-shrink-0" />
                   <div>
                     <span className="text-sm font-medium text-stone-700">What's Working:</span>
-                    <p className="text-sm text-stone-900">{healthVision.strengths}</p>
+                    <p className="text-sm text-summit-forest">{healthVision.strengths}</p>
                   </div>
                 </div>
               )}
@@ -232,10 +232,10 @@ export default function AdminUserDetail() {
               {/* Motivation Drivers */}
               {healthVision.motivationDrivers && healthVision.motivationDrivers.length > 0 && (
                 <div className="flex items-start gap-2">
-                  <Target className="w-4 h-4 text-blue-500 mt-1 flex-shrink-0" />
+                  <TrackChanges className="w-4 h-4 text-blue-500 mt-1 flex-shrink-0" />
                   <div>
                     <span className="text-sm font-medium text-stone-700">Motivated By:</span>
-                    <p className="text-sm text-stone-900">{healthVision.motivationDrivers.join(', ')}</p>
+                    <p className="text-sm text-summit-forest">{healthVision.motivationDrivers.join(', ')}</p>
                   </div>
                 </div>
               )}
@@ -254,64 +254,64 @@ export default function AdminUserDetail() {
 
         {/* User Snapshot */}
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
-          <h2 className="text-xl font-bold text-stone-900 mb-4">User Snapshot</h2>
+          <h2 className="text-xl font-bold text-summit-forest mb-4">User Snapshot</h2>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-stone-600">Phone:</span>
-              <span className="ml-2 font-medium text-stone-900">{profile.phone}</span>
+              <span className="ml-2 font-medium text-summit-forest">{profile.phone}</span>
             </div>
             <div>
               <span className="text-stone-600">SMS Opt-in:</span>
-              <span className="ml-2 font-medium text-stone-900">
+              <span className="ml-2 font-medium text-summit-forest">
                 {profile.smsOptIn ? 'Yes' : 'No'}
               </span>
             </div>
             <div>
               <span className="text-stone-600">Account Created:</span>
-              <span className="ml-2 font-medium text-stone-900">{formatDate(profile.createdAt)}</span>
+              <span className="ml-2 font-medium text-summit-forest">{formatDate(profile.createdAt)}</span>
             </div>
             <div>
               <span className="text-stone-600">Last Login:</span>
-              <span className="ml-2 font-medium text-stone-900">{formatDate(profile.lastLogin)}</span>
+              <span className="ml-2 font-medium text-summit-forest">{formatDate(profile.lastLogin)}</span>
             </div>
             <div>
               <span className="text-stone-600">Timezone:</span>
-              <span className="ml-2 font-medium text-stone-900">{profile.timezone || 'N/A'}</span>
+              <span className="ml-2 font-medium text-summit-forest">{profile.timezone || 'N/A'}</span>
             </div>
           </div>
         </div>
 
         {/* Pilot Readiness Checklist */}
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
-          <h2 className="text-xl font-bold text-stone-900 mb-4">Pilot Readiness</h2>
+          <h2 className="text-xl font-bold text-summit-forest mb-4">Pilot Readiness</h2>
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               {pilotReadiness.hasLoggedIn ? (
-                <CheckCircle className="w-5 h-5 text-green-600" />
+                <CheckCircle className="w-5 h-5 text-summit-emerald" />
               ) : (
-                <XCircle className="w-5 h-5 text-stone-400" />
+                <Cancel className="w-5 h-5 text-stone-400" />
               )}
-              <span className={pilotReadiness.hasLoggedIn ? 'text-stone-900' : 'text-stone-500'}>
+              <span className={pilotReadiness.hasLoggedIn ? 'text-summit-forest' : 'text-stone-500'}>
                 Logged in at least once
               </span>
             </div>
             <div className="flex items-center gap-3">
               {pilotReadiness.hasHealthVision ? (
-                <CheckCircle className="w-5 h-5 text-green-600" />
+                <CheckCircle className="w-5 h-5 text-summit-emerald" />
               ) : (
-                <XCircle className="w-5 h-5 text-stone-400" />
+                <Cancel className="w-5 h-5 text-stone-400" />
               )}
-              <span className={pilotReadiness.hasHealthVision ? 'text-stone-900' : 'text-stone-500'}>
+              <span className={pilotReadiness.hasHealthVision ? 'text-summit-forest' : 'text-stone-500'}>
                 Health vision set
               </span>
             </div>
             <div className="flex items-center gap-3">
               {pilotReadiness.hasActiveHabits ? (
-                <CheckCircle className="w-5 h-5 text-green-600" />
+                <CheckCircle className="w-5 h-5 text-summit-emerald" />
               ) : (
-                <XCircle className="w-5 h-5 text-stone-400" />
+                <Cancel className="w-5 h-5 text-stone-400" />
               )}
-              <span className={pilotReadiness.hasActiveHabits ? 'text-stone-900' : 'text-stone-500'}>
+              <span className={pilotReadiness.hasActiveHabits ? 'text-summit-forest' : 'text-stone-500'}>
                 At least 1 active weekly habit
               </span>
             </div>
@@ -324,7 +324,7 @@ export default function AdminUserDetail() {
               </div>
             ) : (
               <div className="flex items-center gap-2 text-amber-700 font-medium">
-                <XCircle className="w-5 h-5" />
+                <Cancel className="w-5 h-5" />
                 Not Pilot Ready
               </div>
             )}
@@ -333,29 +333,29 @@ export default function AdminUserDetail() {
 
         {/* Health Vision */}
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
-          <h2 className="text-xl font-bold text-stone-900 mb-4">Health Vision</h2>
+          <h2 className="text-xl font-bold text-summit-forest mb-4">Health Vision</h2>
           {healthVision?.visionStatement ? (
             <div className="space-y-4">
               <div>
                 <h3 className="text-sm font-medium text-stone-700 mb-2">Vision Statement</h3>
-                <p className="text-stone-900 whitespace-pre-wrap">{healthVision.visionStatement}</p>
+                <p className="text-summit-forest whitespace-pre-wrap">{healthVision.visionStatement}</p>
               </div>
               {healthVision.whyMatters && (
                 <div>
                   <h3 className="text-sm font-medium text-stone-700 mb-2">Why It Matters</h3>
-                  <p className="text-stone-900 whitespace-pre-wrap">{healthVision.whyMatters}</p>
+                  <p className="text-summit-forest whitespace-pre-wrap">{healthVision.whyMatters}</p>
                 </div>
               )}
               {healthVision.feelingState && (
                 <div>
                   <h3 className="text-sm font-medium text-stone-700 mb-2">Feeling State</h3>
-                  <p className="text-stone-900 whitespace-pre-wrap">{healthVision.feelingState}</p>
+                  <p className="text-summit-forest whitespace-pre-wrap">{healthVision.feelingState}</p>
                 </div>
               )}
               {healthVision.futureAbilities && (
                 <div>
                   <h3 className="text-sm font-medium text-stone-700 mb-2">Future Abilities</h3>
-                  <p className="text-stone-900 whitespace-pre-wrap">{healthVision.futureAbilities}</p>
+                  <p className="text-summit-forest whitespace-pre-wrap">{healthVision.futureAbilities}</p>
                 </div>
               )}
             </div>
@@ -366,12 +366,12 @@ export default function AdminUserDetail() {
 
         {/* Current Habits */}
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
-          <h2 className="text-xl font-bold text-stone-900 mb-4">Current Habits</h2>
+          <h2 className="text-xl font-bold text-summit-forest mb-4">Current Habits</h2>
           {habits.length > 0 ? (
             <div className="space-y-4">
               {habits.map((habit, index) => (
                 <div key={index} className="border border-stone-200 rounded-lg p-4">
-                  <h3 className="font-medium text-stone-900 mb-2">{habit.name}</h3>
+                  <h3 className="font-medium text-summit-forest mb-2">{habit.name}</h3>
                   <div className="text-sm text-stone-600 space-y-1">
                     <div>
                       <span className="font-medium">Frequency:</span> {habit.frequency} day{habit.frequency !== 1 ? 's' : ''}/week
@@ -401,13 +401,13 @@ export default function AdminUserDetail() {
 
         {/* Weekly Reflections */}
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
-          <h2 className="text-xl font-bold text-stone-900 mb-4">Weekly Reflections</h2>
+          <h2 className="text-xl font-bold text-summit-forest mb-4">Weekly Reflections</h2>
           {reflections.length > 0 ? (
             <div className="space-y-4">
               {reflections.map((reflection) => (
                 <div key={reflection.id} className="border border-stone-200 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-3">
-                    <Calendar className="w-4 h-4 text-stone-600" />
+                    <CalendarMonth className="w-4 h-4 text-stone-600" />
                     <span className="text-sm font-medium text-stone-700">
                       Week {reflection.week_number}
                     </span>
@@ -419,25 +419,25 @@ export default function AdminUserDetail() {
                     {reflection.went_well && (
                       <div>
                         <h4 className="font-medium text-stone-700 mb-1">What went well:</h4>
-                        <p className="text-stone-900 whitespace-pre-wrap">{reflection.went_well}</p>
+                        <p className="text-summit-forest whitespace-pre-wrap">{reflection.went_well}</p>
                       </div>
                     )}
                     {reflection.friction && (
                       <div>
                         <h4 className="font-medium text-stone-700 mb-1">Friction points:</h4>
-                        <p className="text-stone-900 whitespace-pre-wrap">{reflection.friction}</p>
+                        <p className="text-summit-forest whitespace-pre-wrap">{reflection.friction}</p>
                       </div>
                     )}
                     {reflection.adjustment && (
                       <div>
                         <h4 className="font-medium text-stone-700 mb-1">Adjustments:</h4>
-                        <p className="text-stone-900 whitespace-pre-wrap">{reflection.adjustment}</p>
+                        <p className="text-summit-forest whitespace-pre-wrap">{reflection.adjustment}</p>
                       </div>
                     )}
                     {reflection.app_feedback && (
                       <div>
                         <h4 className="font-medium text-stone-700 mb-1">App feedback:</h4>
-                        <p className="text-stone-900 whitespace-pre-wrap">{reflection.app_feedback}</p>
+                        <p className="text-summit-forest whitespace-pre-wrap">{reflection.app_feedback}</p>
                       </div>
                     )}
                   </div>

@@ -1,14 +1,16 @@
+import summitPreset from './design-system/tokens/tailwind.preset.js'
+
 /** @type {import('tailwindcss').Config} */
 export default {
+  presets: [summitPreset],
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
+    "./design-system/components/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
-      fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-      },
+      // Legacy compass colors (can be removed after migration)
       colors: {
         compass: {
           primary: '#d97706',
@@ -16,21 +18,6 @@ export default {
           accent: '#f59e0b',
         }
       },
-      keyframes: {
-        'fade-in': {
-          '0%': {
-            opacity: '0',
-            transform: 'translateX(-5px)'
-          },
-          '100%': {
-            opacity: '1',
-            transform: 'translateX(0)'
-          }
-        }
-      },
-      animation: {
-        'fade-in': 'fade-in 0.3s ease-out forwards'
-      }
     },
   },
   plugins: [],

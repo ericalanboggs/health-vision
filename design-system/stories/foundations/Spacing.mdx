@@ -1,0 +1,203 @@
+import { Meta } from '@storybook/blocks'
+
+<Meta title="Foundations/Spacing" />
+
+# Spacing & Layout
+
+Summit embraces **generous whitespace** for a fluid, open canvas feel. We're moving from confined cards to expansive, breathing layouts.
+
+---
+
+## Spacing Scale
+
+Our spacing follows a consistent 4px base unit system.
+
+<div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '2rem' }}>
+  {[
+    { token: 'space.1', value: '4px', usage: 'Tight gaps' },
+    { token: 'space.2', value: '8px', usage: 'Icon gaps, compact padding' },
+    { token: 'space.3', value: '12px', usage: 'Standard gaps' },
+    { token: 'space.4', value: '16px', usage: 'Component padding' },
+    { token: 'space.6', value: '24px', usage: 'Section gaps' },
+    { token: 'space.8', value: '32px', usage: 'Large gaps' },
+    { token: 'space.12', value: '48px', usage: 'Page sections' },
+    { token: 'space.16', value: '64px', usage: 'Hero spacing' },
+  ].map((item) => (
+    <div key={item.token} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <div style={{
+        width: item.value,
+        height: '24px',
+        backgroundColor: '#10B981',
+        borderRadius: '4px',
+        flexShrink: 0,
+      }} />
+      <code style={{ fontFamily: 'monospace', fontSize: '0.875rem', color: '#064E3B', minWidth: '80px' }}>
+        {item.token}
+      </code>
+      <span style={{ fontSize: '0.875rem', color: 'rgba(6, 78, 59, 0.8)', minWidth: '50px' }}>
+        {item.value}
+      </span>
+      <span style={{ fontSize: '0.875rem', color: 'rgba(6, 78, 59, 0.5)' }}>
+        {item.usage}
+      </span>
+    </div>
+  ))}
+</div>
+
+---
+
+## Border Radius
+
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', marginTop: '2rem' }}>
+  {[
+    { token: 'radius.sm', value: '6px', usage: 'Small inputs' },
+    { token: 'radius.md', value: '8px', usage: 'Buttons, tags' },
+    { token: 'radius.lg', value: '12px', usage: 'Cards' },
+    { token: 'radius.xl', value: '16px', usage: 'Large cards, modals' },
+    { token: 'radius.full', value: '9999px', usage: 'Pills, avatars' },
+  ].map((item) => (
+    <div key={item.token} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+      <div style={{
+        width: '64px',
+        height: '64px',
+        backgroundColor: '#D1FAE5',
+        border: '2px solid #10B981',
+        borderRadius: item.value,
+      }} />
+      <code style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#064E3B' }}>
+        {item.token}
+      </code>
+      <span style={{ fontSize: '0.75rem', color: 'rgba(6, 78, 59, 0.5)' }}>
+        {item.value}
+      </span>
+    </div>
+  ))}
+</div>
+
+---
+
+## Shadows
+
+<div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginTop: '2rem' }}>
+  {[
+    { name: 'Card', value: '0 1px 3px rgba(0,0,0,0.1)', usage: 'Default card shadow' },
+    { name: 'Elevated', value: '0 4px 6px -1px rgba(0,0,0,0.1)', usage: 'Hover states' },
+    { name: 'Modal', value: '0 20px 25px -5px rgba(0,0,0,0.1)', usage: 'Modals, dropdowns' },
+    { name: 'Focus', value: '0 0 0 3px rgba(16,185,129,0.4)', usage: 'Focus rings' },
+  ].map((item) => (
+    <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+      <div style={{
+        width: '120px',
+        height: '60px',
+        backgroundColor: '#FFFFFF',
+        borderRadius: '12px',
+        boxShadow: item.value,
+        flexShrink: 0,
+      }} />
+      <div>
+        <div style={{ fontWeight: 600, color: '#064E3B' }}>{item.name}</div>
+        <code style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'rgba(6, 78, 59, 0.5)' }}>
+          {item.value}
+        </code>
+        <div style={{ fontSize: '0.875rem', color: 'rgba(6, 78, 59, 0.8)', marginTop: '0.25rem' }}>
+          {item.usage}
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
+
+---
+
+## Touch Targets
+
+For accessibility, all interactive elements must have a minimum touch target of **44x44px** on mobile devices.
+
+<div style={{ display: 'flex', gap: '2rem', marginTop: '1rem', alignItems: 'center' }}>
+  <div style={{
+    width: '44px',
+    height: '44px',
+    border: '2px dashed #10B981',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  }}>
+    <div style={{
+      width: '24px',
+      height: '24px',
+      backgroundColor: '#10B981',
+      borderRadius: '4px',
+    }} />
+  </div>
+  <span style={{ color: 'rgba(6, 78, 59, 0.8)', fontSize: '0.875rem' }}>
+    44x44px minimum touch target (WCAG requirement)
+  </span>
+</div>
+
+---
+
+## Z-Index Scale
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `z.base` | 0 | Default |
+| `z.raised` | 10 | Slightly raised |
+| `z.dropdown` | 20 | Dropdown menus |
+| `z.sticky` | 30 | Sticky headers |
+| `z.fixed` | 40 | Fixed elements |
+| `z.modalBackdrop` | 50 | Modal backdrop |
+| `z.modal` | 60 | Modals |
+| `z.popover` | 70 | Popovers |
+| `z.tooltip` | 80 | Tooltips |
+| `z.max` | 100 | Maximum (toasts) |
+
+---
+
+## Breakpoints
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `sm` | 640px | Small tablets |
+| `md` | 768px | Tablets |
+| `lg` | 1024px | Small desktops |
+| `xl` | 1280px | Large desktops |
+| `2xl` | 1536px | Extra large screens |
+
+---
+
+## Container Widths
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `narrow` | 640px | Narrow content (forms) |
+| `default` | 768px | Standard content |
+| `wide` | 1024px | Wide content |
+| `max` | 1280px | Maximum width |
+
+---
+
+## Tailwind Classes
+
+```jsx
+// Spacing
+className="p-4"      // 16px padding
+className="m-6"      // 24px margin
+className="gap-3"    // 12px gap
+
+// Border radius
+className="rounded-sm"    // 6px
+className="rounded-lg"    // 12px
+className="rounded-full"  // 9999px
+
+// Shadows
+className="shadow-card"
+className="shadow-elevated"
+className="shadow-modal"
+className="shadow-focus"
+
+// Z-index
+className="z-10"     // raised
+className="z-50"     // modal backdrop
+className="z-60"     // modal
+```

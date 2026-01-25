@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import supabase from '../lib/supabase'
 import { getProfile } from '../services/authService'
-import { Loader2 } from 'lucide-react'
+import { Autorenew } from '@mui/icons-material'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -134,9 +134,9 @@ export default function Home() {
   }, [navigate])
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50 flex items-center justify-center">
+    <div className="min-h-screen bg-white flex items-center justify-center">
       <div className="text-center">
-        <Loader2 className="w-12 h-12 text-green-600 animate-spin mx-auto mb-4" />
+        <Autorenew className="w-12 h-12 text-summit-emerald animate-spin mx-auto mb-4" />
         <p className="text-stone-600 mb-2">Redirecting...</p>
         {debugInfo && (
           <p className="text-sm text-stone-500 mt-4 max-w-md mx-auto">{debugInfo}</p>

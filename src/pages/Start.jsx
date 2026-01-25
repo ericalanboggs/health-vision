@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Mountain, Calendar, MessageSquare, Sparkles, ArrowRight } from 'lucide-react'
+import { Terrain, CalendarMonth, Chat, AutoAwesome, ArrowForward } from '@mui/icons-material'
 
 export default function Start() {
   const navigate = useNavigate()
@@ -9,17 +9,17 @@ export default function Start() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-stone-50 to-amber-50">
+    <div className="min-h-screen bg-white">
       <div className="max-w-3xl mx-auto px-4 py-12 sm:py-16">
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
-              <Mountain className="w-12 h-12 text-green-600" />
+            <div className="w-20 h-20 bg-summit-mint rounded-full flex items-center justify-center">
+              <Terrain className="w-12 h-12 text-summit-emerald" />
             </div>
           </div>
           
-          <h1 className="text-4xl sm:text-5xl font-bold text-stone-800 mb-4">
+          <h1 className="text-4xl sm:text-5xl font-bold text-summit-forest mb-4">
             Welcome to Your Summit Pilot 🏔️
           </h1>
           
@@ -29,10 +29,10 @@ export default function Start() {
         </div>
 
         {/* Main Content Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 sm:p-10 mb-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 sm:p-10 mb-8">
           {/* Program Overview */}
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-stone-800 mb-4">
+            <h2 className="text-2xl font-bold text-summit-forest mb-4">
               How It Works
             </h2>
             <p className="text-stone-600 text-lg leading-relaxed">
@@ -46,11 +46,11 @@ export default function Start() {
             <div className="flex gap-4">
               <div className="flex-shrink-0">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Sparkles className="w-6 h-6 text-blue-600" />
+                  <AutoAwesome className="w-6 h-6 text-blue-600" />
                 </div>
               </div>
               <div>
-                <h3 className="font-semibold text-stone-800 mb-1">
+                <h3 className="font-semibold text-summit-forest mb-1">
                   Create Your Vision
                 </h3>
                 <p className="text-stone-600">
@@ -61,12 +61,12 @@ export default function Start() {
 
             <div className="flex gap-4">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-6 h-6 text-green-600" />
+                <div className="w-12 h-12 bg-summit-mint rounded-lg flex items-center justify-center">
+                  <CalendarMonth className="w-6 h-6 text-summit-emerald" />
                 </div>
               </div>
               <div>
-                <h3 className="font-semibold text-stone-800 mb-1">
+                <h3 className="font-semibold text-summit-forest mb-1">
                   Weekly Habit Building
                 </h3>
                 <p className="text-stone-600">
@@ -78,11 +78,11 @@ export default function Start() {
             <div className="flex gap-4">
               <div className="flex-shrink-0">
                 <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                  <MessageSquare className="w-6 h-6 text-amber-600" />
+                  <Chat className="w-6 h-6 text-amber-600" />
                 </div>
               </div>
               <div>
-                <h3 className="font-semibold text-stone-800 mb-1">
+                <h3 className="font-semibold text-summit-forest mb-1">
                   SMS Reminders (if opted in)
                 </h3>
                 <p className="text-stone-600">
@@ -95,10 +95,10 @@ export default function Start() {
           {/* CTA */}
           <button
             onClick={handleGetStarted}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-lg transition flex items-center justify-center gap-2 text-lg"
+            className="w-full bg-summit-emerald hover:bg-emerald-700 text-white font-semibold py-4 px-6 rounded-lg transition flex items-center justify-center gap-2 text-lg"
           >
             Get Started
-            <ArrowRight className="w-6 h-6" />
+            <ArrowForward className="w-6 h-6" />
           </button>
         </div>
 
