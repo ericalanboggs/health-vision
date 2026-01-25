@@ -46,14 +46,30 @@ export const sendMagicLink = async (email) => {
  */
 export const checkPilotAccess = async (email) => {
   try {
-    const hasAccess = isPilotApproved(email)
-    
-    trackEvent('pilot_access_checked', { 
-      email, 
-      hasAccess 
-    })
-    
-    return hasAccess
+    // First check static allowlist
+    const hasStaticAccess = isPilotApproved(email)
+
+    if (hasStaticAccess) {
+      trackEvent('pilot_access_checked', { email, hasAccess: true, source: 'static' })
+      return true
+    }
+
+    // Then check database for invites
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('pilot_invites')
+        .select('email')
+        .eq('email', email.toLowerCase().trim())
+        .single()
+
+      if (data && !error) {
+        trackEvent('pilot_access_checked', { email, hasAccess: true, source: 'database' })
+        return true
+      }
+    }
+
+    trackEvent('pilot_access_checked', { email, hasAccess: false })
+    return false
   } catch (error) {
     console.error('Error checking pilot access:', error)
     trackEvent('pilot_access_check_error', { error: error.message })

@@ -1,6 +1,8 @@
 import supabase from '../lib/supabase'
+import { addPilotEmail } from '../config/pilotAllowlist'
 
 const ADMIN_EMAIL = 'eric.alan.boggs@gmail.com'
+const SUPABASE_FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL?.replace('.supabase.co', '.supabase.co/functions/v1') || ''
 
 /**
  * Check if current user is admin
@@ -190,6 +192,67 @@ export const getUserDetail = async (userId) => {
     }
   } catch (error) {
     console.error('Error fetching user detail:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Invite a user to the pilot program
+ * Adds email to allowlist and sends invitation email
+ */
+export const inviteUser = async (email) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const normalizedEmail = email.toLowerCase().trim()
+
+    // Add to in-memory allowlist (for current session)
+    addPilotEmail(normalizedEmail)
+
+    // Store in database for persistence
+    const { error: insertError } = await supabase
+      .from('pilot_invites')
+      .upsert({
+        email: normalizedEmail,
+        invited_at: new Date().toISOString(),
+        invited_by: ADMIN_EMAIL
+      }, {
+        onConflict: 'email'
+      })
+
+    if (insertError) {
+      console.error('Error storing invite:', insertError)
+      // Continue anyway - the email sending is more important
+    }
+
+    // Get auth token for function call
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    // Call the invite email function
+    const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/send-invite-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({ email: normalizedEmail })
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      console.error('Error sending invite email:', result)
+      return { success: false, error: result.error || 'Failed to send invitation email' }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error inviting user:', error)
     return { success: false, error: error.message }
   }
 }

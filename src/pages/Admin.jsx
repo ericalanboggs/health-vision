@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getAllUsers } from '../services/adminService'
-import { CheckCircle, Warning, Autorenew, SwapVert } from '@mui/icons-material'
+import { getAllUsers, inviteUser } from '../services/adminService'
+import { CheckCircle, Warning, Autorenew, SwapVert, PersonAdd, Send } from '@mui/icons-material'
 
 export default function Admin() {
   const navigate = useNavigate()
@@ -10,6 +10,9 @@ export default function Admin() {
   const [sortBy, setSortBy] = useState('createdAt')
   const [sortDesc, setSortDesc] = useState(true)
   const [filterNeedsSetup, setFilterNeedsSetup] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviting, setInviting] = useState(false)
+  const [inviteStatus, setInviteStatus] = useState(null) // { type: 'success' | 'error', message: string }
 
   useEffect(() => {
     loadUsers()
@@ -87,6 +90,28 @@ export default function Admin() {
 
   const sortedUsers = getSortedUsers()
 
+  const handleInvite = async () => {
+    if (!inviteEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail)) {
+      setInviteStatus({ type: 'error', message: 'Please enter a valid email address' })
+      return
+    }
+
+    setInviting(true)
+    setInviteStatus(null)
+
+    const { success, error } = await inviteUser(inviteEmail.trim().toLowerCase())
+
+    if (success) {
+      setInviteStatus({ type: 'success', message: `Invitation sent to ${inviteEmail}` })
+      setInviteEmail('')
+      setTimeout(() => setInviteStatus(null), 5000)
+    } else {
+      setInviteStatus({ type: 'error', message: error || 'Failed to send invitation' })
+    }
+
+    setInviting(false)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -99,8 +124,47 @@ export default function Admin() {
     <div className="min-h-screen bg-white">
       <header className="bg-white shadow-sm border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-summit-forest">Admin Dashboard</h1>
-          <p className="text-stone-600 mt-1">Summit Pilot User Overview</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-summit-forest">Admin Dashboard</h1>
+              <p className="text-stone-600 mt-1">Summit Pilot User Overview</p>
+            </div>
+
+            {/* Invite User */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
+                  <PersonAdd className="w-5 h-5 text-summit-moss" />
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleInvite()}
+                    placeholder="Invite user by email"
+                    className="border-none outline-none text-sm w-48 placeholder-stone-400"
+                    disabled={inviting}
+                  />
+                </div>
+                <button
+                  onClick={handleInvite}
+                  disabled={inviting || !inviteEmail.trim()}
+                  className="flex items-center gap-2 bg-summit-emerald hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium px-4 py-2 rounded-lg transition text-sm"
+                >
+                  {inviting ? (
+                    <Autorenew className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  Send
+                </button>
+              </div>
+              {inviteStatus && (
+                <p className={`text-xs ${inviteStatus.type === 'success' ? 'text-summit-emerald' : 'text-red-600'}`}>
+                  {inviteStatus.message}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       </header>
 
