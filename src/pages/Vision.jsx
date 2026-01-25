@@ -4,12 +4,17 @@ import {
   Flag,
   Backpack,
   TrendingUp,
-  Schedule,
   Description,
   ArrowForward,
   ArrowBack,
   Check,
+  OpenInNew,
 } from '@mui/icons-material'
+
+// Material Symbol component for icons not in @mui/icons-material
+const MaterialSymbol = ({ name, className }) => (
+  <span className={`material-symbols-outlined ${className || ''}`}>{name}</span>
+)
 import { trackEvent } from '../lib/posthog'
 import { saveJourney, loadJourney } from '../services/journeyService'
 import { getCurrentUser } from '../services/authService'
@@ -68,39 +73,39 @@ export default function Vision() {
   }, [])
 
   const steps = [
-    { 
-      id: 'intro', 
-      label: 'Introduction', 
+    {
+      id: 'intro',
+      label: 'Intro',
       icon: Flag,
       shortLabel: 'Intro'
     },
-    { 
-      id: 'vision', 
-      label: 'Vision', 
-      icon: Flag,
+    {
+      id: 'vision',
+      label: 'Vision',
+      icon: () => <MaterialSymbol name="mountain_flag" className="text-[20px]" />,
       shortLabel: 'Vision'
     },
-    { 
-      id: 'basecamp', 
-      label: 'Base Camp', 
+    {
+      id: 'basecamp',
+      label: 'Base',
       icon: Backpack,
-      shortLabel: 'Base Camp'
+      shortLabel: 'Base'
     },
-    { 
-      id: 'current', 
-      label: 'Map the Ascent', 
+    {
+      id: 'current',
+      label: 'Path',
       icon: TrendingUp,
-      shortLabel: 'Map'
+      shortLabel: 'Path'
     },
     {
       id: 'capacity',
-      label: 'Capacity & Support',
-      icon: Schedule,
-      shortLabel: 'Capacity'
+      label: 'Support',
+      icon: () => <MaterialSymbol name="concierge" className="text-[20px]" />,
+      shortLabel: 'Support'
     },
     {
       id: 'summary',
-      label: 'Personal Plan',
+      label: 'Plan',
       icon: Description,
       shortLabel: 'Plan'
     },
@@ -213,6 +218,19 @@ export default function Vision() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
+      {/* Back Button */}
+      {currentStep > 0 && steps[currentStep].id !== 'summary' && (
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <Button
+            variant="ghost"
+            onClick={handleBack}
+            leftIcon={<ArrowBack className="w-5 h-5" />}
+          >
+            Back
+          </Button>
+        </div>
+      )}
+
       {/* Progress Stepper */}
       <div className={`bg-transparent sticky top-0 z-10 transition-transform duration-300 ${headerVisible ? 'translate-y-0' : '-translate-y-full'}`}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -234,12 +252,12 @@ export default function Vision() {
                     }`}
                   >
                     <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                      className={`w-10 h-10 min-w-[40px] min-h-[40px] flex-shrink-0 rounded-full flex items-center justify-center transition-all ${
                         isActive
-                          ? 'bg-summit-lime text-summit-forest ring-4 ring-summit-sage'
+                          ? 'bg-summit-emerald text-white ring-4 ring-summit-sage'
                           : isCompleted
                           ? 'bg-summit-sage text-summit-emerald'
-                          : 'bg-gray-200 text-text-muted'
+                          : 'bg-stone-200 text-stone-400'
                       }`}
                     >
                       {isCompleted ? (
@@ -261,7 +279,7 @@ export default function Vision() {
                   {index < steps.length - 1 && (
                     <div
                       className={`flex-1 h-0.5 mx-4 transition-all ${
-                        isCompleted ? 'bg-summit-emerald' : 'bg-gray-200'
+                        isCompleted ? 'bg-summit-emerald' : 'bg-stone-200'
                       }`}
                     />
                   )}
@@ -282,7 +300,7 @@ export default function Vision() {
             </div>
             <div className="w-full bg-summit-sage rounded-full h-2">
               <div
-                className="bg-summit-lime h-2 rounded-full transition-all duration-300"
+                className="bg-summit-emerald h-2 rounded-full transition-all duration-300"
                 style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
               />
             </div>
@@ -293,19 +311,6 @@ export default function Vision() {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {renderStepContent()}
-
-        {/* Navigation Buttons */}
-        {currentStep > 0 && steps[currentStep].id !== 'summary' && (
-          <div className="mt-8 flex justify-between items-center">
-            <Button
-              variant="ghost"
-              onClick={handleBack}
-              leftIcon={<ArrowBack className="w-5 h-5" />}
-            >
-              Back
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   )
@@ -316,61 +321,41 @@ const IntroPage = ({ onNext }) => {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="text-center mb-8">
+        <div className="flex justify-center mb-6">
+          <img
+            src="/summit-illustration.png"
+            alt="Summit"
+            className="w-[120px] h-[120px]"
+          />
+        </div>
         <h1 className="text-h1 text-summit-forest mb-4">
           Create Your Health Vision
         </h1>
-        <p className="text-body-lg text-text-secondary leading-relaxed">
-          Building sustainable health habits starts with a clear vision of where you're going and why it matters.
-        </p>
       </div>
 
       <Card className="mb-8 border border-summit-sage">
         <h2 className="text-h2 text-summit-forest mb-4">
-          Why Vision Matters for Health Habits
+          Why Vision Matters
         </h2>
 
-        <div className="space-y-4 text-body text-summit-forest leading-relaxed mb-6">
+        <div className="space-y-4 text-body text-stone-600 leading-relaxed mb-6">
           <p>
-            Research shows that people who connect their daily actions to a compelling future vision are{' '}
-            <strong>3x more likely to stick with new habits</strong>. Your vision becomes your North Star—a
-            reference point when motivation wanes and obstacles arise.
+            Research shows that connecting daily actions to a meaningful future vision is associated with lower disease risk and reduced mortality.{' '}
+            <a
+              href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8669210/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-baseline gap-0.5 text-summit-emerald hover:text-summit-forest"
+            >
+              <OpenInNew className="w-3.5 h-3.5" />
+            </a>
           </p>
-
           <p>
-            Without a clear vision, health habits feel like arbitrary tasks on a to-do list. With a vivid vision,
-            they become meaningful steps toward the life you want to live.
+            A clear vision makes habit formation easier—even when it's hard—because it gives you something to return to when motivation fades.
           </p>
-
           <p>
-            In the next few minutes, you'll create a personalized health vision and map out a realistic path
-            to get there. Your words and vision will guide your entire experience.
+            Let's create yours together, step by step.
           </p>
-        </div>
-
-        <div className="bg-summit-mint rounded-xl border border-summit-sage p-6 mb-6">
-          <h3 className="text-h3 text-summit-forest mb-3">What You'll Do</h3>
-          <ul className="space-y-2 text-body text-summit-forest">
-            <li className="flex items-start gap-2">
-              <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-summit-emerald" />
-              <span><strong>Vision:</strong> Define your ideal health state 1-2 years from now</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-summit-emerald" />
-              <span><strong>Base Camp:</strong> Assess where you are today and what drives you</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-summit-emerald" />
-              <span><strong>Map the Ascent:</strong> Identify barriers and areas for improvement</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-summit-emerald" />
-              <span><strong>Capacity & Support:</strong> Determine what's realistic for you right now</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-summit-emerald" />
-              <span><strong>Personal Plan:</strong> Review your complete health roadmap</span>
-            </li>
-          </ul>
         </div>
 
         <div className="bg-summit-sage/50 rounded-xl border border-summit-sage p-6 mb-6">
@@ -386,7 +371,7 @@ const IntroPage = ({ onNext }) => {
         <Button
           onClick={onNext}
           size="lg"
-          className="w-full"
+          className="w-full bg-summit-emerald hover:bg-emerald-700 text-white"
           rightIcon={<ArrowForward className="w-5 h-5" />}
         >
           Start Creating Your Vision

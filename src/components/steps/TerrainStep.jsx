@@ -1,5 +1,6 @@
 import React from 'react'
-import { Map, ArrowForward } from '@mui/icons-material'
+import { TrendingUp, ArrowForward } from '@mui/icons-material'
+import { Button } from '@summit/design-system'
 
 const TerrainStep = ({ formData, updateFormData, onNext }) => {
   const barrierOptions = [
@@ -55,23 +56,23 @@ const TerrainStep = ({ formData, updateFormData, onNext }) => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-green-100 rounded-xl">
-          <Map className="w-8 h-8 text-green-600" />
+        <div className="p-3 bg-summit-mint rounded-xl">
+          <TrendingUp className="w-8 h-8 text-summit-emerald" />
         </div>
         <div>
-          <h2 className="text-4xl font-bold text-stone-900">Step 3: Assess the Route</h2>
+          <h2 className="text-h2 text-summit-forest">Step 3: Your Path</h2>
           <p className="text-stone-500">Survey the Terrain & Choose Your Path</p>
         </div>
       </div>
 
-      <p className="text-lg text-stone-700 mb-8 leading-relaxed">
+      <p className="text-body-lg text-stone-600 mb-8 leading-relaxed">
         Every mountain has multiple routes to the summit. Survey where you stand today, identify the obstacles in your path, and choose the trail that fits your strengths.
       </p>
 
       <div className="space-y-8">
         {/* Q7: Current Score Slider */}
         <div className="bg-white p-6 rounded-xl shadow-md border border-stone-200">
-          <label className="block text-xl font-semibold text-stone-800 mb-2">
+          <label className="block text-lg font-semibold text-summit-forest mb-2">
             How far up the mountain are you today?
           </label>
           <p className="text-sm text-stone-600 mb-4">
@@ -85,19 +86,19 @@ const TerrainStep = ({ formData, updateFormData, onNext }) => {
               max="10"
               value={formData.currentScore || 5}
               onChange={(e) => updateFormData('currentScore', parseInt(e.target.value))}
-              className="flex-1 h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+              className="flex-1 h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-summit-emerald"
             />
             <span className="text-sm text-stone-500 font-medium">10</span>
           </div>
           <div className="mt-3 text-center">
-            <span className="text-3xl font-bold text-green-600">{formData.currentScore || 5}</span>
+            <span className="text-3xl font-bold text-summit-emerald">{formData.currentScore || 5}</span>
             <span className="text-stone-600 ml-2">/ 10</span>
           </div>
         </div>
 
         {/* Q8: Barriers (Multi-select) */}
         <div className="bg-white p-6 rounded-xl shadow-md border border-stone-200">
-          <label className="block text-xl font-semibold text-stone-800 mb-2">
+          <label className="block text-lg font-semibold text-summit-forest mb-2">
             What obstacles are blocking your path?
           </label>
           <p className="text-sm text-stone-600 mb-4">
@@ -110,8 +111,8 @@ const TerrainStep = ({ formData, updateFormData, onNext }) => {
                 onClick={() => toggleBarrier(option)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   (formData.barriers || []).includes(option)
-                    ? 'bg-green-600 text-white shadow-md'
-                    : 'bg-white text-stone-700 border border-stone-300 hover:border-green-400'
+                    ? 'bg-summit-emerald text-white shadow-md'
+                    : 'bg-summit-mint text-summit-forest border border-summit-sage hover:bg-summit-sage'
                 }`}
               >
                 {option}
@@ -122,13 +123,13 @@ const TerrainStep = ({ formData, updateFormData, onNext }) => {
             value={formData.barriersNotes || ''}
             onChange={(e) => updateFormData('barriersNotes', e.target.value)}
             placeholder="Any additional notes about your barriers..."
-            className="w-full h-32 p-4 border border-stone-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition resize-none"
+            className="w-full h-32 p-4 border border-stone-300 rounded-lg shadow-sm focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition resize-none"
           />
         </div>
 
         {/* Q10: Habits to Improve (Multi-select) */}
         <div className="bg-white p-6 rounded-xl shadow-md border border-stone-200">
-          <label className="block text-xl font-semibold text-stone-800 mb-2">
+          <label className="block text-lg font-semibold text-summit-forest mb-2">
             What skills or habits will help you navigate this terrain?
           </label>
           <p className="text-sm text-stone-600 mb-4">
@@ -141,8 +142,8 @@ const TerrainStep = ({ formData, updateFormData, onNext }) => {
                 onClick={() => toggleHabit(option)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   (formData.habitsToImprove || []).includes(option)
-                    ? 'bg-green-600 text-white shadow-md'
-                    : 'bg-white text-stone-700 border border-stone-300 hover:border-green-400'
+                    ? 'bg-summit-emerald text-white shadow-md'
+                    : 'bg-summit-mint text-summit-forest border border-summit-sage hover:bg-summit-sage'
                 }`}
               >
                 {option}
@@ -153,13 +154,14 @@ const TerrainStep = ({ formData, updateFormData, onNext }) => {
       </div>
 
       <div className="mt-8 flex justify-end">
-        <button
+        <Button
           onClick={onNext}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold text-lg px-8 py-4 rounded-lg shadow-lg hover:shadow-xl transition-all"
+          size="lg"
+          className="bg-summit-emerald hover:bg-emerald-700 text-white"
+          rightIcon={<ArrowForward className="w-5 h-5" />}
         >
-          Continue to Capacity & Support
-          <ArrowForward className="w-5 h-5" />
-        </button>
+          Continue to Support
+        </Button>
       </div>
     </div>
   )

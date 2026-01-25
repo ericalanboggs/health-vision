@@ -27,7 +27,7 @@ export default function TopNav() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/profile')}
-              className="flex items-center gap-2 text-text-secondary hover:text-summit-forest hover:bg-summit-sage p-2 rounded-lg font-medium transition"
+              className="flex items-center gap-2 text-summit-moss hover:text-summit-forest hover:bg-summit-sage p-2 rounded-lg font-medium transition"
               title="Update Profile"
             >
               <Person className="w-5 h-5 flex-shrink-0" />
@@ -35,7 +35,7 @@ export default function TopNav() {
             </button>
             <button
               onClick={handleSignOut}
-              className="flex items-center gap-2 text-text-secondary hover:text-summit-forest hover:bg-summit-sage p-2 rounded-lg font-medium transition"
+              className="flex items-center gap-2 text-summit-moss hover:text-summit-forest hover:bg-summit-sage p-2 rounded-lg font-medium transition"
               title="Sign Out"
             >
               <Logout className="w-5 h-5 flex-shrink-0" />

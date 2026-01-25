@@ -1,5 +1,11 @@
 import React from 'react'
-import { Flag, ArrowForward, Check } from '@mui/icons-material'
+import { ArrowForward, Check } from '@mui/icons-material'
+import { Button } from '@summit/design-system'
+
+// Material Symbol component for icons not in @mui/icons-material
+const MaterialSymbol = ({ name, className }) => (
+  <span className={`material-symbols-outlined ${className || ''}`}>{name}</span>
+)
 
 const NorthStarStep = ({ formData, updateFormData, onNext }) => {
   const motivationOptions = [
@@ -76,23 +82,23 @@ const NorthStarStep = ({ formData, updateFormData, onNext }) => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-green-100 rounded-xl">
-          <Flag className="w-8 h-8 text-green-600" />
+        <div className="p-3 bg-summit-mint rounded-xl">
+          <MaterialSymbol name="mountain_flag" className="text-[32px] text-summit-emerald" />
         </div>
         <div>
-          <h2 className="text-4xl font-bold text-stone-900">Step 1: Vision Setting</h2>
+          <h2 className="text-h2 text-summit-forest">Step 1: Vision Setting</h2>
           <p className="text-stone-500">Your Future State & Why It Matters</p>
         </div>
       </div>
 
-      <p className="text-lg text-stone-700 mb-8 leading-relaxed">
+      <p className="text-body-lg text-stone-600 mb-8 leading-relaxed">
         Paint a vivid picture of your ideal health state 1-2 years from now, then anchor it to what truly drives you.
       </p>
 
       <div className="space-y-8">
         {/* Q1: Health Summit */}
         <div className="bg-white p-6 rounded-xl shadow-md border border-stone-200">
-          <label className="block text-xl font-semibold text-stone-800 mb-2">
+          <label className="block text-lg font-semibold text-summit-forest mb-2">
             What is your health summit?
           </label>
           <p className="text-sm text-stone-600 mb-4">
@@ -102,12 +108,12 @@ const NorthStarStep = ({ formData, updateFormData, onNext }) => {
             value={formData.visionStatement || ''}
             onChange={(e) => updateFormData('visionStatement', e.target.value)}
             placeholder="In 12 months, I wake up feeling energized and clear-headed. My body moves easily and I have the stamina to..."
-            className="w-full h-40 p-4 border border-stone-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition resize-none"
+            className="w-full h-40 p-4 border border-stone-300 rounded-lg shadow-sm focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition resize-none"
           />
-          
+
           {/* Suggestion Chips */}
           <div className="mt-3">
-            <p className="text-xs text-stone-500 mb-2">💡 Quick starts (click to add):</p>
+            <p className="text-xs text-stone-500 mb-2">Quick starts (click to add):</p>
             <div className="flex flex-wrap gap-2">
               {visionSuggestions.map((suggestion, idx) => {
                 const isActive = isSuggestionActive('visionStatement', `vision_${idx}`)
@@ -116,7 +122,11 @@ const NorthStarStep = ({ formData, updateFormData, onNext }) => {
                     key={idx}
                     type="button"
                     onClick={() => insertSuggestion('visionStatement', suggestion.text, `vision_${idx}`)}
-                    className="px-3 py-1.5 text-sm bg-green-50 text-green-700 rounded-full border border-green-200 hover:bg-green-100 transition-all flex items-center gap-1.5"
+                    className={`px-3 py-1.5 text-sm rounded-full border transition-all flex items-center gap-1.5 ${
+                      isActive
+                        ? 'bg-summit-emerald text-white border-summit-emerald'
+                        : 'bg-summit-mint text-summit-forest border-summit-sage hover:bg-summit-sage'
+                    }`}
                   >
                     {isActive && <Check className="w-3.5 h-3.5" />}
                     {suggestion.label}
@@ -129,7 +139,7 @@ const NorthStarStep = ({ formData, updateFormData, onNext }) => {
 
         {/* Q2: How You Feel */}
         <div className="bg-white p-6 rounded-xl shadow-md border border-stone-200">
-          <label className="block text-xl font-semibold text-stone-800 mb-2">
+          <label className="block text-lg font-semibold text-summit-forest mb-2">
             How do you feel in this future version of you?
           </label>
           <p className="text-sm text-stone-600 mb-4">
@@ -139,12 +149,12 @@ const NorthStarStep = ({ formData, updateFormData, onNext }) => {
             value={formData.feelingState || ''}
             onChange={(e) => updateFormData('feelingState', e.target.value)}
             placeholder="I feel calm and resilient. My energy is steady throughout the day. I'm confident in my body and..."
-            className="w-full h-32 p-4 border border-stone-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition resize-none"
+            className="w-full h-32 p-4 border border-stone-300 rounded-lg shadow-sm focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition resize-none"
           />
-          
+
           {/* Suggestion Chips */}
           <div className="mt-3">
-            <p className="text-xs text-stone-500 mb-2">💡 Quick starts (click to add):</p>
+            <p className="text-xs text-stone-500 mb-2">Quick starts (click to add):</p>
             <div className="flex flex-wrap gap-2">
               {feelingSuggestions.map((suggestion, idx) => {
                 const isActive = isSuggestionActive('feelingState', `feeling_${idx}`)
@@ -153,7 +163,11 @@ const NorthStarStep = ({ formData, updateFormData, onNext }) => {
                     key={idx}
                     type="button"
                     onClick={() => insertSuggestion('feelingState', suggestion.text, `feeling_${idx}`)}
-                    className="px-3 py-1.5 text-sm bg-green-50 text-green-700 rounded-full border border-green-200 hover:bg-green-100 transition-all flex items-center gap-1.5"
+                    className={`px-3 py-1.5 text-sm rounded-full border transition-all flex items-center gap-1.5 ${
+                      isActive
+                        ? 'bg-summit-emerald text-white border-summit-emerald'
+                        : 'bg-summit-mint text-summit-forest border-summit-sage hover:bg-summit-sage'
+                    }`}
                   >
                     {isActive && <Check className="w-3.5 h-3.5" />}
                     {suggestion.label}
@@ -166,7 +180,7 @@ const NorthStarStep = ({ formData, updateFormData, onNext }) => {
 
         {/* Q3: What You're Able to Do (Optional) */}
         <div className="bg-white p-6 rounded-xl shadow-md border border-stone-200">
-          <label className="block text-xl font-semibold text-stone-800 mb-2">
+          <label className="block text-lg font-semibold text-summit-forest mb-2">
             What are you able to do that you can't (or struggle to) do today? <span className="text-sm font-normal text-stone-500">(Optional)</span>
           </label>
           <p className="text-sm text-stone-600 mb-4">
@@ -176,17 +190,17 @@ const NorthStarStep = ({ formData, updateFormData, onNext }) => {
             value={formData.futureAbilities || ''}
             onChange={(e) => updateFormData('futureAbilities', e.target.value)}
             placeholder="I can hike for hours without fatigue. I play with my kids without getting winded. I sleep through the night..."
-            className="w-full h-28 p-4 border border-stone-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition resize-none"
+            className="w-full h-28 p-4 border border-stone-300 rounded-lg shadow-sm focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition resize-none"
           />
         </div>
 
         {/* Motivation Section */}
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border-2 border-green-200">
-          <h3 className="text-2xl font-bold text-stone-900 mb-4">Why This Vision Matters</h3>
-          
+        <div className="bg-gradient-to-br from-summit-mint to-summit-sage/50 p-6 rounded-xl border-2 border-summit-sage">
+          <h3 className="text-xl font-bold text-summit-forest mb-4">Why This Vision Matters</h3>
+
           {/* Q5: Why Does This Matter */}
           <div className="mb-6">
-            <label className="block text-lg font-semibold text-stone-800 mb-2">
+            <label className="block text-lg font-semibold text-summit-forest mb-2">
               Why does this vision matter to you?
             </label>
             <p className="text-sm text-stone-600 mb-4">
@@ -196,12 +210,12 @@ const NorthStarStep = ({ formData, updateFormData, onNext }) => {
               value={formData.whyMatters || ''}
               onChange={(e) => updateFormData('whyMatters', e.target.value)}
               placeholder="This matters because I want to be present for my family, have the energy to pursue my passions, and feel like myself again..."
-              className="w-full h-32 p-4 border border-green-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition resize-none"
+              className="w-full h-32 p-4 border border-summit-sage rounded-lg shadow-sm focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition resize-none bg-white"
             />
-            
+
             {/* Suggestion Chips */}
             <div className="mt-3">
-              <p className="text-xs text-stone-500 mb-2">💡 Quick starts (click to add):</p>
+              <p className="text-xs text-stone-500 mb-2">Quick starts (click to add):</p>
               <div className="flex flex-wrap gap-2">
                 {whyMattersSuggestions.map((suggestion, idx) => {
                   const isActive = isSuggestionActive('whyMatters', `whyMatters_${idx}`)
@@ -210,7 +224,11 @@ const NorthStarStep = ({ formData, updateFormData, onNext }) => {
                       key={idx}
                       type="button"
                       onClick={() => insertSuggestion('whyMatters', suggestion.text, `whyMatters_${idx}`)}
-                      className="px-3 py-1.5 text-sm bg-green-50 text-green-700 rounded-full border border-green-200 hover:bg-green-100 transition-all flex items-center gap-1.5"
+                      className={`px-3 py-1.5 text-sm rounded-full border transition-all flex items-center gap-1.5 ${
+                        isActive
+                          ? 'bg-summit-emerald text-white border-summit-emerald'
+                          : 'bg-white text-summit-forest border-summit-sage hover:bg-summit-mint'
+                      }`}
                     >
                       {isActive && <Check className="w-3.5 h-3.5" />}
                       {suggestion.label}
@@ -224,13 +242,14 @@ const NorthStarStep = ({ formData, updateFormData, onNext }) => {
       </div>
 
       <div className="mt-8 flex justify-end">
-        <button
+        <Button
           onClick={onNext}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold text-lg px-8 py-4 rounded-lg shadow-lg hover:shadow-xl transition-all"
+          size="lg"
+          className="bg-summit-emerald hover:bg-emerald-700 text-white"
+          rightIcon={<ArrowForward className="w-5 h-5" />}
         >
           Continue to Base Camp
-          <ArrowForward className="w-5 h-5" />
-        </button>
+        </Button>
       </div>
     </div>
   )

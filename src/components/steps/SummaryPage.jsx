@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Description, AutoAwesome, Favorite, Map, Schedule, Edit, Notifications, Science, TrendingUp, TipsAndUpdates, AutoFixHigh, Autorenew, Refresh, ContentCopy, Check, CheckCircle, Terrain } from '@mui/icons-material'
+import { Description, AutoAwesome, Favorite, Map, Schedule, Edit, Notifications, Science, TrendingUp, TipsAndUpdates, AutoFixHigh, Autorenew, Refresh, ContentCopy, Check, CheckCircle, Terrain, InfoOutlined } from '@mui/icons-material'
+import { Checkbox } from '@summit/design-system'
 import { generateActionPlan, generateMotivationalMessage } from '../../utils/planGenerator'
 import { enhanceActionPlan } from '../../utils/aiService'
 import { saveHabitsForWeek } from '../../services/habitService'
@@ -657,103 +658,28 @@ END:VEVENT
     <div className="max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="p-3 bg-green-100 rounded-xl">
-          <Description className="w-8 h-8 text-green-600" />
+        <div className="p-3 bg-summit-mint rounded-xl">
+          <Description className="w-8 h-8 text-summit-emerald" />
         </div>
-        <h2 className="text-4xl font-bold text-stone-900">My Personal Health Plan</h2>
+        <h2 className="text-h2 text-summit-forest">My Plan</h2>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-2 mb-6 border-b border-stone-200 no-print">
-        <button
-          onClick={() => setActiveTab('plan')}
-          className={`px-6 py-3 font-semibold transition-all border-b-2 ${
-            activeTab === 'plan'
-              ? 'border-green-600 text-green-600'
-              : 'border-transparent text-stone-500 hover:text-stone-700'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Science className="w-4 h-4" />
-            My Plan
-          </div>
-        </button>
-        <button
-          onClick={() => setActiveTab('summary')}
-          className={`px-6 py-3 font-semibold transition-all border-b-2 ${
-            activeTab === 'summary'
-              ? 'border-green-600 text-green-600'
-              : 'border-transparent text-stone-500 hover:text-stone-700'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Description className="w-4 h-4" />
-            My Vision
-          </div>
-        </button>
-      </div>
 
       {/* Print-only header */}
       <div className="hidden print:block mb-8">
-        <h1 className="text-4xl font-bold text-stone-900 mb-2">My Personal Health Plan</h1>
+        <h1 className="text-4xl font-bold text-stone-900 mb-2">My Plan</h1>
         <p className="text-stone-600">Generated: {new Date().toLocaleDateString()}</p>
       </div>
 
       {/* Action Plan Tab */}
       {activeTab === 'plan' && (
         <>
-          {/* Motivational Message */}
-          <div className="bg-gradient-to-r from-green-50 to-blue-50 border-l-4 border-green-500 p-6 rounded-r-xl mb-8">
-            <div className="flex items-start gap-3">
-              <TipsAndUpdates className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
-              <div>
-                <h3 className="font-semibold text-stone-900 mb-2">Your Starting Point</h3>
-                <p className="text-stone-700 leading-relaxed">{motivationalMessage}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Habit Recommendations */}
-          {actionPlan.habitRecommendations.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-6 mb-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-blue-100 rounded-xl">
-                  <TrendingUp className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-stone-900">Your Plan: Start Small, Then Stack</h3>
-                </div>
-              </div>
-
-              <div className="space-y-3 mb-4">
-                <p className="text-stone-700">
-                  Each week, you'll choose 1–2 small habits to experiment with.
-                </p>
-                <p className="text-stone-700">
-                  Going from 0→100 is a recipe for burnout. Successful plans start with incremental, achievable actions that build momentum over time.
-                </p>
-                <p className="text-stone-700">
-                  As habits stick, you can extend, modify, or level them up—based on what actually worked last week.
-                </p>
-                {actionPlan.habitRecommendations.length > 0 && (
-                  <p className="text-stone-700 pt-2">
-                    <strong>Based on your vision and needs, experiment with habits focused around {
-                      actionPlan.habitRecommendations.length === 1
-                        ? actionPlan.habitRecommendations[0]?.habit.toLowerCase()
-                        : `${actionPlan.habitRecommendations[0]?.habit.toLowerCase()} and ${actionPlan.habitRecommendations[1]?.habit.toLowerCase()}`
-                    }.</strong>
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Build Your Plan - AI Actions with Checkboxes */}
           <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-6 mb-6">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-green-100 rounded-xl">
-                  <Science className="w-6 h-6 text-green-600" />
+                <div className="p-3 bg-summit-mint rounded-xl">
+                  <Science className="w-6 h-6 text-summit-emerald" />
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold text-stone-900">Habit Experiments</h3>
@@ -762,7 +688,7 @@ END:VEVENT
               {isPlanFinalized && (
                 <button
                   onClick={handleEditPlan}
-                  className="flex items-center gap-2 px-4 py-2 text-green-600 hover:text-green-700 font-semibold transition-colors no-print"
+                  className="flex items-center gap-2 px-4 py-2 text-summit-emerald hover:text-emerald-700 font-semibold transition-colors no-print"
                 >
                   <Edit className="w-4 h-4" />
                   Edit
@@ -771,13 +697,23 @@ END:VEVENT
             </div>
             {!isPlanFinalized && (
               <>
-                <p className="text-sm text-stone-600 mb-4">Choose 1–3 habits to start with this week.</p>
+                <p className="text-sm text-stone-600 mb-4 flex items-center gap-1.5">
+                  Choose 1–3 habits to start with this week.
+                  <span className="relative group">
+                    <InfoOutlined className="w-4 h-4 text-summit-emerald cursor-help hover:text-emerald-700 transition-colors" />
+                    <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-3 bg-stone-800 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-lg">
+                      <strong className="block mb-1">Start small, then build.</strong>
+                      Each week, choose 1–2 simple habits to try. Small, doable actions create momentum and prevent burnout. As habits stick, you can adjust or level them up based on what worked last week.
+                      <span className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-stone-800"></span>
+                    </span>
+                  </span>
+                </p>
                 
                 {/* Add Your Own Link/Form - Moved to top */}
                 {!showAddCustom ? (
                   <button
                     onClick={() => setShowAddCustom(true)}
-                    className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center gap-2 transition-colors mb-6"
+                    className="px-4 py-2 bg-summit-emerald hover:bg-emerald-700 text-white font-medium text-sm flex items-center gap-2 transition-colors mb-6 rounded-lg"
                   >
                     <span className="text-lg">+</span>
                     Add My Own
@@ -788,13 +724,13 @@ END:VEVENT
                       value={newCustomAction}
                       onChange={(e) => setNewCustomAction(e.target.value)}
                       placeholder="Describe your custom habit..."
-                      className="w-full p-3 border border-stone-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full p-3 border border-stone-300 rounded-lg resize-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent"
                       rows="3"
                     />
                     <div className="flex gap-2 mt-3">
                       <button
                         onClick={handleAddCustomAction}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+                        className="px-4 py-2 bg-summit-emerald hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors"
                       >
                         Add Habit
                       </button>
@@ -890,11 +826,11 @@ END:VEVENT
             {isPlanFinalized ? (
               <>
                 <div className="space-y-3 mb-6">
-                  <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200 mb-4">
-                    <p className="text-sm text-green-800 font-medium">
+                  <div className="bg-summit-mint p-4 rounded-lg border-2 border-summit-sage mb-4">
+                    <p className="text-sm text-summit-forest font-medium">
                       {encouragementMessage} Let's lock in when you'll try {getSelectedActionsData().length === 1 ? 'this' : 'these'}—take a quick look at your calendar and choose days that realistically work for you.
                     </p>
-                    <p className="text-sm text-green-700 mt-2">
+                    <p className="text-sm text-summit-forest/80 mt-2">
                       People are far more likely to follow through when they decide <em>when</em> they'll act, not just <em>what</em> they'll do.
                     </p>
                   </div>
@@ -903,7 +839,7 @@ END:VEVENT
                     const committedDays = dayCommitments[index] || []
                     
                     return (
-                      <div key={index} className="p-4 rounded-lg border-2 border-stone-200 bg-white">
+                      <div key={index} className="p-4 rounded-lg border border-stone-200 bg-white">
                         <div className="flex-1">
                           <p className="font-semibold text-stone-900 mb-2">{item.action}</p>
                           {item.type === 'ai' && (
@@ -917,7 +853,7 @@ END:VEVENT
                             </>
                           )}
                           {item.type === 'custom' && (
-                            <p className="text-xs text-blue-600 mb-3">Custom action</p>
+                            <p className="text-xs text-summit-emerald mb-3">Custom action</p>
                           )}
                           
                           {/* When will you do this? Label */}
@@ -937,7 +873,7 @@ END:VEVENT
                                   onClick={() => toggleDayCommitment(index, day)}
                                   className={`px-5 py-2 rounded-lg text-sm font-medium transition-all border ${
                                     committedDays.includes(day)
-                                      ? 'bg-green-50 text-green-700 border-green-600'
+                                      ? 'bg-summit-mint text-summit-forest border-summit-emerald'
                                       : 'bg-white text-stone-600 border-stone-300 hover:bg-stone-50'
                                   }`}
                                 >
@@ -951,7 +887,7 @@ END:VEVENT
                               <select
                                 value={timePreferences[index] || 'mid-morning'}
                                 onChange={(e) => handleTimePreferenceChange(index, e.target.value)}
-                                className="w-full lg:min-w-[200px] px-4 py-2 border border-stone-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition"
+                                className="w-full lg:min-w-[200px] px-4 py-2 border border-stone-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition"
                               >
                                 {timeOfDayOptions.map(option => (
                                   <option key={option.value} value={option.value}>
@@ -975,7 +911,7 @@ END:VEVENT
                       <button
                         onClick={handleConfirmHabits}
                         disabled={isConfirmingHabits}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all"
+                        className="flex items-center gap-2 bg-summit-emerald hover:bg-emerald-700 disabled:bg-emerald-400 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all"
                       >
                         {isConfirmingHabits ? (
                           <>
@@ -991,12 +927,12 @@ END:VEVENT
                       </button>
                     </>
                   ) : (
-                    <div className="w-full bg-green-50 border-2 border-green-500 rounded-lg p-4">
+                    <div className="w-full bg-summit-mint border-2 border-summit-emerald rounded-lg p-4">
                       <div className="flex items-center gap-3">
-                        <CheckCircle className="w-6 h-6 text-green-600" />
+                        <CheckCircle className="w-6 h-6 text-summit-emerald" />
                         <div>
-                          <p className="font-semibold text-green-900">Habits Confirmed!</p>
-                          <p className="text-sm text-green-700">Redirecting you to your dashboard...</p>
+                          <p className="font-semibold text-summit-forest">Habits Confirmed!</p>
+                          <p className="text-sm text-summit-forest/80">Redirecting you to your dashboard...</p>
                         </div>
                       </div>
                     </div>
@@ -1009,26 +945,27 @@ END:VEVENT
                 {selectedAiActions.length > 0 && (
                   <div className="space-y-3 mb-4">
                     {selectedAiActions.map((item, index) => (
-                      <div 
-                        key={`selected-${index}`} 
-                        className="p-4 rounded-lg border-2 transition-all cursor-pointer bg-green-50 border-green-300 hover:border-green-400 hover:shadow-sm"
+                      <div
+                        key={`selected-${index}`}
+                        className="p-4 rounded-lg border transition-all cursor-pointer bg-summit-mint border-stone-200 hover:border-summit-emerald hover:shadow-sm"
                         onClick={() => {
                           setSelectedAiActions(prev => prev.filter((_, i) => i !== index))
                         }}
                       >
                         <div className="flex items-start gap-3">
-                          <input
-                            type="checkbox"
-                            checked={true}
-                            onChange={() => {
-                              setSelectedAiActions(prev => prev.filter((_, i) => i !== index))
-                            }}
-                            className="mt-1 w-5 h-5 text-green-600 rounded border-stone-300 focus:ring-green-500 cursor-pointer"
-                            onClick={(e) => e.stopPropagation()}
-                          />
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={true}
+                              onChange={() => {
+                                setSelectedAiActions(prev => prev.filter((_, i) => i !== index))
+                              }}
+                              size="sm"
+                              shape="square"
+                            />
+                          </div>
                           <div className="flex-1">
                             <p className="font-semibold text-stone-900 mb-2">{item.action}</p>
-                            <p className="text-sm text-purple-800 mb-2">
+                            <p className="text-sm text-stone-700 mb-2">
                               <strong>Why this works:</strong> {item.why}
                             </p>
                             <p className="text-sm text-stone-600">
@@ -1048,26 +985,27 @@ END:VEVENT
                       .map((item, originalIndex) => ({ item, originalIndex }))
                       .filter(({ item }) => !selectedAiActions.some(selected => selected.action === item.action))
                       .map(({ item, originalIndex }) => (
-                      <div 
-                        key={originalIndex} 
-                        className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                      <div
+                        key={originalIndex}
+                        className={`p-4 rounded-lg border transition-all cursor-pointer ${
                           selectedActions.includes(originalIndex)
-                            ? 'bg-green-50 border-green-300'
+                            ? 'bg-summit-mint border-stone-200'
                             : 'bg-white border-stone-200 hover:border-stone-300'
                         }`}
                         onClick={() => toggleActionSelection(originalIndex)}
                       >
                         <div className="flex items-start gap-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedActions.includes(originalIndex)}
-                            onChange={() => toggleActionSelection(originalIndex)}
-                            className="mt-1 w-5 h-5 text-green-600 rounded border-stone-300 focus:ring-green-500 cursor-pointer"
-                            onClick={(e) => e.stopPropagation()}
-                          />
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedActions.includes(originalIndex)}
+                              onChange={() => toggleActionSelection(originalIndex)}
+                              size="sm"
+                              shape="square"
+                            />
+                          </div>
                           <div className="flex-1">
                             <p className="font-semibold text-stone-900 mb-2">{item.action}</p>
-                            <p className="text-sm text-purple-800 mb-2">
+                            <p className="text-sm text-stone-700 mb-2">
                               <strong>Why this works:</strong> {item.why}
                             </p>
                             <p className="text-sm text-stone-600">
@@ -1084,16 +1022,16 @@ END:VEVENT
                 {customActions.length > 0 && (
                   <div className="space-y-3 mb-4">
                     {customActions.map((action, index) => (
-                      <div key={`custom-${index}`} className="p-4 rounded-lg border-2 border-blue-200 bg-blue-50">
+                      <div key={`custom-${index}`} className="p-4 rounded-lg border border-stone-200 bg-summit-mint">
                         <div className="flex items-start gap-3">
-                          <input
-                            type="checkbox"
+                          <Checkbox
                             defaultChecked
-                            className="mt-1 w-5 h-5 text-blue-600 rounded border-stone-300 focus:ring-blue-500"
+                            size="sm"
+                            shape="square"
                           />
                           <div className="flex-1">
                             <p className="font-semibold text-stone-900">{action}</p>
-                            <p className="text-xs text-blue-600 mt-1">Custom action</p>
+                            <p className="text-xs text-summit-emerald mt-1">Custom action</p>
                           </div>
                           <button
                             onClick={() => handleRemoveCustomAction(index)}
@@ -1115,7 +1053,7 @@ END:VEVENT
                       disabled={selectedActions.length === 0 && selectedAiActions.length === 0 && customActions.length === 0}
                       className={`w-full py-3 font-bold rounded-lg shadow-md transition-all ${
                         selectedActions.length > 0 || selectedAiActions.length > 0 || customActions.length > 0
-                          ? 'bg-green-600 hover:bg-green-700 text-white'
+                          ? 'bg-summit-emerald hover:bg-emerald-700 text-white'
                           : 'bg-stone-300 text-stone-500 cursor-not-allowed'
                       }`}
                     >
@@ -1136,12 +1074,12 @@ END:VEVENT
               {actionPlan.weeklyActions.length > 0 && (
                 <div className="space-y-6">
                   {actionPlan.weeklyActions.map((item, index) => (
-                    <div key={index} className="border-l-4 border-green-500 pl-4">
+                    <div key={index} className="border-l-4 border-summit-emerald pl-4">
                       <h4 className="font-semibold text-stone-900 mb-3">{item.area}</h4>
                       <ul className="space-y-2">
                         {item.actions.map((action, idx) => (
                           <li key={idx} className="flex items-start gap-2 text-stone-700">
-                            <span className="text-green-600 mt-1">✓</span>
+                            <span className="text-summit-emerald mt-1">✓</span>
                             <span>{action}</span>
                           </li>
                         ))}
@@ -1169,11 +1107,11 @@ END:VEVENT
         {/* Health Summit */}
         <section className="p-6 border-b border-stone-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-green-800 flex items-center gap-2">
+            <h3 className="text-xl font-bold text-summit-forest flex items-center gap-2">
               <Terrain className="w-5 h-5" />
               Health Summit
             </h3>
-            <button onClick={() => onNavigate('vision')} className="no-print flex items-center gap-1 text-sm text-stone-600 hover:text-green-600 transition-colors" title="Edit this section">
+            <button onClick={() => onNavigate('vision')} className="no-print flex items-center gap-1 text-sm text-stone-600 hover:text-summit-emerald transition-colors" title="Edit this section">
               <Edit className="w-4 h-4" />
               Edit
             </button>
@@ -1207,7 +1145,7 @@ END:VEVENT
                 <p className="text-xs font-semibold text-stone-600 mb-2">My Biggest Drivers:</p>
                 <div className="flex flex-wrap gap-2">
                   {formData.motivationDrivers.map((driver) => (
-                    <span key={driver} className="px-3 py-1 bg-green-200 text-green-900 text-xs font-medium rounded-full">{driver}</span>
+                    <span key={driver} className="px-3 py-1 bg-summit-sage text-summit-forest text-xs font-medium rounded-full">{driver}</span>
                   ))}
                 </div>
               </div>
@@ -1218,11 +1156,11 @@ END:VEVENT
         {/* Step 2: Base Camp */}
         <section className="p-6 border-b border-stone-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-green-800 flex items-center gap-2">
+            <h3 className="text-xl font-bold text-summit-forest flex items-center gap-2">
               <Favorite className="w-5 h-5" />
               Step 2: Base Camp (Resources)
             </h3>
-            <button onClick={() => onNavigate('basecamp')} className="no-print flex items-center gap-1 text-sm text-stone-600 hover:text-green-600 transition-colors" title="Edit this section">
+            <button onClick={() => onNavigate('basecamp')} className="no-print flex items-center gap-1 text-sm text-stone-600 hover:text-summit-emerald transition-colors" title="Edit this section">
               <Edit className="w-4 h-4" />
               Edit
             </button>
@@ -1262,20 +1200,20 @@ END:VEVENT
         {/* Step 3: Assess the Route */}
         <section className="p-6 border-b border-stone-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-green-800 flex items-center gap-2">
+            <h3 className="text-xl font-bold text-summit-forest flex items-center gap-2">
               <Map className="w-5 h-5" />
               Step 3: Assess the Route
             </h3>
-            <button onClick={() => onNavigate('current')} className="no-print flex items-center gap-1 text-sm text-stone-600 hover:text-green-600 transition-colors" title="Edit this section">
+            <button onClick={() => onNavigate('current')} className="no-print flex items-center gap-1 text-sm text-stone-600 hover:text-summit-emerald transition-colors" title="Edit this section">
               <Edit className="w-4 h-4" />
               Edit
             </button>
           </div>
           
           <div className="space-y-3">
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-              <h4 className="text-sm font-semibold text-green-900 mb-1">Current Position on the Mountain</h4>
-              <p className="text-3xl font-bold text-green-600">{formData.currentScore || 5} <span className="text-lg text-stone-600">/ 10</span></p>
+            <div className="bg-summit-mint p-4 rounded-lg border border-summit-sage">
+              <h4 className="text-sm font-semibold text-summit-forest mb-1">Current Position on the Mountain</h4>
+              <p className="text-3xl font-bold text-summit-emerald">{formData.currentScore || 5} <span className="text-lg text-stone-600">/ 10</span></p>
             </div>
 
             <div>
@@ -1283,7 +1221,7 @@ END:VEVENT
               {!isArrayEmpty(formData.barriers) ? (
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.barriers.map((barrier) => (
-                    <span key={barrier} className="px-3 py-1 bg-green-100 text-green-900 text-xs font-medium rounded-full">{barrier}</span>
+                    <span key={barrier} className="px-3 py-1 bg-summit-mint text-summit-forest text-xs font-medium rounded-full">{barrier}</span>
                   ))}
                 </div>
               ) : (
@@ -1312,11 +1250,11 @@ END:VEVENT
         {/* Step 4: Capacity & Support */}
         <section className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-green-800 flex items-center gap-2">
+            <h3 className="text-xl font-bold text-summit-forest flex items-center gap-2">
               <Schedule className="w-5 h-5" />
               Step 4: Capacity & Support
             </h3>
-            <button onClick={() => onNavigate('capacity')} className="no-print flex items-center gap-1 text-sm text-stone-600 hover:text-green-600 transition-colors" title="Edit this section">
+            <button onClick={() => onNavigate('capacity')} className="no-print flex items-center gap-1 text-sm text-stone-600 hover:text-summit-emerald transition-colors" title="Edit this section">
               <Edit className="w-4 h-4" />
               Edit
             </button>
@@ -1344,9 +1282,9 @@ END:VEVENT
               </div>
             )}
 
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-              <h4 className="text-sm font-semibold text-green-900 mb-1">Readiness Level</h4>
-              <p className="text-3xl font-bold text-green-600">{formData.readiness || 5} <span className="text-lg text-stone-600">/ 10</span></p>
+            <div className="bg-summit-mint p-4 rounded-lg border border-summit-sage">
+              <h4 className="text-sm font-semibold text-summit-forest mb-1">Readiness Level</h4>
+              <p className="text-3xl font-bold text-summit-emerald">{formData.readiness || 5} <span className="text-lg text-stone-600">/ 10</span></p>
             </div>
 
             <div>
@@ -1354,7 +1292,7 @@ END:VEVENT
               {!isArrayEmpty(formData.supportNeeds) ? (
                 <div className="flex flex-wrap gap-2">
                   {formData.supportNeeds.map((need) => (
-                    <span key={need} className="px-3 py-1 bg-green-100 text-green-900 text-xs font-medium rounded-full">{need}</span>
+                    <span key={need} className="px-3 py-1 bg-summit-mint text-summit-forest text-xs font-medium rounded-full">{need}</span>
                   ))}
                 </div>
               ) : (
@@ -1366,7 +1304,7 @@ END:VEVENT
       </div>
 
           {/* Footer Note */}
-          <div className="mt-8 bg-green-50 border-l-4 border-green-500 p-6 rounded-r-xl">
+          <div className="mt-8 bg-summit-mint border-l-4 border-summit-emerald p-6 rounded-r-xl">
             <h4 className="font-semibold text-stone-900 mb-2">📅 Next Steps</h4>
             <ul className="text-sm text-stone-700 space-y-1">
               <li>• Save or print this plan for easy reference</li>

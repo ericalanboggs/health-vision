@@ -1,14 +1,20 @@
 import React from 'react'
-import { Schedule, ArrowForward, Check } from '@mui/icons-material'
+import { ArrowForward, Check } from '@mui/icons-material'
+import { Button, RadioSelect } from '@summit/design-system'
+
+// Material Symbol component for icons not in @mui/icons-material
+const MaterialSymbol = ({ name, className }) => (
+  <span className={`material-symbols-outlined ${className || ''}`}>{name}</span>
+)
 
 const RouteStep = ({ formData, updateFormData, onNext }) => {
   const timeOptions = [
-    '5 minutes/day',
-    '10 minutes/day',
-    '20 minutes/day',
-    '30 minutes/day',
-    '45 minutes/day',
-    '60 minutes/day'
+    { value: '5 minutes/day', label: '5 minutes/day' },
+    { value: '10 minutes/day', label: '10 minutes/day' },
+    { value: '20 minutes/day', label: '20 minutes/day' },
+    { value: '30 minutes/day', label: '30 minutes/day' },
+    { value: '45 minutes/day', label: '45 minutes/day' },
+    { value: '60 minutes/day', label: '60 minutes/day' },
   ]
 
   const supportOptions = [
@@ -73,63 +79,51 @@ const RouteStep = ({ formData, updateFormData, onNext }) => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-green-100 rounded-xl">
-          <Schedule className="w-8 h-8 text-green-600" />
+        <div className="p-3 bg-summit-mint rounded-xl">
+          <MaterialSymbol name="concierge" className="text-[32px] text-summit-emerald" />
         </div>
         <div>
-          <h2 className="text-4xl font-bold text-stone-900">Step 4: Capacity & Support</h2>
+          <h2 className="text-h2 text-summit-forest">Step 4: Support</h2>
           <p className="text-stone-500">Time, Readiness & What You Need</p>
         </div>
       </div>
 
-      <p className="text-lg text-stone-700 mb-8 leading-relaxed">
+      <p className="text-body-lg text-stone-600 mb-8 leading-relaxed">
         Ground your plan in realistic constraints and identify the support that will make this sustainable.
       </p>
 
       <div className="space-y-8">
         {/* Q12: Time Capacity */}
         <div className="bg-white p-6 rounded-xl shadow-md border border-stone-200">
-          <label className="block text-xl font-semibold text-stone-800 mb-2">
+          <label className="block text-lg font-semibold text-summit-forest mb-2">
             How much time do you realistically have each day to work on your health?
           </label>
           <p className="text-sm text-stone-600 mb-4">
             Be honest about your current schedule and commitments.
           </p>
-          <div className="space-y-2">
-            {timeOptions.map((option) => (
-              <label
-                key={option}
-                className="flex items-center gap-3 p-3 border border-stone-300 rounded-lg hover:bg-stone-50 cursor-pointer transition"
-              >
-                <input
-                  type="radio"
-                  name="timeCapacity"
-                  value={option}
-                  checked={formData.timeCapacity === option}
-                  onChange={(e) => updateFormData('timeCapacity', e.target.value)}
-                  className="w-4 h-4 text-green-600 focus:ring-2 focus:ring-green-500"
-                />
-                <span className="text-stone-800 font-medium">{option}</span>
-              </label>
-            ))}
-          </div>
+          <RadioSelect
+            name="timeCapacity"
+            options={timeOptions}
+            value={formData.timeCapacity}
+            onChange={(value) => updateFormData('timeCapacity', value)}
+          />
         </div>
 
         {/* Q: Preferred Times (Optional) */}
         <div className="bg-white p-6 rounded-xl shadow-md border border-stone-200">
-          <label className="block text-xl font-semibold text-stone-800 mb-2">
+          <label className="block text-lg font-semibold text-summit-forest mb-2">
             What days or times usually work best for you? <span className="text-sm font-normal text-stone-500">(Optional)</span>
           </label>
           <textarea
             value={formData.preferredTimes || ''}
             onChange={(e) => updateFormData('preferredTimes', e.target.value)}
             placeholder="Mornings before work, Tuesday/Thursday evenings, weekend mornings..."
-            className="w-full h-24 p-4 border border-stone-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition resize-none"
+            className="w-full h-24 p-4 border border-stone-300 rounded-lg shadow-sm focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition resize-none"
           />
-          
+
           {/* Suggestion Chips */}
           <div className="mt-3">
-            <p className="text-xs text-stone-500 mb-2">💡 Quick starts (click to add):</p>
+            <p className="text-xs text-stone-500 mb-2">Quick starts (click to add):</p>
             <div className="flex flex-wrap gap-2">
               {preferredTimesSuggestions.map((suggestion, idx) => {
                 const isActive = isSuggestionActive('preferredTimes', `preferredTimes_${idx}`)
@@ -138,7 +132,11 @@ const RouteStep = ({ formData, updateFormData, onNext }) => {
                     key={idx}
                     type="button"
                     onClick={() => insertSuggestion('preferredTimes', suggestion.text, `preferredTimes_${idx}`)}
-                    className="px-3 py-1.5 text-sm bg-green-50 text-green-700 rounded-full border border-green-200 hover:bg-green-100 transition-all flex items-center gap-1.5"
+                    className={`px-3 py-1.5 text-sm rounded-full border transition-all flex items-center gap-1.5 ${
+                      isActive
+                        ? 'bg-summit-emerald text-white border-summit-emerald'
+                        : 'bg-summit-mint text-summit-forest border-summit-sage hover:bg-summit-sage'
+                    }`}
                   >
                     {isActive && <Check className="w-3.5 h-3.5" />}
                     {suggestion.label}
@@ -151,7 +149,7 @@ const RouteStep = ({ formData, updateFormData, onNext }) => {
 
         {/* Q: Sustainability (Optional) */}
         <div className="bg-white p-6 rounded-xl shadow-md border border-stone-200">
-          <label className="block text-xl font-semibold text-stone-800 mb-2">
+          <label className="block text-lg font-semibold text-summit-forest mb-2">
             What feels sustainable for the next 2–4 weeks? <span className="text-sm font-normal text-stone-500">(Optional)</span>
           </label>
           <p className="text-sm text-stone-600 mb-4">
@@ -161,12 +159,12 @@ const RouteStep = ({ formData, updateFormData, onNext }) => {
             value={formData.sustainableNotes || ''}
             onChange={(e) => updateFormData('sustainableNotes', e.target.value)}
             placeholder="Starting small with 10-minute walks. Meal prepping on Sundays. Going to bed 30 minutes earlier..."
-            className="w-full h-28 p-4 border border-stone-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition resize-none"
+            className="w-full h-28 p-4 border border-stone-300 rounded-lg shadow-sm focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition resize-none"
           />
-          
+
           {/* Suggestion Chips */}
           <div className="mt-3">
-            <p className="text-xs text-stone-500 mb-2">💡 Quick starts (click to add):</p>
+            <p className="text-xs text-stone-500 mb-2">Quick starts (click to add):</p>
             <div className="flex flex-wrap gap-2">
               {sustainableSuggestions.map((suggestion, idx) => {
                 const isActive = isSuggestionActive('sustainableNotes', `sustainableNotes_${idx}`)
@@ -175,7 +173,11 @@ const RouteStep = ({ formData, updateFormData, onNext }) => {
                     key={idx}
                     type="button"
                     onClick={() => insertSuggestion('sustainableNotes', suggestion.text, `sustainableNotes_${idx}`)}
-                    className="px-3 py-1.5 text-sm bg-green-50 text-green-700 rounded-full border border-green-200 hover:bg-green-100 transition-all flex items-center gap-1.5"
+                    className={`px-3 py-1.5 text-sm rounded-full border transition-all flex items-center gap-1.5 ${
+                      isActive
+                        ? 'bg-summit-emerald text-white border-summit-emerald'
+                        : 'bg-summit-mint text-summit-forest border-summit-sage hover:bg-summit-sage'
+                    }`}
                   >
                     {isActive && <Check className="w-3.5 h-3.5" />}
                     {suggestion.label}
@@ -187,8 +189,8 @@ const RouteStep = ({ formData, updateFormData, onNext }) => {
         </div>
 
         {/* Q13: Readiness Slider */}
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border-2 border-green-200">
-          <label className="block text-xl font-semibold text-stone-800 mb-2">
+        <div className="bg-gradient-to-br from-summit-mint to-summit-sage/50 p-6 rounded-xl border-2 border-summit-sage">
+          <label className="block text-lg font-semibold text-summit-forest mb-2">
             How ready are you to begin?
           </label>
           <p className="text-sm text-stone-600 mb-4">
@@ -202,19 +204,19 @@ const RouteStep = ({ formData, updateFormData, onNext }) => {
               max="10"
               value={formData.readiness || 5}
               onChange={(e) => updateFormData('readiness', parseInt(e.target.value))}
-              className="flex-1 h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+              className="flex-1 h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-summit-emerald"
             />
             <span className="text-sm text-stone-500 font-medium">10</span>
           </div>
           <div className="mt-3 text-center">
-            <span className="text-3xl font-bold text-green-600">{formData.readiness || 5}</span>
+            <span className="text-3xl font-bold text-summit-emerald">{formData.readiness || 5}</span>
             <span className="text-stone-600 ml-2">/ 10</span>
           </div>
         </div>
 
         {/* Q14: Support Needs (Multi-select) */}
         <div className="bg-white p-6 rounded-xl shadow-md border border-stone-200">
-          <label className="block text-xl font-semibold text-stone-800 mb-2">
+          <label className="block text-lg font-semibold text-summit-forest mb-2">
             What support would make this easier?
           </label>
           <p className="text-sm text-stone-600 mb-4">
@@ -227,8 +229,8 @@ const RouteStep = ({ formData, updateFormData, onNext }) => {
                 onClick={() => toggleSupport(option)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   (formData.supportNeeds || []).includes(option)
-                    ? 'bg-green-600 text-white shadow-md'
-                    : 'bg-white text-stone-700 border border-stone-300 hover:border-green-400'
+                    ? 'bg-summit-emerald text-white shadow-md'
+                    : 'bg-summit-mint text-summit-forest border border-summit-sage hover:bg-summit-sage'
                 }`}
               >
                 {option}
@@ -239,13 +241,14 @@ const RouteStep = ({ formData, updateFormData, onNext }) => {
       </div>
 
       <div className="mt-8 flex justify-end">
-        <button
+        <Button
           onClick={onNext}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold text-lg px-8 py-4 rounded-lg shadow-lg hover:shadow-xl transition-all"
+          size="lg"
+          className="bg-summit-emerald hover:bg-emerald-700 text-white"
+          rightIcon={<ArrowForward className="w-5 h-5" />}
         >
-          View My Personal Plan
-          <ArrowForward className="w-5 h-5" />
-        </button>
+          View My Plan
+        </Button>
       </div>
     </div>
   )

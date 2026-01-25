@@ -44,3 +44,7 @@ export type { ToggleProps } from './Toggle'
 // Banner
 export { Banner, bannerVariants } from './Banner'
 export type { BannerProps } from './Banner'
+
+// RadioSelect
+export { RadioSelect } from './RadioSelect'
+export type { RadioSelectProps, RadioOption } from './RadioSelect'

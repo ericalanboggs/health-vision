@@ -6,6 +6,11 @@ body {
   /* Font family is now set by design system */
 }
 
+/* Material Symbols base styles */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
 @keyframes wiggle {
   0%, 100% {
     transform: translate(0, 0) scale(1);

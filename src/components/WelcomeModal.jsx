@@ -1,4 +1,5 @@
 import { Close } from '@mui/icons-material'
+import { Button } from '@summit/design-system'
 
 export default function WelcomeModal({ isOpen, onClose }) {
   if (!isOpen) return null
@@ -6,11 +7,11 @@ export default function WelcomeModal({ isOpen, onClose }) {
   return (
     <>
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
@@ -24,10 +25,10 @@ export default function WelcomeModal({ isOpen, onClose }) {
               <Close className="w-5 h-5" />
             </button>
             <div className="pr-8">
-              <p className="text-sm font-semibold text-green-600 uppercase tracking-wide mb-1">
+              <p className="text-sm font-semibold text-summit-emerald uppercase tracking-wide mb-1">
                 Welcome
               </p>
-              <h2 className="text-2xl font-bold text-stone-900">
+              <h2 className="text-2xl font-bold text-summit-forest">
                 You're set to go 🎉
               </h2>
             </div>
@@ -38,18 +39,18 @@ export default function WelcomeModal({ isOpen, onClose }) {
             <p className="text-stone-700 leading-relaxed">
               You're all set.
             </p>
-            
+
             <p className="text-stone-700 leading-relaxed">
               Take a moment to update anything you want right now—or feel free to jump out and get on with your day. Nothing here needs to be perfect.
             </p>
-            
+
             <p className="text-stone-700 leading-relaxed">
               If you opted in to SMS reminders, we'll text you to help you stay consistent with your habits. You'll also receive a weekly reflection reminder to check in and adjust as needed.
             </p>
 
             {/* Need Help Section */}
-            <div className="bg-stone-50 rounded-lg p-4 mt-6">
-              <h3 className="font-semibold text-stone-900 mb-3">Need help?</h3>
+            <div className="bg-summit-mint rounded-lg p-4 mt-6 border border-summit-sage">
+              <h3 className="font-semibold text-summit-forest mb-3">Need help?</h3>
               <ul className="space-y-2 text-sm text-stone-700">
                 <li className="flex items-start">
                   <span className="mr-2">•</span>
@@ -62,19 +63,20 @@ export default function WelcomeModal({ isOpen, onClose }) {
               </ul>
             </div>
 
-            <p className="text-stone-900 font-medium text-center pt-4">
+            <p className="text-summit-forest font-medium text-center pt-4">
               Let's do it. Small steps. Consistent progress.
             </p>
           </div>
 
           {/* Footer */}
           <div className="p-6 pt-0">
-            <button
+            <Button
               onClick={onClose}
-              className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition shadow-sm hover:shadow"
+              size="lg"
+              className="w-full bg-summit-emerald hover:bg-emerald-700 text-white"
             >
               Alright!
-            </button>
+            </Button>
           </div>
         </div>
       </div>
