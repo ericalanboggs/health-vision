@@ -3,6 +3,9 @@
 -- 1. Generate digests at 7:00 AM CST (1:00 PM UTC)
 -- 2. Send digests at 8:00 AM CST (2:00 PM UTC)
 
+-- PREREQUISITE: Store the service role key in Supabase Vault first:
+-- SELECT vault.create_secret('YOUR_SERVICE_ROLE_KEY', 'service_role_key', 'Service role key for edge function authentication');
+
 -- Step 1: Generate all weekly digests
 SELECT cron.schedule(
   'generate-weekly-digests',
@@ -13,7 +16,7 @@ SELECT cron.schedule(
       url:='https://oxszevplpzmzmeibjtdz.supabase.co/functions/v1/generate-all-weekly-digests',
       headers:=jsonb_build_object(
         'Content-Type', 'application/json',
-        'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key')
+        'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key')
       ),
       body:='{}'::jsonb
     ) as request_id;
@@ -30,7 +33,7 @@ SELECT cron.schedule(
       url:='https://oxszevplpzmzmeibjtdz.supabase.co/functions/v1/send-all-weekly-digests',
       headers:=jsonb_build_object(
         'Content-Type', 'application/json',
-        'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key')
+        'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key')
       ),
       body:='{}'::jsonb
     ) as request_id;
