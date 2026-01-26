@@ -100,12 +100,45 @@ export const getHabitsForWeek = async (weekNumber, userId = null) => {
 
 /**
  * Get habits for current week
+ * Auto-rolls over habits from previous week if none exist for current week
  * @param {string} [userId] - Optional user ID (if not provided, will fetch from auth)
  * @returns {Promise<{success: boolean, data?: any, error?: any}>}
  */
 export const getCurrentWeekHabits = async (userId = null) => {
   const weekNumber = getCurrentWeekNumber()
-  return getHabitsForWeek(weekNumber, userId)
+
+  // First, try to get habits for the current week
+  const result = await getHabitsForWeek(weekNumber, userId)
+
+  // If we have habits for this week, return them
+  if (result.success && result.data && result.data.length > 0) {
+    return result
+  }
+
+  // No habits for current week - try to auto-rollover from previous week
+  if (weekNumber > 1) {
+    const prevWeekResult = await getHabitsForWeek(weekNumber - 1, userId)
+
+    if (prevWeekResult.success && prevWeekResult.data && prevWeekResult.data.length > 0) {
+      // Copy habits from previous week to current week
+      const habitsToCopy = prevWeekResult.data.map(habit => ({
+        habit_name: habit.habit_name,
+        day_of_week: habit.day_of_week,
+        reminder_time: habit.reminder_time,
+        timezone: habit.timezone,
+      }))
+
+      const copyResult = await saveHabitsForWeek(weekNumber, habitsToCopy)
+
+      if (copyResult.success) {
+        console.log(`Auto-rolled over ${habitsToCopy.length} habits from week ${weekNumber - 1} to week ${weekNumber}`)
+        return copyResult
+      }
+    }
+  }
+
+  // No habits to rollover, return empty result
+  return result
 }
 
 /**
