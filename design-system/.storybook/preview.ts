@@ -1,8 +1,20 @@
 import type { Preview } from '@storybook/react'
+import React from 'react'
 import '../styles.css'
 import './typography-docs.css'
 
 const preview: Preview = {
+  decorators: [
+    (Story) => (
+      React.createElement('div', {
+        style: {
+          minHeight: '100vh',
+          background: 'linear-gradient(to bottom, #FFFFFF, #F0FDFA)',
+          padding: '2rem',
+        }
+      }, React.createElement(Story))
+    ),
+  ],
   parameters: {
     controls: {
       matchers: {
@@ -11,23 +23,9 @@ const preview: Preview = {
       },
     },
     backgrounds: {
-      default: 'Summit Mint',
-      values: [
-        {
-          name: 'Summit Mint',
-          value: '#F0FDFA',
-        },
-        {
-          name: 'White',
-          value: '#FFFFFF',
-        },
-        {
-          name: 'Summit Forest',
-          value: '#064E3B',
-        },
-      ],
+      disable: true,
     },
-    layout: 'centered',
+    layout: 'fullscreen',
     a11y: {
       config: {
         rules: [
