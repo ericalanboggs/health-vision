@@ -820,7 +820,7 @@ END:VEVENT
                           <button
                             onClick={() => handleSaveHabit(index)}
                             disabled={saving}
-                            className="flex items-center gap-2 bg-summit-lime hover:bg-summit-lime-dark disabled:bg-summit-sage disabled:cursor-not-allowed text-summit-forest font-medium px-4 py-2 rounded-lg transition-all text-sm"
+                            className="flex items-center gap-2 bg-summit-emerald hover:bg-emerald-700 disabled:bg-summit-sage disabled:cursor-not-allowed text-white font-medium px-4 py-2 rounded-lg transition-all text-sm"
                           >
                             {saving ? (
                               <>
