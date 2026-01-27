@@ -18,7 +18,7 @@ import { getAllUserHabits, deleteAllUserHabits, saveHabitsForWeek } from '../ser
 import { getCurrentWeekNumber } from '../utils/weekCalculator'
 import { formatDaysDisplay, convertShortToFullDays } from '../utils/formatDays'
 import { getCurrentUser, getProfile } from '../services/authService'
-import { getAllTrackingConfigs, disableTracking, saveTrackingConfig, getAiSuggestion } from '../services/trackingService'
+import { getAllTrackingConfigs, disableTracking, saveTrackingConfig, getAiSuggestion, renameHabitTracking } from '../services/trackingService'
 import { METRIC_UNITS } from '../constants/metricUnits'
 import WeeklyTracker from '../components/WeeklyTracker'
 import { Toggle } from '@summit/design-system'
@@ -253,10 +253,7 @@ export default function Habits() {
     setSaving(true)
 
     try {
-      // Delete all existing habits and re-save (habits persist across weeks)
-      await deleteAllUserHabits()
-
-      // Get unique habit names
+      // Get unique habit names (before any changes)
       const habitGroups = {}
       habits.forEach(habit => {
         if (!habitGroups[habit.habit_name]) {
@@ -265,6 +262,20 @@ export default function Habits() {
       })
 
       const uniqueHabitNames = Object.keys(habitGroups)
+
+      // Check for name changes and update tracking data
+      for (let index = 0; index < uniqueHabitNames.length; index++) {
+        const originalHabitName = uniqueHabitNames[index]
+        const newHabitName = editedHabitNames[index]
+
+        // If the name was edited and is different, rename tracking data
+        if (newHabitName && newHabitName !== originalHabitName) {
+          await renameHabitTracking(originalHabitName, newHabitName)
+        }
+      }
+
+      // Delete all existing habits and re-save (habits persist across weeks)
+      await deleteAllUserHabits()
 
       // Create new habits array based on selections
       const newHabits = []
@@ -288,9 +299,10 @@ export default function Habits() {
 
       // Save new habits
       const { success } = await saveHabitsForWeek(weekNumber, newHabits)
-      
+
       if (success) {
         await loadHabits()
+        await loadTrackingConfigs() // Reload tracking configs with new names
         setEditingHabitIndex(null)
       } else {
         alert('Failed to save habits. Please try again.')

@@ -396,6 +396,66 @@ export const deleteEntry = async (habitName, date) => {
 }
 
 // ============================================================================
+// Habit Name Updates (for when user renames a habit)
+// ============================================================================
+
+/**
+ * Rename a habit across all tracking data (config and entries)
+ * @param {string} oldName - Current habit name
+ * @param {string} newName - New habit name
+ * @returns {Promise<{success: boolean, error?: any}>}
+ */
+export const renameHabitTracking = async (oldName, newName) => {
+  try {
+    if (!supabase) {
+      return { success: false, error: 'Supabase is not configured' }
+    }
+
+    if (oldName === newName) {
+      return { success: true } // No change needed
+    }
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    // Update tracking config
+    const { error: configError } = await supabase
+      .from('habit_tracking_config')
+      .update({ habit_name: newName, updated_at: new Date().toISOString() })
+      .eq('user_id', user.id)
+      .eq('habit_name', oldName)
+
+    if (configError) {
+      console.error('Error updating tracking config:', configError)
+      // Continue anyway - entries are more important
+    }
+
+    // Update tracking entries
+    const { error: entriesError } = await supabase
+      .from('habit_tracking_entries')
+      .update({ habit_name: newName, updated_at: new Date().toISOString() })
+      .eq('user_id', user.id)
+      .eq('habit_name', oldName)
+
+    if (entriesError) {
+      console.error('Error updating tracking entries:', entriesError)
+      return { success: false, error: entriesError }
+    }
+
+    trackEvent('habit_tracking_renamed', { oldName, newName })
+    console.log(`Renamed tracking data from "${oldName}" to "${newName}"`)
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error in renameHabitTracking:', error)
+    return { success: false, error }
+  }
+}
+
+// ============================================================================
 // AI Suggestions
 // ============================================================================
 
