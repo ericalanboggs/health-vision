@@ -6,6 +6,7 @@ import { getCurrentWeekHabits, saveHabitsForWeek } from '../services/habitServic
 import { loadJourney } from '../services/journeyService'
 import { enhanceActionPlan } from '../utils/aiService'
 import { generateActionPlan } from '../utils/planGenerator'
+import { Button, Checkbox, Input, Card } from '@summit/design-system'
 
 export default function AddHabit() {
   const navigate = useNavigate()
@@ -259,14 +260,15 @@ export default function AddHabit() {
                 <AutoAwesome className="w-5 h-5 text-summit-emerald" />
                 <h4 className="font-semibold text-summit-forest">AI-Personalized Suggestions</h4>
               </div>
-              <button
+              <Button
                 onClick={handleRefresh}
                 disabled={generating}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-summit-forest bg-white hover:bg-summit-mint border border-summit-emerald rounded-lg transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                variant="outline"
+                size="sm"
+                leftIcon={<Refresh className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />}
               >
-                <Refresh className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
                 Refresh ideas
-              </button>
+              </Button>
             </div>
             <p className="text-body-sm text-summit-forest">
               {visionData
@@ -296,13 +298,15 @@ export default function AddHabit() {
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedHabits.includes(index)}
-                      onChange={() => {}}
-                      disabled={maxHabitsReached && !selectedHabits.includes(index)}
-                      className="mt-1 w-5 h-5 text-summit-emerald rounded border-gray-300 focus:ring-summit-emerald cursor-pointer disabled:cursor-not-allowed"
-                    />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedHabits.includes(index)}
+                        onChange={() => !maxHabitsReached || selectedHabits.includes(index) ? toggleHabitSelection(index) : null}
+                        disabled={maxHabitsReached && !selectedHabits.includes(index)}
+                        shape="square"
+                        className="mt-1"
+                      />
+                    </div>
                     <div className="flex-1">
                       <p className="font-semibold text-summit-forest mb-2">{suggestion.action}</p>
                       <p className="text-body-sm text-summit-forest mb-2">
@@ -320,62 +324,64 @@ export default function AddHabit() {
 
           {/* Custom Habit Input */}
           {!showCustomInput ? (
-            <button
+            <Button
               onClick={() => setShowCustomInput(true)}
               disabled={maxHabitsReached}
-              className="text-summit-emerald hover:text-summit-forest font-medium text-sm flex items-center gap-2 transition-colors mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="ghost"
+              size="sm"
+              leftIcon={<Add className="w-4 h-4" />}
+              className="mb-6"
             >
-              <span className="text-lg">+</span>
               Create my own
-            </button>
+            </Button>
           ) : (
             <div className="mb-6 p-4 bg-summit-mint rounded-lg border border-summit-sage">
               <label className="block text-sm font-semibold text-summit-forest mb-2">
                 What habit would you like to add?
               </label>
-              <input
+              <Input
                 type="text"
                 value={customHabit}
                 onChange={(e) => setCustomHabit(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleAddCustomHabit()}
                 placeholder="e.g., Meditate for 5 minutes each morning"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald mb-3"
+                className="mb-3"
                 autoFocus
               />
               <div className="flex gap-2">
-                <button
+                <Button
                   onClick={handleAddCustomHabit}
                   disabled={!customHabit.trim()}
-                  className="px-4 py-2 bg-summit-lime hover:bg-summit-lime-dark disabled:bg-summit-sage text-summit-forest font-medium rounded-lg transition text-sm"
+                  variant="primary"
+                  size="sm"
                 >
                   Add Habit
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => {
                     setShowCustomInput(false)
                     setCustomHabit('')
                   }}
-                  className="px-4 py-2 text-text-secondary hover:bg-summit-mint font-medium rounded-lg transition text-sm"
+                  variant="ghost"
+                  size="sm"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           )}
 
           {/* Next Button */}
           <div className="mt-6">
-            <button
+            <Button
               onClick={handleNext}
               disabled={selectedHabits.length === 0}
-              className={`w-full py-3 font-bold rounded-lg shadow-md transition-all ${
-                selectedHabits.length > 0
-                  ? 'bg-summit-lime hover:bg-summit-lime-dark text-summit-forest'
-                  : 'bg-summit-sage text-text-muted cursor-not-allowed'
-              }`}
+              variant="primary"
+              size="lg"
+              className="w-full"
             >
               Next: Schedule Your Habits
-            </button>
+            </Button>
             {selectedHabits.length === 0 && (
               <p className="text-xs text-text-muted text-center mt-2">
                 Select at least one habit to continue
