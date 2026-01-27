@@ -8,7 +8,7 @@ const buttonVariants = cva(
     'inline-flex items-center justify-center gap-2',
     'font-semibold',
     'transition-all duration-normal ease-out',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-summit-lime focus-visible:ring-offset-2',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-summit-emerald focus-visible:ring-offset-2',
     'disabled:pointer-events-none disabled:opacity-50',
     'active:scale-[0.98] active:duration-fast',
   ],
@@ -16,9 +16,15 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary: [
+          'bg-summit-emerald text-white',
+          'hover:bg-emerald-700 hover:scale-[1.02]',
+          'shadow-sm hover:shadow-md',
+        ],
+        'branded-pop': [
           'bg-summit-lime text-summit-forest',
           'hover:bg-[#84CC16] hover:scale-[1.02]',
           'shadow-sm hover:shadow-md',
+          'focus-visible:ring-summit-lime',
         ],
         secondary: [
           'bg-transparent text-summit-moss',
@@ -46,9 +52,11 @@ const buttonVariants = cva(
         md: 'h-10 px-4 text-sm rounded-lg',
         lg: 'h-12 px-6 text-base rounded-lg',
         xl: 'h-14 px-8 text-lg rounded-xl',
+        '2xl': 'h-16 px-10 text-xl rounded-xl',
         icon: 'h-10 w-10 rounded-lg',
         'icon-sm': 'h-8 w-8 rounded-md',
         'icon-lg': 'h-12 w-12 rounded-lg',
+        'icon-xl': 'h-14 w-14 rounded-xl',
       },
       shape: {
         default: '',

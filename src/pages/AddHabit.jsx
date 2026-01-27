@@ -278,8 +278,8 @@ export default function AddHabit() {
               <Button
                 onClick={handleAddCustomHabit}
                 disabled={!customHabit.trim()}
+                variant="primary"
                 size="sm"
-                className="bg-summit-emerald hover:bg-emerald-700 text-white"
               >
                 Add Habit
               </Button>

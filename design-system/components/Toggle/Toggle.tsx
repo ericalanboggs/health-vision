@@ -3,7 +3,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '../utils'
 
 const toggleVariants = cva(
-  'relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:ring-offset-2 cursor-pointer',
+  'relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:ring-offset-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
   {
     variants: {
       size: {
@@ -12,14 +12,9 @@ const toggleVariants = cva(
         md: 'h-6 w-11',
         lg: 'h-8 w-14',
       },
-      disabled: {
-        true: 'opacity-50 cursor-not-allowed',
-        false: '',
-      },
     },
     defaultVariants: {
       size: 'md',
-      disabled: false,
     },
   }
 )
@@ -112,7 +107,7 @@ const Toggle = React.forwardRef<HTMLButtonElement, ToggleProps>(
         onClick={handleClick}
         disabled={disabled}
         className={cn(
-          toggleVariants({ size, disabled: disabled as boolean }),
+          toggleVariants({ size }),
           checked ? onColor : offColor,
           className
         )}

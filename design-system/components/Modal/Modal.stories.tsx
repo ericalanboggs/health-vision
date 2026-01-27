@@ -156,7 +156,7 @@ const ConfirmationDemo = () => {
 
   return (
     <>
-      <Button variant="outline" onClick={() => setIsOpen(true)}>
+      <Button variant="secondary" onClick={() => setIsOpen(true)}>
         Delete Item
       </Button>
 

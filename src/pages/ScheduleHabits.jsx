@@ -141,7 +141,7 @@ export default function ScheduleHabits() {
           <p className="text-text-secondary mb-4">No habits selected</p>
           <Button
             onClick={() => navigate('/add-habit')}
-            className="bg-summit-emerald hover:bg-emerald-700 text-white"
+            variant="primary"
           >
             Select Habits
           </Button>
@@ -258,8 +258,8 @@ export default function ScheduleHabits() {
               onClick={handleSave}
               disabled={saving}
               loading={saving}
+              variant="primary"
               leftIcon={!saving && <CheckCircle className="w-5 h-5" />}
-              className="bg-summit-emerald hover:bg-emerald-700 text-white"
             >
               {saving ? 'Saving...' : 'Save Habits'}
             </Button>
