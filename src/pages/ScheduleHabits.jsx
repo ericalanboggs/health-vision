@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ArrowBack, CheckCircle, Autorenew } from '@mui/icons-material'
-import { getCurrentWeekNumber } from '../utils/weekCalculator'
-import { saveHabitsForWeek } from '../services/habitService'
+import { ArrowBack, CheckCircle, Autorenew, Science } from '@mui/icons-material'
+import { saveHabits } from '../services/habitService'
 import { getCurrentUser, getProfile } from '../services/authService'
+import { Button, Card, CardHeader, CardTitle } from '@summit/design-system'
 
 export default function ScheduleHabits() {
   const navigate = useNavigate()
   const location = useLocation()
   const habits = location.state?.habits || []
-  
+
   const [saving, setSaving] = useState(false)
   const [userTimezone, setUserTimezone] = useState('America/Chicago')
   const [dayCommitments, setDayCommitments] = useState(
@@ -72,7 +72,7 @@ export default function ScheduleHabits() {
       const updated = current.includes(day)
         ? current.filter(d => d !== day)
         : [...current, day]
-      
+
       return { ...prev, [habitIndex]: updated }
     })
   }
@@ -97,10 +97,8 @@ export default function ScheduleHabits() {
     }
 
     setSaving(true)
-    
+
     try {
-      const weekNumber = getCurrentWeekNumber()
-      
       // Create habits array for database
       const newHabits = []
       habits.forEach((habit, index) => {
@@ -121,8 +119,8 @@ export default function ScheduleHabits() {
       })
 
       // Save new habits (this will add to existing habits)
-      const { success } = await saveHabitsForWeek(weekNumber, newHabits)
-      
+      const { success } = await saveHabits(newHabits)
+
       if (success) {
         navigate('/habits')
       } else {
@@ -140,13 +138,13 @@ export default function ScheduleHabits() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint flex items-center justify-center">
         <div className="text-center">
-          <p className="text-stone-600 mb-4">No habits selected</p>
-          <button
+          <p className="text-text-secondary mb-4">No habits selected</p>
+          <Button
             onClick={() => navigate('/add-habit')}
-            className="px-6 py-3 bg-summit-emerald hover:bg-emerald-700 text-white font-semibold rounded-lg transition"
+            className="bg-summit-emerald hover:bg-emerald-700 text-white"
           >
             Select Habits
-          </button>
+          </Button>
         </div>
       </div>
     )
@@ -159,7 +157,7 @@ export default function ScheduleHabits() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <button
             onClick={() => navigate('/add-habit')}
-            className="flex items-center gap-2 text-stone-600 hover:text-summit-forest font-medium transition-colors"
+            className="flex items-center gap-2 text-text-secondary hover:text-summit-forest font-medium transition-colors"
           >
             <ArrowBack className="w-5 h-5" />
             Back
@@ -170,18 +168,27 @@ export default function ScheduleHabits() {
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-summit-forest mb-2">Schedule Your Habits</h1>
-          <p className="text-stone-600">
+          <h1 className="text-h1 text-summit-forest mb-2">Schedule Your Habits</h1>
+          <p className="text-body text-text-secondary">
             Choose when you'll do each habit. Pick specific days and times that work for you.
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-stone-200 p-6">
-          <div className="mb-6 bg-summit-mint/50 border border-summit-sage rounded-lg p-4">
-            <p className="text-sm text-summit-forest">
+        <Card className="border border-gray-200">
+          <CardHeader className="mb-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-summit-sage">
+                <Science className="h-5 w-5 text-summit-emerald" />
+              </div>
+              <CardTitle className="text-h3">Habit Experiments</CardTitle>
+            </div>
+          </CardHeader>
+
+          <div className="mb-6 bg-summit-mint border border-summit-sage rounded-lg p-4">
+            <p className="text-body-sm text-summit-forest">
               <strong>Nice!</strong> Let's lock in when you'll try this—take a quick look at your calendar and choose days that realistically work for you.
             </p>
-            <p className="text-sm text-summit-forest mt-2">
+            <p className="text-body-sm text-summit-forest mt-2">
               People are far more likely to follow through when they decide <em>when</em> they'll act, not just <em>what</em> they'll do.
             </p>
           </div>
@@ -192,15 +199,15 @@ export default function ScheduleHabits() {
               const timeSlot = timePreferences[index] || 'mid-morning'
 
               return (
-                <div key={index} className="border border-stone-200 rounded-lg p-5">
+                <div key={index} className="border border-gray-200 rounded-lg p-5">
                   <p className="font-semibold text-summit-forest mb-4">{habit.action}</p>
-                  
+
                   <div className="mb-3">
-                    <label className="block text-sm font-normal text-summit-forest mb-2">
+                    <label className="block text-body-sm font-normal text-summit-forest mb-2">
                       When will you do this?
                     </label>
                   </div>
-                  
+
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                     {/* Day Commitment Chips */}
                     <div className="flex flex-wrap gap-2">
@@ -210,21 +217,21 @@ export default function ScheduleHabits() {
                           onClick={() => toggleDayCommitment(index, day)}
                           className={`px-5 py-2 rounded-lg text-sm font-medium transition-all border ${
                             committedDays.includes(day)
-                              ? 'bg-summit-mint/50 text-summit-moss border-summit-emerald'
-                              : 'bg-white text-stone-600 border-stone-300 hover:bg-stone-50'
+                              ? 'bg-summit-mint text-summit-emerald border-summit-emerald'
+                              : 'bg-white text-text-secondary border-gray-300 hover:bg-summit-mint'
                           }`}
                         >
                           {day}
                         </button>
                       ))}
                     </div>
-                    
+
                     {/* Time of Day Selector */}
                     <div className="w-full lg:w-auto lg:flex-shrink-0">
                       <select
                         value={timeSlot}
                         onChange={(e) => handleTimePreferenceChange(index, e.target.value)}
-                        className="w-full lg:min-w-[200px] px-4 py-2 border border-stone-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition"
+                        className="w-full lg:min-w-[200px] px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition"
                       >
                         {timeOfDayOptions.map(option => (
                           <option key={option.value} value={option.value}>
@@ -240,32 +247,24 @@ export default function ScheduleHabits() {
           </div>
 
           {/* Save Button */}
-          <div className="flex gap-3 mt-6 pt-6 border-t border-stone-200">
-            <button
+          <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
+            <Button
               onClick={() => navigate('/add-habit')}
-              className="flex items-center gap-2 px-6 py-3 text-stone-600 hover:text-stone-700 hover:bg-stone-100 font-semibold rounded-lg border-2 border-stone-300 transition"
+              variant="secondary"
             >
               Back
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-2 bg-summit-emerald hover:bg-emerald-700 disabled:bg-summit-sage disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all flex-1"
+              loading={saving}
+              leftIcon={!saving && <CheckCircle className="w-5 h-5" />}
+              className="bg-summit-emerald hover:bg-emerald-700 text-white"
             >
-              {saving ? (
-                <>
-                  <Autorenew className="w-5 h-5 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-5 h-5" />
-                  Save Habits
-                </>
-              )}
-            </button>
+              {saving ? 'Saving...' : 'Save Habits'}
+            </Button>
           </div>
-        </div>
+        </Card>
       </main>
     </div>
   )

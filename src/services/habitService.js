@@ -1,33 +1,34 @@
 import supabase from '../lib/supabase'
 import { trackEvent } from '../lib/posthog'
-import { getCurrentWeekNumber } from '../utils/weekCalculator'
 
 /**
- * Service for managing weekly habits in the Summit Pilot
+ * Service for managing habits in the Summit Pilot
+ *
+ * Note: Habits are now persistent entities (no week_number).
+ * They exist until explicitly deleted. Tracking uses habit_name + entry_date.
  */
 
 /**
- * Save habits for a specific week
- * @param {number} weekNumber - Week number
+ * Save habits (creates new habits, replacing any existing ones)
  * @param {Array} habits - Array of habit objects with { habit_name, day_of_week, reminder_time, timezone }
  * @returns {Promise<{success: boolean, data?: any, error?: any}>}
  */
-export const saveHabitsForWeek = async (weekNumber, habits) => {
+export const saveHabits = async (habits) => {
   try {
     if (!supabase) {
       return { success: false, error: 'Supabase is not configured' }
     }
 
     const { data: { user } } = await supabase.auth.getUser()
-    
+
     if (!user) {
       return { success: false, error: 'User not authenticated' }
     }
 
-    // Prepare habits with user_id and week_number
+    // Prepare habits with user_id (no week_number)
     const habitsToInsert = habits.map(habit => ({
       user_id: user.id,
-      week_number: weekNumber,
+      week_number: null, // Explicitly null - habits are persistent
       habit_name: habit.habit_name,
       day_of_week: habit.day_of_week,
       reminder_time: habit.reminder_time,
@@ -41,30 +42,28 @@ export const saveHabitsForWeek = async (weekNumber, habits) => {
 
     if (error) {
       console.error('Error saving habits:', error)
-      trackEvent('habits_save_failed', { error: error.message, weekNumber })
+      trackEvent('habits_save_failed', { error: error.message })
       return { success: false, error }
     }
 
-    trackEvent('habits_saved', { 
-      weekNumber, 
+    trackEvent('habits_saved', {
       habitCount: habits.length,
-      userId: user.id 
+      userId: user.id
     })
-    
+
     return { success: true, data }
   } catch (error) {
-    console.error('Error in saveHabitsForWeek:', error)
+    console.error('Error in saveHabits:', error)
     return { success: false, error }
   }
 }
 
 /**
- * Get habits for a specific week
- * @param {number} weekNumber - Week number
+ * Get all habits for the current user
  * @param {string} [userId] - Optional user ID (if not provided, will fetch from auth)
  * @returns {Promise<{success: boolean, data?: any, error?: any}>}
  */
-export const getHabitsForWeek = async (weekNumber, userId = null) => {
+export const getHabits = async (userId = null) => {
   try {
     if (!supabase) {
       return { success: false, error: 'Supabase is not configured' }
@@ -83,7 +82,6 @@ export const getHabitsForWeek = async (weekNumber, userId = null) => {
       .from('weekly_habits')
       .select('*')
       .eq('user_id', uid)
-      .eq('week_number', weekNumber)
       .order('created_at', { ascending: true })
 
     if (error) {
@@ -93,104 +91,13 @@ export const getHabitsForWeek = async (weekNumber, userId = null) => {
 
     return { success: true, data: data || [] }
   } catch (error) {
-    console.error('Error in getHabitsForWeek:', error)
+    console.error('Error in getHabits:', error)
     return { success: false, error }
   }
 }
 
 /**
- * Get habits for current week
- * Auto-rolls over habits from previous week if none exist for current week
- * @param {string} [userId] - Optional user ID (if not provided, will fetch from auth)
- * @returns {Promise<{success: boolean, data?: any, error?: any}>}
- */
-export const getCurrentWeekHabits = async (userId = null) => {
-  const weekNumber = getCurrentWeekNumber()
-
-  // First, try to get habits for the current week
-  const result = await getHabitsForWeek(weekNumber, userId)
-
-  // If we have habits for this week, return them
-  if (result.success && result.data && result.data.length > 0) {
-    return result
-  }
-
-  // No habits for current week - try to auto-rollover from previous week
-  if (weekNumber > 1) {
-    const prevWeekResult = await getHabitsForWeek(weekNumber - 1, userId)
-
-    if (prevWeekResult.success && prevWeekResult.data && prevWeekResult.data.length > 0) {
-      // Copy habits from previous week to current week
-      const habitsToCopy = prevWeekResult.data.map(habit => ({
-        habit_name: habit.habit_name,
-        day_of_week: habit.day_of_week,
-        reminder_time: habit.reminder_time,
-        timezone: habit.timezone,
-      }))
-
-      const copyResult = await saveHabitsForWeek(weekNumber, habitsToCopy)
-
-      if (copyResult.success) {
-        console.log(`Auto-rolled over ${habitsToCopy.length} habits from week ${weekNumber - 1} to week ${weekNumber}`)
-        return copyResult
-      }
-    }
-  }
-
-  // No habits to rollover, return empty result
-  return result
-}
-
-/**
- * Get habits for previous week
- * @returns {Promise<{success: boolean, data?: any, error?: any}>}
- */
-export const getPreviousWeekHabits = async () => {
-  const weekNumber = getCurrentWeekNumber() - 1
-  if (weekNumber < 1) {
-    return { success: true, data: [] }
-  }
-  return getHabitsForWeek(weekNumber)
-}
-
-/**
- * Delete all habits for a specific week
- * @param {number} weekNumber - Week number
- * @returns {Promise<{success: boolean, error?: any}>}
- */
-export const deleteHabitsForWeek = async (weekNumber) => {
-  try {
-    if (!supabase) {
-      return { success: false, error: 'Supabase is not configured' }
-    }
-
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return { success: false, error: 'User not authenticated' }
-    }
-
-    const { error } = await supabase
-      .from('weekly_habits')
-      .delete()
-      .eq('user_id', user.id)
-      .eq('week_number', weekNumber)
-
-    if (error) {
-      console.error('Error deleting habits:', error)
-      return { success: false, error }
-    }
-
-    trackEvent('habits_deleted', { weekNumber, userId: user.id })
-    return { success: true }
-  } catch (error) {
-    console.error('Error in deleteHabitsForWeek:', error)
-    return { success: false, error }
-  }
-}
-
-/**
- * Delete all habits for the current user (across all weeks)
+ * Delete all habits for the current user
  * @returns {Promise<{success: boolean, error?: any}>}
  */
 export const deleteAllUserHabits = async () => {
@@ -285,80 +192,11 @@ export const deleteHabit = async (habitId) => {
 }
 
 /**
- * Copy habits from one week to another
- * @param {number} fromWeek - Source week number
- * @param {number} toWeek - Destination week number
- * @returns {Promise<{success: boolean, data?: any, error?: any}>}
- */
-export const copyHabitsToWeek = async (fromWeek, toWeek) => {
-  try {
-    // Get habits from source week
-    const { success, data: sourceHabits, error } = await getHabitsForWeek(fromWeek)
-    
-    if (!success || !sourceHabits || sourceHabits.length === 0) {
-      return { success: false, error: error || 'No habits found to copy' }
-    }
-
-    // Prepare habits for new week (remove id and update week_number)
-    const habitsToCopy = sourceHabits.map(habit => ({
-      habit_name: habit.habit_name,
-      day_of_week: habit.day_of_week,
-      reminder_time: habit.reminder_time,
-      timezone: habit.timezone,
-    }))
-
-    // Save to new week
-    return await saveHabitsForWeek(toWeek, habitsToCopy)
-  } catch (error) {
-    console.error('Error in copyHabitsToWeek:', error)
-    return { success: false, error }
-  }
-}
-
-/**
- * Get all habits for the current user (across all weeks)
- * @returns {Promise<{success: boolean, data?: any, error?: any}>}
- */
-export const getAllUserHabits = async (userId = null) => {
-  try {
-    if (!supabase) {
-      return { success: false, error: 'Supabase is not configured' }
-    }
-
-    let uid = userId
-    if (!uid) {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        return { success: false, error: 'User not authenticated' }
-      }
-      uid = user.id
-    }
-
-    const { data, error } = await supabase
-      .from('weekly_habits')
-      .select('*')
-      .eq('user_id', uid)
-      .order('week_number', { ascending: false })
-      .order('created_at', { ascending: true })
-
-    if (error) {
-      console.error('Error fetching all habits:', error)
-      return { success: false, error }
-    }
-
-    return { success: true, data: data || [] }
-  } catch (error) {
-    console.error('Error in getAllUserHabits:', error)
-    return { success: false, error }
-  }
-}
-
-/**
- * Check if user has habits for current week
+ * Check if user has any habits
  * @returns {Promise<boolean>}
  */
-export const hasCurrentWeekHabits = async () => {
-  const { success, data } = await getCurrentWeekHabits()
+export const hasHabits = async () => {
+  const { success, data } = await getHabits()
   return success && data && data.length > 0
 }
 
@@ -434,4 +272,74 @@ export const getUniqueHabitNames = async () => {
     console.error('Error in getUniqueHabitNames:', error)
     return { success: false, error }
   }
+}
+
+// ============================================================================
+// BACKWARDS COMPATIBILITY ALIASES
+// These maintain compatibility with existing code during transition
+// ============================================================================
+
+/**
+ * @deprecated Use saveHabits() instead
+ * Save habits (ignores weekNumber parameter)
+ */
+export const saveHabitsForWeek = async (weekNumber, habits) => {
+  return saveHabits(habits)
+}
+
+/**
+ * @deprecated Use getHabits() instead
+ * Get habits (ignores weekNumber parameter)
+ */
+export const getHabitsForWeek = async (weekNumber, userId = null) => {
+  return getHabits(userId)
+}
+
+/**
+ * @deprecated Use getHabits() instead
+ * Get current week habits (now just returns all habits)
+ */
+export const getCurrentWeekHabits = async (userId = null) => {
+  return getHabits(userId)
+}
+
+/**
+ * @deprecated Use getHabits() instead
+ * Get all user habits (now just returns all habits, ignores week ordering)
+ */
+export const getAllUserHabits = async (userId = null) => {
+  return getHabits(userId)
+}
+
+/**
+ * @deprecated Use hasHabits() instead
+ * Check if user has habits for current week
+ */
+export const hasCurrentWeekHabits = async () => {
+  return hasHabits()
+}
+
+/**
+ * @deprecated No longer needed - habits persist across weeks
+ * Delete habits for a specific week (now deletes all habits)
+ */
+export const deleteHabitsForWeek = async (weekNumber) => {
+  console.warn('deleteHabitsForWeek is deprecated. Use deleteAllUserHabits instead.')
+  return deleteAllUserHabits()
+}
+
+/**
+ * @deprecated No longer needed - habits persist across weeks
+ */
+export const getPreviousWeekHabits = async () => {
+  console.warn('getPreviousWeekHabits is deprecated. Habits now persist across weeks.')
+  return { success: true, data: [] }
+}
+
+/**
+ * @deprecated No longer needed - habits persist across weeks
+ */
+export const copyHabitsToWeek = async (fromWeek, toWeek) => {
+  console.warn('copyHabitsToWeek is deprecated. Habits now persist across weeks.')
+  return { success: true, data: [] }
 }

@@ -14,8 +14,8 @@ import {
   MoreVert,
   Autorenew,
 } from '@mui/icons-material'
-import { getAllUserHabits, deleteAllUserHabits, saveHabitsForWeek } from '../services/habitService'
-import { getCurrentWeekNumber } from '../utils/weekCalculator'
+import { getHabits, deleteAllUserHabits, saveHabits } from '../services/habitService'
+import { getCurrentWeekNumber } from '../utils/weekCalculator' // Still used for pilot timeline display
 import { formatDaysDisplay, convertShortToFullDays } from '../utils/formatDays'
 import { getCurrentUser, getProfile } from '../services/authService'
 import { getAllTrackingConfigs, disableTracking, saveTrackingConfig, getAiSuggestion, renameHabitTracking } from '../services/trackingService'
@@ -101,7 +101,7 @@ export default function Habits() {
     setWeekNumber(week)
 
     const uid = userId || userIdRef.current
-    const { success, data } = await getAllUserHabits(uid)
+    const { success, data } = await getHabits(uid)
     if (success && data && data.length > 0) {
       setHabits(data)
 
@@ -162,7 +162,7 @@ export default function Habits() {
       // Run all data fetches in parallel
       const [profileResult, habitsResult, configsResult] = await Promise.all([
         getProfile(userId),
-        getAllUserHabits(userId),
+        getHabits(userId),
         getAllTrackingConfigs(userId)
       ])
 
@@ -298,7 +298,7 @@ export default function Habits() {
       })
 
       // Save new habits
-      const { success } = await saveHabitsForWeek(weekNumber, newHabits)
+      const { success } = await saveHabits(newHabits)
 
       if (success) {
         await loadHabits()
@@ -382,7 +382,7 @@ export default function Habits() {
           })
         })
 
-        await saveHabitsForWeek(weekNumber, newHabits)
+        await saveHabits(newHabits)
       }
 
       // Clear state and reload

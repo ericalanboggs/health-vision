@@ -16,7 +16,8 @@ export default function AddHabit() {
   const [suggestions, setSuggestions] = useState([])
   const [selectedHabits, setSelectedHabits] = useState([])
   const [customHabit, setCustomHabit] = useState('')
-  const [showCustomInput, setShowCustomInput] = useState(false)
+  const [showAiSuggestions, setShowAiSuggestions] = useState(false)
+  const [aiSuggestionsLoaded, setAiSuggestionsLoaded] = useState(false)
   const [currentHabitsCount, setCurrentHabitsCount] = useState(0)
   const [visionData, setVisionData] = useState(null)
   const [headerVisible, setHeaderVisible] = useState(true)
@@ -60,7 +61,7 @@ export default function AddHabit() {
 
   const loadData = async () => {
     setLoading(true)
-    
+
     // Get current habits count
     const { success, data } = await getCurrentWeekHabits()
     if (success && data) {
@@ -73,18 +74,25 @@ export default function AddHabit() {
       setCurrentHabitsCount(Object.keys(habitGroups).length)
     }
 
-    // Load vision data
+    // Load vision data (but don't generate suggestions yet - wait for user to request)
     const journeyResult = await loadJourney()
     if (journeyResult.success && journeyResult.data?.form_data) {
       setVisionData(journeyResult.data.form_data)
-      // Generate initial suggestions
-      await generateSuggestions(journeyResult.data.form_data)
-    } else {
-      // If no vision data, show generic suggestions
-      setGenericSuggestions()
     }
 
     setLoading(false)
+  }
+
+  const handleShowAiSuggestions = async () => {
+    setShowAiSuggestions(true)
+    if (!aiSuggestionsLoaded) {
+      if (visionData) {
+        await generateSuggestions(visionData)
+      } else {
+        setGenericSuggestions()
+      }
+      setAiSuggestionsLoaded(true)
+    }
   }
 
   const generateSuggestions = async (formData) => {
@@ -173,8 +181,7 @@ export default function AddHabit() {
       } else {
         // Limit total habits (current + new) to 3
         if (currentHabitsCount + prev.length >= 3) {
-          alert('You can have a maximum of 3 habits per week. Consider removing an existing habit first.')
-          return prev
+          return prev // Silently prevent - UI already shows limit
         }
         return [...prev, index]
       }
@@ -183,22 +190,20 @@ export default function AddHabit() {
 
   const handleAddCustomHabit = () => {
     if (!customHabit.trim()) return
-    
-    if (currentHabitsCount + selectedHabits.length >= 3) {
+
+    if (currentHabitsCount >= 3) {
       alert('You can have a maximum of 3 habits per week. Consider removing an existing habit first.')
       return
     }
 
-    const newHabit = {
-      action: customHabit,
+    // Navigate directly to scheduling with the custom habit
+    const habit = {
+      action: customHabit.trim(),
       why: 'Your personal habit goal',
       tip: 'Set specific days and times to make this a routine'
     }
-    
-    setSuggestions(prev => [...prev, newHabit])
-    setSelectedHabits(prev => [...prev, suggestions.length])
-    setCustomHabit('')
-    setShowCustomInput(false)
+
+    navigate('/schedule-habits', { state: { habits: [habit] } })
   }
 
   const handleNext = () => {
@@ -209,7 +214,8 @@ export default function AddHabit() {
     navigate('/schedule-habits', { state: { habits: selected } })
   }
 
-  const maxHabitsReached = currentHabitsCount + selectedHabits.length >= 3
+  const maxHabitsReached = currentHabitsCount >= 3
+  const canAddMore = 3 - currentHabitsCount - selectedHabits.length > 0
 
   if (loading) {
     return (
@@ -250,91 +256,13 @@ export default function AddHabit() {
 
           <p className="text-body-sm text-text-secondary mb-6">
             You currently have {currentHabitsCount} habit{currentHabitsCount !== 1 ? 's' : ''}.
-            Choose up to {3 - currentHabitsCount} more to add this week.
+            {3 - currentHabitsCount > 0
+              ? ` Add up to ${3 - currentHabitsCount} more this week.`
+              : ' You\'ve reached your limit of 3 habits.'}
           </p>
 
-          {/* AI Suggestions Section */}
-          <div className="bg-gradient-to-r from-summit-mint to-summit-sage p-4 rounded-lg border-2 border-summit-emerald mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <AutoAwesome className="w-5 h-5 text-summit-emerald" />
-                <h4 className="font-semibold text-summit-forest">AI-Personalized Suggestions</h4>
-              </div>
-              <Button
-                onClick={handleRefresh}
-                disabled={generating}
-                variant="outline"
-                size="sm"
-                leftIcon={<Refresh className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />}
-              >
-                Refresh ideas
-              </Button>
-            </div>
-            <p className="text-body-sm text-summit-forest">
-              {visionData
-                ? 'These actions are tailored to your vision and goals. Choose 1–2 new ideas to focus on.'
-                : 'These are general healthy habit suggestions. Create your vision for personalized recommendations.'}
-            </p>
-          </div>
-
-          {/* Habit Suggestions */}
-          {generating ? (
-            <div className="flex items-center justify-center py-12">
-              <Autorenew className="w-8 h-8 animate-spin text-summit-emerald" />
-              <p className="ml-3 text-text-secondary">Building your personalized plan...</p>
-            </div>
-          ) : (
-            <div className="space-y-3 mb-4">
-              {suggestions.map((suggestion, index) => (
-                <div
-                  key={index}
-                  onClick={() => !maxHabitsReached || selectedHabits.includes(index) ? toggleHabitSelection(index) : null}
-                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                    selectedHabits.includes(index)
-                      ? 'bg-summit-mint border-summit-emerald'
-                      : maxHabitsReached
-                      ? 'bg-summit-sage border-gray-200 opacity-50 cursor-not-allowed'
-                      : 'bg-white border-gray-200 hover:border-summit-emerald'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={selectedHabits.includes(index)}
-                        onChange={() => !maxHabitsReached || selectedHabits.includes(index) ? toggleHabitSelection(index) : null}
-                        disabled={maxHabitsReached && !selectedHabits.includes(index)}
-                        shape="square"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-summit-forest mb-2">{suggestion.action}</p>
-                      <p className="text-body-sm text-summit-forest mb-2">
-                        <strong>Why this works:</strong> {suggestion.why}
-                      </p>
-                      <p className="text-body-sm text-text-secondary">
-                        <strong>Tip:</strong> {suggestion.tip}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Custom Habit Input */}
-          {!showCustomInput ? (
-            <Button
-              onClick={() => setShowCustomInput(true)}
-              disabled={maxHabitsReached}
-              variant="ghost"
-              size="sm"
-              leftIcon={<Add className="w-4 h-4" />}
-              className="mb-6"
-            >
-              Create my own
-            </Button>
-          ) : (
+          {/* Custom Habit Input - Always visible first */}
+          {!maxHabitsReached && (
             <div className="mb-6 p-4 bg-summit-mint rounded-lg border border-summit-sage">
               <label className="block text-sm font-semibold text-summit-forest mb-2">
                 What habit would you like to add?
@@ -346,48 +274,121 @@ export default function AddHabit() {
                 onKeyPress={(e) => e.key === 'Enter' && handleAddCustomHabit()}
                 placeholder="e.g., Meditate for 5 minutes each morning"
                 className="mb-3"
-                autoFocus
               />
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleAddCustomHabit}
-                  disabled={!customHabit.trim()}
-                  variant="primary"
-                  size="sm"
-                >
-                  Add Habit
-                </Button>
-                <Button
-                  onClick={() => {
-                    setShowCustomInput(false)
-                    setCustomHabit('')
-                  }}
-                  variant="ghost"
-                  size="sm"
-                >
-                  Cancel
-                </Button>
+              <Button
+                onClick={handleAddCustomHabit}
+                disabled={!customHabit.trim()}
+                size="sm"
+                className="bg-summit-emerald hover:bg-emerald-700 text-white"
+              >
+                Add Habit
+              </Button>
+            </div>
+          )}
+
+          {/* AI Suggestions Section - Expandable */}
+          {!showAiSuggestions ? (
+            <button
+              onClick={handleShowAiSuggestions}
+              disabled={maxHabitsReached}
+              className="w-full p-4 border-2 border-dashed border-summit-sage hover:border-summit-emerald rounded-lg text-summit-forest hover:bg-summit-mint/50 font-medium transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <AutoAwesome className="w-5 h-5 text-summit-emerald group-hover:scale-110 transition-transform" />
+              Need ideas? Get AI-Personalized Suggestions
+            </button>
+          ) : (
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              {/* AI Header */}
+              <div className="bg-gradient-to-r from-summit-mint to-summit-sage p-4 border-b border-summit-sage">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <AutoAwesome className="w-5 h-5 text-summit-emerald" />
+                    <h4 className="font-semibold text-summit-forest">AI-Personalized Suggestions</h4>
+                  </div>
+                  <Button
+                    onClick={handleRefresh}
+                    disabled={generating}
+                    variant="outline"
+                    size="sm"
+                    leftIcon={<Refresh className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />}
+                  >
+                    Refresh
+                  </Button>
+                </div>
+                <p className="text-body-sm text-summit-forest">
+                  {visionData
+                    ? 'Tailored to your vision and goals. Select any that resonate.'
+                    : 'General suggestions. Create your vision for personalized recommendations.'}
+                </p>
+              </div>
+
+              {/* Suggestions List */}
+              <div className="p-4">
+                {generating ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Autorenew className="w-6 h-6 animate-spin text-summit-emerald" />
+                    <p className="ml-3 text-text-secondary">Generating ideas...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {suggestions.map((suggestion, index) => {
+                      const isSelected = selectedHabits.includes(index)
+                      const isDisabled = !canAddMore && !isSelected
+
+                      return (
+                        <div
+                          key={index}
+                          onClick={() => !isDisabled ? toggleHabitSelection(index) : null}
+                          className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-summit-mint border-summit-emerald'
+                              : isDisabled
+                              ? 'bg-summit-sage border-gray-200 opacity-50 cursor-not-allowed'
+                              : 'bg-white border-gray-200 hover:border-summit-emerald'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={isSelected}
+                                onChange={() => !isDisabled ? toggleHabitSelection(index) : null}
+                                disabled={isDisabled}
+                                shape="square"
+                                className="mt-1"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold text-summit-forest mb-2">{suggestion.action}</p>
+                              <p className="text-body-sm text-summit-forest mb-2">
+                                <strong>Why this works:</strong> {suggestion.why}
+                              </p>
+                              <p className="text-body-sm text-text-secondary">
+                                <strong>Tip:</strong> {suggestion.tip}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Next Button */}
-          <div className="mt-6">
-            <Button
-              onClick={handleNext}
-              disabled={selectedHabits.length === 0}
-              variant="primary"
-              size="lg"
-              className="w-full"
-            >
-              Next: Schedule Your Habits
-            </Button>
-            {selectedHabits.length === 0 && (
-              <p className="text-xs text-text-muted text-center mt-2">
-                Select at least one habit to continue
-              </p>
-            )}
-          </div>
+          {/* Next Button - Only show when AI suggestions are visible and selected */}
+          {showAiSuggestions && selectedHabits.length > 0 && (
+            <div className="mt-6">
+              <Button
+                onClick={handleNext}
+                variant="primary"
+                size="lg"
+                className="w-full"
+              >
+                Next: Schedule {selectedHabits.length} Habit{selectedHabits.length !== 1 ? 's' : ''}
+              </Button>
+            </div>
+          )}
         </div>
       </main>
     </div>

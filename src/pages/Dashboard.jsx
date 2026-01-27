@@ -414,7 +414,8 @@ export default function Dashboard() {
 
     // Format each habit group
     return Object.entries(habitGroups).map(([habitName, habits]) => {
-      const dayIndices = habits.map(h => h.day_of_week).sort((a, b) => a - b)
+      // Deduplicate day indices in case of duplicate entries
+      const dayIndices = [...new Set(habits.map(h => h.day_of_week))].sort((a, b) => a - b)
       const dayCount = dayIndices.length
 
       let daysStr = ''

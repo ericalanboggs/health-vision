@@ -4,8 +4,7 @@ import { Description, AutoAwesome, Favorite, Map, Schedule, Edit, Notifications,
 import { Checkbox } from '@summit/design-system'
 import { generateActionPlan, generateMotivationalMessage } from '../../utils/planGenerator'
 import { enhanceActionPlan } from '../../utils/aiService'
-import { saveHabitsForWeek } from '../../services/habitService'
-import { getCurrentWeekNumber } from '../../utils/weekCalculator'
+import { saveHabits } from '../../services/habitService'
 import { getCurrentUser } from '../../services/authService'
 import jsPDF from 'jspdf'
 
@@ -436,7 +435,7 @@ END:VEVENT
 
   const handleConfirmHabits = async () => {
     setIsConfirmingHabits(true)
-    
+
     try {
       // Check if user is authenticated
       const { user } = await getCurrentUser()
@@ -446,9 +445,6 @@ END:VEVENT
         return
       }
 
-      // Get current week number
-      const weekNumber = getCurrentWeekNumber()
-      
       // Get selected actions with their day/time commitments
       const finalizedActions = getSelectedActionsData()
       
@@ -495,9 +491,9 @@ END:VEVENT
         return
       }
       
-      
+
       // Save to database
-      const result = await saveHabitsForWeek(weekNumber, habits)
+      const result = await saveHabits(habits)
       
       if (result.success) {
         setHabitsConfirmed(true)
