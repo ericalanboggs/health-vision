@@ -633,7 +633,7 @@ export default function Dashboard() {
               )}
             </CardHeader>
 
-            <Button variant="ghost" rightIcon={<ArrowForward className="h-4 w-4" />}>
+            <Button variant="primary" rightIcon={<ArrowForward className="h-4 w-4" />}>
               {currentReflection ? 'Update Reflection' : 'Start Reflection'}
             </Button>
           </Card>
@@ -671,7 +671,7 @@ export default function Dashboard() {
               </CardHeader>
 
               <Button
-                variant="ghost"
+                variant="primary"
                 rightIcon={<OpenInNew className="h-4 w-4" />}
                 onClick={(e) => {
                   e.stopPropagation()
