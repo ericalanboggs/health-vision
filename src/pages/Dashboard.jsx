@@ -13,32 +13,10 @@ import {
   getWeekEndDate,
 } from '../utils/weekCalculator'
 import { formatDaysDisplay } from '../utils/formatDays'
-import { extractVisionAdjectives, summarizeHabitAction } from '../utils/aiService'
+import { extractVisionAdjectives } from '../utils/aiService'
 
 // Cache keys
-const HABIT_SUMMARIES_CACHE_KEY = 'health_summit_habit_summaries'
 const VISION_ADJECTIVES_CACHE_KEY = 'health_summit_vision_adjectives'
-
-// Load cached habit summaries
-const loadCachedHabitSummaries = () => {
-  try {
-    const cached = localStorage.getItem(HABIT_SUMMARIES_CACHE_KEY)
-    return cached ? JSON.parse(cached) : {}
-  } catch (e) {
-    return {}
-  }
-}
-
-// Save habit summary to cache
-const saveCachedHabitSummary = (habitName, summary) => {
-  try {
-    const cached = loadCachedHabitSummaries()
-    cached[habitName] = summary
-    localStorage.setItem(HABIT_SUMMARIES_CACHE_KEY, JSON.stringify(cached))
-  } catch (e) {
-    console.warn('Failed to cache habit summary:', e)
-  }
-}
 
 // Load cached vision adjectives
 const loadCachedVisionAdjectives = (visionHash) => {
@@ -307,21 +285,10 @@ export default function Dashboard() {
         setCurrentHabits(data)
 
         const uniqueHabits = [...new Set(data.map(h => h.habit_name))]
-        const cachedSummaries = loadCachedHabitSummaries()
 
-        // Process habit summaries in parallel (only uncached ones call API)
-        const summaryPromises = uniqueHabits.map(async habitName => {
-          if (cachedSummaries[habitName]) {
-            return { habitName, summary: cachedSummaries[habitName] }
-          }
-          try {
-            const summary = await summarizeHabitAction(habitName)
-            saveCachedHabitSummary(habitName, summary)
-            return { habitName, summary }
-          } catch (error) {
-            console.error(`Failed to summarize habit: ${habitName}`, error)
-            return { habitName, summary: habitName.split(' ').slice(0, 2).join(' ') }
-          }
+        // Use habit names directly (no AI summarization)
+        const summaryPromises = uniqueHabits.map(habitName => {
+          return Promise.resolve({ habitName, summary: habitName })
         })
 
         // Process habit stats in parallel
