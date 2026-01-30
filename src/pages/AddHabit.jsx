@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ArrowBack, Science, AutoAwesome, Refresh, Add, Autorenew } from '@mui/icons-material'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { ArrowBack, Science, AutoAwesome, Refresh, Add, Autorenew, ExpandMore, CheckCircle } from '@mui/icons-material'
 import { getCurrentWeekNumber } from '../utils/weekCalculator'
-import { getCurrentWeekHabits, saveHabitsForWeek } from '../services/habitService'
+import { getCurrentWeekHabits, saveHabitsForWeek, saveHabits } from '../services/habitService'
+import { getCurrentUser, getProfile } from '../services/authService'
 import { loadJourney } from '../services/journeyService'
 import { enhanceActionPlan } from '../utils/aiService'
 import { generateActionPlan } from '../utils/planGenerator'
@@ -10,6 +11,7 @@ import { Button, Checkbox, Input, Card } from '@summit/design-system'
 
 export default function AddHabit() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -21,7 +23,17 @@ export default function AddHabit() {
   const [currentHabitsCount, setCurrentHabitsCount] = useState(0)
   const [visionData, setVisionData] = useState(null)
   const [headerVisible, setHeaderVisible] = useState(true)
+  const [showCustomHabitInput, setShowCustomHabitInput] = useState(false)
+  const [expandedSuggestions, setExpandedSuggestions] = useState({})
+  const [phase, setPhase] = useState('select') // 'select' or 'schedule'
+  const [userTimezone, setUserTimezone] = useState('America/Chicago')
+  const [dayCommitments, setDayCommitments] = useState({})
+  const [timePreferences, setTimePreferences] = useState({})
   const lastScrollY = useRef(0)
+
+  // Check if coming from quick start flow with prefetched habits
+  const fromQuickStart = location.state?.fromQuickStart
+  const prefetchedHabits = location.state?.prefetchedHabits
 
   // Headroom behavior for nav
   useEffect(() => {
@@ -78,6 +90,13 @@ export default function AddHabit() {
     const journeyResult = await loadJourney()
     if (journeyResult.success && journeyResult.data?.form_data) {
       setVisionData(journeyResult.data.form_data)
+    }
+
+    // If coming from quick start with prefetched habits, auto-show them
+    if (prefetchedHabits && prefetchedHabits.length > 0) {
+      setSuggestions(prefetchedHabits)
+      setShowAiSuggestions(true)
+      setAiSuggestionsLoaded(true)
     }
 
     setLoading(false)
@@ -196,22 +215,138 @@ export default function AddHabit() {
       return
     }
 
-    // Navigate directly to scheduling with the custom habit
-    const habit = {
+    // Add custom habit to suggestions and select it
+    const customHabitData = {
       action: customHabit.trim(),
       why: 'Your personal habit goal',
       tip: 'Set specific days and times to make this a routine'
     }
 
-    navigate('/schedule-habits', { state: { habits: [habit] } })
+    const newIndex = suggestions.length
+    const updatedSuggestions = [...suggestions, customHabitData]
+    const updatedSelectedHabits = [...selectedHabits, newIndex]
+
+    setSuggestions(updatedSuggestions)
+    setSelectedHabits(updatedSelectedHabits)
+    setCustomHabit('')
+    setShowCustomHabitInput(false)
+
+    // Initialize scheduling for all selected habits (including the new custom one)
+    const initialDayCommitments = {}
+    const initialTimePreferences = {}
+    updatedSelectedHabits.forEach((_, idx) => {
+      initialDayCommitments[idx] = []
+      initialTimePreferences[idx] = 'mid-morning'
+    })
+    setDayCommitments(initialDayCommitments)
+    setTimePreferences(initialTimePreferences)
+
+    // Go directly to scheduling
+    setPhase('schedule')
+    fetchUserTimezone()
   }
 
   const handleNext = () => {
     if (selectedHabits.length === 0) return
-    
-    // Store selected habits in state and navigate to scheduling
-    const selected = selectedHabits.map(index => suggestions[index])
-    navigate('/schedule-habits', { state: { habits: selected } })
+
+    // Initialize scheduling state for selected habits
+    const initialDayCommitments = {}
+    const initialTimePreferences = {}
+    selectedHabits.forEach((_, idx) => {
+      initialDayCommitments[idx] = []
+      initialTimePreferences[idx] = 'mid-morning'
+    })
+    setDayCommitments(initialDayCommitments)
+    setTimePreferences(initialTimePreferences)
+
+    // Switch to schedule phase
+    setPhase('schedule')
+
+    // Fetch user timezone
+    fetchUserTimezone()
+  }
+
+  const fetchUserTimezone = async () => {
+    const { success, user } = await getCurrentUser()
+    if (success && user) {
+      const { success: profileSuccess, data: profile } = await getProfile(user.id)
+      if (profileSuccess && profile?.timezone) {
+        setUserTimezone(profile.timezone)
+      }
+    }
+  }
+
+  const toggleDayCommitment = (habitIndex, day) => {
+    setDayCommitments(prev => {
+      const current = prev[habitIndex] || []
+      const updated = current.includes(day)
+        ? current.filter(d => d !== day)
+        : [...current, day]
+      return { ...prev, [habitIndex]: updated }
+    })
+  }
+
+  const handleTimePreferenceChange = (habitIndex, value) => {
+    setTimePreferences(prev => ({
+      ...prev,
+      [habitIndex]: value
+    }))
+  }
+
+  // Check if at least one habit has at least one day selected
+  const hasAtLeastOneScheduled = selectedHabits.some((_, index) => {
+    const days = dayCommitments[index] || []
+    return days.length > 0
+  })
+
+  const handleSave = async () => {
+    if (!hasAtLeastOneScheduled) {
+      alert('Please select at least one day for at least one habit.')
+      return
+    }
+
+    setSaving(true)
+
+    try {
+      const selectedHabitData = selectedHabits.map(index => suggestions[index])
+      const newHabits = []
+
+      selectedHabitData.forEach((habit, index) => {
+        const selectedDays = dayCommitments[index] || []
+        if (selectedDays.length === 0) return
+
+        const timeSlot = timePreferences[index] || 'mid-morning'
+        const timeOption = timeOfDayOptions.find(opt => opt.value === timeSlot)
+        const reminderTime = `${String(timeOption.hour).padStart(2, '0')}:00:00`
+
+        selectedDays.forEach(day => {
+          newHabits.push({
+            habit_name: habit.action,
+            day_of_week: dayMap[day],
+            reminder_time: reminderTime,
+            time_of_day: reminderTime,
+            timezone: userTimezone
+          })
+        })
+      })
+
+      const { success } = await saveHabits(newHabits)
+
+      if (success) {
+        navigate('/dashboard')
+      } else {
+        alert('Failed to save habits. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error saving habits:', error)
+      alert('Failed to save habits. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleBackFromSchedule = () => {
+    setPhase('select')
   }
 
   const maxHabitsReached = currentHabitsCount >= 3
@@ -225,6 +360,292 @@ export default function AddHabit() {
     )
   }
 
+  // Toggle expanded state for a suggestion
+  const toggleExpanded = (index) => {
+    setExpandedSuggestions(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }))
+  }
+
+  // Render onboarding flow layout (from Quick Start)
+  if (fromQuickStart) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
+        {/* Main Content */}
+        <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="flex justify-center mb-6">
+              <img
+                src="/Habit-Plan.png"
+                alt="Habit Plan"
+                className="w-[200px] h-[200px] object-contain"
+              />
+            </div>
+            <h1 className="text-h1 text-summit-forest mb-3">My Habit Plan</h1>
+            <p className="text-body text-text-secondary">
+              Add up to 3 new habits to try that align to your Summit vision.
+            </p>
+          </div>
+
+          {phase === 'select' ? (
+            <>
+              {/* AI Suggestions Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <AutoAwesome className="w-5 h-5 text-summit-lime" />
+                  <span className="text-body-sm font-semibold text-summit-forest">AI-Personalized Suggestions</span>
+                </div>
+                <button
+                  onClick={handleRefresh}
+                  disabled={generating}
+                  className="text-body-sm text-summit-forest hover:text-summit-emerald font-medium flex items-center gap-1 transition-colors"
+                >
+                  <Refresh className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+              </div>
+
+              {/* Suggestions List */}
+              {generating ? (
+                <div className="flex items-center justify-center py-12">
+                  <Autorenew className="w-6 h-6 animate-spin text-summit-emerald" />
+                  <p className="ml-3 text-text-secondary">Generating ideas...</p>
+                </div>
+              ) : (
+                <div className="space-y-3 mb-4">
+                  {suggestions.map((suggestion, index) => {
+                    const isSelected = selectedHabits.includes(index)
+                    const isDisabled = !canAddMore && !isSelected
+                    const isExpanded = expandedSuggestions[index]
+
+                    return (
+                      <Card
+                        key={index}
+                        className={`transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-summit-mint border-summit-emerald'
+                            : isDisabled
+                            ? 'opacity-50 cursor-not-allowed'
+                            : 'hover:border-summit-sage'
+                        }`}
+                        onClick={() => !isDisabled && toggleHabitSelection(index)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={isSelected}
+                              onChange={() => !isDisabled && toggleHabitSelection(index)}
+                              disabled={isDisabled}
+                            />
+                          </div>
+                          <p
+                            className={`flex-1 font-medium ${
+                              isDisabled ? 'text-gray-400' : 'text-summit-forest'
+                            }`}
+                          >
+                            {suggestion.action}
+                          </p>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleExpanded(index)
+                            }}
+                            className="p-1 text-gray-400 hover:text-summit-forest transition-colors"
+                          >
+                            <ExpandMore
+                              className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Expandable content */}
+                        {isExpanded && (
+                          <div className="mt-3 pt-3 pl-8 border-t border-gray-100">
+                            <p className="text-body-sm text-summit-forest mb-2">
+                              <strong>Why this works:</strong> {suggestion.why}
+                            </p>
+                            <p className="text-body-sm text-text-secondary">
+                              <strong>Tip:</strong> {suggestion.tip}
+                            </p>
+                          </div>
+                        )}
+                      </Card>
+                    )
+                  })}
+
+                  {/* Add My Own Row */}
+                  {!showCustomHabitInput ? (
+                    <Card
+                      onClick={() => setShowCustomHabitInput(true)}
+                      className="cursor-pointer hover:border-summit-sage transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox disabled />
+                        <span className="text-text-secondary">Add my own...</span>
+                      </div>
+                    </Card>
+                  ) : (
+                    <Card className="border-summit-emerald bg-summit-mint">
+                      <div className="flex items-start gap-3">
+                        <Checkbox disabled className="mt-2" />
+                        <div className="flex-1">
+                          <Input
+                            type="text"
+                            value={customHabit}
+                            onChange={(e) => setCustomHabit(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleAddCustomHabit()}
+                            placeholder="e.g., Meditate for 5 minutes each morning"
+                            autoFocus
+                            className="mb-3"
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={handleAddCustomHabit}
+                              disabled={!customHabit.trim()}
+                              variant="primary"
+                              size="sm"
+                            >
+                              Add
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                setShowCustomHabitInput(false)
+                                setCustomHabit('')
+                              }}
+                              variant="ghost"
+                              size="sm"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  )}
+                </div>
+              )}
+
+              {/* Bottom Navigation */}
+              <div className="mt-8 flex justify-between items-center">
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate('/vision')}
+                  leftIcon={<ArrowBack className="w-5 h-5" />}
+                >
+                  Back
+                </Button>
+
+                {selectedHabits.length > 0 && (
+                  <Button
+                    onClick={handleNext}
+                    variant="primary"
+                    size="lg"
+                  >
+                    Next: Schedule {selectedHabits.length} Habit{selectedHabits.length !== 1 ? 's' : ''}
+                  </Button>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Schedule Phase */}
+              <div className="mb-6 bg-summit-mint border border-summit-sage rounded-lg p-4">
+                <p className="text-body-sm text-summit-forest">
+                  <strong>Nice!</strong> Let's lock in when you'll try this—take a quick look at your calendar and choose days that realistically work for you.
+                </p>
+                <p className="text-body-sm text-summit-forest mt-2">
+                  People are far more likely to follow through when they decide <em>when</em> they'll act, not just <em>what</em> they'll do.
+                </p>
+              </div>
+
+              {/* Scheduling Cards */}
+              <div className="space-y-4 mb-4">
+                {selectedHabits.map((suggestionIndex, index) => {
+                  const habit = suggestions[suggestionIndex]
+                  const committedDays = dayCommitments[index] || []
+                  const timeSlot = timePreferences[index] || 'mid-morning'
+
+                  return (
+                    <Card key={index} className="border border-gray-200">
+                      <p className="font-semibold text-summit-forest mb-4">{habit.action}</p>
+
+                      <div className="mb-3">
+                        <label className="block text-body-sm font-normal text-summit-forest mb-2">
+                          When will you do this?
+                        </label>
+                      </div>
+
+                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                        {/* Day Commitment Chips */}
+                        <div className="flex flex-wrap gap-2">
+                          {days.map(day => (
+                            <button
+                              key={day}
+                              onClick={() => toggleDayCommitment(index, day)}
+                              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all border ${
+                                committedDays.includes(day)
+                                  ? 'bg-summit-mint text-summit-emerald border-summit-emerald'
+                                  : 'bg-white text-text-secondary border-gray-300 hover:bg-summit-mint'
+                              }`}
+                            >
+                              {day}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Time of Day Selector */}
+                        <div className="w-full lg:w-auto lg:flex-shrink-0">
+                          <select
+                            value={timeSlot}
+                            onChange={(e) => handleTimePreferenceChange(index, e.target.value)}
+                            className="w-full lg:min-w-[200px] px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition"
+                          >
+                            {timeOfDayOptions.map(option => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </Card>
+                  )
+                })}
+              </div>
+
+              {/* Bottom Navigation */}
+              <div className="mt-8 flex justify-between items-center">
+                <Button
+                  variant="ghost"
+                  onClick={handleBackFromSchedule}
+                  leftIcon={<ArrowBack className="w-5 h-5" />}
+                >
+                  Back
+                </Button>
+
+                {hasAtLeastOneScheduled && (
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving}
+                    loading={saving}
+                    variant="primary"
+                    size="lg"
+                    leftIcon={!saving && <CheckCircle className="w-5 h-5" />}
+                  >
+                    {saving ? 'Saving...' : 'Save Habits'}
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+        </main>
+      </div>
+    )
+  }
+
+  // Standard add habit flow (not from onboarding)
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
       {/* Header */}
@@ -249,16 +670,15 @@ export default function AddHabit() {
                 <Science className="w-6 h-6 text-summit-emerald" />
               </div>
               <div>
-                <h3 className="text-h2 text-summit-forest">Add New Habit</h3>
+                <h3 className="text-h2 text-summit-forest">Habit Experiments</h3>
               </div>
             </div>
           </div>
 
           <p className="text-body-sm text-text-secondary mb-6">
-            You currently have {currentHabitsCount} habit{currentHabitsCount !== 1 ? 's' : ''}.
-            {3 - currentHabitsCount > 0
-              ? ` Add up to ${3 - currentHabitsCount} more this week.`
-              : ' You\'ve reached your limit of 3 habits.'}
+            {maxHabitsReached
+              ? 'You\'ve reached your limit of 3 habits this week.'
+              : 'Add up to 3 new habits to try that align to your Summit vision.'}
           </p>
 
           {/* Custom Habit Input - Always visible first */}

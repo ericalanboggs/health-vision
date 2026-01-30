@@ -22,6 +22,7 @@ import NorthStarStep from '../components/steps/NorthStarStep'
 import CardinalDirectionsStep from '../components/steps/CardinalDirectionsStep'
 import TerrainStep from '../components/steps/TerrainStep'
 import RouteStep from '../components/steps/RouteStep'
+import QuickStartVision from '../components/steps/QuickStartVision'
 import SummaryPage from '../components/steps/SummaryPage'
 import VisionDisplay from '../components/VisionDisplay'
 import { Card, Button } from '@summit/design-system'
@@ -77,7 +78,15 @@ export default function Vision() {
       id: 'intro',
       label: 'Intro',
       icon: Flag,
-      shortLabel: 'Intro'
+      shortLabel: 'Intro',
+      hidden: true, // Hide from stepper
+    },
+    {
+      id: 'quickstart',
+      label: 'Quick Start',
+      icon: () => <MaterialSymbol name="bolt" className="text-[20px]" />,
+      shortLabel: 'Quick',
+      hidden: true, // Hide from stepper (uses own progress)
     },
     {
       id: 'vision',
@@ -187,12 +196,39 @@ export default function Vision() {
     }
   }
 
+  const handleSelectPath = (path) => {
+    trackEvent('vision_path_selected', { path })
+    if (path === 'quickstart') {
+      const quickstartIndex = steps.findIndex(s => s.id === 'quickstart')
+      setCurrentStep(quickstartIndex)
+    } else {
+      // Detailed path - go to vision step
+      const visionIndex = steps.findIndex(s => s.id === 'vision')
+      setCurrentStep(visionIndex)
+    }
+  }
+
+  const handleQuickStartComplete = async (prefetchedHabits) => {
+    trackEvent('vision_quickstart_completed')
+    // Save the journey before navigating
+    await saveJourney(formData, 'summary')
+    // Navigate to habit creation page with prefetched habits
+    navigate('/add-habit', {
+      state: {
+        prefetchedHabits,
+        fromQuickStart: true
+      }
+    })
+  }
+
   const renderStepContent = () => {
     const stepId = steps[currentStep].id
 
     switch (stepId) {
       case 'intro':
-        return <IntroPage onNext={handleNext} />
+        return <IntroPage onSelectPath={handleSelectPath} />
+      case 'quickstart':
+        return <QuickStartVision formData={formData} updateFormData={updateFormData} onComplete={handleQuickStartComplete} />
       case 'vision':
         return <NorthStarStep formData={formData} updateFormData={updateFormData} onNext={handleNext} />
       case 'basecamp':
@@ -207,7 +243,7 @@ export default function Vision() {
           if (index !== -1) setCurrentStep(index)
         }} />
       default:
-        return <IntroPage onNext={handleNext} />
+        return <IntroPage onSelectPath={handleSelectPath} />
     }
   }
 
@@ -216,10 +252,19 @@ export default function Vision() {
     return <VisionDisplay formData={formData} />
   }
 
+  // Filter visible steps for stepper (exclude hidden steps like intro/quickstart)
+  const visibleSteps = steps.filter(s => !s.hidden)
+  const currentStepId = steps[currentStep].id
+  const showStepper = !['intro', 'quickstart'].includes(currentStepId)
+  const showBackButton = currentStep > 0 && !['summary', 'quickstart'].includes(currentStepId)
+
+  // Find current visible step index for stepper display
+  const currentVisibleIndex = visibleSteps.findIndex(s => s.id === currentStepId)
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
       {/* Back Button */}
-      {currentStep > 0 && steps[currentStep].id !== 'summary' && (
+      {showBackButton && (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
           <Button
             variant="ghost"
@@ -231,21 +276,23 @@ export default function Vision() {
         </div>
       )}
 
-      {/* Progress Stepper */}
+      {/* Progress Stepper - hidden for intro and quickstart */}
+      {showStepper && (
       <div className={`bg-transparent sticky top-0 z-10 transition-transform duration-300 ${headerVisible ? 'translate-y-0' : '-translate-y-full'}`}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           {/* Desktop Stepper */}
           <div className="hidden md:flex items-center justify-between">
-            {steps.map((step, index) => {
+            {visibleSteps.map((step, index) => {
               const Icon = step.icon
-              const isActive = index === currentStep
-              const isCompleted = index < currentStep
-              const isAccessible = index <= currentStep
+              const stepIndex = steps.findIndex(s => s.id === step.id)
+              const isActive = stepIndex === currentStep
+              const isCompleted = stepIndex < currentStep
+              const isAccessible = stepIndex <= currentStep
 
               return (
                 <div key={step.id} className="flex items-center flex-1">
                   <button
-                    onClick={() => isAccessible && setCurrentStep(index)}
+                    onClick={() => isAccessible && setCurrentStep(stepIndex)}
                     disabled={!isAccessible}
                     className={`flex items-center gap-3 transition-all ${
                       isAccessible ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
@@ -276,7 +323,7 @@ export default function Vision() {
                       </div>
                     </div>
                   </button>
-                  {index < steps.length - 1 && (
+                  {index < visibleSteps.length - 1 && (
                     <div
                       className={`flex-1 h-0.5 mx-4 transition-all ${
                         isCompleted ? 'bg-summit-emerald' : 'bg-stone-200'
@@ -292,7 +339,7 @@ export default function Vision() {
           <div className="md:hidden">
             <div className="flex items-center justify-between mb-2">
               <span className="text-body-sm text-text-secondary">
-                Step {currentStep + 1} of {steps.length}
+                Step {currentVisibleIndex + 1} of {visibleSteps.length}
               </span>
               <span className="text-body-sm font-semibold text-summit-emerald">
                 {steps[currentStep].label}
@@ -301,12 +348,13 @@ export default function Vision() {
             <div className="w-full bg-summit-sage rounded-full h-2">
               <div
                 className="bg-summit-emerald h-2 rounded-full transition-all duration-300"
-                style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+                style={{ width: `${((currentVisibleIndex + 1) / visibleSteps.length) * 100}%` }}
               />
             </div>
           </div>
         </div>
       </div>
+      )}
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -317,7 +365,7 @@ export default function Vision() {
 }
 
 // Introduction Page Component
-const IntroPage = ({ onNext }) => {
+const IntroPage = ({ onSelectPath }) => {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="text-center mb-8">
@@ -333,7 +381,7 @@ const IntroPage = ({ onNext }) => {
         </h1>
       </div>
 
-      <Card className="mb-8 border border-summit-sage">
+      <Card className="mb-6 border border-summit-sage">
         <h2 className="text-h2 text-summit-forest mb-4">
           Why Vision Matters
         </h2>
@@ -353,33 +401,58 @@ const IntroPage = ({ onNext }) => {
           <p>
             A clear vision makes habit formation easier—even when it's hard—because it gives you something to return to when motivation fades.
           </p>
-          <p>
-            Let's create yours together, step by step.
-          </p>
         </div>
-
-        <div className="bg-summit-sage/50 rounded-xl border border-summit-sage p-6 mb-6">
-          <h3 className="text-h3 text-summit-forest mb-3">Tips for Success</h3>
-          <ul className="space-y-2 text-body-sm text-summit-forest">
-            <li>• <strong>Be honest:</strong> This is for you, not anyone else</li>
-            <li>• <strong>Think big:</strong> Your vision should inspire you</li>
-            <li>• <strong>Be specific:</strong> Vivid details make your vision more powerful</li>
-            <li>• <strong>Take your time:</strong> Your answers auto-save, so you can pause anytime</li>
-          </ul>
-        </div>
-
-        <Button
-          onClick={onNext}
-          size="lg"
-          className="w-full bg-summit-emerald hover:bg-emerald-700 text-white"
-          rightIcon={<ArrowForward className="w-5 h-5" />}
-        >
-          Start Creating Your Vision
-        </Button>
       </Card>
 
+      {/* Path Selection Cards */}
+      <div className="space-y-4 mb-8">
+        {/* Quick Start Card */}
+        <button
+          onClick={() => onSelectPath('quickstart')}
+          className="w-full text-left bg-white p-6 rounded-xl border-2 border-summit-sage hover:border-summit-emerald transition-all shadow-sm hover:shadow-md group"
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              <span className="text-3xl">⚡</span>
+              <div>
+                <h3 className="text-lg font-semibold text-summit-forest mb-1">Quick Start</h3>
+                <p className="text-body-sm text-stone-600 mb-2">
+                  Answer 10 quick questions to get started fast
+                </p>
+                <span className="inline-block text-xs text-stone-500 bg-summit-mint px-2 py-1 rounded-full">
+                  ~2-3 minutes
+                </span>
+              </div>
+            </div>
+            <ArrowForward className="w-5 h-5 text-stone-400 group-hover:text-summit-emerald transition-colors" />
+          </div>
+        </button>
+
+        {/* Detailed Vision Card */}
+        <button
+          onClick={() => onSelectPath('detailed')}
+          className="w-full text-left bg-white p-6 rounded-xl border-2 border-summit-sage hover:border-summit-emerald transition-all shadow-sm hover:shadow-md group"
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              <span className="text-3xl">🏔️</span>
+              <div>
+                <h3 className="text-lg font-semibold text-summit-forest mb-1">Detailed Vision</h3>
+                <p className="text-body-sm text-stone-600 mb-2">
+                  Take your time with guided questions for a deeper vision
+                </p>
+                <span className="inline-block text-xs text-stone-500 bg-summit-mint px-2 py-1 rounded-full">
+                  ~5-10 minutes
+                </span>
+              </div>
+            </div>
+            <ArrowForward className="w-5 h-5 text-stone-400 group-hover:text-summit-emerald transition-colors" />
+          </div>
+        </button>
+      </div>
+
       <div className="text-center text-body-sm text-text-muted">
-        <p>Takes about 5-10 minutes • Progress is automatically saved</p>
+        <p>Progress is automatically saved • You can expand your vision later</p>
       </div>
     </div>
   )

@@ -226,6 +226,51 @@ Return ONLY the short phrase in title case, no quotes or punctuation at the end.
 }
 
 /**
+ * Consolidate and clean up vision text for clarity and conciseness
+ * Removes redundancy and combines similar ideas into flowing prose
+ */
+export const consolidateVisionText = async (visionText) => {
+  try {
+    const client = getOpenAIClient()
+
+    const prompt = `Rewrite this vision statement to be clear, concise, and free of redundancy. Combine similar ideas and remove repetition while preserving the person's authentic voice and goals.
+
+Original: "${visionText}"
+
+Rules:
+- Remove duplicate or overlapping ideas (e.g., "feel energized" and "have energy" should become one idea)
+- Write in first person ("I...")
+- Keep it to 2-4 sentences maximum
+- Preserve the emotional tone and personal meaning
+- Make it flow naturally as a cohesive vision statement
+
+Return ONLY the rewritten vision text, no quotes or explanation.`
+
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an editor who consolidates text for clarity while preserving authentic voice. Return only the requested format.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.4,
+      max_tokens: 150
+    })
+
+    return response.choices[0].message.content.trim()
+  } catch (error) {
+    console.error('AI Vision Consolidation Error:', error)
+    // Return original text if API fails
+    return visionText
+  }
+}
+
+/**
  * Extract 3 key adjectives from a vision statement
  */
 export const extractVisionAdjectives = async (visionText) => {

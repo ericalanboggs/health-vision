@@ -35,9 +35,12 @@ export const saveHabits = async (habits) => {
       timezone: habit.timezone || 'America/Chicago',
     }))
 
+    // Use upsert to handle conflicts - if habit exists for this day, update it
     const { data, error } = await supabase
       .from('weekly_habits')
-      .insert(habitsToInsert)
+      .upsert(habitsToInsert, {
+        onConflict: 'user_id,habit_name,day_of_week'
+      })
       .select()
 
     if (error) {

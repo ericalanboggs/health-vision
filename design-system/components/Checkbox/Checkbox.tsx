@@ -8,7 +8,7 @@ const checkboxVariants = cva(
     'relative inline-flex items-center justify-center',
     'border-2 border-summit-sage',
     'bg-white',
-    'transition-all duration-medium ease-out',
+    'transition-colors duration-medium ease-out',
     'cursor-pointer',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-summit-emerald focus-visible:ring-offset-2',
     'disabled:cursor-not-allowed disabled:opacity-50',
@@ -16,9 +16,9 @@ const checkboxVariants = cva(
   {
     variants: {
       size: {
-        sm: 'h-6 w-6',
-        md: 'h-8 w-8',
-        lg: 'h-10 w-10',
+        sm: 'h-6 w-6 min-h-6 min-w-6',
+        md: 'h-8 w-8 min-h-8 min-w-8',
+        lg: 'h-10 w-10 min-h-10 min-w-10',
       },
       shape: {
         circle: 'rounded-full',
@@ -96,9 +96,11 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
       onChange?.(e)
     }
 
+    const hasLabelContent = label || description
+
     return (
-      <div className={cn('flex items-start gap-3', className)}>
-        <div className="relative">
+      <div className={cn('flex items-center', hasLabelContent && 'gap-3', className)}>
+        <div className="relative flex-shrink-0 flex items-center justify-center">
           <input
             ref={ref}
             type="checkbox"

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ArrowBack, CheckCircle, Autorenew, Science } from '@mui/icons-material'
 import { saveHabits } from '../services/habitService'
@@ -18,24 +18,6 @@ export default function ScheduleHabits() {
   const [timePreferences, setTimePreferences] = useState(
     habits.reduce((acc, _, index) => ({ ...acc, [index]: 'mid-morning' }), {})
   )
-  const [headerVisible, setHeaderVisible] = useState(true)
-  const lastScrollY = useRef(0)
-
-  // Headroom behavior for nav
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY
-      if (currentScrollY > lastScrollY.current && currentScrollY > 60) {
-        setHeaderVisible(false)
-      } else {
-        setHeaderVisible(true)
-      }
-      lastScrollY.current = currentScrollY
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
 
   useEffect(() => {
     const fetchUserTimezone = async () => {
@@ -84,25 +66,27 @@ export default function ScheduleHabits() {
     }))
   }
 
-  const handleSave = async () => {
-    // Validate that all habits have at least one day selected
-    const allHaveDays = habits.every((_, index) => {
-      const days = dayCommitments[index] || []
-      return days.length > 0
-    })
+  // Check if at least one habit has at least one day selected
+  const hasAtLeastOneScheduled = habits.some((_, index) => {
+    const days = dayCommitments[index] || []
+    return days.length > 0
+  })
 
-    if (!allHaveDays) {
-      alert('Please select at least one day for each habit.')
+  const handleSave = async () => {
+    if (!hasAtLeastOneScheduled) {
+      alert('Please select at least one day for at least one habit.')
       return
     }
 
     setSaving(true)
 
     try {
-      // Create habits array for database
+      // Create habits array for database (only include habits with at least one day selected)
       const newHabits = []
       habits.forEach((habit, index) => {
         const selectedDays = dayCommitments[index] || []
+        if (selectedDays.length === 0) return // Skip habits with no days selected
+
         const timeSlot = timePreferences[index] || 'mid-morning'
         const timeOption = timeOfDayOptions.find(opt => opt.value === timeSlot)
         const reminderTime = `${String(timeOption.hour).padStart(2, '0')}:00:00`
@@ -152,19 +136,6 @@ export default function ScheduleHabits() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
-      {/* Header */}
-      <header className={`bg-transparent sticky top-0 z-10 transition-transform duration-300 ${headerVisible ? 'translate-y-0' : '-translate-y-full'}`}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <button
-            onClick={() => navigate('/add-habit')}
-            className="flex items-center gap-2 text-text-secondary hover:text-summit-forest font-medium transition-colors"
-          >
-            <ArrowBack className="w-5 h-5" />
-            Back
-          </button>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
@@ -174,7 +145,7 @@ export default function ScheduleHabits() {
           </p>
         </div>
 
-        <Card className="border border-gray-200">
+        <Card className="border border-gray-200 mb-6">
           <CardHeader className="mb-4">
             <div className="flex items-center gap-3 mb-3">
               <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-summit-sage">
@@ -245,26 +216,31 @@ export default function ScheduleHabits() {
               )
             })}
           </div>
+        </Card>
 
-          {/* Save Button */}
-          <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
-            <Button
-              onClick={() => navigate('/add-habit')}
-              variant="secondary"
-            >
-              Back
-            </Button>
+        {/* Bottom Navigation */}
+        <div className="flex justify-between items-center">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+            leftIcon={<ArrowBack className="w-5 h-5" />}
+          >
+            Back
+          </Button>
+
+          {hasAtLeastOneScheduled && (
             <Button
               onClick={handleSave}
               disabled={saving}
               loading={saving}
               variant="primary"
+              size="lg"
               leftIcon={!saving && <CheckCircle className="w-5 h-5" />}
             >
               {saving ? 'Saving...' : 'Save Habits'}
             </Button>
-          </div>
-        </Card>
+          )}
+        </div>
       </main>
     </div>
   )
