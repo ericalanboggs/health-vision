@@ -54,7 +54,7 @@ export default function WelcomeModal({ isOpen, onClose }) {
               <ul className="space-y-2 text-sm text-stone-700">
                 <li className="flex items-start">
                   <span className="mr-2">•</span>
-                  <span>For technical issues or product ideas/feedback, text or email Eric</span>
+                  <span>For technical issues or product ideas/feedback, email help@summithealth.app</span>
                 </li>
                 <li className="flex items-start">
                   <span className="mr-2">•</span>

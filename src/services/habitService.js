@@ -35,12 +35,21 @@ export const saveHabits = async (habits) => {
       timezone: habit.timezone || 'America/Chicago',
     }))
 
-    // Use upsert to handle conflicts - if habit exists for this day, update it
+    // Delete existing habits for the same user/habit/day combinations first
+    // This avoids unique constraint issues
+    for (const habit of habitsToInsert) {
+      await supabase
+        .from('weekly_habits')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('habit_name', habit.habit_name)
+        .eq('day_of_week', habit.day_of_week)
+    }
+
+    // Insert new habits
     const { data, error } = await supabase
       .from('weekly_habits')
-      .upsert(habitsToInsert, {
-        onConflict: 'user_id,habit_name,day_of_week'
-      })
+      .insert(habitsToInsert)
       .select()
 
     if (error) {

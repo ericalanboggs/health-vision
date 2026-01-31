@@ -41,7 +41,7 @@ export const RadioSelect: React.FC<RadioSelectProps> = ({
                 'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all',
                 isSelected
                   ? 'border-summit-emerald'
-                  : 'border-stone-400'
+                  : 'border-summit-moss'
               )}
             >
               {isSelected && (

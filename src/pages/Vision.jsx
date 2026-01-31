@@ -145,12 +145,17 @@ export default function Vision() {
           const summaryIndex = steps.findIndex(s => s.id === 'summary')
           setCurrentStep(summaryIndex)
         } else {
-          // Otherwise, use saved step or start from beginning
+          // Only resume if user was in the middle of the detailed flow
+          // (not intro or quickstart - those should show the fork again)
           const savedStepId = result.data.current_step
-          const savedStepIndex = steps.findIndex(s => s.id === savedStepId)
-          if (savedStepIndex !== -1) {
-            setCurrentStep(savedStepIndex)
+          const detailedFlowSteps = ['vision', 'basecamp', 'current', 'capacity']
+          if (detailedFlowSteps.includes(savedStepId)) {
+            const savedStepIndex = steps.findIndex(s => s.id === savedStepId)
+            if (savedStepIndex !== -1) {
+              setCurrentStep(savedStepIndex)
+            }
           }
+          // Otherwise, stay at intro (step 0) to show the fork
         }
       }
     }
@@ -192,7 +197,13 @@ export default function Vision() {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1)
+      const currentStepId = steps[currentStep].id
+      // If on 'vision' step (detailed flow), go back to intro, not quickstart
+      if (currentStepId === 'vision') {
+        setCurrentStep(0) // Go to intro
+      } else {
+        setCurrentStep(currentStep - 1)
+      }
     }
   }
 
@@ -228,7 +239,7 @@ export default function Vision() {
       case 'intro':
         return <IntroPage onSelectPath={handleSelectPath} />
       case 'quickstart':
-        return <QuickStartVision formData={formData} updateFormData={updateFormData} onComplete={handleQuickStartComplete} />
+        return <QuickStartVision formData={formData} updateFormData={updateFormData} onComplete={handleQuickStartComplete} onBack={() => setCurrentStep(0)} />
       case 'vision':
         return <NorthStarStep formData={formData} updateFormData={updateFormData} onNext={handleNext} />
       case 'basecamp':
@@ -451,7 +462,7 @@ const IntroPage = ({ onSelectPath }) => {
         </button>
       </div>
 
-      <div className="text-center text-body-sm text-text-muted">
+      <div className="text-center text-body-sm text-summit-moss">
         <p>Progress is automatically saved • You can expand your vision later</p>
       </div>
     </div>

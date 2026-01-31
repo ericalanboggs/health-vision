@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import { CalendarMonth, Chat, AutoAwesome, ArrowForward } from '@mui/icons-material'
+import { Terrain, Science, Chat } from '@mui/icons-material'
+import { Button, Card } from '@summit/design-system'
 
 export default function Start() {
   const navigate = useNavigate()
@@ -14,99 +15,83 @@ export default function Start() {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-summit-mint rounded-full flex items-center justify-center">
+            <div className="w-20 h-20 bg-summit-sage rounded-full flex items-center justify-center">
               <span className="text-4xl">🏔️</span>
             </div>
           </div>
-          
-          <h1 className="text-4xl sm:text-5xl font-bold text-summit-forest mb-4">
-            Welcome to Your Summit Pilot
+
+          <h1 className="text-h1 text-summit-forest mb-4">
+            How Summit Works
           </h1>
-          
-          <p className="text-xl text-stone-600 max-w-2xl mx-auto">
-            This is a 3-week pilot program to help you build sustainable health habits.
+
+          <p className="text-body-lg text-text-secondary max-w-2xl mx-auto">
+            Turn your vision into simple, sustainable habits—designed for your life right now.
           </p>
         </div>
 
         {/* Main Content Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-stone-200 p-8 sm:p-10 mb-8">
-          {/* Program Overview */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-summit-forest mb-4">
-              How It Works
-            </h2>
-            <p className="text-stone-600 text-lg leading-relaxed">
-              Each week, commit to 1–2 habits and reflect on how they're going. If you opt in, you'll receive SMS reminders at the times you choose.
-            </p>
-          </div>
-
+        <Card className="p-8 sm:p-10 mb-8">
           {/* Features */}
           <div className="space-y-6 mb-10">
             <div className="flex gap-4">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-summit-mint rounded-lg flex items-center justify-center">
-                  <AutoAwesome className="w-6 h-6 text-summit-moss" />
+                <div className="w-12 h-12 bg-summit-sage rounded-lg flex items-center justify-center">
+                  <Terrain className="w-6 h-6 text-summit-emerald" />
                 </div>
               </div>
               <div>
                 <h3 className="font-semibold text-summit-forest mb-1">
                   Create Your Vision
                 </h3>
-                <p className="text-stone-600">
-                  You'll start by defining a clear vision—your "why." This becomes your reference point and guides everything you build from here.
+                <p className="text-text-secondary">
+                  Start by defining a clear vision—your "why." This becomes your reference point and guides everything you build from here.
                 </p>
               </div>
             </div>
 
             <div className="flex gap-4">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-summit-mint rounded-lg flex items-center justify-center">
-                  <CalendarMonth className="w-6 h-6 text-summit-moss" />
+                <div className="w-12 h-12 bg-summit-sage rounded-lg flex items-center justify-center">
+                  <Science className="w-6 h-6 text-summit-emerald" />
                 </div>
               </div>
               <div>
                 <h3 className="font-semibold text-summit-forest mb-1">
-                  Weekly Habit Building
+                  Build Small Habits
                 </h3>
-                <p className="text-stone-600">
-                  Choose 1–2 habits each week that align with your vision. Small, intentional steps create meaningful, lasting change.
+                <p className="text-text-secondary">
+                  Choose 1–3 habits that align with your vision. Small, intentional steps create meaningful, lasting change.
                 </p>
               </div>
             </div>
 
             <div className="flex gap-4">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-summit-mint rounded-lg flex items-center justify-center">
-                  <Chat className="w-6 h-6 text-summit-moss" />
+                <div className="w-12 h-12 bg-summit-sage rounded-lg flex items-center justify-center">
+                  <Chat className="w-6 h-6 text-summit-emerald" />
                 </div>
               </div>
               <div>
                 <h3 className="font-semibold text-summit-forest mb-1">
-                  SMS Reminders (Optional)
+                  Stay on Track
                 </h3>
-                <p className="text-stone-600">
-                  Get personalized reminders to support your habits—on your schedule, and only if you want them.
+                <p className="text-text-secondary">
+                  Get optional SMS reminders and check-ins to help you stay consistent—on your schedule.
                 </p>
               </div>
             </div>
           </div>
 
           {/* CTA */}
-          <button
+          <Button
             onClick={handleGetStarted}
-            className="w-full bg-summit-emerald hover:bg-emerald-700 text-white font-semibold py-4 px-6 rounded-lg transition flex items-center justify-center gap-2 text-lg"
+            variant="primary"
+            size="lg"
+            className="w-full"
           >
-            Get Started
-            <ArrowForward className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Footer Note */}
-        <div className="text-center">
-          <p className="text-sm text-stone-500">
-            This pilot program runs for 3 weeks. Let's build something meaningful together.
-          </p>
-        </div>
+            Get Started →
+          </Button>
+        </Card>
       </div>
     </div>
   )

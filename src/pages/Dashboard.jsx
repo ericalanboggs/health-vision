@@ -609,46 +609,41 @@ export default function Dashboard() {
 
         {/* Coaching Section */}
         <Card className="border border-gray-200">
-          <div className="flex items-start gap-4">
-            <img
-              src={coachEric}
-              alt="Coach Eric"
-              className="h-14 w-14 rounded-xl object-cover flex-shrink-0"
-            />
-
-            <div className="flex-1 min-w-0">
-              <CardHeader className="mb-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <CardTitle className="text-h2">Coaching</CardTitle>
-                  <div className="relative group/tooltip">
-                    <HelpOutline className="h-5 w-5 text-text-muted hover:text-summit-forest cursor-help transition" />
-                    <div className="absolute left-0 top-8 w-80 bg-summit-forest text-white p-4 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-10">
-                      <p className="font-semibold mb-2">What coaching means in Summit</p>
-                      <p className="text-sm leading-relaxed">This isn't someone telling you how to live your life. Coaching is about being heard, thinking things through together, and recognizing that you already have the answers—you just may need space and support to uncover them.</p>
-                      <div className="absolute -top-2 left-4 w-4 h-4 bg-summit-forest transform rotate-45"></div>
-                    </div>
-                  </div>
+          <CardHeader className="mb-4">
+            <div className="flex items-center gap-3 mb-3">
+              <img
+                src={coachEric}
+                alt="Coach Eric"
+                className="h-10 w-10 rounded-lg object-cover flex-shrink-0"
+              />
+              <CardTitle className="text-h3">Coaching</CardTitle>
+              <div className="relative group/tooltip">
+                <HelpOutline className="h-5 w-5 text-text-muted hover:text-summit-forest cursor-help transition" />
+                <div className="absolute left-0 top-8 w-80 bg-summit-forest text-white p-4 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-10">
+                  <p className="font-semibold mb-2">What coaching means in Summit</p>
+                  <p className="text-sm leading-relaxed">This isn't someone telling you how to live your life. Coaching is about being heard, thinking things through together, and recognizing that you already have the answers—you just may need space and support to uncover them.</p>
+                  <div className="absolute -top-2 left-4 w-4 h-4 bg-summit-forest transform rotate-45"></div>
                 </div>
-                <Tag size="sm" variant="secondary" className="w-fit mb-2">
-                  Optional 30 minute session
-                </Tag>
-                <CardDescription className="leading-relaxed">
-                  Need a hand? Schedule a session with Coach Eric to workshop challenges and make a plan.
-                </CardDescription>
-              </CardHeader>
-
-              <Button
-                variant="primary"
-                rightIcon={<OpenInNew className="h-4 w-4" />}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  window.open('https://cal.com/eric-boggs/30min', '_blank', 'noopener,noreferrer')
-                }}
-              >
-                Schedule Session
-              </Button>
+              </div>
             </div>
-          </div>
+            <Tag size="sm" variant="secondary" className="w-fit mb-2">
+              Optional 30 minute session
+            </Tag>
+            <CardDescription className="text-body mb-3">
+              Need a hand? Schedule a session with Coach Eric to workshop challenges and make a plan.
+            </CardDescription>
+          </CardHeader>
+
+          <Button
+            variant="primary"
+            rightIcon={<OpenInNew className="h-4 w-4" />}
+            onClick={(e) => {
+              e.stopPropagation()
+              window.open('https://cal.com/eric-boggs/30min', '_blank', 'noopener,noreferrer')
+            }}
+          >
+            Schedule Session
+          </Button>
         </Card>
       </main>
     </div>

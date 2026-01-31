@@ -5,7 +5,7 @@ import { Button } from '@summit/design-system'
 import { extractVisionAdjectives, consolidateVisionText, enhanceActionPlan } from '../../utils/aiService'
 import { generateActionPlan } from '../../utils/planGenerator'
 
-const QuickStartVision = ({ formData, updateFormData, onComplete }) => {
+const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBackToIntro }) => {
   const navigate = useNavigate()
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [otherText, setOtherText] = useState({})
@@ -395,25 +395,64 @@ const QuickStartVision = ({ formData, updateFormData, onComplete }) => {
     const q = currentQ
 
     if (q.type === 'slider') {
+      const value = formData[q.field] || 5
+      const percentage = ((value - q.min) / (q.max - q.min)) * 100
+      const steps = Array.from({ length: q.max - q.min + 1 }, (_, i) => q.min + i)
+
       return (
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl shadow-md border border-stone-200">
-            <div className="flex items-center gap-4 mb-4">
-              <span className="text-lg font-medium text-stone-500">1</span>
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-md border border-stone-200">
+            {/* Slider track with gradient fill */}
+            <div className="relative mb-6">
+              {/* Track background */}
+              <div className="relative h-3 bg-stone-200 rounded-full">
+                {/* Filled portion (gradient) */}
+                <div
+                  className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-summit-sage to-summit-emerald transition-all duration-150"
+                  style={{ width: `${percentage}%` }}
+                />
+              </div>
+
+              {/* Invisible range input for interaction */}
               <input
                 type="range"
                 min={q.min}
                 max={q.max}
-                value={formData[q.field] || 5}
+                value={value}
                 onChange={(e) => updateFormData(q.field, parseInt(e.target.value))}
-                className="flex-1 h-3 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-summit-emerald"
+                className="absolute top-0 left-0 w-full h-3 opacity-0 cursor-pointer"
               />
-              <span className="text-lg font-medium text-stone-500">10</span>
+
+              {/* Custom thumb */}
+              <div
+                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none transition-all duration-150"
+                style={{ left: `${percentage}%` }}
+              >
+                <div className="w-8 h-8 bg-summit-emerald rounded-full border-4 border-white shadow-lg flex items-center justify-center">
+                  <span className="text-xs font-bold text-white">{value}</span>
+                </div>
+              </div>
             </div>
-            <div className="text-center">
-              <span className="text-6xl font-bold text-summit-emerald">{formData[q.field] || 5}</span>
-              <span className="text-2xl text-stone-500 ml-2">/ 10</span>
+
+            {/* Step indicators */}
+            <div className="flex justify-between px-1">
+              {steps.map((step) => (
+                <button
+                  key={step}
+                  onClick={() => updateFormData(q.field, step)}
+                  className={`w-8 h-8 rounded-full text-sm font-medium transition-all ${
+                    step === value
+                      ? 'bg-summit-emerald text-white'
+                      : step < value
+                      ? 'bg-summit-sage text-summit-forest'
+                      : 'bg-stone-100 text-stone-400 hover:bg-stone-200'
+                  }`}
+                >
+                  {step}
+                </button>
+              ))}
             </div>
+
           </div>
         </div>
       )
@@ -689,17 +728,13 @@ const QuickStartVision = ({ formData, updateFormData, onComplete }) => {
 
       {/* Navigation */}
       <div className="flex justify-between items-center">
-        {currentQuestion > 0 ? (
-          <Button
-            variant="ghost"
-            onClick={handleBack}
-            leftIcon={<ArrowBack className="w-5 h-5" />}
-          >
-            Back
-          </Button>
-        ) : (
-          <div />
-        )}
+        <Button
+          variant="ghost"
+          onClick={currentQuestion > 0 ? handleBack : onBackToIntro}
+          leftIcon={<ArrowBack className="w-5 h-5" />}
+        >
+          Back
+        </Button>
 
         <Button
           onClick={handleNext}

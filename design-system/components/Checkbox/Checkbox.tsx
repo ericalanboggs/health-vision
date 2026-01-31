@@ -6,7 +6,7 @@ import { Check } from 'lucide-react'
 const checkboxVariants = cva(
   [
     'relative inline-flex items-center justify-center',
-    'border-2 border-summit-sage',
+    'border-2 border-summit-moss',
     'bg-white',
     'transition-colors duration-medium ease-out',
     'cursor-pointer',
@@ -55,6 +55,10 @@ export interface CheckboxProps
   description?: string
   /** Whether the checkbox is in an indeterminate state */
   indeterminate?: boolean
+  /** Whether to show strikethrough on label when checked (default: false) */
+  strikethrough?: boolean
+  /** Vertical alignment when label/description present: 'top' or 'center' (default: 'center') */
+  align?: 'top' | 'center'
 }
 
 const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
@@ -66,6 +70,8 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
       label,
       description,
       indeterminate,
+      strikethrough = false,
+      align = 'center',
       checked,
       defaultChecked,
       disabled,
@@ -99,7 +105,12 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     const hasLabelContent = label || description
 
     return (
-      <div className={cn('flex items-center', hasLabelContent && 'gap-3', className)}>
+      <div className={cn(
+        'flex',
+        hasLabelContent && align === 'top' ? 'items-start' : 'items-center',
+        hasLabelContent && 'gap-3',
+        className
+      )}>
         <div className="relative flex-shrink-0 flex items-center justify-center">
           <input
             ref={ref}
@@ -147,7 +158,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
           </label>
         </div>
         {(label || description) && (
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-1">
             {label && (
               <label
                 htmlFor={checkboxId}
@@ -156,7 +167,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
                   size === 'sm' && 'text-sm',
                   size === 'md' && 'text-base',
                   size === 'lg' && 'text-lg',
-                  checkedState && 'line-through opacity-50',
+                  strikethrough && checkedState && 'line-through opacity-50',
                   disabled && 'cursor-not-allowed opacity-50'
                 )}
               >
@@ -166,7 +177,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
             {description && (
               <span
                 className={cn(
-                  'text-text-muted',
+                  'text-text-secondary',
                   size === 'sm' && 'text-xs',
                   size === 'md' && 'text-sm',
                   size === 'lg' && 'text-base'

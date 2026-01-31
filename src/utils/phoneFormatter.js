@@ -50,19 +50,43 @@ export function isValidUSPhoneNumber(phone) {
  */
 export function formatPhoneForDisplay(phone) {
   if (!phone) return ''
-  
+
   const digits = phone.replace(/\D/g, '')
-  
+
   // Handle 10-digit US numbers
   if (digits.length === 10) {
     return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
   }
-  
+
   // Handle 11-digit numbers (with country code)
   if (digits.length === 11 && digits.startsWith('1')) {
     return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`
   }
-  
+
   // Return as-is if not a standard format
   return phone
+}
+
+/**
+ * Format phone number as user types (XXX-XXX-XXXX)
+ * @param {string} phone - Phone number input
+ * @returns {string} Formatted phone number with dashes
+ */
+export function formatPhoneAsYouType(phone) {
+  if (!phone) return ''
+
+  // Remove all non-digit characters
+  const digits = phone.replace(/\D/g, '')
+
+  // Limit to 10 digits
+  const limited = digits.slice(0, 10)
+
+  // Format with dashes as user types
+  if (limited.length <= 3) {
+    return limited
+  }
+  if (limited.length <= 6) {
+    return `${limited.slice(0, 3)}-${limited.slice(3)}`
+  }
+  return `${limited.slice(0, 3)}-${limited.slice(3, 6)}-${limited.slice(6)}`
 }
