@@ -1,8 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { sendEmail } from '../_shared/resend.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-const RESEND_FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'Summit <hello@summithealth.app>'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
@@ -355,35 +355,25 @@ serve(async (req) => {
     const htmlContent = markdownToHtml(digest.email_markdown)
     const fullHtml = buildEmailHtml(htmlContent, firstName)
 
-    // Send via Resend
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: RESEND_FROM_EMAIL,
-        to: recipientEmail,
-        subject: digest.subject,
-        html: fullHtml,
-      }),
+    // Send via Resend (with retry on rate limit)
+    const result = await sendEmail({
+      to: recipientEmail,
+      subject: digest.subject,
+      html: fullHtml,
     })
 
-    const resendData = await response.json()
-
-    if (!response.ok) {
-      console.error('Resend error:', resendData)
+    if (!result.success) {
+      console.error('Resend error:', result.error)
       return new Response(JSON.stringify({
         error: 'Failed to send email',
-        details: resendData
+        details: result.error
       }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       })
     }
 
-    console.log(`✓ Email sent successfully! Resend ID: ${resendData.id}`)
+    console.log(`✓ Email sent successfully! Resend ID: ${result.id}`)
 
     // Update digest status if not using email_override (i.e., real send)
     if (!email_override) {
@@ -403,14 +393,14 @@ serve(async (req) => {
       email_type: 'weekly_digest',
       subject: digest.subject,
       status: 'sent',
-      resend_id: resendData.id,
+      resend_id: result.id,
     })
 
     return new Response(
       JSON.stringify({
         success: true,
         message: 'Weekly digest sent successfully',
-        resend_id: resendData.id,
+        resend_id: result.id,
         recipient: recipientEmail,
         subject: digest.subject,
         digest_id: digest.id,

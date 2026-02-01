@@ -1,10 +1,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { sendEmailsInBatches, type EmailPayload } from '../_shared/resend.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-const RESEND_FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'Summit <hello@summithealth.app>'
 const PILOT_START_DATE = Deno.env.get('PILOT_START_DATE') || '2026-01-12'
 
 // Accessible green color (4.5:1 contrast ratio on white)
@@ -221,33 +221,6 @@ function buildEmailHtml(content: string): string {
 `
 }
 
-async function sendEmail(to: string, subject: string, html: string): Promise<{ success: boolean; id?: string; error?: string }> {
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: RESEND_FROM_EMAIL,
-        to,
-        subject,
-        html,
-      }),
-    })
-
-    const data = await response.json()
-
-    if (response.ok) {
-      return { success: true, id: data.id }
-    } else {
-      return { success: false, error: data.message || 'Resend API error' }
-    }
-  } catch (error) {
-    return { success: false, error: error.message }
-  }
-}
 
 serve(async (req) => {
   try {
@@ -380,59 +353,73 @@ serve(async (req) => {
       )
     }
 
-    // Send emails
-    const results: Array<{ userId: string; email: string; status: string; error?: string }> = []
+    // Prepare email payloads for batch sending
+    const emailPayloads: Array<EmailPayload & { userId: string; digestId: string; digestSubject: string }> = []
 
     for (const user of usersToProcess as Profile[]) {
       const digest = digestsByUser.get(user.id)!
-      console.log(`\n--- Sending to ${user.first_name} (${user.email}) ---`)
+      const htmlContent = markdownToHtml(digest.email_markdown)
+      const fullHtml = buildEmailHtml(htmlContent)
 
-      try {
-        const htmlContent = markdownToHtml(digest.email_markdown)
-        const fullHtml = buildEmailHtml(htmlContent)
+      emailPayloads.push({
+        to: user.email,
+        subject: digest.subject,
+        html: fullHtml,
+        userId: user.id,
+        digestId: digest.id,
+        digestSubject: digest.subject,
+      })
+    }
 
-        const result = await sendEmail(user.email, digest.subject, fullHtml)
+    console.log(`\nSending ${emailPayloads.length} emails using batch API...`)
 
-        if (result.success) {
-          // Log to email_reminders
-          await supabase.from('email_reminders').insert({
-            user_id: user.id,
-            email: user.email,
-            email_type: 'weekly_digest',
-            subject: digest.subject,
-            status: 'sent',
-            resend_id: result.id,
-          })
+    // Send all emails in batches (100 per request, with rate limit handling)
+    const batchResults = await sendEmailsInBatches(
+      emailPayloads.map(p => ({ to: p.to, subject: p.subject, html: p.html })),
+      100, // batch size
+      1000 // delay between batches (1 second)
+    )
 
-          // Update digest status
-          await supabase
-            .from('weekly_digests')
-            .update({ status: 'sent', sent_at: new Date().toISOString() })
-            .eq('id', digest.id)
+    // Process results and update database
+    const results: Array<{ userId: string; email: string; status: string; error?: string }> = []
 
-          console.log(`✓ Sent: ${result.id}`)
-          results.push({ userId: user.id, email: user.email, status: 'sent' })
-        } else {
-          throw new Error(result.error)
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        console.error(`✗ Failed: ${errorMessage}`)
+    for (let i = 0; i < batchResults.length; i++) {
+      const result = batchResults[i]
+      const payload = emailPayloads[i]
 
+      if (result.success) {
+        // Log to email_reminders
         await supabase.from('email_reminders').insert({
-          user_id: user.id,
-          email: user.email,
+          user_id: payload.userId,
+          email: payload.to,
           email_type: 'weekly_digest',
-          subject: digest.subject,
-          status: 'failed',
-          error_message: errorMessage,
+          subject: payload.digestSubject,
+          status: 'sent',
+          resend_id: result.id,
         })
 
-        results.push({ userId: user.id, email: user.email, status: 'failed', error: errorMessage })
-      }
+        // Update digest status
+        await supabase
+          .from('weekly_digests')
+          .update({ status: 'sent', sent_at: new Date().toISOString() })
+          .eq('id', payload.digestId)
 
-      // Small delay between sends
-      await new Promise(resolve => setTimeout(resolve, 500))
+        console.log(`✓ Sent to ${payload.to}: ${result.id}`)
+        results.push({ userId: payload.userId, email: payload.to, status: 'sent' })
+      } else {
+        console.error(`✗ Failed to send to ${payload.to}: ${result.error}`)
+
+        await supabase.from('email_reminders').insert({
+          user_id: payload.userId,
+          email: payload.to,
+          email_type: 'weekly_digest',
+          subject: payload.digestSubject,
+          status: 'failed',
+          error_message: result.error,
+        })
+
+        results.push({ userId: payload.userId, email: payload.to, status: 'failed', error: result.error })
+      }
     }
 
     const sent = results.filter(r => r.status === 'sent').length

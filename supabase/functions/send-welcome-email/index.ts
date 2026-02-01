@@ -1,8 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { sendEmail } from '../_shared/resend.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-const RESEND_FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'Summit <hello@summithealth.app>'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
@@ -242,30 +242,16 @@ serve(async (req) => {
       const subject = `Welcome to Summit, ${testName}!`
       const html = buildEmailHtml(testName)
 
-      const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${RESEND_API_KEY}`,
-        },
-        body: JSON.stringify({
-          from: RESEND_FROM_EMAIL,
-          to: testEmail,
-          subject: subject,
-          html: html,
-        }),
-      })
+      const result = await sendEmail({ to: testEmail, subject, html })
 
-      const data = await response.json()
-
-      if (response.ok) {
+      if (result.success) {
         return new Response(
-          JSON.stringify({ message: 'Test welcome email sent', email: testEmail, resendId: data.id }),
+          JSON.stringify({ message: 'Test welcome email sent', email: testEmail, resendId: result.id }),
           { headers: { 'Content-Type': 'application/json' } }
         )
       } else {
         return new Response(
-          JSON.stringify({ error: 'Failed to send test email', details: data }),
+          JSON.stringify({ error: 'Failed to send test email', details: result.error }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
         )
       }
@@ -330,23 +316,9 @@ serve(async (req) => {
 
     console.log(`Sending welcome email to ${profile.email} (${userId})`)
 
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: RESEND_FROM_EMAIL,
-        to: profile.email,
-        subject: subject,
-        html: html,
-      }),
-    })
+    const result = await sendEmail({ to: profile.email, subject, html })
 
-    const data = await response.json()
-
-    if (response.ok) {
+    if (result.success) {
       // Log successful email
       await supabase.from('email_reminders').insert({
         user_id: userId,
@@ -354,7 +326,7 @@ serve(async (req) => {
         email_type: 'welcome',
         subject: subject,
         status: 'sent',
-        resend_id: data.id,
+        resend_id: result.id,
       })
 
       console.log(`✓ Sent welcome email to ${profile.email}`)
@@ -364,13 +336,11 @@ serve(async (req) => {
           message: 'Welcome email sent',
           userId,
           email: profile.email,
-          resendId: data.id,
+          resendId: result.id,
         }),
         { headers: { 'Content-Type': 'application/json' } }
       )
     } else {
-      const errorMessage = data.message || 'Resend API error'
-
       // Log failed email
       await supabase.from('email_reminders').insert({
         user_id: userId,
@@ -378,13 +348,13 @@ serve(async (req) => {
         email_type: 'welcome',
         subject: subject,
         status: 'failed',
-        error_message: errorMessage,
+        error_message: result.error,
       })
 
-      console.error(`✗ Failed to send welcome email to ${profile.email}:`, data)
+      console.error(`✗ Failed to send welcome email to ${profile.email}:`, result.error)
 
       return new Response(
-        JSON.stringify({ error: 'Failed to send email', details: data }),
+        JSON.stringify({ error: 'Failed to send email', details: result.error }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       )
     }

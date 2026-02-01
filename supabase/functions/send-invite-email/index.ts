@@ -1,8 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { sendEmail } from '../_shared/resend.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-const RESEND_FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'Summit <hello@summithealth.app>'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
@@ -227,30 +227,16 @@ serve(async (req) => {
 
     console.log(`Sending invitation email to ${email}`)
 
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: RESEND_FROM_EMAIL,
-        to: email.toLowerCase(),
-        subject: subject,
-        html: html,
-      }),
-    })
+    const result = await sendEmail({ to: email.toLowerCase(), subject, html })
 
-    const data = await response.json()
-
-    if (response.ok) {
+    if (result.success) {
       // Update the invite record with email sent timestamp
       await supabase
         .from('pilot_invites')
         .upsert({
           email: email.toLowerCase(),
           email_sent_at: new Date().toISOString(),
-          resend_id: data.id
+          resend_id: result.id
         }, {
           onConflict: 'email'
         })
@@ -261,7 +247,7 @@ serve(async (req) => {
         JSON.stringify({
           message: 'Invitation email sent',
           email: email.toLowerCase(),
-          resendId: data.id,
+          resendId: result.id,
         }),
         {
           headers: {
@@ -271,10 +257,10 @@ serve(async (req) => {
         }
       )
     } else {
-      console.error(`✗ Failed to send invitation email to ${email}:`, data)
+      console.error(`✗ Failed to send invitation email to ${email}:`, result.error)
 
       return new Response(
-        JSON.stringify({ error: 'Failed to send email', details: data }),
+        JSON.stringify({ error: 'Failed to send email', details: result.error }),
         {
           status: 500,
           headers: {

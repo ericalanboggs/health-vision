@@ -1,8 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { sendEmailsInBatches, type EmailPayload } from '../_shared/resend.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-const RESEND_FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'Summit <hello@summithealth.app>'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const PILOT_START_DATE = Deno.env.get('PILOT_START_DATE') || '2026-01-12'
@@ -308,65 +308,66 @@ serve(async (req) => {
       )
     }
 
-    // Send emails
-    const results = []
+    // Prepare email payloads for batch sending
+    const emailPayloads: Array<EmailPayload & { userId: string; emailSubject: string }> = []
 
     for (const user of usersToEmail) {
       const firstName = user.first_name || 'there'
       const subject = `${firstName}, let's set up your first habit!`
       const html = buildEmailHtml(firstName)
 
-      console.log(`Sending email to ${user.email} (${user.id})`)
+      emailPayloads.push({
+        to: user.email,
+        subject,
+        html,
+        userId: user.id,
+        emailSubject: subject,
+      })
+    }
 
-      try {
-        const response = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${RESEND_API_KEY}`,
-          },
-          body: JSON.stringify({
-            from: RESEND_FROM_EMAIL,
-            to: user.email,
-            subject: subject,
-            html: html,
-          }),
+    console.log(`\nSending ${emailPayloads.length} emails using batch API...`)
+
+    // Send all emails in batches (100 per request, with rate limit handling)
+    const batchResults = await sendEmailsInBatches(
+      emailPayloads.map(p => ({ to: p.to, subject: p.subject, html: p.html })),
+      100,
+      1000
+    )
+
+    // Process results and update database
+    const results = []
+
+    for (let i = 0; i < batchResults.length; i++) {
+      const result = batchResults[i]
+      const payload = emailPayloads[i]
+
+      if (result.success) {
+        // Log successful email
+        await supabase.from('email_reminders').insert({
+          user_id: payload.userId,
+          email: payload.to,
+          email_type: 'habit_setup',
+          subject: payload.emailSubject,
+          status: 'sent',
+          resend_id: result.id,
         })
 
-        const data = await response.json()
-
-        if (response.ok) {
-          // Log successful email
-          await supabase.from('email_reminders').insert({
-            user_id: user.id,
-            email: user.email,
-            email_type: 'habit_setup',
-            subject: subject,
-            status: 'sent',
-            resend_id: data.id,
-          })
-
-          results.push({ userId: user.id, email: user.email, status: 'sent', resendId: data.id })
-          console.log(`✓ Sent email to ${user.email}`)
-        } else {
-          throw new Error(data.message || 'Resend API error')
-        }
-      } catch (error) {
-        console.error(`✗ Failed to send email to ${user.email}:`, error)
-
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        results.push({ userId: payload.userId, email: payload.to, status: 'sent', resendId: result.id })
+        console.log(`✓ Sent email to ${payload.to}`)
+      } else {
+        console.error(`✗ Failed to send email to ${payload.to}: ${result.error}`)
 
         // Log failed email
         await supabase.from('email_reminders').insert({
-          user_id: user.id,
-          email: user.email,
+          user_id: payload.userId,
+          email: payload.to,
           email_type: 'habit_setup',
-          subject: subject,
+          subject: payload.emailSubject,
           status: 'failed',
-          error_message: errorMessage,
+          error_message: result.error,
         })
 
-        results.push({ userId: user.id, email: user.email, status: 'failed', error: errorMessage })
+        results.push({ userId: payload.userId, email: payload.to, status: 'failed', error: result.error })
       }
     }
 
