@@ -72,9 +72,11 @@ export function assembleMarkdown(
       sections.push(`- ${habitName} (${days})`)
     })
     sections.push(`\n`)
+    sections.push(`[Modify these in your app](https://summit-pilot.vercel.app)\n`)
+  } else {
+    // No habits yet - simple CTA on its own line
+    sections.push(`[Add habits in your app →](https://summit-pilot.vercel.app)\n`)
   }
-
-  sections.push(`[Modify these in your app](https://summit-pilot.vercel.app)\n`)
 
   // Patterns to reinforce
   if (focus.patterns_to_reinforce.length > 0) {
@@ -143,13 +145,19 @@ export function assembleMarkdown(
     sections.push(`*${reflectionPrompt}*\n`)
   }
 
-  // One-minute action plan
+  // One-minute action plan (different for users with vs without habits)
   sections.push(`## Your One-Minute Action Plan ⚡\n`)
   sections.push(`Before this week starts:\n`)
-  sections.push(`1. Review your habits in the app`)
-  sections.push(`2. Pick ONE strategy from above to try`)
-  if (recommendations.length > 0) {
-    sections.push(`3. Choose ONE piece of content to consume this week`)
+  if (context.habits.length > 0) {
+    sections.push(`1. Review your habits in the app`)
+    sections.push(`2. Pick ONE strategy from above to try`)
+    if (recommendations.length > 0) {
+      sections.push(`3. Choose ONE piece of content to consume this week`)
+    }
+  } else {
+    sections.push(`1. Watch or listen to ONE piece of content from above`)
+    sections.push(`2. Pick ONE small action from the strategies to try`)
+    sections.push(`3. [Set up your first habit](https://summit-pilot.vercel.app) when you're ready`)
   }
   sections.push(`\n`)
 

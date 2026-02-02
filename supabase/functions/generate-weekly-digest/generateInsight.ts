@@ -40,7 +40,7 @@ THEIR REFLECTIONS SO FAR:
 ${reflectionSummary || 'No reflections yet'}
 
 THEIR CURRENT HABITS:
-${context.habits.map(h => `- ${h.habit_name}`).filter((v, i, a) => a.indexOf(v) === i).join('\n') || 'No habits set'}
+${(context.habits && context.habits.length > 0) ? context.habits.map(h => `- ${h.habit_name}`).filter((v, i, a) => a.indexOf(v) === i).join('\n') : 'No habits set up yet (new user)'}
 
 Generate a personal insight that:
 1. Spots a pattern or theme across their reflections (if multiple exist)
@@ -48,7 +48,8 @@ Generate a personal insight that:
 3. Feels warm and observational, not prescriptive
 4. Is 2-3 sentences max
 
-If there's only one reflection or none, focus on connecting their habits to their vision.
+If there's only one reflection or none, focus on connecting their vision to their aspirations.
+If they have no habits set up yet, focus entirely on their vision - acknowledge they're at the beginning of their journey and connect their vision statement to the possibility ahead.
 
 Also generate a "connection to vision" statement that explicitly ties their recent experience to their goals (1 sentence).
 
@@ -145,13 +146,26 @@ function getMilestone(weekNumber: number, reflectionCount: number): string | nul
  * Generate a reflection prompt for the week ahead
  */
 export function getReflectionPrompt(context: UserContext): string {
-  const prompts = [
+  const hasHabits = context.habits && context.habits.length > 0
+
+  // Different prompts for users with vs without habits
+  const promptsWithHabits = [
     "What's one small thing you could let go of this week to make more room for your habits?",
     "What time of day tends to work best for you? How might you lean into that?",
     "What's one thing that made your habits easier last week that you could repeat?",
     "If this week gets busy, what's the one habit you'd protect above all others?",
     "What would it feel like to finish this week knowing you showed up for yourself?",
   ]
+
+  const promptsWithoutHabits = [
+    "What's one small action you could take this week that would move you toward your vision?",
+    "What time of day do you typically feel most motivated? That might be your sweet spot for building habits.",
+    "What's something you already do daily that you could build a new habit around?",
+    "If you could change just one thing about your routine, what would make the biggest difference?",
+    "What would it feel like to look back on this week and see you took the first step?",
+  ]
+
+  const prompts = hasHabits ? promptsWithHabits : promptsWithoutHabits
 
   // Pick based on week number for variety
   const index = (context.week_number - 1) % prompts.length

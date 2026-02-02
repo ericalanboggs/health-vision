@@ -9,23 +9,53 @@ export async function generateWeeklyFocus(
 ): Promise<WeeklyFocus> {
   console.log('Generating weekly focus with OpenAI...')
 
+  const hasHabits = context.habits && context.habits.length > 0
+  const hasReflection = context.reflection && Object.keys(context.reflection).length > 0
+
+  // Build context section based on what data we have
+  let userContextSection = `- Name: ${context.user_name}\n`
+
+  if (hasHabits) {
+    userContextSection += `- Habits:\n${context.habits.map(h => `  - ${h.habit_name} (${h.day_of_week})`).join('\n')}\n`
+  } else {
+    userContextSection += `- Habits: None set up yet (user is new to the platform)\n`
+  }
+
+  userContextSection += `- Vision: ${context.vision?.visionStatement || 'Not provided'}\n`
+
+  if (hasReflection) {
+    userContextSection += `- Previous Reflection: ${JSON.stringify(context.reflection)}`
+  } else {
+    userContextSection += `- Previous Reflection: None yet`
+  }
+
+  // Adjust instructions based on whether user has habits
+  const focusInstructions = hasHabits
+    ? `Generate a concise weekly focus theme (3-6 words) that:
+1. Reinforces what's working in their habits
+2. Addresses potential challenges they might face
+3. Connects to their broader vision
+4. Is motivational but realistic`
+    : `Generate a concise weekly focus theme (3-6 words) that:
+1. Connects directly to their vision statement
+2. Suggests a first step they could take this week
+3. Is welcoming and encouraging for someone just starting out
+4. Focuses on small wins and building momentum`
+
+  const patternsInstructions = hasHabits
+    ? `- 2-3 patterns to reinforce from their habits`
+    : `- 2-3 aspects of their vision to focus on this week`
+
   // Create prompt for weekly focus generation
   const prompt = `Based on this user's context, generate a personalized weekly focus theme:
 
 User Context:
-- Name: ${context.user_name}
-- Habits: ${context.habits.map(h => `- ${h.habit_name} (${h.day_of_week})`).join('\n')}
-- Vision: ${context.vision?.visionStatement || 'Not provided'}
-- Previous Reflection: ${context.reflection ? JSON.stringify(context.reflection) : 'No reflection'}
+${userContextSection}
 
-Generate a concise weekly focus theme (3-6 words) that:
-1. Reinforces what's working in their habits
-2. Addresses potential challenges they might face
-3. Connects to their broader vision
-4. Is motivational but realistic
+${focusInstructions}
 
 Also provide:
-- 2-3 patterns to reinforce
+${patternsInstructions}
 - 2-3 potential challenges they might face
 - 3-4 specific strategies to overcome challenges
 

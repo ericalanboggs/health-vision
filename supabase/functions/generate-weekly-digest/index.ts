@@ -97,7 +97,7 @@ serve(async (req) => {
 
     // Step 4: Generate personalized content recommendations
     console.log('Step 4: Generating personalized content recommendations...')
-    const contentEngine = new ContentRecommendationEngine(YOUTUBE_API_KEY!, SPOTIFY_ACCESS_TOKEN!)
+    const contentEngine = new ContentRecommendationEngine(YOUTUBE_API_KEY!, OPENAI_API_KEY!)
     contentEngine.setExcludedVideoIds(pastVideoIds)
     const recommendations = await contentEngine.generateRecommendations(context)
 

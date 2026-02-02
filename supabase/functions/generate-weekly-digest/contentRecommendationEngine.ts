@@ -4,20 +4,23 @@ import { YouTubeAPI } from './youtubeApi.ts'
 /**
  * Content Recommendation Engine
  * Generates personalized content based on user context, goals, and reflection signals
- * Uses improved YouTube API with two-step search, quality filtering, and fallbacks
  *
  * Priority order:
- * 1. Friction-based content (2+ pieces addressing what didn't go well)
- * 2. Habit-based content
- * 3. Complementary content
+ * 1. Reflection-based content (what didn't go well + what user will try)
+ * 2. Vision-based content (for users without habits or reflection)
+ * 3. AI-generated queries based on vision/habits (when no reflection exists)
+ * 4. Habit-based content (fallback to fill remaining slots)
+ *
+ * Future: Curated library content (Phase 2) will slot in between 1 and 2
  */
 export class ContentRecommendationEngine {
   private readonly youtubeAPI: YouTubeAPI
+  private readonly openaiApiKey: string | null
   private excludeVideoIds: Set<string> = new Set()
 
-  constructor(youtubeApiKey: string, spotifyAccessToken?: string) {
+  constructor(youtubeApiKey: string, openaiApiKey?: string) {
     this.youtubeAPI = new YouTubeAPI(youtubeApiKey)
-    // Spotify integration disabled for now
+    this.openaiApiKey = openaiApiKey || null
   }
 
   /**
@@ -30,33 +33,69 @@ export class ContentRecommendationEngine {
 
   /**
    * Generate personalized content recommendations based on user context
+   *
+   * PRIORITY ORDER:
+   * 1. Reflection-based content (what didn't go well + what user will try) - up to 4 pieces
+   * 2. Vision-based content (for users without habits or reflection)
+   * 3. AI-generated content (when no reflection exists - uses GPT to generate targeted queries)
+   * 4. Habit-based content (fills remaining slots)
    */
   async generateRecommendations(context: UserContext): Promise<ContentRecommendation[]> {
     const recommendations: ContentRecommendation[] = []
 
     // Analyze user's current habits and goals
-    const habitCategories = this.analyzeHabits(context.habits)
+    const habitCategories = this.analyzeHabits(context.habits || [])
     const goalSignals = this.extractGoalSignals(context)
     const challengeAreas = this.identifyChallenges(context.reflection_signals)
     const frictionThemes = context.reflection_signals?.friction_themes || []
 
+    const hasHabits = context.habits && context.habits.length > 0
+    const hasReflection = frictionThemes.length > 0
+
     console.log(`📊 Content analysis:`, {
+      hasHabits,
+      hasReflection,
       habitCategories,
       goalSignals,
       challengeAreas,
       frictionThemes: frictionThemes.map(t => t.theme)
     })
 
-    // PRIORITY 1: Friction-based content (at least 2 pieces)
-    if (frictionThemes.length > 0) {
-      console.log(`🎯 Fetching friction-based content (${frictionThemes.length} themes)...`)
+    // PRIORITY 1: Reflection-based content (THIS IS THE MAIN SOURCE)
+    // Pull from what didn't go well + what user will try differently
+    if (hasReflection) {
+      console.log(`🎯 PRIORITY 1: Fetching reflection-based content (${frictionThemes.length} themes)...`)
       const frictionContent = await this.getFrictionBasedContent(frictionThemes)
       recommendations.push(...frictionContent)
-      console.log(`✅ Added ${frictionContent.length} friction-based recommendations`)
+      console.log(`✅ Added ${frictionContent.length} reflection-based recommendations`)
     }
 
-    // PRIORITY 2: Habit-based and complementary content
-    recommendations.push(...await this.getRealTimeContent(context, habitCategories, goalSignals))
+    // PRIORITY 2: Vision-based content (for users without habits OR without reflection)
+    if (!hasHabits || (!hasReflection && goalSignals.length > 0)) {
+      console.log(`🎯 PRIORITY 2: Generating vision-based recommendations...`)
+      const visionContent = await this.getVisionBasedContent(context, goalSignals)
+      // Only add vision content if we need more recommendations
+      const slotsRemaining = 6 - recommendations.length
+      recommendations.push(...visionContent.slice(0, slotsRemaining))
+    }
+
+    // PRIORITY 3: AI-generated content (when no reflection data exists)
+    // Uses OpenAI to generate targeted search queries based on vision/habits
+    if (!hasReflection && recommendations.length < 5) {
+      console.log(`🎯 PRIORITY 3: Generating AI-powered recommendations...`)
+      const aiContent = await this.getAIGeneratedContent(context)
+      const slotsRemaining = 6 - recommendations.length
+      recommendations.push(...aiContent.slice(0, slotsRemaining))
+      console.log(`✅ Added ${Math.min(aiContent.length, slotsRemaining)} AI-generated recommendations`)
+    }
+
+    // PRIORITY 4: Habit-based content (fills remaining slots, only if we need more)
+    if (recommendations.length < 5) {
+      console.log(`🎯 PRIORITY 4: Adding habit-based content to fill ${6 - recommendations.length} remaining slots...`)
+      const habitContent = await this.getRealTimeContent(context, habitCategories, goalSignals)
+      const slotsRemaining = 6 - recommendations.length
+      recommendations.push(...habitContent.slice(0, slotsRemaining))
+    }
 
     // Deduplicate by video ID and limit to top 6
     const uniqueRecommendations = this.deduplicateRecommendations(recommendations)
@@ -64,39 +103,240 @@ export class ContentRecommendationEngine {
   }
 
   /**
+   * Get content based purely on user's vision (for users without habits)
+   */
+  private async getVisionBasedContent(context: UserContext, goalSignals: string[]): Promise<ContentRecommendation[]> {
+    const recommendations: ContentRecommendation[] = []
+
+    console.log(`🌟 Generating vision-based content for signals:`, goalSignals)
+
+    // Map goal signals to search queries
+    const signalQueries: Record<string, { query: string; reason: string }> = {
+      'energy': { query: 'increase energy naturally daily habits', reason: 'Supports your vision of having more energy and vitality.' },
+      'family': { query: 'work life balance present parenting tips', reason: 'Helps you be more present with your family.' },
+      'health': { query: 'healthy lifestyle habits beginners guide', reason: 'Aligns with your health and wellness goals.' },
+      'stress_management': { query: 'reduce stress calm mind techniques', reason: 'Supports your goal of finding more peace and calm.' },
+      'focus': { query: 'improve focus concentration productivity', reason: 'Helps you achieve the focus and productivity you envision.' },
+      'gratitude': { query: 'gratitude practice daily happiness', reason: 'Supports your practice of gratitude and positivity.' }
+    }
+
+    // Get content for up to 3 goal signals
+    for (const signal of goalSignals.slice(0, 3)) {
+      const queryInfo = signalQueries[signal]
+      if (queryInfo) {
+        try {
+          console.log(`🔍 Vision search: "${queryInfo.query}"`)
+          const videos = await this.youtubeAPI.searchWorkoutVideos(queryInfo.query, 2)
+          const freshVideos = videos.filter(v => !this.excludeVideoIds.has(v.videoId))
+
+          if (freshVideos.length > 0) {
+            recommendations.push(...this.transformVideosToRecommendations(
+              freshVideos.slice(0, 2),
+              queryInfo.reason
+            ))
+          }
+        } catch (error) {
+          console.error(`❌ Error fetching vision content for "${signal}":`, error)
+        }
+      }
+    }
+
+    // If we still don't have enough, add general getting-started content
+    if (recommendations.length < 4) {
+      try {
+        console.log(`🌱 Adding getting-started content...`)
+        const starterVideos = await this.youtubeAPI.searchWorkoutVideos('building healthy habits beginners motivation', 2)
+        const freshStarter = starterVideos.filter(v =>
+          !this.excludeVideoIds.has(v.videoId) &&
+          !recommendations.some(r => r.url.includes(v.videoId))
+        )
+
+        if (freshStarter.length > 0) {
+          recommendations.push(...this.transformVideosToRecommendations(
+            freshStarter,
+            'Great starting point for building the life you envision.'
+          ))
+        }
+      } catch (error) {
+        console.error('❌ Error fetching starter content:', error)
+      }
+    }
+
+    return recommendations
+  }
+
+  /**
+   * AI-powered content query generation (Phase 3)
+   * Uses OpenAI to analyze user's vision and habits, then generates targeted search queries
+   * Only used when no reflection themes are available
+   */
+  private async getAIGeneratedContent(context: UserContext): Promise<ContentRecommendation[]> {
+    if (!this.openaiApiKey) {
+      console.log('⚠️ No OpenAI API key - skipping AI content generation')
+      return []
+    }
+
+    console.log('🤖 Generating AI-powered content recommendations...')
+
+    const recommendations: ContentRecommendation[] = []
+
+    // Build context for the AI
+    const habitsList = context.habits && context.habits.length > 0
+      ? context.habits.map(h => h.habit_name).filter((v, i, a) => a.indexOf(v) === i).join(', ')
+      : 'No habits set up yet'
+
+    const visionStatement = context.vision?.visionStatement || 'Not provided'
+    const whyMatters = context.vision?.whyMatters || ''
+    const feelingState = context.vision?.feelingState || ''
+
+    const prompt = `You are a health and wellness coach helping someone find helpful YouTube content.
+
+USER'S VISION:
+${visionStatement}
+
+WHY IT MATTERS TO THEM:
+${whyMatters}
+
+HOW THEY WANT TO FEEL:
+${feelingState}
+
+THEIR CURRENT HABITS:
+${habitsList}
+
+Based on this person's goals and situation, generate 3 specific YouTube search queries that would find helpful, practical content for them THIS WEEK.
+
+Rules:
+- Focus on actionable, practical content (how-to videos, guided practices, tips)
+- Avoid generic motivation videos - be specific to their situation
+- Consider what challenges someone with these goals might face
+- Keep queries concise (3-6 words) for best YouTube results
+
+Return as JSON array:
+[
+  {
+    "query": "your search query here",
+    "reason": "One sentence explaining why this helps them"
+  }
+]
+
+Return ONLY the JSON array, no other text.`
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.openaiApiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a wellness content curator. Generate specific, practical YouTube search queries. Return only valid JSON.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.7,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.text()
+        console.error('❌ OpenAI API error:', error)
+        return []
+      }
+
+      const data = await response.json()
+      let content = data.choices[0]?.message?.content?.trim()
+
+      if (!content) {
+        console.error('❌ Empty response from OpenAI')
+        return []
+      }
+
+      // Strip markdown code fences if present
+      if (content.startsWith('```')) {
+        content = content.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
+      }
+
+      const queries = JSON.parse(content) as Array<{ query: string; reason: string }>
+
+      console.log('🤖 AI generated queries:', queries.map(q => q.query))
+
+      // Search YouTube for each AI-generated query
+      for (const { query, reason } of queries.slice(0, 3)) {
+        try {
+          console.log(`🔍 AI search: "${query}"`)
+          const videos = await this.youtubeAPI.searchWorkoutVideos(query, 2)
+          const freshVideos = videos.filter(v =>
+            !this.excludeVideoIds.has(v.videoId) &&
+            !recommendations.some(r => r.url.includes(v.videoId))
+          )
+
+          if (freshVideos.length > 0) {
+            recommendations.push(...this.transformVideosToRecommendations(
+              freshVideos.slice(0, 1),
+              reason
+            ))
+            console.log(`✅ Added AI-recommended video for: "${query}"`)
+          }
+        } catch (error) {
+          console.error(`❌ Error searching for AI query "${query}":`, error)
+        }
+      }
+
+      console.log(`🤖 Total AI-generated recommendations: ${recommendations.length}`)
+      return recommendations
+
+    } catch (error) {
+      console.error('❌ Error in AI content generation:', error)
+      return []
+    }
+  }
+
+  /**
    * Get content specifically addressing friction/challenges from reflection
-   * Aims for at least 2 pieces of content
+   * THIS IS THE HIGHEST PRIORITY - aims for 3-4 pieces of reflection-based content
    */
   private async getFrictionBasedContent(frictionThemes: FrictionTheme[]): Promise<ContentRecommendation[]> {
     const recommendations: ContentRecommendation[] = []
 
-    // Get content for top 2 friction themes
-    const themesToSearch = frictionThemes.slice(0, 2)
+    // Get content for up to 3 friction/adjustment themes
+    const themesToSearch = frictionThemes.slice(0, 3)
 
     for (const theme of themesToSearch) {
       try {
-        console.log(`🔍 Searching for: "${theme.searchQuery}"`)
-        const videos = await this.youtubeAPI.searchWorkoutVideos(theme.searchQuery, 2)
+        console.log(`🎯 Reflection-based search: "${theme.searchQuery}"`)
+        const videos = await this.youtubeAPI.searchWorkoutVideos(theme.searchQuery, 3)
 
         // Filter out previously sent videos
         const freshVideos = videos.filter(v => !this.excludeVideoIds.has(v.videoId))
 
         if (freshVideos.length > 0) {
+          // Take up to 2 videos per theme for variety
+          const videosToAdd = freshVideos.slice(0, recommendations.length < 2 ? 2 : 1)
           recommendations.push(...this.transformVideosToRecommendations(
-            freshVideos.slice(0, 1), // Take 1 video per theme
+            videosToAdd,
             theme.whyRelevant
           ))
+          console.log(`✅ Added ${videosToAdd.length} videos for "${theme.theme}"`)
         }
       } catch (error) {
         console.error(`❌ Error fetching content for theme "${theme.theme}":`, error)
       }
     }
 
-    // If we didn't get at least 2, try generic resilience/motivation content
-    if (recommendations.length < 2) {
+    console.log(`📊 Total reflection-based recommendations: ${recommendations.length}`)
+
+    // If we didn't get at least 3 reflection-based, try generic wellness content
+    if (recommendations.length < 3) {
       try {
-        const fallbackQuery = 'building resilience habits positive psychology'
-        console.log(`🔍 Fetching fallback content: "${fallbackQuery}"`)
+        const fallbackQuery = 'building healthy habits wellness tips'
+        console.log(`🔍 Adding wellness fallback content...`)
         const fallbackVideos = await this.youtubeAPI.searchWorkoutVideos(fallbackQuery, 2)
         const freshFallback = fallbackVideos.filter(v =>
           !this.excludeVideoIds.has(v.videoId) &&
@@ -104,10 +344,10 @@ export class ContentRecommendationEngine {
         )
 
         if (freshFallback.length > 0) {
-          const needed = 2 - recommendations.length
+          const needed = 3 - recommendations.length
           recommendations.push(...this.transformVideosToRecommendations(
             freshFallback.slice(0, needed),
-            'Supports you through challenges with science-backed strategies.'
+            'Supports your wellness journey with practical strategies.'
           ))
         }
       } catch (error) {
@@ -169,20 +409,8 @@ export class ContentRecommendationEngine {
       }
     }
 
-    // YouTube content for creativity/storytelling habits
-    if (habitCategories.includes('creativity') || goalSignals.includes('storytelling')) {
-      console.log('🎨 Fetching storytelling videos...')
-      try {
-        const creativityVideos = await this.youtubeAPI.searchWorkoutVideos('storytelling techniques how to tell stories', 2)
-        console.log('📺 Storytelling videos found:', creativityVideos.length)
-        recommendations.push(...this.transformVideosToRecommendations(
-          creativityVideos,
-          'Enhances your storytelling and creative writing skills.'
-        ))
-      } catch (error) {
-        console.error('❌ Error fetching storytelling videos:', error)
-      }
-    }
+    // NOTE: Removed generic "creativity/storytelling" category - was too loosely triggered
+    // and not relevant to most users' health/wellness goals
 
     // YouTube content for wellness/gratitude habits
     if (habitCategories.includes('wellness') || goalSignals.includes('gratitude')) {
@@ -478,7 +706,13 @@ export class ContentRecommendationEngine {
    */
   private analyzeHabits(habits: any[]): string[] {
     const categories = new Set<string>()
-    
+
+    // Handle null/undefined habits
+    if (!habits || habits.length === 0) {
+      console.log('📋 No habits to analyze')
+      return []
+    }
+
     habits.forEach(habit => {
       const habitName = habit.habit_name.toLowerCase()
       
@@ -524,12 +758,15 @@ export class ContentRecommendationEngine {
         categories.add('nutrition')
       }
       
-      // Creativity & Expression
-      if (habitName.includes('story') || habitName.includes('write') || habitName.includes('journal') ||
-          habitName.includes('creative') || habitName.includes('art') || habitName.includes('music') ||
-          habitName.includes('draw') || habitName.includes('paint') || habitName.includes('craft')) {
-        categories.add('creativity')
+      // Journaling & Reflection (separate from creativity - more wellness focused)
+      if (habitName.includes('journal') || habitName.includes('reflect') || habitName.includes('diary') ||
+          habitName.includes('morning pages') || habitName.includes('evening reflection')) {
+        categories.add('wellness') // Journal habits map to wellness, not creativity
       }
+
+      // NOTE: Removed generic "creativity" category - habits like "write" and "journal"
+      // were triggering irrelevant "storytelling" content.
+      // If user explicitly has creative hobbies, those should be handled differently.
       
       // Wellness & Gratitude
       if (habitName.includes('grateful') || habitName.includes('gratitude') || habitName.includes('reflect') ||
@@ -572,31 +809,61 @@ export class ContentRecommendationEngine {
 
   /**
    * Extract goal signals from user's vision and context
+   * Enhanced to extract more signals for users without habits
    */
   private extractGoalSignals(context: UserContext): string[] {
-    const signals = []
-    
+    const signals: string[] = []
+
     if (context.vision?.visionStatement) {
       const vision = context.vision.visionStatement.toLowerCase()
-      
-      if (vision.includes('energy') || vision.includes('vitality')) {
+
+      // Energy & Vitality
+      if (vision.includes('energy') || vision.includes('vitality') || vision.includes('energized') || vision.includes('vibrant')) {
         signals.push('energy')
       }
-      if (vision.includes('family') || vision.includes('children') || vision.includes('parent')) {
+      // Family & Relationships
+      if (vision.includes('family') || vision.includes('children') || vision.includes('parent') ||
+          vision.includes('kids') || vision.includes('husband') || vision.includes('wife') ||
+          vision.includes('partner') || vision.includes('relationship')) {
         signals.push('family')
       }
-      if (vision.includes('health') || vision.includes('wellness')) {
+      // Health & Wellness
+      if (vision.includes('health') || vision.includes('wellness') || vision.includes('healthy') ||
+          vision.includes('fit') || vision.includes('strong') || vision.includes('body')) {
         signals.push('health')
       }
-      if (vision.includes('calm') || vision.includes('peace') || vision.includes('stress')) {
+      // Stress Management & Peace
+      if (vision.includes('calm') || vision.includes('peace') || vision.includes('stress') ||
+          vision.includes('relax') || vision.includes('anxiety') || vision.includes('balance') ||
+          vision.includes('centered') || vision.includes('grounded')) {
         signals.push('stress_management')
       }
-      if (vision.includes('focus') || vision.includes('productivity') || vision.includes('deep work')) {
+      // Focus & Productivity
+      if (vision.includes('focus') || vision.includes('productivity') || vision.includes('deep work') ||
+          vision.includes('accomplish') || vision.includes('achieve') || vision.includes('goals') ||
+          vision.includes('career') || vision.includes('work') || vision.includes('success')) {
         signals.push('focus')
+      }
+      // Gratitude & Positivity
+      if (vision.includes('gratitude') || vision.includes('grateful') || vision.includes('positive') ||
+          vision.includes('happy') || vision.includes('joy') || vision.includes('appreciate')) {
+        signals.push('gratitude')
+      }
+      // Mindfulness & Presence
+      if (vision.includes('present') || vision.includes('mindful') || vision.includes('awareness') ||
+          vision.includes('moment') || vision.includes('intentional')) {
+        signals.push('stress_management')
       }
     }
 
-    return signals
+    // If no signals found but user has a vision, add a general health signal
+    // This ensures we always have something to work with
+    if (signals.length === 0 && context.vision?.visionStatement) {
+      console.log('⚠️ No specific signals found in vision, adding default health signal')
+      signals.push('health')
+    }
+
+    return [...new Set(signals)] // Remove duplicates
   }
 
   /**
