@@ -13,6 +13,7 @@ import Habits from './pages/Habits'
 import AddHabit from './pages/AddHabit'
 import ScheduleHabits from './pages/ScheduleHabits'
 import Reflection from './pages/Reflection'
+import PilotSurvey from './pages/PilotSurvey'
 import AuthCallback from './pages/AuthCallback'
 import AuthTest from './pages/AuthTest'
 import AuthDebug from './pages/AuthDebug'
@@ -58,6 +59,7 @@ function App() {
         
         {/* Auth routes */}
         <Route path="/pilot" element={<PilotIntake />} />
+        <Route path="/pilot-survey" element={<PilotSurvey />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/test" element={<AuthTest />} />
