@@ -48,26 +48,14 @@ CREATE POLICY "Users can delete their own pilot feedback"
   USING (auth.uid() = user_id);
 
 -- Admin policy (for viewing all feedback)
-CREATE POLICY "Admins can view all pilot feedback"
+CREATE POLICY "Admin can view all pilot feedback"
   ON pilot_feedback FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.is_admin = true
-    )
-  );
+  USING (auth.jwt()->>'email' = 'eric.alan.boggs@gmail.com');
 
 -- Admin policy (for managing all feedback)
-CREATE POLICY "Admins can manage all pilot feedback"
+CREATE POLICY "Admin can manage all pilot feedback"
   ON pilot_feedback FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.is_admin = true
-    )
-  );
+  USING (auth.jwt()->>'email' = 'eric.alan.boggs@gmail.com');
 
 -- Comment on table
 COMMENT ON TABLE pilot_feedback IS 'Stores pilot close-out survey responses for product feedback, pricing signals, and testimonials';
