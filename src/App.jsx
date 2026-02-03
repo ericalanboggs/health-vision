@@ -59,7 +59,7 @@ function App() {
         
         {/* Auth routes */}
         <Route path="/pilot" element={<PilotIntake />} />
-        <Route path="/pilot-survey" element={<PilotSurvey />} />
+        <Route path="/pilot-survey" element={<ProtectedRoute><PilotSurvey /></ProtectedRoute>} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/test" element={<AuthTest />} />
