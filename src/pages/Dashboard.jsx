@@ -361,6 +361,21 @@ export default function Dashboard() {
     loadDashboardData()
   }, [])
 
+  // Refresh habits when user returns to the tab (prevents stale data)
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && user) {
+        const habitsResult = await getCurrentWeekHabits(user.id)
+        if (habitsResult.success && habitsResult.data) {
+          setCurrentHabits(habitsResult.data)
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [user])
+
   const handleCloseWelcomeModal = () => {
     setShowWelcomeModal(false)
     localStorage.setItem('hasSeenWelcome', 'true')
@@ -458,12 +473,12 @@ export default function Dashboard() {
               <CardHeader>
                 <div className="text-meta text-summit-moss mb-1">YOUR HEALTH VISION</div>
                 <CardTitle className="text-h3">
-                  {visionData.visionStatement || visionData.feelingState || visionData.whyMatters ? visionAdjectives : 'Create Your Vision'}
+                  {visionData?.visionStatement || visionData?.feelingState || visionData?.whyMatters ? visionAdjectives : 'Create Your Vision'}
                 </CardTitle>
               </CardHeader>
 
               <Button variant="ghost" rightIcon={<ArrowForward className="h-4 w-4" />} className="flex-shrink-0">
-                {visionData.visionStatement ? 'View & Edit Vision' : 'Create Vision'}
+                {visionData?.visionStatement ? 'View & Edit Vision' : 'Create Vision'}
               </Button>
             </div>
           </div>

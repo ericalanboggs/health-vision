@@ -89,6 +89,9 @@ export default function PilotSurvey() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
+    // Prevent double-submit
+    if (saving) return
+
     if (!validateForm()) {
       return
     }

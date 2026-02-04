@@ -26,6 +26,21 @@ export default function ProfileSetup() {
     loadUser()
   }, [])
 
+  // Warn user about unsaved data before leaving
+  useEffect(() => {
+    const hasUnsavedData = formData.firstName || formData.lastName || formData.phone
+
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedData && !saving) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [formData, saving])
+
   const loadUser = async () => {
     const result = await getCurrentUser()
     console.log('ProfileSetup: getCurrentUser result:', result)
@@ -73,6 +88,9 @@ export default function ProfileSetup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // Prevent double-submit
+    if (saving) return
 
     if (!validateForm()) {
       return

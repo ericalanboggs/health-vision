@@ -208,7 +208,15 @@ export default function AddHabit() {
   }
 
   const handleAddCustomHabit = () => {
-    if (!customHabit.trim()) return
+    const trimmedHabit = customHabit.trim()
+
+    // Validate custom habit name
+    if (!trimmedHabit) return
+
+    if (trimmedHabit.length > 200) {
+      alert('Habit name must be 200 characters or less.')
+      return
+    }
 
     if (currentHabitsCount >= 3) {
       alert('You can have a maximum of 3 habits per week. Consider removing an existing habit first.')
@@ -217,7 +225,7 @@ export default function AddHabit() {
 
     // Add custom habit to suggestions and select it
     const customHabitData = {
-      action: customHabit.trim(),
+      action: trimmedHabit,
       why: 'Your personal habit goal',
       tip: 'Set specific days and times to make this a routine'
     }
@@ -300,6 +308,9 @@ export default function AddHabit() {
   })
 
   const handleSave = async () => {
+    // Prevent double-submit
+    if (saving) return
+
     if (!hasAtLeastOneScheduled) {
       alert('Please select at least one day for at least one habit.')
       return
@@ -308,6 +319,13 @@ export default function AddHabit() {
     setSaving(true)
 
     try {
+      // Verify session is still valid before saving
+      const { success: sessionValid, user } = await getCurrentUser()
+      if (!sessionValid || !user) {
+        alert('Your session has expired. Please log in again to save your habits.')
+        navigate('/')
+        return
+      }
       const selectedHabitData = selectedHabits.map(index => suggestions[index])
       const newHabits = []
 

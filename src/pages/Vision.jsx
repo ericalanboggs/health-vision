@@ -180,10 +180,27 @@ export default function Vision() {
         await saveJourney(formData, steps[currentStep].id)
       }
     }
-    
+
     const timeoutId = setTimeout(autoSave, 1000)
     return () => clearTimeout(timeoutId)
   }, [formData, currentStep])
+
+  // Warn user about unsaved data before leaving (only during active editing)
+  useEffect(() => {
+    const stepId = steps[currentStep]?.id
+    const isActivelyEditing = stepId && !['intro', 'summary'].includes(stepId)
+    const hasFormData = formData.visionStatement || formData.feelingState || formData.whyMatters
+
+    const handleBeforeUnload = (e) => {
+      if (isActivelyEditing && hasFormData) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [currentStep, formData])
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))

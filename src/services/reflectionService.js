@@ -25,12 +25,17 @@ export const saveReflection = async (weekNumber, reflection) => {
     }
 
     // Check if reflection already exists for this week
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from('weekly_reflections')
       .select('id')
       .eq('user_id', user.id)
       .eq('week_number', weekNumber)
       .maybeSingle()
+
+    if (existingError) {
+      console.error('Error checking existing reflection:', existingError)
+      return { success: false, error: existingError }
+    }
 
     let result
 

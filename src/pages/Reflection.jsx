@@ -119,8 +119,11 @@ export default function Reflection() {
   }
 
   const handleSave = async () => {
+    // Prevent double-submit
+    if (saving) return
+
     setSaving(true)
-    
+
     const { success } = await saveReflection(selectedWeek, reflection)
     
     if (success) {

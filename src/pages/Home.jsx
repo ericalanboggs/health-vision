@@ -7,9 +7,13 @@ import { Autorenew } from '@mui/icons-material'
 export default function Home() {
   const navigate = useNavigate()
   const [error, setError] = useState(null)
+  const [redirecting, setRedirecting] = useState(false)
 
   useEffect(() => {
     const checkAuthAndRedirect = async () => {
+      // Prevent multiple simultaneous navigations
+      if (redirecting) return
+      setRedirecting(true)
       if (!supabase) {
         console.error('Supabase is not configured')
         navigate('/pilot', { replace: true })
