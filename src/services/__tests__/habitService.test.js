@@ -50,7 +50,12 @@ describe('habitService', () => {
     it('inserts habits with correct data structure', async () => {
       const mockSelect = vi.fn().mockResolvedValue({ data: mockHabits, error: null })
       const mockInsert = vi.fn().mockReturnValue({ select: mockSelect })
-      mockFrom.mockReturnValue({ insert: mockInsert })
+      // Mock delete chain (called before insert to clear existing habits)
+      const mockDeleteEq3 = vi.fn().mockResolvedValue({ error: null })
+      const mockDeleteEq2 = vi.fn().mockReturnValue({ eq: mockDeleteEq3 })
+      const mockDeleteEq1 = vi.fn().mockReturnValue({ eq: mockDeleteEq2 })
+      const mockDelete = vi.fn().mockReturnValue({ eq: mockDeleteEq1 })
+      mockFrom.mockReturnValue({ delete: mockDelete, insert: mockInsert })
 
       const habitsToSave = [
         { habit_name: 'Exercise', day_of_week: 1, reminder_time: '09:00' }
@@ -76,7 +81,12 @@ describe('habitService', () => {
       const mockError = { message: 'Database error' }
       const mockSelect = vi.fn().mockResolvedValue({ data: null, error: mockError })
       const mockInsert = vi.fn().mockReturnValue({ select: mockSelect })
-      mockFrom.mockReturnValue({ insert: mockInsert })
+      // Mock delete chain
+      const mockDeleteEq3 = vi.fn().mockResolvedValue({ error: null })
+      const mockDeleteEq2 = vi.fn().mockReturnValue({ eq: mockDeleteEq3 })
+      const mockDeleteEq1 = vi.fn().mockReturnValue({ eq: mockDeleteEq2 })
+      const mockDelete = vi.fn().mockReturnValue({ eq: mockDeleteEq1 })
+      mockFrom.mockReturnValue({ delete: mockDelete, insert: mockInsert })
 
       const result = await saveHabits([{ habit_name: 'Test' }])
 
