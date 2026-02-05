@@ -7,6 +7,9 @@ This folder contains marketing copy and messaging frameworks for the Summit webs
 | File | Description |
 |------|-------------|
 | `core-messaging-framework.md` | Brand positioning, taglines, pillars, and key phrases |
+| `landing-page-homepage.md` | Main homepage |
+| `landing-page-pricing.md` | Pricing page with tiers, FAQ, comparisons |
+| `landing-page-about.md` | About/story page |
 | `landing-page-energy.md` | Use case page: Energy/burnout |
 | `landing-page-sleep.md` | Use case page: Sleep improvement |
 | `landing-page-stress.md` | Use case page: Stress management |
@@ -15,15 +18,13 @@ This folder contains marketing copy and messaging frameworks for the Summit webs
 ## Site Structure
 
 ```
-Homepage (Platform positioning)
-├── How It Works
-├── Use Cases
-│   ├── /energy
-│   ├── /sleep
-│   ├── /stress
-│   └── /movement
-├── Pricing
-└── About
+/ (Homepage)
+├── /energy (use case)
+├── /sleep (use case)
+├── /stress (use case)
+├── /movement (use case)
+├── /pricing
+└── /about
 ```
 
 ## Key Differentiators
