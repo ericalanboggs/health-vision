@@ -81,6 +81,41 @@ export default function Terms() {
 
             <section className="mb-8">
               <h2 className="text-xl font-semibold text-summit-forest mb-4">4. SMS Messaging Terms</h2>
+
+              {/* CTIA-Required SMS Disclosure Box */}
+              <div className="bg-summit-mint/50 border-2 border-summit-sage rounded-lg p-6 mb-6">
+                <h3 className="text-lg font-bold text-summit-forest mb-3">Summit SMS Program</h3>
+                <p className="text-stone-700 mb-4">
+                  <strong>Program Name:</strong> Summit Health Habit Reminders
+                </p>
+                <p className="text-stone-700 mb-4">
+                  <strong>Description:</strong> Personalized SMS messages including daily habit reminders,
+                  check-ins, and health coaching support to help you build sustainable wellness habits.
+                </p>
+                <p className="text-stone-700 mb-4">
+                  <strong>Message Frequency:</strong> Message frequency varies based on your preferences
+                  and interactions. Expect 1-5 messages per day when opted in.
+                </p>
+                <p className="text-stone-700 mb-4">
+                  <strong>Message and data rates may apply.</strong> Check with your mobile carrier for details.
+                </p>
+                <p className="text-stone-700 mb-4">
+                  <strong>To opt out:</strong> Text <strong className="bg-white px-2 py-1 rounded">STOP</strong> to
+                  cancel and stop receiving messages.
+                </p>
+                <p className="text-stone-700 mb-4">
+                  <strong>For help:</strong> Text <strong className="bg-white px-2 py-1 rounded">HELP</strong> or
+                  email hello@summithealth.app
+                </p>
+                <p className="text-stone-700">
+                  <strong>Privacy:</strong> Your information will not be shared with third parties for
+                  marketing purposes. See our{' '}
+                  <Link to="/privacy" className="text-summit-emerald hover:underline font-medium">
+                    Privacy Policy
+                  </Link>.
+                </p>
+              </div>
+
               <p className="text-stone-600 mb-4">
                 By opting in to receive SMS messages from Summit, you agree to the following:
               </p>
@@ -93,9 +128,9 @@ export default function Terms() {
                   coaching support, and replies to your messages</li>
                 <li><strong>Costs:</strong> Message and data rates may apply depending on your mobile
                   carrier plan</li>
-                <li><strong>Opt-Out:</strong> You may opt out at any time by replying STOP to any
+                <li><strong>Opt-Out:</strong> You may opt out at any time by replying <strong>STOP</strong> to any
                   message or by updating your preferences in your profile settings</li>
-                <li><strong>Help:</strong> Reply HELP for assistance or contact hello@summithealth.app</li>
+                <li><strong>Help:</strong> Reply <strong>HELP</strong> for assistance or contact hello@summithealth.app</li>
               </ul>
               <p className="text-stone-600 mt-4">
                 SMS consent is not required to use Summit. You may use our web-based features without
