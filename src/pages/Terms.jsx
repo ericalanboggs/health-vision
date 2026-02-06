@@ -15,6 +15,7 @@ export default function Terms() {
               onClick={() => navigate('/')}
               className="flex items-center gap-2 text-2xl font-bold text-summit-forest hover:text-summit-moss transition"
             >
+              <span>🏔️</span>
               <span>Summit</span>
             </button>
           </div>
