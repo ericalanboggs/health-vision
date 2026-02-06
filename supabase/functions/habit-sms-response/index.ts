@@ -254,9 +254,8 @@ serve(async (req) => {
     if (followupError) console.log(`Followup error: ${followupError.message}`)
 
     if (!recentFollowup) {
-      console.log(`❌ No recent followup found for user ${profile.id} on ${todayStr}`)
-      // Send a helpful response
-      await sendSMS(from, `Thanks for your message! You can track habits through the app at any time.`, supabase, profile.id, userName)
+      console.log(`No habit followup context - message logged for admin conversation`)
+      // Don't auto-reply for general messages (could be admin conversation)
       return new Response(
         '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
         { headers: { 'Content-Type': 'text/xml' } }
