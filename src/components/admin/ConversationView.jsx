@@ -206,7 +206,7 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
   const canSend = smsOptIn && phone && phone !== 'N/A'
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-stone-200 flex flex-col relative">
+    <div className="bg-white rounded-lg shadow-sm border border-stone-200 flex flex-col relative h-full">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200 bg-stone-50">
         <div className="flex items-center gap-2">
@@ -221,7 +221,7 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
       </div>
 
       {/* Messages */}
-      <div className="flex-1 h-72 overflow-y-auto p-4 space-y-3 bg-stone-50">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 bg-stone-50">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <Autorenew className="w-6 h-6 animate-spin text-summit-emerald" />

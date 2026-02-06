@@ -454,9 +454,9 @@ export default function AdminUserDetail() {
         </div>
           </div>
 
-          {/* Right column - SMS Conversation (sticky) */}
+          {/* Right column - SMS Conversation (sticky, full viewport height) */}
           <div className="lg:col-span-1">
-            <div className="lg:sticky lg:top-6">
+            <div className="lg:sticky lg:top-6 lg:h-[calc(100vh-7rem)] flex flex-col">
               <ConversationView
                 userId={profile.id}
                 userName={profile.name}
