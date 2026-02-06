@@ -68,7 +68,7 @@ export default function Terms() {
               <h2 className="text-xl font-semibold text-summit-forest mb-4">3. Account Registration</h2>
               <p className="text-stone-600 mb-4">To use Summit, you must:</p>
               <ul className="list-disc pl-6 text-stone-600 space-y-2">
-                <li>Be at least 13 years of age</li>
+                <li>Be at least 18 years of age</li>
                 <li>Provide accurate and complete registration information</li>
                 <li>Maintain the security of your account credentials</li>
                 <li>Promptly update any changes to your information</li>
@@ -86,10 +86,10 @@ export default function Terms() {
               <ul className="list-disc pl-6 text-stone-600 space-y-2">
                 <li><strong>Consent:</strong> You consent to receive recurring automated text messages
                   from Summit at the phone number you provide</li>
-                <li><strong>Message Frequency:</strong> You will receive up to 1 message per day
-                  containing your habit reminders</li>
-                <li><strong>Message Content:</strong> Messages will include personalized habit reminders
-                  based on your scheduled habits</li>
+                <li><strong>Message Frequency:</strong> Message frequency varies based on your preferences
+                  and interactions with the service</li>
+                <li><strong>Message Content:</strong> Messages will include habit reminders, check-ins,
+                  coaching support, and replies to your messages</li>
                 <li><strong>Costs:</strong> Message and data rates may apply depending on your mobile
                   carrier plan</li>
                 <li><strong>Opt-Out:</strong> You may opt out at any time by replying STOP to any

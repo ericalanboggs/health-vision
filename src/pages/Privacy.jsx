@@ -98,12 +98,12 @@ export default function Privacy() {
             <section className="mb-8">
               <h2 className="text-xl font-semibold text-summit-forest mb-4">4. SMS Messaging</h2>
               <p className="text-stone-600 mb-4">
-                If you opt in to SMS reminders, you will receive text messages from Summit related to
-                your habit reminders. By opting in, you agree to receive these messages.
+                If you opt in to SMS, you will receive text messages from Summit including habit reminders,
+                check-ins, and coaching support. By opting in, you agree to receive these messages.
               </p>
               <ul className="list-disc pl-6 text-stone-600 space-y-2">
-                <li><strong>Frequency:</strong> Up to 1 message per day</li>
-                <li><strong>Message content:</strong> Daily habit reminders personalized to your schedule</li>
+                <li><strong>Frequency:</strong> Message frequency varies based on your preferences and interactions</li>
+                <li><strong>Message content:</strong> Habit reminders, check-ins, coaching support, and replies to your messages</li>
                 <li><strong>Opt-out:</strong> Reply STOP to any message to unsubscribe instantly</li>
                 <li><strong>Help:</strong> Reply HELP for assistance</li>
                 <li><strong>Costs:</strong> Message and data rates may apply</li>
@@ -170,11 +170,12 @@ export default function Privacy() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-xl font-semibold text-summit-forest mb-4">9. Children's Privacy</h2>
+              <h2 className="text-xl font-semibold text-summit-forest mb-4">9. Age Requirement</h2>
               <p className="text-stone-600">
-                Summit is not intended for children under 13 years of age. We do not knowingly collect
-                personal information from children under 13. If we learn we have collected information
-                from a child under 13, we will delete it promptly.
+                Summit is intended for individuals 18 years of age and older. By using Summit, you
+                represent that you are at least 18 years old. We do not knowingly collect personal
+                information from anyone under 18. If we learn we have collected information from
+                someone under 18, we will delete it promptly.
               </p>
             </section>
 
