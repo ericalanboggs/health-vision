@@ -77,17 +77,22 @@ async function sendSMS(
     if (response.ok) {
       // Log outbound message to sms_messages if supabase client provided
       if (supabase) {
-        await supabase.from('sms_messages').insert({
-          direction: 'outbound',
-          user_id: userId || null,
-          phone: to,
-          user_name: userName || null,
-          body: message,
-          sent_by: null, // System-sent
-          sent_by_type: 'system',
-          twilio_sid: data.sid,
-          twilio_status: data.status || 'sent',
-        }).catch(err => console.error('Error logging outbound message:', err))
+        try {
+          const { error: insertError } = await supabase.from('sms_messages').insert({
+            direction: 'outbound',
+            user_id: userId || null,
+            phone: to,
+            user_name: userName || null,
+            body: message,
+            sent_by: null, // System-sent
+            sent_by_type: 'system',
+            twilio_sid: data.sid,
+            twilio_status: data.status || 'sent',
+          })
+          if (insertError) console.error('Error logging outbound message:', insertError)
+        } catch (err) {
+          console.error('Error logging outbound message:', err)
+        }
       }
       return { success: true, sid: data.sid }
     } else {
@@ -190,15 +195,20 @@ serve(async (req) => {
       console.log(`Profile error: ${profileError?.message || 'none'}`)
 
       // Still log the message even if we can't find the user
-      await supabase.from('sms_messages').insert({
-        direction: 'inbound',
-        user_id: null,
-        phone: from,
-        user_name: null,
-        body: body,
-        twilio_sid: messageSid,
-        twilio_status: 'received',
-      }).catch(err => console.error('Error logging unknown user message:', err))
+      try {
+        const { error: insertError } = await supabase.from('sms_messages').insert({
+          direction: 'inbound',
+          user_id: null,
+          phone: from,
+          user_name: null,
+          body: body,
+          twilio_sid: messageSid,
+          twilio_status: 'received',
+        })
+        if (insertError) console.error('Error logging unknown user message:', insertError)
+      } catch (err) {
+        console.error('Error logging unknown user message:', err)
+      }
 
       return new Response(
         '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
@@ -210,15 +220,21 @@ serve(async (req) => {
 
     // Log the inbound message to sms_messages for conversation history
     const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || null
-    await supabase.from('sms_messages').insert({
-      direction: 'inbound',
-      user_id: profile.id,
-      phone: from,
-      user_name: userName,
-      body: body,
-      twilio_sid: messageSid,
-      twilio_status: 'received',
-    }).catch(err => console.error('Error logging inbound message:', err))
+    try {
+      const { error: insertError } = await supabase.from('sms_messages').insert({
+        direction: 'inbound',
+        user_id: profile.id,
+        phone: from,
+        user_name: userName,
+        body: body,
+        twilio_sid: messageSid,
+        twilio_status: 'received',
+      })
+      if (insertError) console.error('Error logging inbound message:', insertError)
+      else console.log('✓ Logged inbound message to sms_messages')
+    } catch (err) {
+      console.error('Error logging inbound message:', err)
+    }
 
     const userTimezone = profile.timezone || 'America/Chicago'
     const todayStr = getTodayInTimezone(userTimezone)
