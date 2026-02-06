@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAllUsers, inviteUser } from '../services/adminService'
 import { CheckCircle, Warning, Autorenew, SwapVert, PersonAdd, Send } from '@mui/icons-material'
+import BulkActionToolbar from '../components/admin/BulkActionToolbar'
+import SendSMSModal from '../components/admin/SendSMSModal'
+import DeleteConfirmModal from '../components/admin/DeleteConfirmModal'
 
 export default function Admin() {
   const navigate = useNavigate()
@@ -12,7 +15,14 @@ export default function Admin() {
   const [filterNeedsSetup, setFilterNeedsSetup] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviting, setInviting] = useState(false)
-  const [inviteStatus, setInviteStatus] = useState(null) // { type: 'success' | 'error', message: string }
+  const [inviteStatus, setInviteStatus] = useState(null)
+
+  // Selection state
+  const [selectedUserIds, setSelectedUserIds] = useState(new Set())
+
+  // Modal state
+  const [showSMSModal, setShowSMSModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   useEffect(() => {
     loadUsers()
@@ -29,7 +39,7 @@ export default function Admin() {
 
   const formatRelativeTime = (timestamp) => {
     if (!timestamp) return 'Never'
-    
+
     const date = new Date(timestamp)
     const now = new Date()
     const diffMs = now - date
@@ -55,7 +65,7 @@ export default function Admin() {
   }
 
   const getSortedUsers = () => {
-    let filtered = filterNeedsSetup 
+    let filtered = filterNeedsSetup
       ? users.filter(u => !u.pilotReady)
       : users
 
@@ -90,6 +100,36 @@ export default function Admin() {
 
   const sortedUsers = getSortedUsers()
 
+  // Selection handlers
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedUserIds(new Set(sortedUsers.map(u => u.id)))
+    } else {
+      setSelectedUserIds(new Set())
+    }
+  }
+
+  const handleToggleUser = (userId, checked) => {
+    const newSet = new Set(selectedUserIds)
+    if (checked) {
+      newSet.add(userId)
+    } else {
+      newSet.delete(userId)
+    }
+    setSelectedUserIds(newSet)
+  }
+
+  const clearSelection = () => {
+    setSelectedUserIds(new Set())
+  }
+
+  // Get selected users for modals
+  const selectedUsers = sortedUsers.filter(u => selectedUserIds.has(u.id))
+
+  // Header checkbox state
+  const allSelected = sortedUsers.length > 0 && selectedUserIds.size === sortedUsers.length
+  const someSelected = selectedUserIds.size > 0 && selectedUserIds.size < sortedUsers.length
+
   const handleInvite = async () => {
     if (!inviteEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail)) {
       setInviteStatus({ type: 'error', message: 'Please enter a valid email address' })
@@ -112,6 +152,16 @@ export default function Admin() {
     setInviting(false)
   }
 
+  // Modal handlers
+  const handleSMSSuccess = () => {
+    clearSelection()
+  }
+
+  const handleDeleteSuccess = () => {
+    clearSelection()
+    loadUsers() // Refresh the user list
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -127,48 +177,58 @@ export default function Admin() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-summit-forest">Admin Dashboard</h1>
-              <p className="text-stone-600 mt-1">Summit Pilot User Overview</p>
+              <p className="text-stone-600 mt-1">Summit User Management</p>
             </div>
 
-            {/* Invite User */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
-                  <PersonAdd className="w-5 h-5 text-summit-moss" />
-                  <input
-                    type="email"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleInvite()}
-                    placeholder="Invite user by email"
-                    className="border-none outline-none text-sm w-48 placeholder-stone-400"
-                    disabled={inviting}
-                  />
+            {/* Invite User - only show when no selection */}
+            {selectedUserIds.size === 0 && (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
+                    <PersonAdd className="w-5 h-5 text-summit-moss" />
+                    <input
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleInvite()}
+                      placeholder="Invite user by email"
+                      className="border-none outline-none text-sm w-48 placeholder-stone-400"
+                      disabled={inviting}
+                    />
+                  </div>
+                  <button
+                    onClick={handleInvite}
+                    disabled={inviting || !inviteEmail.trim()}
+                    className="flex items-center gap-2 bg-summit-emerald hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium px-4 py-2 rounded-lg transition text-sm"
+                  >
+                    {inviting ? (
+                      <Autorenew className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                    Send
+                  </button>
                 </div>
-                <button
-                  onClick={handleInvite}
-                  disabled={inviting || !inviteEmail.trim()}
-                  className="flex items-center gap-2 bg-summit-emerald hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium px-4 py-2 rounded-lg transition text-sm"
-                >
-                  {inviting ? (
-                    <Autorenew className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                  Send
-                </button>
+                {inviteStatus && (
+                  <p className={`text-xs ${inviteStatus.type === 'success' ? 'text-summit-emerald' : 'text-red-600'}`}>
+                    {inviteStatus.message}
+                  </p>
+                )}
               </div>
-              {inviteStatus && (
-                <p className={`text-xs ${inviteStatus.type === 'success' ? 'text-summit-emerald' : 'text-red-600'}`}>
-                  {inviteStatus.message}
-                </p>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Bulk Action Toolbar */}
+        <BulkActionToolbar
+          selectedCount={selectedUserIds.size}
+          onSendSMS={() => setShowSMSModal(true)}
+          onDelete={() => setShowDeleteModal(true)}
+          onClear={clearSelection}
+        />
+
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden">
           <div className="p-4 border-b border-stone-200 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -191,7 +251,19 @@ export default function Admin() {
             <table className="w-full">
               <thead className="bg-stone-50 border-b border-stone-200">
                 <tr>
-                  <th 
+                  {/* Checkbox column */}
+                  <th className="px-4 py-3 text-center w-12">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      ref={el => {
+                        if (el) el.indeterminate = someSelected
+                      }}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="rounded border-stone-300 text-summit-emerald focus:ring-summit-emerald"
+                    />
+                  </th>
+                  <th
                     className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider cursor-pointer hover:bg-stone-100"
                     onClick={() => handleSort('name')}
                   >
@@ -209,7 +281,7 @@ export default function Admin() {
                   <th className="px-4 py-3 text-center text-xs font-medium text-stone-600 uppercase tracking-wider">
                     SMS
                   </th>
-                  <th 
+                  <th
                     className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider cursor-pointer hover:bg-stone-100"
                     onClick={() => handleSort('lastLogin')}
                   >
@@ -221,7 +293,7 @@ export default function Admin() {
                   <th className="px-4 py-3 text-center text-xs font-medium text-stone-600 uppercase tracking-wider">
                     Habits
                   </th>
-                  <th 
+                  <th
                     className="px-4 py-3 text-center text-xs font-medium text-stone-600 uppercase tracking-wider cursor-pointer hover:bg-stone-100"
                     onClick={() => handleSort('pilotReady')}
                   >
@@ -234,43 +306,77 @@ export default function Admin() {
               </thead>
               <tbody className="divide-y divide-stone-200">
                 {sortedUsers.map(user => (
-                  <tr 
+                  <tr
                     key={user.id}
-                    onClick={() => navigate(`/admin/users/${user.id}`)}
-                    className="hover:bg-stone-50 cursor-pointer transition-colors"
+                    className={`hover:bg-stone-50 cursor-pointer transition-colors ${
+                      selectedUserIds.has(user.id) ? 'bg-summit-mint/30' : ''
+                    }`}
                   >
-                    <td className="px-4 py-3 text-sm font-medium text-summit-forest">
+                    {/* Checkbox */}
+                    <td
+                      className="px-4 py-3 text-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedUserIds.has(user.id)}
+                        onChange={(e) => handleToggleUser(user.id, e.target.checked)}
+                        className="rounded border-stone-300 text-summit-emerald focus:ring-summit-emerald"
+                      />
+                    </td>
+                    <td
+                      className="px-4 py-3 text-sm font-medium text-summit-forest"
+                      onClick={() => navigate(`/admin/users/${user.id}`)}
+                    >
                       {user.name}
                     </td>
-                    <td className="px-4 py-3 text-sm text-stone-600">
+                    <td
+                      className="px-4 py-3 text-sm text-stone-600"
+                      onClick={() => navigate(`/admin/users/${user.id}`)}
+                    >
                       {user.email}
                     </td>
-                    <td className="px-4 py-3 text-sm text-stone-600">
+                    <td
+                      className="px-4 py-3 text-sm text-stone-600"
+                      onClick={() => navigate(`/admin/users/${user.id}`)}
+                    >
                       {user.phone}
                     </td>
-                    <td className="px-4 py-3 text-sm text-center">
+                    <td
+                      className="px-4 py-3 text-sm text-center"
+                      onClick={() => navigate(`/admin/users/${user.id}`)}
+                    >
                       {user.smsOptIn ? (
                         <span className="text-summit-emerald font-medium">Y</span>
                       ) : (
                         <span className="text-stone-400">N</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-sm text-stone-600">
+                    <td
+                      className="px-4 py-3 text-sm text-stone-600"
+                      onClick={() => navigate(`/admin/users/${user.id}`)}
+                    >
                       <span title={user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}>
                         {formatRelativeTime(user.lastLogin)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-center text-stone-600">
+                    <td
+                      className="px-4 py-3 text-sm text-center text-stone-600"
+                      onClick={() => navigate(`/admin/users/${user.id}`)}
+                    >
                       {user.activeHabitsCount}
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td
+                      className="px-4 py-3 text-center"
+                      onClick={() => navigate(`/admin/users/${user.id}`)}
+                    >
                       {user.pilotReady ? (
                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-summit-mint text-summit-forest">
                           <CheckCircle className="w-3 h-3" />
                           Pilot Ready
                         </span>
                       ) : (
-                        <span 
+                        <span
                           className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800"
                           title={`Missing: ${!user.hasLoggedIn ? 'Login, ' : ''}${!user.hasHealthVision ? 'Health Vision, ' : ''}${!user.hasActiveHabits ? 'Habits' : ''}`}
                         >
@@ -286,6 +392,21 @@ export default function Admin() {
           </div>
         </div>
       </main>
+
+      {/* Modals */}
+      <SendSMSModal
+        isOpen={showSMSModal}
+        onClose={() => setShowSMSModal(false)}
+        recipients={selectedUsers}
+        onSuccess={handleSMSSuccess}
+      />
+
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        users={selectedUsers}
+        onSuccess={handleDeleteSuccess}
+      />
     </div>
   )
 }

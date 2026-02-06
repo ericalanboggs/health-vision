@@ -256,3 +256,134 @@ export const inviteUser = async (email) => {
     return { success: false, error: error.message }
   }
 }
+
+/**
+ * Send SMS to one or more users
+ * @param {Array<{userId: string, phone: string, name: string}>} recipients
+ * @param {string} message
+ */
+export const sendAdminSMS = async (recipients, message) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    // Get auth token for function call
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/send-admin-sms`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({ recipients, message })
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      console.error('Error sending admin SMS:', result)
+      return { success: false, error: result.error || 'Failed to send SMS' }
+    }
+
+    return { success: true, data: result }
+  } catch (error) {
+    console.error('Error sending admin SMS:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Get SMS conversation history for a user
+ * @param {string} userId
+ * @param {number} limit
+ */
+export const getConversation = async (userId, limit = 50) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { data, error } = await supabase
+      .from('sms_messages')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true })
+      .limit(limit)
+
+    if (error) throw error
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error fetching conversation:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Delete users and all their data
+ * @param {string[]} userIds
+ */
+export const deleteUsers = async (userIds) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    // Delete from all related tables (cascade)
+    // Order matters due to foreign key constraints
+
+    // Delete SMS messages
+    await supabase
+      .from('sms_messages')
+      .delete()
+      .in('user_id', userIds)
+
+    // Delete SMS reminders
+    await supabase
+      .from('sms_reminders')
+      .delete()
+      .in('user_id', userIds)
+
+    // Delete weekly reflections
+    await supabase
+      .from('weekly_reflections')
+      .delete()
+      .in('user_id', userIds)
+
+    // Delete weekly habits
+    await supabase
+      .from('weekly_habits')
+      .delete()
+      .in('user_id', userIds)
+
+    // Delete health journeys
+    await supabase
+      .from('health_journeys')
+      .delete()
+      .in('user_id', userIds)
+
+    // Delete pilot feedback
+    await supabase
+      .from('pilot_feedback')
+      .delete()
+      .in('user_id', userIds)
+
+    // Delete profiles (this should cascade to auth.users via FK if configured)
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .delete()
+      .in('id', userIds)
+
+    if (profileError) throw profileError
+
+    return { success: true, deleted: userIds.length }
+  } catch (error) {
+    console.error('Error deleting users:', error)
+    return { success: false, error: error.message }
+  }
+}
