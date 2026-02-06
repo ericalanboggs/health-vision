@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { Send, EmojiEmotions, Autorenew, SmsOutlined } from '@mui/icons-material'
+import { Send, EmojiEmotions, Autorenew, SmsOutlined, Add, Chat, Close, Image, AttachFile } from '@mui/icons-material'
 import { getConversation, sendAdminSMS } from '../../services/adminService'
 
-// Summit-themed emoji palette (same as SendSMSModal)
+// Summit-themed emoji palette
 const EMOJI_OPTIONS = [
   { emoji: '🏔️', label: 'Summit' },
   { emoji: '⛰️', label: 'Mountain' },
@@ -22,13 +22,44 @@ const EMOJI_OPTIONS = [
   { emoji: '🌟', label: 'Sparkle' },
 ]
 
+// Quick reply templates - use {{name}} for personalization
+const MESSAGE_TEMPLATES = [
+  {
+    category: 'Check-ins',
+    templates: [
+      { label: 'Quick check-in', text: 'Hey {{name}}! 🏔️ Quick check-in - how are things going with your habits this week?' },
+      { label: 'Energy check', text: 'Hi {{name}}! How\'s your energy been lately? Any wins to celebrate? 💪' },
+      { label: 'Weekly pulse', text: '{{name}} - checking in! How did this week feel overall? 1-10?' },
+    ]
+  },
+  {
+    category: 'Encouragement',
+    templates: [
+      { label: 'Keep going', text: 'Hey {{name}}! Just wanted to say - keep going! Every small step counts. 🔥' },
+      { label: 'Proud of you', text: '{{name}} - I see you putting in the work. Really proud of your progress! ⭐' },
+      { label: 'You got this', text: 'Thinking of you {{name}}! Remember why you started. You\'ve got this! 🏔️' },
+    ]
+  },
+  {
+    category: 'Nudges',
+    templates: [
+      { label: 'Gentle reminder', text: 'Hey {{name}}! Friendly nudge - don\'t forget about your habits today. Small wins! ✅' },
+      { label: 'Miss you', text: 'Hi {{name}}! Haven\'t seen you in a bit. Everything okay? Here if you need anything.' },
+      { label: 'Get back on track', text: '{{name}} - no judgment, just checking in. Ready to get back on track? I\'m here to help! 💪' },
+    ]
+  },
+  {
+    category: 'Celebrations',
+    templates: [
+      { label: 'Milestone', text: '🎉 {{name}}! You hit a milestone! So proud of your consistency. Keep crushing it!' },
+      { label: 'Streak', text: '{{name}} - look at that streak! 🔥 You\'re building real momentum. Amazing work!' },
+      { label: 'Progress', text: 'Wow {{name}}! Your progress this week has been incredible. You should be proud! 🏔️' },
+    ]
+  },
+]
+
 /**
  * 2-way SMS conversation view for a single user
- * @param {Object} props
- * @param {string} props.userId - The user's ID
- * @param {string} props.userName - The user's name for display
- * @param {string} props.phone - The user's phone number
- * @param {boolean} props.smsOptIn - Whether the user has opted in to SMS
  */
 export default function ConversationView({ userId, userName, phone, smsOptIn }) {
   const [messages, setMessages] = useState([])
@@ -36,10 +67,17 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [showTemplates, setShowTemplates] = useState(false)
+  const [showAddMenu, setShowAddMenu] = useState(false)
 
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
   const emojiPickerRef = useRef(null)
+  const templatesRef = useRef(null)
+  const addMenuRef = useRef(null)
+
+  // Extract first name for templates
+  const firstName = userName?.split(' ')[0] || 'there'
 
   // Load conversation on mount
   useEffect(() => {
@@ -51,19 +89,25 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
     scrollToBottom()
   }, [messages])
 
-  // Close emoji picker when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
         setShowEmojiPicker(false)
       }
+      if (templatesRef.current && !templatesRef.current.contains(e.target)) {
+        setShowTemplates(false)
+      }
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target)) {
+        setShowAddMenu(false)
+      }
     }
 
-    if (showEmojiPicker) {
+    if (showEmojiPicker || showTemplates || showAddMenu) {
       document.addEventListener('mousedown', handleClickOutside)
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showEmojiPicker])
+  }, [showEmojiPicker, showTemplates, showAddMenu])
 
   const loadConversation = async () => {
     setLoading(true)
@@ -123,6 +167,14 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
     setShowEmojiPicker(false)
   }
 
+  const selectTemplate = (template) => {
+    // Replace {{name}} with actual first name
+    const personalizedMessage = template.text.replace(/\{\{name\}\}/g, firstName)
+    setMessage(personalizedMessage)
+    setShowTemplates(false)
+    textareaRef.current?.focus()
+  }
+
   const handleSend = async () => {
     if (sending || !message.trim() || !smsOptIn || !phone) return
 
@@ -136,10 +188,8 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
     )
 
     if (success) {
-      // Refresh conversation to show the sent message
       await loadConversation()
     } else {
-      // Restore message on failure
       setMessage(messageText)
     }
 
@@ -156,22 +206,22 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
   const canSend = smsOptIn && phone && phone !== 'N/A'
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden">
+    <div className="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 bg-stone-50">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200 bg-stone-50">
         <div className="flex items-center gap-2">
           <SmsOutlined className="w-5 h-5 text-summit-emerald" />
-          <h2 className="text-xl font-bold text-summit-forest">SMS Conversation</h2>
+          <h2 className="text-lg font-bold text-summit-forest">SMS Conversation</h2>
         </div>
         {!canSend && (
           <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
-            {!phone || phone === 'N/A' ? 'No phone number' : 'SMS opted out'}
+            {!phone || phone === 'N/A' ? 'No phone' : 'Opted out'}
           </span>
         )}
       </div>
 
       {/* Messages */}
-      <div className="h-80 overflow-y-auto p-4 space-y-3 bg-stone-50">
+      <div className="flex-1 h-72 overflow-y-auto p-4 space-y-3 bg-stone-50">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <Autorenew className="w-6 h-6 animate-spin text-summit-emerald" />
@@ -187,10 +237,10 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
               className={`flex ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[75%] rounded-2xl px-4 py-2 ${
+                className={`max-w-[80%] rounded-2xl px-3 py-2 ${
                   msg.direction === 'outbound'
-                    ? 'bg-summit-emerald text-white rounded-br-md'
-                    : 'bg-white border border-stone-200 text-summit-forest rounded-bl-md'
+                    ? 'bg-summit-emerald text-white rounded-br-sm'
+                    : 'bg-white border border-stone-200 text-summit-forest rounded-bl-sm'
                 }`}
               >
                 <p className="text-sm whitespace-pre-wrap break-words">{msg.body}</p>
@@ -208,26 +258,31 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Reply Input */}
-      <div className="border-t border-stone-200 p-4 bg-white">
-        <div className="relative flex gap-2">
-          <div className="relative flex-1">
+      {/* Compose Area */}
+      <div className="border-t border-stone-200 bg-white">
+        {/* Text Input */}
+        <div className="p-3 pb-2">
+          <div className="relative">
             <textarea
               ref={textareaRef}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={canSend ? "Type a message..." : "Cannot send SMS to this user"}
-              rows={1}
-              className="w-full px-4 py-2 pr-10 border border-stone-200 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition resize-none disabled:bg-stone-100 disabled:cursor-not-allowed"
+              placeholder={canSend ? "Write a message..." : "Cannot send SMS"}
+              rows={2}
+              className="w-full px-3 py-2 border border-stone-200 rounded-xl focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition resize-none disabled:bg-stone-100 disabled:cursor-not-allowed text-sm"
               disabled={!canSend || sending}
             />
 
-            {/* Emoji picker button */}
+            {/* Emoji picker button - inside textarea */}
             <button
               type="button"
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-summit-emerald rounded transition"
+              onClick={() => {
+                setShowEmojiPicker(!showEmojiPicker)
+                setShowTemplates(false)
+                setShowAddMenu(false)
+              }}
+              className="absolute right-2 top-2 p-1 text-stone-400 hover:text-summit-emerald rounded transition"
               disabled={!canSend || sending}
               title="Add emoji"
             >
@@ -238,7 +293,7 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
             {showEmojiPicker && (
               <div
                 ref={emojiPickerRef}
-                className="absolute bottom-12 right-0 bg-white border border-gray-200 rounded-xl shadow-lg p-3 z-10 w-64"
+                className="absolute bottom-full right-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg p-3 z-20 w-64"
               >
                 <div className="grid grid-cols-8 gap-1">
                   {EMOJI_OPTIONS.map(({ emoji, label }) => (
@@ -246,7 +301,7 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
                       key={emoji}
                       type="button"
                       onClick={() => insertEmoji(emoji)}
-                      className="p-1.5 text-xl hover:bg-summit-mint rounded-lg transition"
+                      className="p-1.5 text-lg hover:bg-summit-mint rounded-lg transition"
                       title={label}
                     >
                       {emoji}
@@ -256,27 +311,116 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
               </div>
             )}
           </div>
-
-          <button
-            onClick={handleSend}
-            disabled={!canSend || sending || !message.trim()}
-            className="flex items-center justify-center w-10 h-10 bg-summit-emerald hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition"
-          >
-            {sending ? (
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </button>
         </div>
 
-        {message.length > 0 && (
-          <div className="flex justify-end mt-1">
-            <span className={`text-xs ${message.length > 320 ? 'text-red-600' : 'text-stone-500'}`}>
-              {message.length}/320
-            </span>
+        {/* Action Bar */}
+        <div className="flex items-center justify-between px-3 pb-3">
+          <div className="flex items-center gap-1">
+            {/* Add Button */}
+            <div className="relative" ref={addMenuRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddMenu(!showAddMenu)
+                  setShowTemplates(false)
+                  setShowEmojiPicker(false)
+                }}
+                className="p-2 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-full transition"
+                disabled={!canSend || sending}
+                title="Add attachment"
+              >
+                <Add className="w-5 h-5" />
+              </button>
+
+              {/* Add Menu Dropdown */}
+              {showAddMenu && (
+                <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-20 w-48">
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-400 cursor-not-allowed"
+                    disabled
+                  >
+                    <Image className="w-5 h-5" />
+                    <span>Photo</span>
+                    <span className="ml-auto text-xs bg-stone-100 px-1.5 py-0.5 rounded">Soon</span>
+                  </button>
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-400 cursor-not-allowed"
+                    disabled
+                  >
+                    <AttachFile className="w-5 h-5" />
+                    <span>File</span>
+                    <span className="ml-auto text-xs bg-stone-100 px-1.5 py-0.5 rounded">Soon</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Templates Button */}
+            <div className="relative" ref={templatesRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowTemplates(!showTemplates)
+                  setShowAddMenu(false)
+                  setShowEmojiPicker(false)
+                }}
+                className="p-2 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-full transition"
+                disabled={!canSend || sending}
+                title="Quick replies"
+              >
+                <Chat className="w-5 h-5" />
+              </button>
+
+              {/* Templates Dropdown */}
+              {showTemplates && (
+                <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-20 w-72 max-h-80 overflow-y-auto">
+                  <div className="px-3 py-2 border-b border-stone-100">
+                    <span className="text-xs font-medium text-stone-500 uppercase tracking-wide">Quick Replies</span>
+                  </div>
+                  {MESSAGE_TEMPLATES.map((category) => (
+                    <div key={category.category}>
+                      <div className="px-3 py-1.5 bg-stone-50">
+                        <span className="text-xs font-medium text-stone-600">{category.category}</span>
+                      </div>
+                      {category.templates.map((template) => (
+                        <button
+                          key={template.label}
+                          onClick={() => selectTemplate(template)}
+                          className="w-full text-left px-3 py-2 hover:bg-summit-mint transition"
+                        >
+                          <span className="text-sm text-summit-forest">{template.label}</span>
+                          <p className="text-xs text-stone-500 mt-0.5 line-clamp-1">
+                            {template.text.replace(/\{\{name\}\}/g, firstName)}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        )}
+
+          {/* Right side: character count + send */}
+          <div className="flex items-center gap-2">
+            {message.length > 0 && (
+              <span className={`text-xs ${message.length > 320 ? 'text-red-600' : 'text-stone-400'}`}>
+                {message.length}/320
+              </span>
+            )}
+            <button
+              onClick={handleSend}
+              disabled={!canSend || sending || !message.trim()}
+              className="p-2 bg-summit-emerald hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-stone-400 text-white rounded-full transition"
+            >
+              {sending ? (
+                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin block" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
