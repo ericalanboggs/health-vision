@@ -150,7 +150,7 @@ export default function Privacy() {
               <p className="text-stone-600">
                 We retain your personal information for as long as your account is active or as needed
                 to provide you services. You may request deletion of your account and associated data
-                at any time by contacting us at hello@summithabits.com.
+                at any time by contacting us at hello@summithealth.app.
               </p>
             </section>
 
@@ -165,7 +165,7 @@ export default function Privacy() {
                 <li>Withdraw consent for data processing</li>
               </ul>
               <p className="text-stone-600 mt-4">
-                To exercise these rights, contact us at hello@summithabits.com.
+                To exercise these rights, contact us at hello@summithealth.app.
               </p>
             </section>
 
@@ -194,8 +194,8 @@ export default function Privacy() {
                 If you have questions about this Privacy Policy or our data practices, please contact us:
               </p>
               <ul className="list-none text-stone-600 space-y-2">
-                <li><strong>Email:</strong> hello@summithabits.com</li>
-                <li><strong>Website:</strong> summithabits.com</li>
+                <li><strong>Email:</strong> hello@summithealth.app</li>
+                <li><strong>Website:</strong> summithealth.app</li>
               </ul>
             </section>
           </div>

@@ -41,7 +41,7 @@ export default function Terms() {
               <h2 className="text-xl font-semibold text-summit-forest mb-4">1. Agreement to Terms</h2>
               <p className="text-stone-600 mb-4">
                 By accessing or using Summit Health ("Summit," "we," "us," or "our") services,
-                including our website at summithabits.com and SMS messaging features, you agree
+                including our website at summithealth.app and SMS messaging features, you agree
                 to be bound by these Terms of Service ("Terms").
               </p>
               <p className="text-stone-600">
@@ -94,7 +94,7 @@ export default function Terms() {
                   carrier plan</li>
                 <li><strong>Opt-Out:</strong> You may opt out at any time by replying STOP to any
                   message or by updating your preferences in your profile settings</li>
-                <li><strong>Help:</strong> Reply HELP for assistance or contact hello@summithabits.com</li>
+                <li><strong>Help:</strong> Reply HELP for assistance or contact hello@summithealth.app</li>
               </ul>
               <p className="text-stone-600 mt-4">
                 SMS consent is not required to use Summit. You may use our web-based features without
@@ -228,8 +228,8 @@ export default function Terms() {
                 If you have questions about these Terms, please contact us:
               </p>
               <ul className="list-none text-stone-600 space-y-2">
-                <li><strong>Email:</strong> hello@summithabits.com</li>
-                <li><strong>Website:</strong> summithabits.com</li>
+                <li><strong>Email:</strong> hello@summithealth.app</li>
+                <li><strong>Website:</strong> summithealth.app</li>
               </ul>
             </section>
 
