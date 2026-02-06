@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAllUsers, inviteUser } from '../services/adminService'
 import { CheckCircle, Warning, Autorenew, SwapVert, PersonAdd, Send } from '@mui/icons-material'
+import { Checkbox } from '@summit/design-system'
 import BulkActionToolbar from '../components/admin/BulkActionToolbar'
 import SendSMSModal from '../components/admin/SendSMSModal'
 import DeleteConfirmModal from '../components/admin/DeleteConfirmModal'
@@ -235,15 +236,13 @@ export default function Admin() {
               <span className="text-sm text-stone-600">
                 {sortedUsers.length} {sortedUsers.length === 1 ? 'user' : 'users'}
               </span>
-              <label className="flex items-center gap-2 text-sm text-stone-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={filterNeedsSetup}
-                  onChange={(e) => setFilterNeedsSetup(e.target.checked)}
-                  className="rounded border-stone-300"
-                />
-                Show only "Needs Setup"
-              </label>
+              <Checkbox
+                size="sm"
+                shape="rounded"
+                checked={filterNeedsSetup}
+                onChange={(e) => setFilterNeedsSetup(e.target.checked)}
+                label='Show only "Needs Setup"'
+              />
             </div>
           </div>
 
@@ -252,16 +251,16 @@ export default function Admin() {
               <thead className="bg-stone-50 border-b border-stone-200">
                 <tr>
                   {/* Checkbox column */}
-                  <th className="px-4 py-3 text-center w-12">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      ref={el => {
-                        if (el) el.indeterminate = someSelected
-                      }}
-                      onChange={(e) => handleSelectAll(e.target.checked)}
-                      className="rounded border-stone-300 text-summit-emerald focus:ring-summit-emerald"
-                    />
+                  <th className="px-4 py-3 text-center w-14">
+                    <div className="flex justify-center">
+                      <Checkbox
+                        size="sm"
+                        shape="rounded"
+                        checked={allSelected}
+                        indeterminate={someSelected}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                      />
+                    </div>
                   </th>
                   <th
                     className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider cursor-pointer hover:bg-stone-100"
@@ -317,12 +316,14 @@ export default function Admin() {
                       className="px-4 py-3 text-center"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <input
-                        type="checkbox"
-                        checked={selectedUserIds.has(user.id)}
-                        onChange={(e) => handleToggleUser(user.id, e.target.checked)}
-                        className="rounded border-stone-300 text-summit-emerald focus:ring-summit-emerald"
-                      />
+                      <div className="flex justify-center">
+                        <Checkbox
+                          size="sm"
+                          shape="rounded"
+                          checked={selectedUserIds.has(user.id)}
+                          onChange={(e) => handleToggleUser(user.id, e.target.checked)}
+                        />
+                      </div>
                     </td>
                     <td
                       className="px-4 py-3 text-sm font-medium text-summit-forest"
