@@ -132,7 +132,7 @@ export default function AdminUserDetail() {
   return (
     <div className="min-h-screen bg-white">
       <header className="bg-white shadow-sm border-b border-stone-200">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="px-6 py-4">
           <button
             onClick={() => navigate('/admin')}
             className="flex items-center gap-2 text-stone-600 hover:text-summit-forest font-medium transition-colors mb-2"
@@ -145,7 +145,10 @@ export default function AdminUserDetail() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <main className="px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left column - User details */}
+          <div className="lg:col-span-2 space-y-6">
         {/* Coach Summary Card */}
         {healthVision && (
           <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg shadow-sm border border-amber-200 p-6">
@@ -281,14 +284,6 @@ export default function AdminUserDetail() {
             </div>
           </div>
         </div>
-
-        {/* SMS Conversation */}
-        <ConversationView
-          userId={profile.id}
-          userName={profile.name}
-          phone={profile.phone}
-          smsOptIn={profile.smsOptIn}
-        />
 
         {/* Pilot Readiness Checklist */}
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
@@ -456,6 +451,20 @@ export default function AdminUserDetail() {
           ) : (
             <p className="text-stone-500 italic">No reflections submitted yet</p>
           )}
+        </div>
+          </div>
+
+          {/* Right column - SMS Conversation (sticky) */}
+          <div className="lg:col-span-1">
+            <div className="lg:sticky lg:top-6">
+              <ConversationView
+                userId={profile.id}
+                userName={profile.name}
+                phone={profile.phone}
+                smsOptIn={profile.smsOptIn}
+              />
+            </div>
+          </div>
         </div>
       </main>
     </div>
