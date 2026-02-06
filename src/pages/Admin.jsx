@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAllUsers, inviteUser } from '../services/adminService'
 import { CheckCircle, Warning, Autorenew, SwapVert, PersonAdd, Send } from '@mui/icons-material'
@@ -6,6 +6,7 @@ import { Checkbox } from '@summit/design-system'
 import BulkActionToolbar from '../components/admin/BulkActionToolbar'
 import SendSMSModal from '../components/admin/SendSMSModal'
 import DeleteConfirmModal from '../components/admin/DeleteConfirmModal'
+import EngagementFilter from '../components/admin/EngagementFilter'
 
 export default function Admin() {
   const navigate = useNavigate()
@@ -13,7 +14,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState('createdAt')
   const [sortDesc, setSortDesc] = useState(true)
-  const [filterNeedsSetup, setFilterNeedsSetup] = useState(false)
+  const [engagementFilter, setEngagementFilter] = useState(null)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviting, setInviting] = useState(false)
   const [inviteStatus, setInviteStatus] = useState(null)
@@ -65,9 +66,53 @@ export default function Admin() {
     }
   }
 
+  // Calculate engagement status for each user
+  const getEngagementStatus = (user) => {
+    const now = new Date()
+    const createdAt = new Date(user.createdAt)
+    const lastLogin = user.lastLogin ? new Date(user.lastLogin) : null
+
+    const daysSinceCreated = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24))
+    const daysSinceLogin = lastLogin ? Math.floor((now - lastLogin) / (1000 * 60 * 60 * 24)) : Infinity
+
+    // New: joined within 7 days
+    if (daysSinceCreated <= 7) return 'new'
+
+    // Active: logged in within 3 days AND has habits
+    if (daysSinceLogin <= 3 && user.activeHabitsCount > 0) return 'active'
+
+    // Inactive: no login in 7+ days
+    if (daysSinceLogin >= 7) return 'inactive'
+
+    // No habits: has logged in but no habits
+    if (user.activeHabitsCount === 0) return 'no_habits'
+
+    return 'active'
+  }
+
+  // Calculate filter counts
+  const filterCounts = useMemo(() => {
+    const counts = {
+      all: users.length,
+      new: 0,
+      active: 0,
+      inactive: 0,
+      no_habits: 0
+    }
+
+    users.forEach(user => {
+      const status = getEngagementStatus(user)
+      if (counts[status] !== undefined) {
+        counts[status]++
+      }
+    })
+
+    return counts
+  }, [users])
+
   const getSortedUsers = () => {
-    let filtered = filterNeedsSetup
-      ? users.filter(u => !u.pilotReady)
+    let filtered = engagementFilter
+      ? users.filter(u => getEngagementStatus(u) === engagementFilter)
       : users
 
     return [...filtered].sort((a, b) => {
@@ -230,20 +275,19 @@ export default function Admin() {
           onClear={clearSelection}
         />
 
+        {/* Engagement Filter */}
+        <EngagementFilter
+          activeFilter={engagementFilter}
+          onFilterChange={setEngagementFilter}
+          counts={filterCounts}
+        />
+
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden">
-          <div className="p-4 border-b border-stone-200 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-stone-600">
-                {sortedUsers.length} {sortedUsers.length === 1 ? 'user' : 'users'}
-              </span>
-              <Checkbox
-                size="sm"
-                shape="rounded"
-                checked={filterNeedsSetup}
-                onChange={(e) => setFilterNeedsSetup(e.target.checked)}
-                label='Show only "Needs Setup"'
-              />
-            </div>
+          <div className="p-4 border-b border-stone-200">
+            <span className="text-sm text-stone-600">
+              {sortedUsers.length} {sortedUsers.length === 1 ? 'user' : 'users'}
+              {engagementFilter && ` (filtered)`}
+            </span>
           </div>
 
           <div className="overflow-x-auto">

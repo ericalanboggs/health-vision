@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getUserDetail } from '../services/adminService'
 import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt } from '@mui/icons-material'
+import ConversationView from '../components/admin/ConversationView'
 
 /**
  * Derive coaching archetype from form data
@@ -280,6 +281,14 @@ export default function AdminUserDetail() {
             </div>
           </div>
         </div>
+
+        {/* SMS Conversation */}
+        <ConversationView
+          userId={profile.id}
+          userName={profile.name}
+          phone={profile.phone}
+          smsOptIn={profile.smsOptIn}
+        />
 
         {/* Pilot Readiness Checklist */}
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
