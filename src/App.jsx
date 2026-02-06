@@ -14,6 +14,8 @@ import AddHabit from './pages/AddHabit'
 import ScheduleHabits from './pages/ScheduleHabits'
 import Reflection from './pages/Reflection'
 import PilotSurvey from './pages/PilotSurvey'
+import Privacy from './pages/Privacy'
+import Terms from './pages/Terms'
 import AuthCallback from './pages/AuthCallback'
 import AuthTest from './pages/AuthTest'
 import AuthDebug from './pages/AuthDebug'
@@ -64,7 +66,11 @@ function App() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/test" element={<AuthTest />} />
         <Route path="/auth/debug" element={<AuthDebug />} />
-        
+
+        {/* Legal pages - Public */}
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+
         {/* Profile setup - Public for Twilio verification */}
         <Route 
           path="/profile-setup" 
