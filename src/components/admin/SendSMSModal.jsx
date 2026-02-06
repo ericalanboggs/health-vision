@@ -1,6 +1,26 @@
-import { useState, useEffect } from 'react'
-import { Close, Send, Warning, CheckCircle, Error } from '@mui/icons-material'
+import { useState, useEffect, useRef } from 'react'
+import { Close, Send, Warning, CheckCircle, Error, EmojiEmotions } from '@mui/icons-material'
 import { sendAdminSMS } from '../../services/adminService'
+
+// Summit-themed emoji palette
+const EMOJI_OPTIONS = [
+  { emoji: '🏔️', label: 'Summit' },
+  { emoji: '⛰️', label: 'Mountain' },
+  { emoji: '💪', label: 'Flex' },
+  { emoji: '🤜🤛', label: 'Fist bump' },
+  { emoji: '❤️', label: 'Heart' },
+  { emoji: '🔥', label: 'Fire' },
+  { emoji: '⭐', label: 'Star' },
+  { emoji: '✅', label: 'Check' },
+  { emoji: '🎯', label: 'Target' },
+  { emoji: '👏', label: 'Clap' },
+  { emoji: '🙌', label: 'Celebrate' },
+  { emoji: '💧', label: 'Water' },
+  { emoji: '🏃', label: 'Run' },
+  { emoji: '🧘', label: 'Meditate' },
+  { emoji: '😊', label: 'Smile' },
+  { emoji: '🌟', label: 'Sparkle' },
+]
 
 /**
  * Modal for composing and sending SMS to one or more users
@@ -14,6 +34,9 @@ export default function SendSMSModal({ isOpen, onClose, recipients, onSuccess })
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [result, setResult] = useState(null) // { success: true/false, sent: n, failed: n }
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const textareaRef = useRef(null)
+  const emojiPickerRef = useRef(null)
 
   // Filter to eligible recipients (has phone AND sms opt-in)
   const eligibleRecipients = recipients.filter(r =>
@@ -31,8 +54,43 @@ export default function SendSMSModal({ isOpen, onClose, recipients, onSuccess })
     if (isOpen) {
       setMessage('')
       setResult(null)
+      setShowEmojiPicker(false)
     }
   }, [isOpen])
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
+        setShowEmojiPicker(false)
+      }
+    }
+
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showEmojiPicker])
+
+  // Insert emoji at cursor position
+  const insertEmoji = (emoji) => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      const newMessage = message.slice(0, start) + emoji + message.slice(end)
+      setMessage(newMessage)
+
+      // Set cursor position after emoji
+      setTimeout(() => {
+        textarea.focus()
+        textarea.selectionStart = textarea.selectionEnd = start + emoji.length
+      }, 0)
+    } else {
+      setMessage(message + emoji)
+    }
+    setShowEmojiPicker(false)
+  }
 
   const handleSend = async () => {
     if (sending || eligibleRecipients.length === 0 || !message.trim()) return
@@ -144,16 +202,52 @@ export default function SendSMSModal({ isOpen, onClose, recipients, onSuccess })
             <label className="block text-sm font-medium text-stone-600 mb-1">
               Message
             </label>
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Hi! Quick check-in from Summit..."
-              rows={4}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition resize-none ${
-                isOverLimit ? 'border-red-500' : 'border-gray-200'
-              }`}
-              disabled={sending || eligibleRecipients.length === 0}
-            />
+            <div className="relative">
+              <textarea
+                ref={textareaRef}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Hi! Quick check-in from Summit..."
+                rows={4}
+                className={`w-full px-4 py-3 pr-12 border rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition resize-none ${
+                  isOverLimit ? 'border-red-500' : 'border-gray-200'
+                }`}
+                disabled={sending || eligibleRecipients.length === 0}
+              />
+
+              {/* Emoji picker button */}
+              <button
+                type="button"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                className="absolute bottom-3 right-3 p-1.5 text-stone-400 hover:text-summit-emerald hover:bg-summit-mint rounded-lg transition"
+                disabled={sending || eligibleRecipients.length === 0}
+                title="Add emoji"
+              >
+                <EmojiEmotions className="w-5 h-5" />
+              </button>
+
+              {/* Emoji picker dropdown */}
+              {showEmojiPicker && (
+                <div
+                  ref={emojiPickerRef}
+                  className="absolute bottom-12 right-0 bg-white border border-gray-200 rounded-xl shadow-lg p-3 z-10 w-64"
+                >
+                  <div className="grid grid-cols-8 gap-1">
+                    {EMOJI_OPTIONS.map(({ emoji, label }) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => insertEmoji(emoji)}
+                        className="p-1.5 text-xl hover:bg-summit-mint rounded-lg transition"
+                        title={label}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="flex justify-between mt-1">
               <span className="text-xs text-stone-500">
                 {segmentCount} SMS segment{segmentCount !== 1 ? 's' : ''}
