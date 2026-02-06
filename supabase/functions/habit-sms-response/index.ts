@@ -46,9 +46,15 @@ function getDayOfWeekInTimezone(timezone: string): number {
 }
 
 /**
- * Send SMS via Twilio
+ * Send SMS via Twilio and optionally log to sms_messages
  */
-async function sendSMS(to: string, message: string): Promise<{ success: boolean; sid?: string; error?: string }> {
+async function sendSMS(
+  to: string,
+  message: string,
+  supabase?: ReturnType<typeof createClient>,
+  userId?: string,
+  userName?: string
+): Promise<{ success: boolean; sid?: string; error?: string }> {
   try {
     const response = await fetch(
       `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
@@ -69,6 +75,20 @@ async function sendSMS(to: string, message: string): Promise<{ success: boolean;
     const data = await response.json()
 
     if (response.ok) {
+      // Log outbound message to sms_messages if supabase client provided
+      if (supabase) {
+        await supabase.from('sms_messages').insert({
+          direction: 'outbound',
+          user_id: userId || null,
+          phone: to,
+          user_name: userName || null,
+          body: message,
+          sent_by: null, // System-sent
+          sent_by_type: 'system',
+          twilio_sid: data.sid,
+          twilio_status: data.status || 'sent',
+        }).catch(err => console.error('Error logging outbound message:', err))
+      }
       return { success: true, sid: data.sid }
     } else {
       return { success: false, error: data.message || 'Twilio API error' }
@@ -155,6 +175,9 @@ serve(async (req) => {
     // Initialize Supabase client
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 
+    // Get MessageSid for logging
+    const messageSid = formData.get('MessageSid')?.toString() || null
+
     // Find user by phone number
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
@@ -165,6 +188,18 @@ serve(async (req) => {
     if (profileError || !profile) {
       console.log(`❌ No user found for phone ${from}`)
       console.log(`Profile error: ${profileError?.message || 'none'}`)
+
+      // Still log the message even if we can't find the user
+      await supabase.from('sms_messages').insert({
+        direction: 'inbound',
+        user_id: null,
+        phone: from,
+        user_name: null,
+        body: body,
+        twilio_sid: messageSid,
+        twilio_status: 'received',
+      }).catch(err => console.error('Error logging unknown user message:', err))
+
       return new Response(
         '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
         { headers: { 'Content-Type': 'text/xml' } }
@@ -172,6 +207,18 @@ serve(async (req) => {
     }
 
     console.log(`✓ Found user: ${profile.id} (${profile.first_name})`)
+
+    // Log the inbound message to sms_messages for conversation history
+    const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || null
+    await supabase.from('sms_messages').insert({
+      direction: 'inbound',
+      user_id: profile.id,
+      phone: from,
+      user_name: userName,
+      body: body,
+      twilio_sid: messageSid,
+      twilio_status: 'received',
+    }).catch(err => console.error('Error logging inbound message:', err))
 
     const userTimezone = profile.timezone || 'America/Chicago'
     const todayStr = getTodayInTimezone(userTimezone)
@@ -193,7 +240,7 @@ serve(async (req) => {
     if (!recentFollowup) {
       console.log(`❌ No recent followup found for user ${profile.id} on ${todayStr}`)
       // Send a helpful response
-      await sendSMS(from, `Thanks for your message! You can track habits through the app at any time.`)
+      await sendSMS(from, `Thanks for your message! You can track habits through the app at any time.`, supabase, profile.id, userName)
       return new Response(
         '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
         { headers: { 'Content-Type': 'text/xml' } }
@@ -233,7 +280,7 @@ serve(async (req) => {
       } else {
         helpMessage = `I didn't understand that. Reply with a number for "${habitName}".`
       }
-      await sendSMS(from, helpMessage)
+      await sendSMS(from, helpMessage, supabase, profile.id, userName)
       return new Response(
         '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
         { headers: { 'Content-Type': 'text/xml' } }
@@ -265,7 +312,7 @@ serve(async (req) => {
 
     if (upsertError) {
       console.error('Error saving entry:', upsertError)
-      await sendSMS(from, `Sorry, there was an error saving your response. Please try again.`)
+      await sendSMS(from, `Sorry, there was an error saving your response. Please try again.`, supabase, profile.id, userName)
       return new Response(
         '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
         { headers: { 'Content-Type': 'text/xml' } }
@@ -292,7 +339,7 @@ serve(async (req) => {
       }
     }
 
-    await sendSMS(from, confirmationMessage)
+    await sendSMS(from, confirmationMessage, supabase, profile.id, userName)
 
     console.log(`Successfully logged ${parsed.type} entry for ${habitName}`)
 
@@ -346,7 +393,7 @@ serve(async (req) => {
               }
 
               // Send the next follow-up
-              await sendSMS(from, nextMessage)
+              await sendSMS(from, nextMessage, supabase, profile.id, userName)
 
               // Log the follow-up
               await supabase.from('sms_followup_log').insert({
