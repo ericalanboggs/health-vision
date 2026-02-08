@@ -15,9 +15,7 @@ export default function Start() {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-summit-sage rounded-full flex items-center justify-center">
-              <span className="text-4xl">🏔️</span>
-            </div>
+            <img src="/summit-logo.svg" alt="Summit Health" className="h-10" />
           </div>
 
           <h1 className="text-h1 text-summit-forest mb-4">

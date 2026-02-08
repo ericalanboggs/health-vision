@@ -24,9 +24,7 @@ export default function Login() {
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-summit-mint rounded-full flex items-center justify-center">
-              <span className="text-4xl">🏔️</span>
-            </div>
+            <img src="/summit-logo.svg" alt="Summit Health" className="h-10" />
           </div>
 
           <h1 className="text-3xl font-bold text-summit-forest mb-2">

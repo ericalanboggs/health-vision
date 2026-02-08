@@ -17,10 +17,9 @@ export default function TopNav() {
           {/* Logo */}
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 text-2xl font-bold text-summit-forest hover:text-summit-moss transition"
+            className="flex items-center hover:opacity-80 transition"
           >
-            <span>🏔️</span>
-            <span>Summit</span>
+            <img src="/summit-logo.svg" alt="Summit Health" className="h-8" />
           </button>
 
           {/* Actions */}

@@ -42,13 +42,11 @@ const LandingPage = ({ onStart }) => {
       <div className="container mx-auto px-6 pt-12 pb-16">
         <div className="text-center max-w-4xl mx-auto mb-10">
           <div className="flex justify-center mb-6">
-            <div className="relative">
-              <img 
-                src="/summit-logo.png" 
-                alt="Summit Logo" 
-                className="w-24 h-24 object-contain"
-              />
-            </div>
+            <img
+              src="/summit-logo.svg"
+              alt="Summit Health"
+              className="h-12"
+            />
           </div>
           
           <h1 className="text-5xl lg:text-6xl font-bold text-stone-900 mb-4 leading-tight">
