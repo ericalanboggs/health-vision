@@ -14,7 +14,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
 const YOUTUBE_API_KEY = Deno.env.get('YOUTUBE_API_KEY')
-const PILOT_START_DATE = Deno.env.get('PILOT_START_DATE') || '2026-01-12'
+const PROGRAM_START_DATE = Deno.env.get('PROGRAM_START_DATE') || '2026-01-12'
 
 interface Profile {
   id: string
@@ -23,9 +23,9 @@ interface Profile {
 }
 
 function getCurrentWeekNumber(): number {
-  const pilotStartDate = new Date(PILOT_START_DATE)
+  const programStartDate = new Date(PROGRAM_START_DATE)
   const now = new Date()
-  const diffTime = now.getTime() - pilotStartDate.getTime()
+  const diffTime = now.getTime() - programStartDate.getTime()
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
   const weekNumber = Math.floor(diffDays / 7) + 1
   return Math.max(1, weekNumber)

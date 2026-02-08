@@ -194,13 +194,12 @@ serve(async (req) => {
 })
 
 /**
- * Get current week number (matches existing system)
- * Week 1 starts on Jan 12, 2026
+ * Get current week number based on program start date
  */
 function getCurrentWeekNumber(): number {
-  const pilotStartDate = new Date('2026-01-12')
+  const programStartDate = new Date(Deno.env.get('PROGRAM_START_DATE') || '2026-01-12')
   const now = new Date()
-  const diffTime = now.getTime() - pilotStartDate.getTime()
+  const diffTime = now.getTime() - programStartDate.getTime()
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
   const weekNumber = Math.floor(diffDays / 7) + 1
   return Math.max(1, weekNumber)

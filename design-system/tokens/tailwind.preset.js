@@ -26,6 +26,7 @@ export default {
           lime: '#A3E635',
           emerald: '#10B981',
           moss: '#059669',
+          pine: '#065F46',
           forest: '#022C22',
           sage: '#D1FAE5',
           mint: '#F0FDFA',

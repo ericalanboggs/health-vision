@@ -6,7 +6,6 @@ const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
 const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-const PILOT_START_DATE = Deno.env.get('PILOT_START_DATE') || '2026-01-12'
 
 interface Profile {
   id: string
@@ -131,21 +130,6 @@ serve(async (req) => {
 
     const now = new Date()
     console.log(`Running habit follow-up check at ${now.toISOString()}`)
-
-    // Check if we're within the pilot date range
-    const pilotStartDate = new Date(PILOT_START_DATE)
-    const pilotEndDate = new Date(pilotStartDate)
-    pilotEndDate.setDate(pilotEndDate.getDate() + 21)
-
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-
-    if (today < pilotStartDate || today > pilotEndDate) {
-      console.log(`Outside pilot date range`)
-      return new Response(
-        JSON.stringify({ message: 'Outside pilot date range' }),
-        { headers: { 'Content-Type': 'application/json' } }
-      )
-    }
 
     // Get all users with SMS opt-in and tracking_followup_time set
     const { data: profiles, error: profilesError } = await supabase

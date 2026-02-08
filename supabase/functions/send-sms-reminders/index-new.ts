@@ -7,7 +7,6 @@ const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
-const PILOT_START_DATE = Deno.env.get('PILOT_START_DATE') || '2026-01-12'
 
 interface Habit {
   id: string
@@ -233,36 +232,6 @@ serve(async (req) => {
       )
     }
 
-    // Check pilot date range (but allow test user to bypass)
-    const pilotStartDate = new Date(PILOT_START_DATE)
-    const pilotEndDate = new Date(pilotStartDate)
-    pilotEndDate.setDate(pilotEndDate.getDate() + 21)
-    
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const TEST_USER_ID = 'a4286912-80dc-4b17-b04b-33ce776c1026'
-    
-    if (today < pilotStartDate || today > pilotEndDate) {
-      // Filter out non-test users if outside pilot range
-      const testUserHabits = habits.filter((h: Habit) => h.user_id === TEST_USER_ID)
-      
-      if (testUserHabits.length === 0) {
-        console.log(`Outside pilot date range and no test user habits`)
-        return new Response(
-          JSON.stringify({ 
-            message: 'Outside pilot date range - no reminders sent',
-            pilotStartDate: pilotStartDate.toISOString(),
-            pilotEndDate: pilotEndDate.toISOString(),
-            currentDate: today.toISOString()
-          }),
-          { headers: { 'Content-Type': 'application/json' } }
-        )
-      }
-      
-      console.log(`Outside pilot range but allowing ${testUserHabits.length} test user habits`)
-      // Continue with only test user habits
-      habits.splice(0, habits.length, ...testUserHabits)
-    }
-
     // Get user profiles to access timezones
     const allUserIds = [...new Set(habits.map((h: Habit) => h.user_id))]
     const { data: allProfiles, error: allProfilesError } = await supabase
@@ -382,15 +351,9 @@ serve(async (req) => {
         continue
       }
 
-      // Check if we already sent a reminder for this user recently
-      const isTestUser = userId === 'a4286912-80dc-4b17-b04b-33ce776c1026'
-      
-      // For test users, check last hour to allow multiple tests per day but prevent spam
-      // For regular users, check entire day
-      const checkSince = isTestUser 
-        ? new Date(now.getTime() - 60 * 60 * 1000).toISOString() // Last hour
-        : new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString() // Today
-      
+      // Check if we already sent a reminder for this user today
+      const checkSince = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+
       const { data: existingReminder } = await supabase
         .from('sms_reminders')
         .select('id')
@@ -400,7 +363,7 @@ serve(async (req) => {
         .maybeSingle()
 
       if (existingReminder) {
-        console.log(`Already sent reminder for user ${userId} ${isTestUser ? 'in last hour' : 'today'}`)
+        console.log(`Already sent reminder for user ${userId} today`)
         continue
       }
 

@@ -7,7 +7,6 @@ import { loadJourney } from '../services/journeyService'
 import {
   getCurrentWeekNumber,
   getCurrentWeekDateRange,
-  getPilotStartDate,
 } from '../utils/weekCalculator'
 import {
   CalendarMonth,
@@ -40,7 +39,6 @@ export default function DashboardSummit() {
   const [currentReflection, setCurrentReflection] = useState(null)
   const [weekNumber, setWeekNumber] = useState(1)
   const [weekDateRange, setWeekDateRange] = useState('')
-  const [pilotTimelineText, setPilotTimelineText] = useState('')
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
   const [visionData, setVisionData] = useState({
     visionStatement: '',
@@ -49,80 +47,6 @@ export default function DashboardSummit() {
     futureAbilities: '',
     whyMatters: ''
   })
-
-  const formatPilotTimeline = () => {
-    const pilotStart = getPilotStartDate()
-    const today = new Date()
-
-    const todayMidnight = new Date(today)
-    todayMidnight.setHours(0, 0, 0, 0)
-
-    const formatDate = (date, includeYear = false) => {
-      const utcDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000))
-      const options = {
-        month: 'numeric',
-        day: 'numeric',
-        timeZone: 'UTC'
-      }
-
-      if (includeYear) {
-        options.year = '2-digit'
-      }
-
-      return utcDate.toLocaleDateString('en-US', options)
-    }
-
-    const formatDateLong = (date) => {
-      const utcDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000))
-      const month = utcDate.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })
-      const day = utcDate.getUTCDate()
-      const year = utcDate.getUTCFullYear()
-
-      const ordinal = (d) => {
-        if (d > 3 && d < 21) return 'th'
-        switch (d % 10) {
-          case 1: return 'st'
-          case 2: return 'nd'
-          case 3: return 'rd'
-          default: return 'th'
-        }
-      }
-
-      return `${month} ${day}${ordinal(day)}, ${year}`
-    }
-
-    if (todayMidnight < pilotStart) {
-      return `Pilot Week 1: Starts ${formatDate(pilotStart, true)}`
-    }
-
-    const week1Start = new Date(pilotStart)
-    const week1End = new Date(week1Start)
-    week1End.setDate(week1End.getDate() + 6)
-
-    if (today >= week1Start && today <= week1End) {
-      return `Pilot Week 1: Monday ${formatDate(week1Start)} - Sunday ${formatDate(week1End)}`
-    }
-
-    const week2Start = new Date(week1Start)
-    week2Start.setDate(week2Start.getDate() + 7)
-    const week2End = new Date(week2Start)
-    week2End.setDate(week2End.getDate() + 6)
-
-    if (today >= week2Start && today <= week2End) {
-      return `Pilot Week 2: Monday ${formatDate(week2Start)} - Sunday ${formatDate(week2End)}`
-    }
-
-    const week3Start = new Date(week1Start)
-    week3Start.setDate(week3Start.getDate() + 14)
-    const week3End = new Date(week3Start)
-    week3End.setDate(week3End.getDate() + 6)
-
-    if (today >= week3Start && today <= week3End) {
-      return `Pilot Week 3: Monday ${formatDate(week3Start)} - Sunday ${formatDate(week3End)}`
-    }
-
-    return `Pilot complete ${formatDateLong(week3End)}`
-  }
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -155,8 +79,6 @@ export default function DashboardSummit() {
           whyMatters: formData.whyMatters || ''
         })
       }
-
-      setPilotTimelineText(formatPilotTimeline())
 
       const hasSeenWelcome = localStorage.getItem('hasSeenWelcome')
       if (!hasSeenWelcome) {
@@ -250,36 +172,6 @@ export default function DashboardSummit() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <h1 className="text-h1 text-summit-forest mb-8">Welcome to Your Summit</h1>
-
-        {/* Your Summit Section */}
-        <div className="mb-8">
-          <h2 className="text-meta text-summit-moss mb-4">YOUR SUMMIT</h2>
-
-          {/* Pilot Program Stats Card */}
-          <Card variant="feature" className="mb-6 border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <div className="text-meta text-summit-moss mb-2">PILOT PROGRAM</div>
-                <CardTitle className="mb-1">Week {weekNumber} of 4</CardTitle>
-                <p className="text-body-sm text-text-muted">
-                  {pilotTimelineText || weekDateRange}
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="text-h2 text-summit-forest">{weekNumber}/4</div>
-                <div className="text-body-sm text-text-muted">weeks</div>
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="w-full bg-summit-sage rounded-full h-2 overflow-hidden">
-              <div
-                className="bg-summit-lime h-full transition-all duration-500 ease-out"
-                style={{ width: `${(weekNumber / 4) * 100}%` }}
-              />
-            </div>
-          </Card>
-        </div>
 
         {/* Vision Section */}
         <Card

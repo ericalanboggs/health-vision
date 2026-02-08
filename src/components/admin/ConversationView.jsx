@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Send, EmojiEmotions, Autorenew, SmsOutlined, Add, Chat, Close, Image, AttachFile } from '@mui/icons-material'
 import { getConversation, sendAdminSMS } from '../../services/adminService'
+import supabase from '../../lib/supabase'
 
 // Summit-themed emoji palette
 const EMOJI_OPTIONS = [
@@ -108,6 +109,38 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [showEmojiPicker, showTemplates, showAddMenu])
+
+  // Real-time subscription for new messages
+  useEffect(() => {
+    if (!userId) return
+
+    const channel = supabase
+      .channel(`sms-conversation-${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'sms_messages',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload) => {
+          // Add new message to the list
+          setMessages((prev) => {
+            // Check if message already exists (avoid duplicates)
+            if (prev.some(m => m.id === payload.new.id)) {
+              return prev
+            }
+            return [...prev, payload.new]
+          })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [userId])
 
   const loadConversation = async () => {
     setLoading(true)

@@ -7,7 +7,6 @@ const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
-const PILOT_START_DATE = Deno.env.get('PILOT_START_DATE') || '2026-01-12'
 
 interface Habit {
   id: string
@@ -263,28 +262,6 @@ serve(async (req) => {
 
     console.log(`Running reminder check at ${now.toISOString()}`)
     console.log(`Day: ${currentDayOfWeek}, Hour: ${currentHour}, Minute: ${currentMinute}`)
-
-    // Check if we're within the pilot date range (Jan 12 - Feb 1, 2026)
-    const pilotStartDate = new Date(PILOT_START_DATE)
-    const pilotEndDate = new Date(pilotStartDate)
-    pilotEndDate.setDate(pilotEndDate.getDate() + 21) // 3 weeks = 21 days
-    
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    
-    if (today < pilotStartDate || today > pilotEndDate) {
-      console.log(`Outside pilot date range. Pilot runs from ${pilotStartDate.toISOString()} to ${pilotEndDate.toISOString()}`)
-      return new Response(
-        JSON.stringify({ 
-          message: 'Outside pilot date range - no reminders sent',
-          pilotStartDate: pilotStartDate.toISOString(),
-          pilotEndDate: pilotEndDate.toISOString(),
-          currentDate: today.toISOString()
-        }),
-        { headers: { 'Content-Type': 'application/json' } }
-      )
-    }
-    
-    console.log(`Within pilot date range (${pilotStartDate.toISOString()} to ${pilotEndDate.toISOString()}) - proceeding with reminders`)
 
     // Query ALL habits scheduled for today
     const { data: habits, error: habitsError } = await supabase

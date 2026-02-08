@@ -8,7 +8,6 @@ import { getStreak, getHabitStats, getAllTrackingConfigs } from '../services/tra
 import {
   getCurrentWeekNumber,
   getCurrentWeekDateRange,
-  getPilotStartDate,
   getWeekStartDate,
   getWeekEndDate,
 } from '../utils/weekCalculator'
@@ -85,7 +84,6 @@ export default function Dashboard() {
   const [currentReflection, setCurrentReflection] = useState(null)
   const [weekNumber, setWeekNumber] = useState(1)
   const [weekDateRange, setWeekDateRange] = useState('')
-  const [pilotTimelineText, setPilotTimelineText] = useState('')
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
   const [visionData, setVisionData] = useState({
     visionStatement: '',
@@ -116,94 +114,6 @@ export default function Dashboard() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const formatPilotTimeline = () => {
-    const pilotStart = getPilotStartDate()
-    const today = new Date()
-    
-    // Don't modify the original pilotStart date - it's already correctly set
-    const todayMidnight = new Date(today)
-    todayMidnight.setHours(0, 0, 0, 0)
-
-    console.log('DEBUG DASHBOARD: today =', today.toISOString())
-    console.log('DEBUG DASHBOARD: pilotStart =', pilotStart.toISOString())
-    console.log('DEBUG DASHBOARD: pilotStart date =', pilotStart.toDateString())
-    console.log('DEBUG DASHBOARD: today < pilotStart =', todayMidnight < pilotStart)
-
-    const formatDate = (date, includeYear = false) => {
-      // Use UTC-based formatting to avoid timezone issues
-      const utcDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000))
-      const options = {
-        month: 'numeric',
-        day: 'numeric',
-        timeZone: 'UTC'
-      }
-
-      if (includeYear) {
-        options.year = '2-digit'
-      }
-
-      return utcDate.toLocaleDateString('en-US', options)
-    }
-
-    const formatDateLong = (date) => {
-      const utcDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000))
-      const month = utcDate.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })
-      const day = utcDate.getUTCDate()
-      const year = utcDate.getUTCFullYear()
-
-      // Add ordinal suffix
-      const ordinal = (d) => {
-        if (d > 3 && d < 21) return 'th'
-        switch (d % 10) {
-          case 1: return 'st'
-          case 2: return 'nd'
-          case 3: return 'rd'
-          default: return 'th'
-        }
-      }
-
-      return `${month} ${day}${ordinal(day)}, ${year}`
-    }
-
-    // Before Week 1 starts
-    if (todayMidnight < pilotStart) {
-      console.log('DEBUG: Returning "Starts" message')
-      return `Pilot Week 1: Starts ${formatDate(pilotStart, true)}`
-    }
-
-    // Calculate week ranges based on the actual pilot start date
-    const week1Start = new Date(pilotStart)
-    const week1End = new Date(week1Start)
-    week1End.setDate(week1End.getDate() + 6)
-    
-    if (today >= week1Start && today <= week1End) {
-      return `Pilot Week 1: Monday ${formatDate(week1Start)} - Sunday ${formatDate(week1End)}`
-    }
-
-    // Week 2: 7 days after week 1 starts
-    const week2Start = new Date(week1Start)
-    week2Start.setDate(week2Start.getDate() + 7)
-    const week2End = new Date(week2Start)
-    week2End.setDate(week2End.getDate() + 6)
-    
-    if (today >= week2Start && today <= week2End) {
-      return `Pilot Week 2: Monday ${formatDate(week2Start)} - Sunday ${formatDate(week2End)}`
-    }
-
-    // Week 3: 14 days after week 1 starts
-    const week3Start = new Date(week1Start)
-    week3Start.setDate(week3Start.getDate() + 14)
-    const week3End = new Date(week3Start)
-    week3End.setDate(week3End.getDate() + 6)
-    
-    if (today >= week3Start && today <= week3End) {
-      return `Pilot Week 3: Monday ${formatDate(week3Start)} - Sunday ${formatDate(week3End)}`
-    }
-
-    // After Week 3
-    return `Pilot complete ${formatDateLong(week3End)}`
-  }
-
   useEffect(() => {
     const loadDashboardData = async () => {
       // Get current week info (sync - instant)
@@ -211,7 +121,6 @@ export default function Dashboard() {
       const dateRange = getCurrentWeekDateRange()
       setWeekNumber(week)
       setWeekDateRange(dateRange)
-      setPilotTimelineText(formatPilotTimeline())
 
       // Get user first (single auth call)
       const userResult = await getCurrentUser()
@@ -481,25 +390,6 @@ export default function Dashboard() {
                 {visionData?.visionStatement ? 'View & Edit Vision' : 'Create Vision'}
               </Button>
             </div>
-          </div>
-        </Card>
-
-        {/* Pilot Program Stats Card */}
-        <Card variant="feature" className="mb-8 border border-gray-200">
-          <div className="mb-4">
-            <div className="text-meta text-summit-moss mb-2">PILOT PROGRAM</div>
-            <CardTitle className="mb-1">{4 - weekNumber} Week{4 - weekNumber !== 1 ? 's' : ''} Remaining</CardTitle>
-            <p className="text-body-sm text-text-muted">
-              {pilotTimelineText || weekDateRange}
-            </p>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="w-full bg-summit-sage rounded-full h-2 overflow-hidden">
-            <div
-              className="bg-summit-lime h-full transition-all duration-500 ease-out"
-              style={{ width: `${(weekNumber / 4) * 100}%` }}
-            />
           </div>
         </Card>
 

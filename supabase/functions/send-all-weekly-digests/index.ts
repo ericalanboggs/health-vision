@@ -5,7 +5,7 @@ import { sendEmailsInBatches, type EmailPayload } from '../_shared/resend.ts'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-const PILOT_START_DATE = Deno.env.get('PILOT_START_DATE') || '2026-01-12'
+const PROGRAM_START_DATE = Deno.env.get('PROGRAM_START_DATE') || '2026-01-12'
 
 // Accessible green color (4.5:1 contrast ratio on white)
 const BRAND_GREEN = '#15803d'
@@ -26,12 +26,12 @@ interface WeeklyDigest {
 }
 
 /**
- * Get current week number (matches existing system)
+ * Get current week number based on program start date
  */
 function getCurrentWeekNumber(): number {
-  const pilotStartDate = new Date(PILOT_START_DATE)
+  const programStartDate = new Date(PROGRAM_START_DATE)
   const now = new Date()
-  const diffTime = now.getTime() - pilotStartDate.getTime()
+  const diffTime = now.getTime() - programStartDate.getTime()
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
   const weekNumber = Math.floor(diffDays / 7) + 1
   return Math.max(1, weekNumber)
@@ -256,22 +256,6 @@ serve(async (req) => {
     console.log(`Timestamp: ${new Date().toISOString()}\n`)
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
-
-    // Check pilot date range
-    const pilotStartDate = new Date(PILOT_START_DATE)
-    const pilotEndDate = new Date(pilotStartDate)
-    pilotEndDate.setDate(pilotEndDate.getDate() + 21)
-
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    if (today < pilotStartDate || today > pilotEndDate) {
-      console.log(`Outside pilot date range`)
-      return new Response(
-        JSON.stringify({ message: 'Outside pilot date range - no digests sent' }),
-        { headers: { 'Content-Type': 'application/json' } }
-      )
-    }
 
     // Get all users with completed profiles and email
     const { data: profiles, error: profilesError } = await supabase

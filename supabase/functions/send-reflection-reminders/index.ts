@@ -6,7 +6,7 @@ const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
 const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-const PILOT_START_DATE = Deno.env.get('PILOT_START_DATE') || '2026-01-12'
+const PROGRAM_START_DATE = Deno.env.get('PROGRAM_START_DATE') || '2026-01-12'
 const APP_URL = 'https://summit-pilot.vercel.app'
 
 interface Profile {
@@ -17,18 +17,18 @@ interface Profile {
 }
 
 /**
- * Get the current week number based on pilot start date
+ * Get the current week number based on program start date
  */
 function getCurrentWeekNumber(): number {
-  const [year, month, day] = PILOT_START_DATE.split('-').map(Number)
-  const pilotStartDate = new Date(year, month - 1, day)
+  const [year, month, day] = PROGRAM_START_DATE.split('-').map(Number)
+  const programStartDate = new Date(year, month - 1, day)
   const now = new Date()
 
   // Reset time to midnight for accurate day calculation
-  pilotStartDate.setHours(0, 0, 0, 0)
+  programStartDate.setHours(0, 0, 0, 0)
   now.setHours(0, 0, 0, 0)
 
-  const diffTime = now.getTime() - pilotStartDate.getTime()
+  const diffTime = now.getTime() - programStartDate.getTime()
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
   const weekNumber = Math.floor(diffDays / 7) + 1
 
