@@ -208,14 +208,18 @@ serve(async (req) => {
         continue
       }
 
-      // Check for existing entries today
+      // Check for existing entries today (only count actually completed/logged entries)
       const { data: existingEntries } = await supabase
         .from('habit_tracking_entries')
-        .select('habit_name')
+        .select('habit_name, completed, metric_value')
         .eq('user_id', profile.id)
         .eq('entry_date', userLocalTime.dateStr)
 
-      const existingHabitNames = new Set(existingEntries?.map(e => e.habit_name) || [])
+      const existingHabitNames = new Set(
+        (existingEntries || [])
+          .filter(e => e.completed === true || e.metric_value !== null)
+          .map(e => e.habit_name)
+      )
 
       // Filter to habits that don't have entries yet
       const habitsNeedingFollowup = habitsWithTracking.filter(

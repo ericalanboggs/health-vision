@@ -162,8 +162,26 @@ serve(async (req) => {
       // Twilio can be configured to auto-respond, or we can respond here
     }
 
-    // Return empty TwiML response (no auto-reply for now)
-    // You can add auto-replies here later if desired
+    // Forward to habit-sms-response for processing (confirmation + chaining)
+    if (userId) {
+      try {
+        console.log(`Forwarding message to habit-sms-response for user ${userId}`)
+        const responseUrl = `${SUPABASE_URL}/functions/v1/habit-sms-response`
+        const forwardRes = await fetch(responseUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+          body: bodyText,
+        })
+        console.log(`habit-sms-response status: ${forwardRes.status}`)
+      } catch (forwardError) {
+        console.error('Error forwarding to habit-sms-response:', forwardError)
+      }
+    }
+
+    // Return empty TwiML response (habit-sms-response sends replies via Twilio API directly)
     return new Response(
       '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
       { headers: { 'Content-Type': 'text/xml' } }

@@ -233,7 +233,7 @@ RULES:
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-nano',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -818,14 +818,18 @@ async function chainToNextHabit(
 
     if (!allTrackingConfigs || allTrackingConfigs.length === 0) return
 
-    // Get existing entries for today
+    // Get existing entries for today (only count actually completed/logged entries)
     const { data: existingEntries } = await supabase
       .from('habit_tracking_entries')
-      .select('habit_name')
+      .select('habit_name, completed, metric_value')
       .eq('user_id', profile.id)
       .eq('entry_date', todayStr)
 
-    const habitsWithEntries = new Set(existingEntries?.map(e => e.habit_name) || [])
+    const habitsWithEntries = new Set(
+      (existingEntries || [])
+        .filter(e => e.completed === true || e.metric_value !== null)
+        .map(e => e.habit_name)
+    )
 
     // Find habits that need followup
     const habitsNeedingFollowup = todayHabits.filter(habit =>
