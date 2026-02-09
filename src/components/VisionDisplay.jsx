@@ -247,7 +247,7 @@ const VisionDisplay = ({ formData: initialFormData }) => {
                   leftIcon={<Edit className="w-4 h-4" />}
                   className="no-print"
                 >
-                  Edit
+                  <span className="hidden sm:inline">Edit</span>
                 </Button>
               ) : (
                 <div className="flex items-center gap-2 no-print">
@@ -373,7 +373,7 @@ const VisionDisplay = ({ formData: initialFormData }) => {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-h3 text-summit-forest flex items-center gap-2">
                 <Favorite className="w-5 h-5 text-summit-emerald" />
-                Base Camp (Resources)
+                Base Camp<span className="hidden sm:inline"> (Resources)</span>
               </h3>
               {editingSection !== 'basecamp' ? (
                 <Button
@@ -383,25 +383,27 @@ const VisionDisplay = ({ formData: initialFormData }) => {
                   leftIcon={<Edit className="w-4 h-4" />}
                   className="no-print"
                 >
-                  Edit
+                  <span className="hidden sm:inline">Edit</span>
                 </Button>
               ) : (
                 <div className="flex items-center gap-2 no-print">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={handleCancelEdit}
-                    className="flex items-center gap-2 px-3 py-1.5 text-text-secondary hover:text-summit-forest hover:bg-gray-100 rounded-lg transition"
+                    leftIcon={<Close className="w-4 h-4" />}
                   >
-                    <Close className="w-4 h-4" />
-                    Cancel
-                  </button>
-                  <button
+                    <span className="hidden sm:inline">Cancel</span>
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onClick={() => handleSaveSection('basecamp')}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg transition"
+                    leftIcon={<Save className="w-4 h-4" />}
                   >
-                    <Save className="w-4 h-4" />
-                    {isSaving ? 'Saving...' : 'Save'}
-                  </button>
+                    <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save'}</span>
+                  </Button>
                 </div>
               )}
             </div>
@@ -496,25 +498,27 @@ const VisionDisplay = ({ formData: initialFormData }) => {
                   leftIcon={<Edit className="w-4 h-4" />}
                   className="no-print"
                 >
-                  Edit
+                  <span className="hidden sm:inline">Edit</span>
                 </Button>
               ) : (
                 <div className="flex items-center gap-2 no-print">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={handleCancelEdit}
-                    className="flex items-center gap-2 px-3 py-1.5 text-text-secondary hover:text-summit-forest hover:bg-gray-100 rounded-lg transition"
+                    leftIcon={<Close className="w-4 h-4" />}
                   >
-                    <Close className="w-4 h-4" />
-                    Cancel
-                  </button>
-                  <button
+                    <span className="hidden sm:inline">Cancel</span>
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onClick={() => handleSaveSection('route')}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg transition"
+                    leftIcon={<Save className="w-4 h-4" />}
                   >
-                    <Save className="w-4 h-4" />
-                    {isSaving ? 'Saving...' : 'Save'}
-                  </button>
+                    <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save'}</span>
+                  </Button>
                 </div>
               )}
             </div>
@@ -625,7 +629,7 @@ const VisionDisplay = ({ formData: initialFormData }) => {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-h3 text-summit-forest flex items-center gap-2">
                 <Schedule className="w-5 h-5 text-summit-emerald" />
-                Capacity & Support
+                Capacity<span className="hidden sm:inline"> & Support</span>
               </h3>
               {editingSection !== 'capacity' ? (
                 <Button
@@ -635,25 +639,27 @@ const VisionDisplay = ({ formData: initialFormData }) => {
                   leftIcon={<Edit className="w-4 h-4" />}
                   className="no-print"
                 >
-                  Edit
+                  <span className="hidden sm:inline">Edit</span>
                 </Button>
               ) : (
                 <div className="flex items-center gap-2 no-print">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={handleCancelEdit}
-                    className="flex items-center gap-2 px-3 py-1.5 text-text-secondary hover:text-summit-forest hover:bg-gray-100 rounded-lg transition"
+                    leftIcon={<Close className="w-4 h-4" />}
                   >
-                    <Close className="w-4 h-4" />
-                    Cancel
-                  </button>
-                  <button
+                    <span className="hidden sm:inline">Cancel</span>
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onClick={() => handleSaveSection('capacity')}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg transition"
+                    leftIcon={<Save className="w-4 h-4" />}
                   >
-                    <Save className="w-4 h-4" />
-                    {isSaving ? 'Saving...' : 'Save'}
-                  </button>
+                    <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save'}</span>
+                  </Button>
                 </div>
               )}
             </div>

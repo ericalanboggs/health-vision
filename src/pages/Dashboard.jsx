@@ -62,10 +62,10 @@ import {
   CheckCircle,
   OpenInNew,
   HelpOutline,
+  Forum,
 } from '@mui/icons-material'
 import TopNav from '../components/TopNav'
 import WelcomeModal from '../components/WelcomeModal'
-import coachEric from '../assets/coach-eric.jpeg'
 import {
   Card,
   CardHeader,
@@ -394,11 +394,11 @@ export default function Dashboard() {
         </Card>
 
         {/* This Week's Climb Section */}
-        <div className="mb-8">
+        <div>
           <h2 className="text-h2 text-summit-forest mb-4">This Week's Climb</h2>
 
           {/* Weekly Sections Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Weekly Habits */}
           <Card
             interactive
@@ -513,14 +513,12 @@ export default function Dashboard() {
         </div>
 
         {/* Coaching Section */}
-        <Card className="border border-gray-200">
+        <Card className="mt-6 border border-gray-200">
           <CardHeader className="mb-4">
             <div className="flex items-center gap-3 mb-3">
-              <img
-                src={coachEric}
-                alt="Coach Eric"
-                className="h-10 w-10 rounded-lg object-cover flex-shrink-0"
-              />
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-summit-sage">
+                <Forum className="h-5 w-5 text-summit-emerald" />
+              </div>
               <CardTitle className="text-h3">Coaching</CardTitle>
               <div className="relative group/tooltip">
                 <HelpOutline className="h-5 w-5 text-text-muted hover:text-summit-forest cursor-help transition" />
@@ -532,10 +530,10 @@ export default function Dashboard() {
               </div>
             </div>
             <Tag size="sm" variant="secondary" className="w-fit mb-2">
-              Optional 30 minute session
+              15 minute session
             </Tag>
             <CardDescription className="text-body mb-3">
-              Need a hand? Schedule a session with Coach Eric to workshop challenges and make a plan.
+              Schedule a session with a Summit Health coach to workshop challenges and make a plan.
             </CardDescription>
           </CardHeader>
 
@@ -544,7 +542,7 @@ export default function Dashboard() {
             rightIcon={<OpenInNew className="h-4 w-4" />}
             onClick={(e) => {
               e.stopPropagation()
-              window.open('https://cal.com/eric-boggs/30min', '_blank', 'noopener,noreferrer')
+              window.open('https://cal.com/eric-boggs/15min', '_blank', 'noopener,noreferrer')
             }}
           >
             Schedule Session

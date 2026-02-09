@@ -334,44 +334,73 @@ export const deleteUsers = async (userIds) => {
       return { success: false, error: 'Unauthorized' }
     }
 
+    console.log('Deleting users:', userIds)
+
     // Delete from all related tables (cascade)
     // Order matters due to foreign key constraints
 
     // Delete SMS messages
-    await supabase
+    const { error: smsError } = await supabase
       .from('sms_messages')
       .delete()
       .in('user_id', userIds)
+    if (smsError) console.error('Error deleting SMS messages:', smsError)
 
     // Delete SMS reminders
-    await supabase
+    const { error: remindersError } = await supabase
       .from('sms_reminders')
       .delete()
       .in('user_id', userIds)
+    if (remindersError) console.error('Error deleting SMS reminders:', remindersError)
+
+    // Delete SMS followup log
+    const { error: followupError } = await supabase
+      .from('sms_followup_log')
+      .delete()
+      .in('user_id', userIds)
+    if (followupError) console.error('Error deleting SMS followup log:', followupError)
 
     // Delete weekly reflections
-    await supabase
+    const { error: reflectionsError } = await supabase
       .from('weekly_reflections')
       .delete()
       .in('user_id', userIds)
+    if (reflectionsError) console.error('Error deleting weekly reflections:', reflectionsError)
 
     // Delete weekly habits
-    await supabase
+    const { error: habitsError } = await supabase
       .from('weekly_habits')
       .delete()
       .in('user_id', userIds)
+    if (habitsError) console.error('Error deleting weekly habits:', habitsError)
+
+    // Delete habit tracking entries
+    const { error: trackingEntriesError } = await supabase
+      .from('habit_tracking_entries')
+      .delete()
+      .in('user_id', userIds)
+    if (trackingEntriesError) console.error('Error deleting habit tracking entries:', trackingEntriesError)
+
+    // Delete habit tracking config
+    const { error: trackingConfigError } = await supabase
+      .from('habit_tracking_config')
+      .delete()
+      .in('user_id', userIds)
+    if (trackingConfigError) console.error('Error deleting habit tracking config:', trackingConfigError)
 
     // Delete health journeys
-    await supabase
+    const { error: journeysError } = await supabase
       .from('health_journeys')
       .delete()
       .in('user_id', userIds)
+    if (journeysError) console.error('Error deleting health journeys:', journeysError)
 
     // Delete pilot feedback
-    await supabase
+    const { error: feedbackError } = await supabase
       .from('pilot_feedback')
       .delete()
       .in('user_id', userIds)
+    if (feedbackError) console.error('Error deleting pilot feedback:', feedbackError)
 
     // Delete profiles (this should cascade to auth.users via FK if configured)
     const { error: profileError } = await supabase
@@ -379,8 +408,12 @@ export const deleteUsers = async (userIds) => {
       .delete()
       .in('id', userIds)
 
-    if (profileError) throw profileError
+    if (profileError) {
+      console.error('Error deleting profiles:', profileError)
+      throw profileError
+    }
 
+    console.log(`Successfully deleted ${userIds.length} user(s)`)
     return { success: true, deleted: userIds.length }
   } catch (error) {
     console.error('Error deleting users:', error)
