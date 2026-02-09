@@ -21,7 +21,7 @@ import { getCurrentUser, getProfile } from '../services/authService'
 import { getAllTrackingConfigs, disableTracking, saveTrackingConfig, getAiSuggestion, renameHabitTracking } from '../services/trackingService'
 import { METRIC_UNITS } from '../constants/metricUnits'
 import WeeklyTracker from '../components/WeeklyTracker'
-import { Toggle, ToggleButtonGroup } from '@summit/design-system'
+import { Toggle, ToggleButtonGroup, Select } from '@summit/design-system'
 
 export default function Habits() {
   const navigate = useNavigate()
@@ -876,7 +876,7 @@ END:VEVENT
                           {trackingConfigs[habitName]?.tracking_enabled && (
                             <div className="mt-4 space-y-4">
                               {/* Tracking Type Segmented Button + Unit Dropdown */}
-                              <div className="flex flex-wrap items-center gap-3">
+                              <div className="flex items-center gap-3">
                                 {/* Y/N | Metrics Toggle Button Group */}
                                 <ToggleButtonGroup
                                   options={[
@@ -892,19 +892,15 @@ END:VEVENT
                                 {trackingConfigs[habitName].tracking_type === 'metric' && (() => {
                                   const currentUnit = trackingConfigs[habitName].metric_unit || 'minutes'
                                   const isCustomUnit = !METRIC_UNITS.find(u => u.value === currentUnit)
-                                  const showCustomInput = currentUnit === 'other' || isCustomUnit
-                                  const localCustomValue = customUnitInputs[habitName]
 
                                   return (
-                                    <select
+                                    <Select
                                       value={isCustomUnit && currentUnit !== 'other' ? 'other' : currentUnit}
                                       onChange={(e) => {
                                         if (e.target.value === 'other') {
-                                          // Just show the input, don't save yet
                                           setCustomUnitInputs(prev => ({ ...prev, [habitName]: '' }))
                                           handleMetricUnitChange(habitName, 'other')
                                         } else {
-                                          // Clear any custom input and save the selected unit
                                           setCustomUnitInputs(prev => {
                                             const { [habitName]: _, ...rest } = prev
                                             return rest
@@ -912,7 +908,8 @@ END:VEVENT
                                           handleMetricUnitChange(habitName, e.target.value)
                                         }
                                       }}
-                                      className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald"
+                                      size="md"
+                                      className="!w-auto shrink-0"
                                     >
                                       {METRIC_UNITS.map(unit => (
                                         <option key={unit.value} value={unit.value}>
@@ -920,39 +917,39 @@ END:VEVENT
                                         </option>
                                       ))}
                                       <option value="other">Other...</option>
-                                    </select>
+                                    </Select>
                                   )
                                 })()}
-
-                                {/* Custom Unit Input (on its own line) */}
-                                {trackingConfigs[habitName].tracking_type === 'metric' && (() => {
-                                  const currentUnit = trackingConfigs[habitName].metric_unit || 'minutes'
-                                  const isCustomUnit = !METRIC_UNITS.find(u => u.value === currentUnit)
-                                  const showCustomInput = currentUnit === 'other' || isCustomUnit
-                                  const localCustomValue = customUnitInputs[habitName]
-
-                                  return showCustomInput ? (
-                                    <input
-                                      type="text"
-                                      value={localCustomValue !== undefined ? localCustomValue : (currentUnit === 'other' ? '' : currentUnit)}
-                                      onChange={(e) => setCustomUnitInputs(prev => ({ ...prev, [habitName]: e.target.value }))}
-                                      onBlur={() => {
-                                        const value = customUnitInputs[habitName]
-                                        if (value !== undefined && value.trim()) {
-                                          handleMetricUnitChange(habitName, value.trim())
-                                        }
-                                        setCustomUnitInputs(prev => {
-                                          const { [habitName]: _, ...rest } = prev
-                                          return rest
-                                        })
-                                      }}
-                                      placeholder="e.g., things"
-                                      className="basis-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald"
-                                      autoFocus
-                                    />
-                                  ) : null
-                                })()}
                               </div>
+
+                              {/* Custom Unit Input (on its own line) */}
+                              {trackingConfigs[habitName].tracking_type === 'metric' && (() => {
+                                const currentUnit = trackingConfigs[habitName].metric_unit || 'minutes'
+                                const isCustomUnit = !METRIC_UNITS.find(u => u.value === currentUnit)
+                                const showCustomInput = currentUnit === 'other' || isCustomUnit
+                                const localCustomValue = customUnitInputs[habitName]
+
+                                return showCustomInput ? (
+                                  <input
+                                    type="text"
+                                    value={localCustomValue !== undefined ? localCustomValue : (currentUnit === 'other' ? '' : currentUnit)}
+                                    onChange={(e) => setCustomUnitInputs(prev => ({ ...prev, [habitName]: e.target.value }))}
+                                    onBlur={() => {
+                                      const value = customUnitInputs[habitName]
+                                      if (value !== undefined && value.trim()) {
+                                        handleMetricUnitChange(habitName, value.trim())
+                                      }
+                                      setCustomUnitInputs(prev => {
+                                        const { [habitName]: _, ...rest } = prev
+                                        return rest
+                                      })
+                                    }}
+                                    placeholder="e.g., things"
+                                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald"
+                                    autoFocus
+                                  />
+                                ) : null
+                              })()}
 
                               {/* Helper Text */}
                               <p className="text-xs text-text-muted">
