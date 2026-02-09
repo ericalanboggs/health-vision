@@ -1,3 +1,4 @@
+import { Select } from '@summit/design-system'
 import { METRIC_UNITS, getUnitsByCategory, CATEGORY_LABELS } from '../constants/metricUnits'
 
 /**
@@ -8,17 +9,25 @@ export default function MetricUnitSelector({
   value,
   onChange,
   disabled = false,
+  label,
+  helperText,
+  errorMessage,
+  size = 'md',
   className = ''
 }) {
   const unitsByCategory = getUnitsByCategory()
   const categories = Object.keys(unitsByCategory)
 
   return (
-    <select
+    <Select
       value={value || ''}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
-      className={`w-full px-4 py-2 border border-stone-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition disabled:bg-stone-100 disabled:cursor-not-allowed ${className}`}
+      label={label}
+      helperText={helperText}
+      errorMessage={errorMessage}
+      size={size}
+      className={className}
       aria-label="Select metric unit"
     >
       <option value="">Select a unit...</option>
@@ -31,6 +40,6 @@ export default function MetricUnitSelector({
           ))}
         </optgroup>
       ))}
-    </select>
+    </Select>
   )
 }

@@ -16,6 +16,10 @@ export type { ButtonProps } from './Button'
 export { Input, Textarea, inputVariants, textareaVariants } from './Input'
 export type { InputProps, TextareaProps } from './Input'
 
+// Select
+export { Select, selectVariants } from './Select'
+export type { SelectProps } from './Select'
+
 // Checkbox
 export { Checkbox, checkboxVariants } from './Checkbox'
 export type { CheckboxProps } from './Checkbox'
