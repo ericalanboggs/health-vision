@@ -233,7 +233,7 @@ const VisionDisplay = ({ formData: initialFormData }) => {
         {/* Vision Content */}
         <Card className="border border-summit-sage overflow-hidden">
           {/* Health Summit */}
-          <section className="p-6 border-b border-summit-sage">
+          <section className="pb-6 border-b border-summit-sage">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-h3 text-summit-forest flex items-center gap-2">
                 <Terrain className="w-5 h-5 text-summit-emerald" />
@@ -369,20 +369,22 @@ const VisionDisplay = ({ formData: initialFormData }) => {
           </section>
 
           {/* Base Camp */}
-          <section className="p-6 border-b border-summit-sage">
+          <section className="pt-4 pb-6 border-b border-summit-sage">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-summit-forest flex items-center gap-2">
-                <Favorite className="w-5 h-5" />
+              <h3 className="text-h3 text-summit-forest flex items-center gap-2">
+                <Favorite className="w-5 h-5 text-summit-emerald" />
                 Base Camp (Resources)
               </h3>
               {editingSection !== 'basecamp' ? (
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleEditSection('basecamp')}
-                  className="flex items-center gap-2 px-3 py-1.5 text-summit-emerald hover:text-green-700 hover:bg-summit-mint rounded-lg transition no-print"
+                  leftIcon={<Edit className="w-4 h-4" />}
+                  className="no-print"
                 >
-                  <Edit className="w-4 h-4" />
                   Edit
-                </button>
+                </Button>
               ) : (
                 <div className="flex items-center gap-2 no-print">
                   <button
@@ -480,20 +482,22 @@ const VisionDisplay = ({ formData: initialFormData }) => {
           </section>
 
           {/* Assess the Route */}
-          <section className="p-6 border-b border-summit-sage">
+          <section className="pt-4 pb-6 border-b border-summit-sage">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-summit-forest flex items-center gap-2">
-                <Map className="w-5 h-5" />
+              <h3 className="text-h3 text-summit-forest flex items-center gap-2">
+                <Map className="w-5 h-5 text-summit-emerald" />
                 Assess the Route
               </h3>
               {editingSection !== 'route' ? (
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleEditSection('route')}
-                  className="flex items-center gap-2 px-3 py-1.5 text-summit-emerald hover:text-green-700 hover:bg-summit-mint rounded-lg transition no-print"
+                  leftIcon={<Edit className="w-4 h-4" />}
+                  className="no-print"
                 >
-                  <Edit className="w-4 h-4" />
                   Edit
-                </button>
+                </Button>
               ) : (
                 <div className="flex items-center gap-2 no-print">
                   <button
@@ -617,20 +621,22 @@ const VisionDisplay = ({ formData: initialFormData }) => {
           </section>
 
           {/* Capacity & Support */}
-          <section className="p-6">
+          <section className="pt-4 pb-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-summit-forest flex items-center gap-2">
-                <Schedule className="w-5 h-5" />
+              <h3 className="text-h3 text-summit-forest flex items-center gap-2">
+                <Schedule className="w-5 h-5 text-summit-emerald" />
                 Capacity & Support
               </h3>
               {editingSection !== 'capacity' ? (
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleEditSection('capacity')}
-                  className="flex items-center gap-2 px-3 py-1.5 text-summit-emerald hover:text-green-700 hover:bg-summit-mint rounded-lg transition no-print"
+                  leftIcon={<Edit className="w-4 h-4" />}
+                  className="no-print"
                 >
-                  <Edit className="w-4 h-4" />
                   Edit
-                </button>
+                </Button>
               ) : (
                 <div className="flex items-center gap-2 no-print">
                   <button

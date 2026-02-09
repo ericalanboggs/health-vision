@@ -16,10 +16,16 @@ const getOpenAIClient = () => {
 /**
  * Enhance action plan with AI personalization
  */
-export const enhanceActionPlan = async (formData, actionPlan) => {
+export const enhanceActionPlan = async (formData, actionPlan, previousSuggestions = []) => {
   try {
     const client = getOpenAIClient()
-    
+
+    // Build the "already suggested" section
+    const alreadySuggestedText = previousSuggestions.length > 0
+      ? `\n\nALREADY SUGGESTED (DO NOT REPEAT THESE):
+${previousSuggestions.map((s, i) => `${i + 1}. ${s.action}`).join('\n')}`
+      : ''
+
     const prompt = `You are a health coach helping someone personalize their health action plan. Based on their context, make the generic actions more specific, actionable, and tailored to their situation.
 
 USER CONTEXT:
@@ -35,15 +41,17 @@ Preferred times: ${formData.preferredTimes || 'Not specified'}
 Sustainable approach: ${formData.sustainableNotes || 'Not specified'}
 
 CURRENT GENERIC PLAN:
-${actionPlan.weeklyActions.map(item => `${item.area}:\n${item.actions.map(a => `- ${a}`).join('\n')}`).join('\n\n')}
+${actionPlan.weeklyActions.map(item => `${item.area}:\n${item.actions.map(a => `- ${a}`).join('\n')}`).join('\n\n')}${alreadySuggestedText}
 
 TASK:
 Provide 4-6 highly specific, personalized action steps for THIS WEEK that:
-1. Fit their exact time capacity and schedule
-2. Address their specific barriers
-3. Align with their vision and why it matters
-4. Feel achievable given their readiness level
-5. Are concrete and actionable (not vague advice)
+1. Are COMPLETELY DIFFERENT from any already-suggested actions above
+2. Fit their exact time capacity and schedule
+3. Address their specific barriers
+4. Align with their vision and why it matters
+5. Feel achievable given their readiness level
+6. Are concrete and actionable (not vague advice)
+7. Explore different health areas (movement, nutrition, sleep, stress, social connection, etc.)
 
 IMPORTANT FORMATTING RULES:
 - Do NOT include specific days of the week (like "Monday, Wednesday, Friday" or "on Sundays")

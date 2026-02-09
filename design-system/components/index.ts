@@ -41,6 +41,10 @@ export type { CardProps, FeatureCardProps } from './Card'
 export { Toggle, toggleVariants } from './Toggle'
 export type { ToggleProps } from './Toggle'
 
+// ToggleButtonGroup
+export { ToggleButtonGroup, toggleButtonGroupVariants, toggleButtonVariants } from './ToggleButtonGroup'
+export type { ToggleButtonGroupProps, ToggleButtonOption } from './ToggleButtonGroup'
+
 // Banner
 export { Banner, bannerVariants } from './Banner'
 export type { BannerProps } from './Banner'

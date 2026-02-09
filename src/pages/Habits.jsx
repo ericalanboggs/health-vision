@@ -21,7 +21,7 @@ import { getCurrentUser, getProfile } from '../services/authService'
 import { getAllTrackingConfigs, disableTracking, saveTrackingConfig, getAiSuggestion, renameHabitTracking } from '../services/trackingService'
 import { METRIC_UNITS } from '../constants/metricUnits'
 import WeeklyTracker from '../components/WeeklyTracker'
-import { Toggle } from '@summit/design-system'
+import { Toggle, ToggleButtonGroup } from '@summit/design-system'
 
 export default function Habits() {
   const navigate = useNavigate()
@@ -877,29 +877,16 @@ END:VEVENT
                             <div className="mt-4 space-y-4">
                               {/* Tracking Type Segmented Button + Unit Dropdown */}
                               <div className="flex flex-wrap items-center gap-3">
-                                {/* Y/N | Metrics Segmented Button */}
-                                <div className="flex rounded-lg border border-gray-300 overflow-hidden">
-                                  <button
-                                    onClick={() => handleTrackingTypeChange(habitName, 'boolean')}
-                                    className={`px-4 py-2 text-sm font-medium transition ${
-                                      trackingConfigs[habitName].tracking_type === 'boolean'
-                                        ? 'bg-summit-lime text-summit-forest'
-                                        : 'bg-white text-text-secondary hover:bg-summit-mint'
-                                    }`}
-                                  >
-                                    Y/N
-                                  </button>
-                                  <button
-                                    onClick={() => handleTrackingTypeChange(habitName, 'metric')}
-                                    className={`px-4 py-2 text-sm font-medium transition border-l border-gray-300 ${
-                                      trackingConfigs[habitName].tracking_type === 'metric'
-                                        ? 'bg-summit-lime text-summit-forest'
-                                        : 'bg-white text-text-secondary hover:bg-summit-mint'
-                                    }`}
-                                  >
-                                    Metrics
-                                  </button>
-                                </div>
+                                {/* Y/N | Metrics Toggle Button Group */}
+                                <ToggleButtonGroup
+                                  options={[
+                                    { value: 'boolean', label: 'Y/N' },
+                                    { value: 'metric', label: 'Metrics' },
+                                  ]}
+                                  value={trackingConfigs[habitName].tracking_type}
+                                  onChange={(value) => handleTrackingTypeChange(habitName, value)}
+                                  size="sm"
+                                />
 
                                 {/* Unit Dropdown (only for metrics) */}
                                 {trackingConfigs[habitName].tracking_type === 'metric' && (() => {
