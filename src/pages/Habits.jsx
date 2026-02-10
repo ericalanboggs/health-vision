@@ -722,16 +722,7 @@ END:VEVENT
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-summit-sage rounded-xl">
-                <Science className="w-6 h-6 text-summit-emerald" />
-              </div>
-              <div>
-                <h2 className="text-h2 text-summit-forest">Habit Experiments</h2>
-              </div>
-            </div>
-
+          <div>
             <div className="space-y-4">
               {groupedHabits.map(([habitName, habitList], index) => {
                 const committedDays = dayCommitments[index] || []
@@ -739,7 +730,7 @@ END:VEVENT
                 const isEditing = editingHabitIndex === index
 
                 return (
-                  <div key={index} className="border border-gray-200 rounded-lg p-5">
+                  <div key={index} className="bg-white border border-gray-200 rounded-2xl shadow-lg p-5">
                     <div className="flex items-start justify-between mb-4">
                       {isEditing ? (
                         <textarea

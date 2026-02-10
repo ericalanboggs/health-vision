@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowBack, CalendarMonth, Save, Autorenew, CheckCircle, Schedule, Edit, Visibility } from '@mui/icons-material'
-import { saveReflection, getCurrentWeekReflection, getReflectionByWeek } from '../services/reflectionService'
+import { ArrowBack, CalendarMonth, Save, Autorenew, CheckCircle, Schedule, Edit, Visibility, ChevronLeft, ChevronRight } from '@mui/icons-material'
+import { saveReflection, getCurrentWeekReflection, getReflectionByWeek, getAllReflections } from '../services/reflectionService'
 import { getCurrentWeekNumber, getCurrentWeekDateRange, getWeekStartDate, getWeekEndDate, hasWeekPassed } from '../utils/weekCalculator'
 import { Banner } from '@summit/design-system'
 
@@ -21,7 +21,7 @@ export default function Reflection() {
   })
   const [weekReflections, setWeekReflections] = useState({}) // Store all weeks' reflections
   const [headerVisible, setHeaderVisible] = useState(true)
-  const [showBanner, setShowBanner] = useState(true)
+  const [showBanner, setShowBanner] = useState(() => !localStorage.getItem('reflection-banner-dismissed'))
   const lastScrollY = useRef(0)
 
   // Headroom behavior for nav
@@ -53,20 +53,20 @@ export default function Reflection() {
     const week = getCurrentWeekNumber()
     setCurrentWeek(week)
     setSelectedWeek(week) // Default to current week
-    
-    // Load reflections for all 3 weeks
+
+    // Load all reflections at once, indexed by week_number
     const reflections = {}
-    for (let i = 1; i <= 3; i++) {
-      try {
-        const { success, data } = await getReflectionByWeek(i)
-        if (success && data) {
-          reflections[i] = data
-        }
-      } catch (error) {
-        console.log(`No reflection found for week ${i}`)
+    try {
+      const { success, data } = await getAllReflections()
+      if (success && data) {
+        data.forEach(r => {
+          reflections[r.week_number] = r
+        })
       }
+    } catch (error) {
+      console.error('Failed to load reflections:', error)
     }
-    
+
     setWeekReflections(reflections)
     setLoading(false)
   }
@@ -191,7 +191,7 @@ export default function Reflection() {
             <Banner
               title="Why Weekly Reflections?"
               dismissible
-              onDismiss={() => setShowBanner(false)}
+              onDismiss={() => { localStorage.setItem('reflection-banner-dismissed', '1'); setShowBanner(false) }}
               className="mb-4"
             >
               Research shows that people who reflect on their progress weekly are more likely to stick with new habits.
@@ -199,81 +199,43 @@ export default function Reflection() {
             </Banner>
           )}
 
-          {/* Week Tabs */}
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 bg-summit-sage/30 p-2 rounded-lg mb-4">
-            {[1, 2, 3].map((week) => {
-              // Use timezone-safe date formatting
-              const dateString = import.meta.env.VITE_PILOT_START_DATE || '2026-01-12'
-              const [year, month, day] = dateString.split('-')
-              const baseDate = new Date(year, parseInt(month) - 1, parseInt(day))
-              
-              // Calculate the actual date for this week
-              const weekOffset = (week - 1) * 7
-              const weekStart = new Date(baseDate.getTime() + (weekOffset * 24 * 60 * 60 * 1000))
-              const weekEnd = new Date(weekStart.getTime() + (6 * 24 * 60 * 60 * 1000))
-              
-              // Use UTC-based formatting to avoid timezone issues
-              const formatDateUTC = (date) => {
-                const utcDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000))
-                return utcDate.toLocaleDateString('en-US', { 
-                  month: 'short', 
-                  day: 'numeric',
-                  timeZone: 'UTC'
-                })
-              }
-              
-              const dateRange = `${formatDateUTC(weekStart)} - ${formatDateUTC(weekEnd)}`
-              
-              const isCurrent = week === currentWeek
-              const hasReflection = weekReflections[week]
-              
-              return (
-                <button
-                  key={week}
-                  onClick={() => setSelectedWeek(week)}
-                  className={`
-                    flex items-center justify-center gap-2 px-4 py-3 rounded-full text-sm font-medium transition-all w-full sm:w-auto border-2
-                    ${selectedWeek === week 
-                      ? 'bg-white text-summit-forest border-summit-emerald' 
-                      : 'text-summit-forest hover:bg-summit-sage/30 border-transparent'
-                    }
-                  `}
-                >
-                  <span className="hidden sm:inline">Week {week}: {dateRange}</span>
-                  <span className="sm:hidden flex flex-col items-center">
-                    <div className="flex items-center gap-1">
-                      <span>Week {week}</span>
-                      {hasReflection && <CheckCircle className="w-3 h-3 text-summit-emerald" />}
-                    </div>
-                    <span className="text-xs leading-tight">{dateRange}</span>
-                  </span>
-                  <span className="hidden sm:flex items-center gap-1">
-                    {hasReflection && <CheckCircle className="w-4 h-4 text-summit-emerald" />}
-                    {isCurrent && <div className="w-2 h-2 bg-summit-emerald rounded-full" />}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+          {/* Week Carousel */}
+          <div className="flex items-center justify-center mb-6">
+            <button
+              onClick={() => setSelectedWeek(prev => prev - 1)}
+              disabled={selectedWeek <= 1}
+              className="p-1 text-summit-moss hover:text-summit-forest hover:bg-summit-sage/50 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label="Previous week"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div className="flex flex-col items-center min-w-[160px]">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-medium text-summit-forest">
+                  Week of {getWeekStartDate(selectedWeek).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </span>
+                {weekReflections[selectedWeek] && (
+                  <CheckCircle className="w-4 h-4 text-summit-emerald" />
+                )}
+              </div>
+              <span className="text-xs text-summit-moss">{weekDateRange}</span>
+            </div>
+            <button
+              onClick={() => setSelectedWeek(prev => prev + 1)}
+              disabled={selectedWeek >= currentWeek}
+              className="p-1 text-summit-moss hover:text-summit-forest hover:bg-summit-sage/50 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label="Next week"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+
           {/* Show form for current and past weeks (always editable) */}
           {isEditable ? (
             <>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-summit-mint rounded-xl">
-                  <CalendarMonth className="w-6 h-6 text-summit-emerald" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-summit-forest">
-                    {isPastWeek ? `Week ${selectedWeek} Check-In` : "This Week's Check-In"}
-                  </h2>
-                  <p className="text-sm text-stone-600 mt-1">
-                    Take a moment to reflect on your week. No judgment—just learning.
-                  </p>
-                </div>
-              </div>
               
               <div className="space-y-6">
                 {/* Question 1: What went well */}

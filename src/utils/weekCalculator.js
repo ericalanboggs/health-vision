@@ -9,8 +9,6 @@
 // Format: YYYY-MM-DD
 const PILOT_START_DATE = import.meta.env.VITE_PILOT_START_DATE || '2026-01-12'
 
-console.log('DEBUG: VITE_PILOT_START_DATE =', import.meta.env.VITE_PILOT_START_DATE)
-console.log('DEBUG: PILOT_START_DATE =', PILOT_START_DATE)
 
 /**
  * Get the current week number for the pilot
@@ -42,11 +40,9 @@ export const getCurrentWeekNumber = () => {
  * @returns {Date} Pilot start date
  */
 export const getPilotStartDate = () => {
-  console.log('DEBUG getPilotStartDate: PILOT_START_DATE =', PILOT_START_DATE)
   // Parse date as local time to avoid timezone issues
   const [year, month, day] = PILOT_START_DATE.split('-').map(Number)
   const date = new Date(year, month - 1, day)
-  console.log('DEBUG getPilotStartDate: new Date result =', date.toISOString())
   return date
 }
 

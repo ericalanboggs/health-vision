@@ -569,6 +569,47 @@ serve(async (req) => {
     const firstName = profile.first_name || 'there'
 
     // ============================================
+    // STEP 0: Check for BACKUP keyword or active backup session
+    // ============================================
+    const upperBody = body.toUpperCase().trim()
+    const isBackupKeyword = upperBody === 'BACKUP' || upperBody.startsWith('BACKUP ')
+
+    let hasActiveBackupSession = false
+    if (!isBackupKeyword) {
+      const { data: backupSession } = await supabase
+        .from('sms_backup_sessions')
+        .select('id')
+        .eq('user_id', profile.id)
+        .gt('expires_at', new Date().toISOString())
+        .limit(1)
+        .maybeSingle()
+      hasActiveBackupSession = !!backupSession
+    }
+
+    if (isBackupKeyword || hasActiveBackupSession) {
+      console.log(`Routing to sms-backup-plan (keyword: ${isBackupKeyword}, active session: ${hasActiveBackupSession})`)
+      try {
+        const backupUrl = `${SUPABASE_URL}/functions/v1/sms-backup-plan`
+        const backupRes = await fetch(backupUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+          body: new URLSearchParams({ From: from, Body: body }).toString(),
+        })
+        console.log(`sms-backup-plan status: ${backupRes.status}`)
+      } catch (backupError) {
+        console.error('Error forwarding to sms-backup-plan:', backupError)
+      }
+
+      return new Response(
+        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+        { headers: { 'Content-Type': 'text/xml' } }
+      )
+    }
+
+    // ============================================
     // STEP 1: Check for pending clarification
     // ============================================
     const { data: pendingClarification } = await supabase
