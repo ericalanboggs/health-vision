@@ -13,6 +13,7 @@ import Habits from './pages/Habits'
 import AddHabit from './pages/AddHabit'
 import ScheduleHabits from './pages/ScheduleHabits'
 import Reflection from './pages/Reflection'
+import Resources from './pages/Resources'
 import PilotSurvey from './pages/PilotSurvey'
 import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
@@ -142,13 +143,21 @@ function App() {
             </ProtectedRoute>
           } 
         />
-        <Route 
-          path="/reflection" 
+        <Route
+          path="/reflection"
           element={
             <ProtectedRoute>
               <Reflection />
             </ProtectedRoute>
-          } 
+          }
+        />
+        <Route
+          path="/resources"
+          element={
+            <ProtectedRoute>
+              <Resources />
+            </ProtectedRoute>
+          }
         />
         
         {/* Admin routes */}

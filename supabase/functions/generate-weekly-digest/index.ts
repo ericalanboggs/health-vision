@@ -156,6 +156,34 @@ serve(async (req) => {
       throw saveError
     }
 
+    // Step 9b: Also insert recommendations into user_resources for persistent library
+    if (recommendations && recommendations.length > 0) {
+      const resourceRows = recommendations.map((rec: any) => ({
+        user_id: context.user_id,
+        title: rec.title,
+        url: rec.url,
+        description: rec.brief_description || null,
+        source: rec.source || null,
+        resource_type: rec.type || 'link',
+        topic: null,
+        duration_minutes: rec.duration_minutes || null,
+        thumbnail_url: rec.thumbnail_url || null,
+        origin: 'digest',
+        week_number: targetWeek,
+      }))
+
+      const { error: resourceError } = await supabase
+        .from('user_resources')
+        .insert(resourceRows)
+
+      if (resourceError) {
+        // Non-fatal: log but don't throw
+        console.warn('Warning: Failed to insert recommendations into user_resources:', resourceError)
+      } else {
+        console.log(`Inserted ${resourceRows.length} recommendations into user_resources`)
+      }
+    }
+
     console.log(`\n✅ Digest generated successfully!`)
     console.log(`Digest ID: ${savedDigest.id}`)
     console.log(`Status: ${savedDigest.status}`)

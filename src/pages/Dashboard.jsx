@@ -5,6 +5,7 @@ import { getCurrentWeekHabits } from '../services/habitService'
 import { getCurrentWeekReflection } from '../services/reflectionService'
 import { loadJourney } from '../services/journeyService'
 import { getStreak, getHabitStats, getAllTrackingConfigs } from '../services/trackingService'
+import { getUserResources, categorizeResource } from '../services/resourceService'
 import {
   getCurrentWeekNumber,
   getCurrentWeekDateRange,
@@ -63,6 +64,7 @@ import {
   OpenInNew,
   HelpOutline,
   Forum,
+  MenuBook,
 } from '@mui/icons-material'
 import TopNav from '../components/TopNav'
 import WelcomeModal from '../components/WelcomeModal'
@@ -95,6 +97,7 @@ export default function Dashboard() {
   const [visionAdjectives, setVisionAdjectives] = useState('Your Health Vision')
   const [habitSummaries, setHabitSummaries] = useState({})
   const [habitStats, setHabitStats] = useState({})
+  const [resourceTopics, setResourceTopics] = useState([])
   const [headerVisible, setHeaderVisible] = useState(true)
   const lastScrollY = useRef(0)
 
@@ -137,17 +140,29 @@ export default function Dashboard() {
         habitsResult,
         reflectionResult,
         journeyResult,
-        configsResult
+        configsResult,
+        resourcesResult
       ] = await Promise.all([
         getCurrentWeekHabits(userId),
         getCurrentWeekReflection(userId),
         loadJourney(userId),
-        getAllTrackingConfigs(userId)
+        getAllTrackingConfigs(userId),
+        getUserResources(userId)
       ])
 
       // Process reflection
       if (reflectionResult.success && reflectionResult.data) {
         setCurrentReflection(reflectionResult.data)
+      }
+
+      // Process resource topics for Guides section
+      if (resourcesResult.success && resourcesResult.data) {
+        const topics = [...new Set(
+          resourcesResult.data
+            .map(r => r.topic || categorizeResource([r.description, r.title].filter(Boolean).join(' ')))
+            .filter(Boolean)
+        )].slice(0, 4)
+        setResourceTopics(topics)
       }
 
       // Process vision (with caching for adjectives)
@@ -512,42 +527,91 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Coaching Section */}
-        <Card className="mt-6 border border-gray-200">
-          <CardHeader className="mb-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-summit-sage">
-                <Forum className="h-5 w-5 text-summit-emerald" />
-              </div>
-              <CardTitle className="text-h3">Coaching</CardTitle>
-              <div className="relative group/tooltip">
-                <HelpOutline className="h-5 w-5 text-text-muted hover:text-summit-forest cursor-help transition" />
-                <div className="absolute left-0 top-8 w-80 bg-summit-forest text-white p-4 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-10">
-                  <p className="font-semibold mb-2">What coaching means in Summit</p>
-                  <p className="text-sm leading-relaxed">This isn't someone telling you how to live your life. Coaching is about being heard, thinking things through together, and recognizing that you already have the answers—you just may need space and support to uncover them.</p>
-                  <div className="absolute -top-2 left-4 w-4 h-4 bg-summit-forest transform rotate-45"></div>
-                </div>
-              </div>
-            </div>
-            <Tag size="sm" variant="secondary" className="w-fit mb-2">
-              15 minute session
-            </Tag>
-            <CardDescription className="text-body mb-3">
-              Schedule a session with a Summit Health coach to workshop challenges and make a plan.
-            </CardDescription>
-          </CardHeader>
+        {/* Guides Section */}
+        <div className="mt-8">
+          <h2 className="text-h2 text-summit-forest mb-4">Guides</h2>
 
-          <Button
-            variant="primary"
-            rightIcon={<OpenInNew className="h-4 w-4" />}
-            onClick={(e) => {
-              e.stopPropagation()
-              window.open('https://cal.com/eric-boggs/15min', '_blank', 'noopener,noreferrer')
-            }}
-          >
-            Schedule Session
-          </Button>
-        </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Resources Card */}
+            <Card
+              interactive
+              className="cursor-pointer border border-gray-200"
+              onClick={() => navigate('/resources')}
+            >
+              <CardHeader className="mb-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-summit-sage">
+                    <MenuBook className="h-5 w-5 text-summit-emerald" />
+                  </div>
+                  <CardTitle className="text-h3">Resources</CardTitle>
+                </div>
+
+                {resourceTopics.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {resourceTopics.map(topic => (
+                      <button
+                        key={topic}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          navigate(`/resources?topic=${encodeURIComponent(topic)}`)
+                        }}
+                      >
+                        <Tag size="sm" variant="secondary" className="hover:bg-summit-emerald/20 transition-colors cursor-pointer">
+                          {topic}
+                        </Tag>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <CardDescription className="text-body">
+                    Personalized content from your weekly digests — videos, podcasts, and articles.
+                  </CardDescription>
+                )}
+              </CardHeader>
+
+              <Button variant="ghost" rightIcon={<ArrowForward className="h-4 w-4" />}>
+                View All
+              </Button>
+            </Card>
+
+            {/* Coaching Card */}
+            <Card className="border border-gray-200">
+              <CardHeader className="mb-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-summit-sage">
+                    <Forum className="h-5 w-5 text-summit-emerald" />
+                  </div>
+                  <CardTitle className="text-h3">Coaching</CardTitle>
+                  <div className="relative group/tooltip">
+                    <HelpOutline className="h-5 w-5 text-text-muted hover:text-summit-forest cursor-help transition" />
+                    <div className="absolute left-0 top-8 w-80 bg-summit-forest text-white p-4 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-10">
+                      <p className="font-semibold mb-2">What coaching means in Summit</p>
+                      <p className="text-sm leading-relaxed">This isn't someone telling you how to live your life. Coaching is about being heard, thinking things through together, and recognizing that you already have the answers—you just may need space and support to uncover them.</p>
+                      <div className="absolute -top-2 left-4 w-4 h-4 bg-summit-forest transform rotate-45"></div>
+                    </div>
+                  </div>
+                </div>
+                <Tag size="sm" variant="secondary" className="w-fit mb-2">
+                  15 minute session
+                </Tag>
+                <CardDescription className="text-body mb-3">
+                  Schedule a session with a Summit Health coach to workshop challenges and make a plan.
+                </CardDescription>
+              </CardHeader>
+
+              <Button
+                variant="primary"
+                rightIcon={<OpenInNew className="h-4 w-4" />}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  window.open('https://cal.com/eric-boggs/15min', '_blank', 'noopener,noreferrer')
+                }}
+              >
+                Schedule Session
+              </Button>
+            </Card>
+          </div>
+        </div>
       </main>
     </div>
   )
