@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Person, Phone, Email, CheckCircle, Autorenew, ArrowBack } from '@mui/icons-material'
+import { Phone, Email, ArrowBack, Autorenew } from '@mui/icons-material'
 import { getCurrentUser, getProfile, upsertProfile } from '../services/authService'
 import TopNav from '../components/TopNav'
 import { formatPhoneToE164, isValidUSPhoneNumber } from '../utils/phoneFormatter'
+import { Card, Input, Textarea, Checkbox, Button, Banner } from '@summit/design-system'
 
 export default function Profile() {
   const navigate = useNavigate()
@@ -12,7 +13,7 @@ export default function Profile() {
   const [saved, setSaved] = useState(false)
   const [user, setUser] = useState(null)
   const [errors, setErrors] = useState({})
-  
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -48,7 +49,7 @@ export default function Profile() {
     const result = await getCurrentUser()
     if (result.success && result.user) {
       setUser(result.user)
-      
+
       // Load profile data
       const profileResult = await getProfile(result.user.id)
       if (profileResult.success && profileResult.data) {
@@ -169,188 +170,127 @@ export default function Profile() {
       <div className={`sticky top-0 z-10 transition-transform duration-300 ${headerVisible ? 'translate-y-0' : '-translate-y-full'}`}>
         <TopNav />
       </div>
-      
+
       <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-6">
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 text-stone-600 hover:text-summit-forest font-medium transition-colors mb-4"
+            className="flex items-center gap-1 text-text-muted hover:text-summit-forest transition-colors mb-4"
           >
-            <ArrowBack className="w-5 h-5" />
-            Back to Dashboard
+            <ArrowBack className="h-5 w-5" />
+            <span className="text-body">Back to Dashboard</span>
           </button>
-          <h1 className="text-3xl font-bold text-summit-forest">Profile Settings</h1>
-          <p className="text-stone-600 mt-2">
+          <h1 className="text-h1 text-summit-forest">Profile Settings</h1>
+          <p className="text-body text-text-muted mt-2">
             Update your personal information and preferences.
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+        <Card className="p-8">
           <form onSubmit={handleSave} className="space-y-6">
             {/* First Name */}
-            <div>
-              <label htmlFor="firstName" className="block text-sm font-semibold text-summit-forest mb-2">
-                First Name <span className="text-red-600">*</span>
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                value={formData.firstName}
-                onChange={(e) => handleChange('firstName', e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition ${
-                  errors.firstName ? 'border-red-500' : 'border-gray-200'
-                }`}
-                placeholder="Enter your first name"
-              />
-              {errors.firstName && (
-                <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
-              )}
-            </div>
+            <Input
+              label={<>First Name <span className="text-feedback-error">*</span></>}
+              type="text"
+              value={formData.firstName}
+              onChange={(e) => handleChange('firstName', e.target.value)}
+              placeholder="Enter your first name"
+              errorMessage={errors.firstName}
+              size="lg"
+            />
 
             {/* Last Name */}
-            <div>
-              <label htmlFor="lastName" className="block text-sm font-semibold text-summit-forest mb-2">
-                Last Name <span className="text-red-600">*</span>
-              </label>
-              <input
-                type="text"
-                id="lastName"
-                value={formData.lastName}
-                onChange={(e) => handleChange('lastName', e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition ${
-                  errors.lastName ? 'border-red-500' : 'border-gray-200'
-                }`}
-                placeholder="Enter your last name"
-              />
-              {errors.lastName && (
-                <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
-              )}
-            </div>
+            <Input
+              label={<>Last Name <span className="text-feedback-error">*</span></>}
+              type="text"
+              value={formData.lastName}
+              onChange={(e) => handleChange('lastName', e.target.value)}
+              placeholder="Enter your last name"
+              errorMessage={errors.lastName}
+              size="lg"
+            />
 
             {/* Email (Read-only) */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-summit-forest mb-2">
-                Email
-              </label>
-              <div className="relative">
-                <Email className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-stone-400" />
-                <input
-                  type="email"
-                  id="email"
-                  value={formData.email}
-                  readOnly
-                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-stone-600"
-                />
-              </div>
-              <p className="mt-1 text-xs text-stone-500">Email cannot be changed</p>
-            </div>
+            <Input
+              label="Email"
+              type="email"
+              value={formData.email}
+              readOnly
+              leftIcon={<Email className="w-5 h-5" />}
+              size="lg"
+              helperText="Email cannot be changed"
+              className="bg-gray-50"
+            />
 
             {/* Mobile Phone */}
-            <div>
-              <label htmlFor="phone" className="block text-sm font-semibold text-summit-forest mb-2">
-                Mobile Phone <span className="text-red-600">*</span>
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-stone-400" />
-                <input
-                  type="tel"
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => handleChange('phone', e.target.value)}
-                  className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition ${
-                    errors.phone ? 'border-red-500' : 'border-gray-200'
-                  }`}
-                  placeholder="(555) 123-4567"
-                />
-              </div>
-              {errors.phone && (
-                <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-              )}
-            </div>
+            <Input
+              label={<>Mobile Phone <span className="text-feedback-error">*</span></>}
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => handleChange('phone', e.target.value)}
+              placeholder="(555) 123-4567"
+              leftIcon={<Phone className="w-5 h-5" />}
+              errorMessage={errors.phone}
+              size="lg"
+            />
 
-            {/* SMS Consent - Optional */}
+            {/* SMS Consent */}
             <div className="bg-summit-mint/30 border border-summit-sage rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  id="smsConsent"
-                  checked={formData.smsConsent}
-                  onChange={(e) => handleChange('smsConsent', e.target.checked)}
-                  className="mt-1 w-5 h-5 text-summit-emerald rounded border-gray-300 focus:ring-summit-emerald cursor-pointer"
-                />
-                <div className="flex-1">
-                  <label htmlFor="smsConsent" className="block text-sm font-semibold text-summit-forest mb-1 cursor-pointer">
-                    Enable SMS Habit Reminders <span className="text-sm font-normal text-stone-500">(Optional)</span>
-                  </label>
-                  <p className="text-sm text-stone-600">
-                    Get optional text reminders for your Summit habits. You'll receive one message per day, sent 15-30 minutes before your first habit, listing all your habits for that day.
-                    Message and data rates may apply. Reply STOP to unsubscribe anytime.
-                  </p>
-                </div>
-              </div>
+              <Checkbox
+                checked={formData.smsConsent}
+                onChange={(e) => handleChange('smsConsent', e.target.checked)}
+                label="Enable SMS Habit Reminders (Optional)"
+                description="Get optional text reminders for your Summit habits. You'll receive one message per day, sent 15-30 minutes before your first habit, listing all your habits for that day. Message and data rates may apply. Reply STOP to unsubscribe anytime."
+                shape="rounded"
+                align="top"
+                size="sm"
+              />
             </div>
 
             {/* Pilot Reason */}
-            <div>
-              <label htmlFor="pilotReason" className="block text-sm font-semibold text-summit-forest mb-2">
-                Why are you interested in this pilot? <span className="text-sm font-normal text-stone-500">(Optional)</span>
-              </label>
-              <textarea
-                id="pilotReason"
-                value={formData.pilotReason}
-                onChange={(e) => handleChange('pilotReason', e.target.value)}
-                rows={4}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition resize-none"
-                placeholder="Tell us what motivated you to join and what you hope to achieve..."
-              />
-            </div>
+            <Textarea
+              label={<>Why are you interested in this pilot? <span className="text-sm font-normal text-stone-500">(Optional)</span></>}
+              value={formData.pilotReason}
+              onChange={(e) => handleChange('pilotReason', e.target.value)}
+              rows={4}
+              size="lg"
+              placeholder="Tell us what motivated you to join and what you hope to achieve..."
+            />
 
             {/* Submit Error */}
             {errors.submit && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm text-red-800">{errors.submit}</p>
-              </div>
+              <Banner variant="error">{errors.submit}</Banner>
             )}
 
             {/* Success Message */}
             {saved && (
-              <div className="bg-summit-mint/50 border border-summit-sage rounded-lg p-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-summit-emerald" />
-                  <p className="text-sm text-summit-forest font-medium">Profile updated successfully!</p>
-                </div>
-              </div>
+              <Banner variant="success">Profile updated successfully!</Banner>
             )}
 
-            {/* Submit Button */}
+            {/* Buttons */}
             <div className="flex gap-4">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="lg"
+                className="flex-1"
                 onClick={() => navigate('/dashboard')}
-                className="flex-1 py-3 bg-summit-sage/50 hover:bg-summit-sage text-summit-forest font-semibold rounded-lg transition"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
+                variant="primary"
+                size="lg"
+                className="flex-1"
+                loading={saving}
                 disabled={saving}
-                className="flex-1 py-3 bg-summit-emerald hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
               >
-                {saving ? (
-                  <>
-                    <Autorenew className="w-5 h-5 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-5 h-5" />
-                    Save Changes
-                  </>
-                )}
-              </button>
+                {saving ? 'Saving...' : 'Save Changes'}
+              </Button>
             </div>
           </form>
-        </div>
+        </Card>
       </main>
     </div>
   )
