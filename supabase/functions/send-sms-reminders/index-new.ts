@@ -238,7 +238,8 @@ serve(async (req) => {
       .from('profiles')
       .select('id, timezone, sms_opt_in, first_name, phone')
       .in('id', allUserIds)
-    
+      .is('deleted_at', null)
+
     if (allProfilesError) {
       console.error('Error fetching profiles:', allProfilesError)
       throw allProfilesError
@@ -293,6 +294,7 @@ serve(async (req) => {
       .select('*')
       .in('id', userIds)
       .eq('sms_opt_in', true)
+      .is('deleted_at', null)
 
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError)

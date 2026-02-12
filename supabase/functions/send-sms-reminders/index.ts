@@ -303,7 +303,8 @@ serve(async (req) => {
       .select('*')
       .in('id', userIds)
       .eq('sms_opt_in', true)
-    
+      .is('deleted_at', null)
+
     console.log('Profiles query result:', profiles)
 
     if (profilesError) {

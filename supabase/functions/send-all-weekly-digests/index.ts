@@ -263,6 +263,7 @@ serve(async (req) => {
       .select('id, first_name, email')
       .eq('profile_completed', true)
       .not('email', 'is', null)
+      .is('deleted_at', null)
 
     if (profilesError) throw profilesError
 

@@ -340,6 +340,7 @@ serve(async (req) => {
       .in('id', userIdsWithoutTracking)
       .eq('profile_completed', true)
       .not('email', 'is', null)
+      .is('deleted_at', null)
 
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError)

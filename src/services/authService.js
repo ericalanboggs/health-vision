@@ -322,6 +322,43 @@ export const signInWithApple = async () => {
 }
 
 /**
+ * Soft-delete a user account (sets deleted_at, opts out of SMS, signs out)
+ * @param {string} userId - User ID
+ * @returns {Promise<{success: boolean, error?: any}>}
+ */
+export const softDeleteAccount = async (userId) => {
+  try {
+    if (!supabase) {
+      const error = new Error('Supabase is not configured')
+      console.error('Error soft-deleting account:', error)
+      return { success: false, error }
+    }
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ deleted_at: new Date().toISOString(), sms_opt_in: false })
+      .eq('id', userId)
+
+    if (updateError) {
+      console.error('Error soft-deleting account:', updateError)
+      return { success: false, error: updateError }
+    }
+
+    trackEvent('account_soft_deleted', { userId })
+
+    const { error: signOutError } = await supabase.auth.signOut()
+    if (signOutError) {
+      console.error('Error signing out after soft-delete:', signOutError)
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error in softDeleteAccount:', error)
+    return { success: false, error }
+  }
+}
+
+/**
  * Update last login timestamp for user
  * @param {string} userId - User ID
  * @param {string} email - User email

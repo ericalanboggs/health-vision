@@ -87,7 +87,11 @@ export default function Home() {
           console.log('Home: Profile result:', profileResult)
           console.log('Home: Profile completed?', profileResult.data?.profile_completed)
 
-          if (profileResult.success && profileResult.data?.profile_completed) {
+          if (profileResult.success && profileResult.data?.deleted_at) {
+            // Soft-deleted account - go to welcome-back
+            console.log('Home: Account soft-deleted, navigating to welcome-back')
+            navigate('/welcome-back', { replace: true })
+          } else if (profileResult.success && profileResult.data?.profile_completed) {
             // Profile complete - go to dashboard
             console.log('Home: Navigating to dashboard')
             navigate('/dashboard', { replace: true })
@@ -114,7 +118,11 @@ export default function Home() {
           console.log('Home: Profile result:', profileResult)
           console.log('Home: Profile completed?', profileResult.data?.profile_completed)
 
-          if (profileResult.success && profileResult.data?.profile_completed) {
+          if (profileResult.success && profileResult.data?.deleted_at) {
+            // Soft-deleted account - go to welcome-back
+            console.log('Home: Account soft-deleted, navigating to welcome-back')
+            navigate('/welcome-back', { replace: true })
+          } else if (profileResult.success && profileResult.data?.profile_completed) {
             // Profile complete - go to dashboard
             console.log('Home: Navigating to dashboard')
             navigate('/dashboard', { replace: true })

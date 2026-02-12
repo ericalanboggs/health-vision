@@ -71,6 +71,7 @@ serve(async (req) => {
       .from('profiles')
       .select('id, first_name, phone, sms_opt_in')
       .eq('sms_opt_in', true)
+      .is('deleted_at', null)
 
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError)

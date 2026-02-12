@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Phone, Email, ArrowBack, Autorenew } from '@mui/icons-material'
-import { getCurrentUser, getProfile, upsertProfile } from '../services/authService'
+import { getCurrentUser, getProfile, upsertProfile, softDeleteAccount } from '../services/authService'
 import TopNav from '../components/TopNav'
 import { formatPhoneToE164, isValidUSPhoneNumber } from '../utils/phoneFormatter'
-import { Card, Input, Textarea, Checkbox, Button, Banner } from '@summit/design-system'
+import { Card, Input, Textarea, Checkbox, Button, Banner, Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@summit/design-system'
 
 export default function Profile() {
   const navigate = useNavigate()
@@ -13,6 +13,8 @@ export default function Profile() {
   const [saved, setSaved] = useState(false)
   const [user, setUser] = useState(null)
   const [errors, setErrors] = useState({})
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -154,6 +156,19 @@ export default function Profile() {
     }
   }
 
+  const handleDeleteAccount = async () => {
+    if (!user) return
+    setDeleting(true)
+    const result = await softDeleteAccount(user.id)
+    if (result.success) {
+      navigate('/login', { replace: true })
+    } else {
+      setDeleting(false)
+      setShowDeleteModal(false)
+      setErrors({ submit: 'Failed to delete account. Please try again.' })
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
@@ -249,7 +264,7 @@ export default function Profile() {
 
             {/* Pilot Reason */}
             <Textarea
-              label={<>Why are you interested in this pilot? <span className="text-sm font-normal text-stone-500">(Optional)</span></>}
+              label={<>What drew you to Summit? <span className="text-sm font-normal text-stone-500">(Optional)</span></>}
               value={formData.pilotReason}
               onChange={(e) => handleChange('pilotReason', e.target.value)}
               rows={4}
@@ -286,11 +301,51 @@ export default function Profile() {
                 loading={saving}
                 disabled={saving}
               >
-                {saving ? 'Saving...' : 'Save Changes'}
+                {saving ? 'Saving...' : 'Save'}
               </Button>
             </div>
           </form>
         </Card>
+
+        {user && (
+          <div className="mt-8 text-center">
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="text-sm text-feedback-error hover:underline"
+            >
+              Delete Account
+            </button>
+          </div>
+        )}
+
+        <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} size="sm">
+          <ModalHeader>
+            <ModalTitle>Are you sure?</ModalTitle>
+            <ModalDescription>
+              This will deactivate your account and cancel all SMS reminders and emails. You can reactivate your account at any time by logging back in.
+            </ModalDescription>
+          </ModalHeader>
+          <ModalFooter>
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleDeleteAccount}
+              loading={deleting}
+              disabled={deleting}
+              className="!bg-feedback-error !hover:bg-red-700"
+            >
+              {deleting ? 'Deleting...' : 'Delete Account'}
+            </Button>
+          </ModalFooter>
+        </Modal>
       </main>
     </div>
   )

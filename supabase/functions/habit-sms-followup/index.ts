@@ -138,6 +138,7 @@ serve(async (req) => {
       .eq('sms_opt_in', true)
       .not('phone', 'is', null)
       .not('tracking_followup_time', 'is', null)
+      .is('deleted_at', null)
 
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError)

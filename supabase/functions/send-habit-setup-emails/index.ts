@@ -236,6 +236,7 @@ serve(async (req) => {
       .select('id, first_name, email, profile_completed')
       .eq('profile_completed', true)
       .not('email', 'is', null)
+      .is('deleted_at', null)
 
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError)

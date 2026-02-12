@@ -20,6 +20,7 @@ import Terms from './pages/Terms'
 import AuthCallback from './pages/AuthCallback'
 import AuthTest from './pages/AuthTest'
 import AuthDebug from './pages/AuthDebug'
+import WelcomeBack from './pages/WelcomeBack'
 import Dashboard from './pages/Dashboard'
 import DashboardSummit from './pages/DashboardSummit'
 import Admin from './pages/Admin'
@@ -71,6 +72,16 @@ function App() {
         {/* Legal pages - Public */}
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
+
+        {/* Welcome back - reactivation flow */}
+        <Route
+          path="/welcome-back"
+          element={
+            <ProtectedRoute>
+              <WelcomeBack />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Profile setup - Public for Twilio verification */}
         <Route 
