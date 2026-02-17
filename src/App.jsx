@@ -4,7 +4,8 @@ import LandingPage from './components/LandingPage'
 import CompassApp from './components/CompassApp'
 import Home from './pages/Home'
 import Login from './pages/Login'
-import PilotIntake from './pages/PilotIntake'
+import Pricing from './pages/Pricing'
+import SubscriptionSuccess from './pages/SubscriptionSuccess'
 import ProfileSetup from './pages/ProfileSetup'
 import Profile from './pages/Profile'
 import Start from './pages/Start'
@@ -14,7 +15,6 @@ import AddHabit from './pages/AddHabit'
 import ScheduleHabits from './pages/ScheduleHabits'
 import Reflection from './pages/Reflection'
 import Resources from './pages/Resources'
-import PilotSurvey from './pages/PilotSurvey'
 import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
 import AuthCallback from './pages/AuthCallback'
@@ -62,9 +62,18 @@ function App() {
         <Route path="/journey" element={<HealthJourney />} />
         
         {/* Auth routes */}
-        <Route path="/pilot" element={<PilotIntake />} />
-        <Route path="/pilot-survey" element={<ProtectedRoute><PilotSurvey /></ProtectedRoute>} />
         <Route path="/login" element={<Login />} />
+
+        {/* Subscription routes */}
+        <Route path="/pricing" element={<Pricing />} />
+        <Route
+          path="/subscription/success"
+          element={
+            <ProtectedRoute>
+              <SubscriptionSuccess />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/test" element={<AuthTest />} />
         <Route path="/auth/debug" element={<AuthDebug />} />

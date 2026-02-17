@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { sendMagicLink, checkPilotAccess, getCurrentUser } from '../services/authService'
+import { sendMagicLink, getCurrentUser } from '../services/authService'
 import { supabase } from '../lib/supabase'
 
 export default function AuthDebug() {
@@ -16,12 +16,7 @@ export default function AuthDebug() {
     diagnostics.supabaseUrl = import.meta.env.VITE_SUPABASE_URL ? 'Set' : 'Not set'
     diagnostics.supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Set' : 'Not set'
 
-    // 2. Check pilot access
-    if (email) {
-      diagnostics.pilotAccess = await checkPilotAccess(email)
-    }
-
-    // 3. Check current user
+    // 2. Check current user
     const { user, session } = await getCurrentUser()
     diagnostics.currentUser = user?.email || 'No user'
     diagnostics.hasSession = !!session

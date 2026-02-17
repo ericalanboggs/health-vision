@@ -1,6 +1,5 @@
 import supabase from '../lib/supabase'
 import { trackEvent } from '../lib/posthog'
-import { isPilotApproved } from '../config/pilotAllowlist'
 
 /**
  * Send a magic link to the user's email
@@ -40,40 +39,81 @@ export const sendMagicLink = async (email) => {
 }
 
 /**
- * Check if an email has pilot access
- * @param {string} email - Email address to check
- * @returns {Promise<boolean>}
+ * Sign up with email and password
+ * @param {string} email - User's email address
+ * @param {string} password - User's password
+ * @returns {Promise<{success: boolean, data?: any, error?: any, needsConfirmation?: boolean}>}
  */
-export const checkPilotAccess = async (email) => {
+export const signUpWithPassword = async (email, password) => {
   try {
-    // First check static allowlist
-    const hasStaticAccess = isPilotApproved(email)
-
-    if (hasStaticAccess) {
-      trackEvent('pilot_access_checked', { email, hasAccess: true, source: 'static' })
-      return true
+    if (!supabase) {
+      const error = new Error('Supabase is not configured')
+      console.error('Error signing up:', error)
+      trackEvent('email_sign_up_failed', { error: error.message })
+      return { success: false, error }
     }
 
-    // Then check database for invites
-    if (supabase) {
-      const { data, error } = await supabase
-        .from('pilot_invites')
-        .select('email')
-        .eq('email', email.toLowerCase().trim())
-        .single()
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/`,
+      },
+    })
 
-      if (data && !error) {
-        trackEvent('pilot_access_checked', { email, hasAccess: true, source: 'database' })
-        return true
-      }
+    if (error) {
+      console.error('Error signing up:', error)
+      trackEvent('email_sign_up_failed', { error: error.message })
+      return { success: false, error }
     }
 
-    trackEvent('pilot_access_checked', { email, hasAccess: false })
-    return false
+    // If email confirmation is required, user won't have a session yet
+    if (data?.user && !data?.session) {
+      trackEvent('email_sign_up_confirmation_needed', { email })
+      return { success: true, data, needsConfirmation: true }
+    }
+
+    trackEvent('email_sign_up_success', { email })
+    return { success: true, data }
   } catch (error) {
-    console.error('Error checking pilot access:', error)
-    trackEvent('pilot_access_check_error', { error: error.message })
-    return false
+    console.error('Error in signUpWithPassword:', error)
+    trackEvent('email_sign_up_failed', { error: error.message })
+    return { success: false, error }
+  }
+}
+
+/**
+ * Sign in with email and password
+ * @param {string} email - User's email address
+ * @param {string} password - User's password
+ * @returns {Promise<{success: boolean, data?: any, error?: any}>}
+ */
+export const signInWithPassword = async (email, password) => {
+  try {
+    if (!supabase) {
+      const error = new Error('Supabase is not configured')
+      console.error('Error signing in:', error)
+      trackEvent('email_sign_in_failed', { error: error.message })
+      return { success: false, error }
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      console.error('Error signing in:', error)
+      trackEvent('email_sign_in_failed', { error: error.message })
+      return { success: false, error }
+    }
+
+    trackEvent('email_sign_in_success', { email })
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error in signInWithPassword:', error)
+    trackEvent('email_sign_in_failed', { error: error.message })
+    return { success: false, error }
   }
 }
 
@@ -262,19 +302,6 @@ export const signInWithGoogle = async () => {
       console.error('Error signing in with Google:', error)
       trackEvent('google_sign_in_failed', { error: error.message })
       return { success: false, error }
-    }
-
-    // Check if Google user email is on allowlist
-    if (data?.user?.email) {
-      const hasAccess = isPilotApproved(data.user.email)
-      if (!hasAccess) {
-        // Sign out user if not on allowlist
-        await supabase.auth.signOut()
-        return { 
-          success: false, 
-          error: { message: 'Email not approved for pilot program. Please contact eric.alan.boggs@gmail.com for access.' }
-        }
-      }
     }
 
     trackEvent('google_sign_in_success')

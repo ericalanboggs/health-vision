@@ -1,13 +1,19 @@
 import { useState } from 'react'
-import { signInWithGoogle } from '../services/authService'
-// TODO: import { signInWithApple } from '../services/authService' when Apple Developer account is ready
+import { useNavigate } from 'react-router-dom'
+import { signInWithGoogle, signUpWithPassword, signInWithPassword } from '../services/authService'
 
 export default function Login() {
-  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
+  const [emailLoading, setEmailLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [mode, setMode] = useState('sign-in') // 'sign-in' or 'sign-up'
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmationSent, setConfirmationSent] = useState(false)
 
   const handleGoogleSignIn = async () => {
-    setLoading(true)
+    setGoogleLoading(true)
     setError(null)
 
     const result = await signInWithGoogle()
@@ -16,7 +22,71 @@ export default function Login() {
       setError(result.error?.message || 'Failed to sign in with Google. Please try again.')
     }
 
-    setLoading(false)
+    setGoogleLoading(false)
+  }
+
+  const handleEmailSubmit = async (e) => {
+    e.preventDefault()
+    setEmailLoading(true)
+    setError(null)
+
+    if (mode === 'sign-up') {
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters.')
+        setEmailLoading(false)
+        return
+      }
+
+      const result = await signUpWithPassword(email, password)
+
+      if (!result.success) {
+        setError(result.error?.message || 'Failed to sign up. Please try again.')
+      } else if (result.needsConfirmation) {
+        setConfirmationSent(true)
+      } else {
+        navigate('/')
+      }
+    } else {
+      const result = await signInWithPassword(email, password)
+
+      if (!result.success) {
+        setError(result.error?.message || 'Invalid email or password.')
+      } else {
+        navigate('/')
+      }
+    }
+
+    setEmailLoading(false)
+  }
+
+  if (confirmationSent) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+          <div className="text-center">
+            <div className="flex justify-center mb-4">
+              <img src="/summit-logo.svg" alt="Summit Health" className="h-10" />
+            </div>
+            <h1 className="text-2xl font-bold text-summit-forest mb-3">
+              Check your email
+            </h1>
+            <p className="text-stone-600 mb-6">
+              We sent a confirmation link to <strong>{email}</strong>. Click the link to activate your account, then come back to sign in.
+            </p>
+            <button
+              onClick={() => {
+                setConfirmationSent(false)
+                setMode('sign-in')
+                setPassword('')
+              }}
+              className="text-sm text-summit-emerald hover:text-emerald-700 font-medium transition-colors"
+            >
+              Back to sign in
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -32,7 +102,7 @@ export default function Login() {
           </h1>
 
           <p className="text-stone-600">
-            Sign in to continue your health journey
+            {mode === 'sign-in' ? 'Sign in to continue your health journey' : 'Create your account to get started'}
           </p>
         </div>
 
@@ -42,12 +112,95 @@ export default function Login() {
           </div>
         )}
 
+        {/* Email/Password Form */}
+        <form onSubmit={handleEmailSubmit} className="space-y-4 mb-6">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-stone-700 mb-1">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-4 py-3 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition"
+              placeholder="you@example.com"
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-stone-700 mb-1">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              className="w-full px-4 py-3 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition"
+              placeholder={mode === 'sign-up' ? 'At least 6 characters' : 'Your password'}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={emailLoading || googleLoading}
+            className="w-full px-4 py-3 bg-summit-emerald hover:bg-emerald-700 text-white font-semibold rounded-lg shadow-sm disabled:bg-emerald-400 disabled:cursor-not-allowed transition"
+          >
+            {emailLoading ? (
+              <span className="flex items-center justify-center">
+                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                {mode === 'sign-in' ? 'Signing in...' : 'Creating account...'}
+              </span>
+            ) : (
+              mode === 'sign-in' ? 'Sign In' : 'Create Account'
+            )}
+          </button>
+        </form>
+
+        {/* Mode Toggle */}
+        <p className="text-center text-sm text-stone-600 mb-6">
+          {mode === 'sign-in' ? (
+            <>
+              Don't have an account?{' '}
+              <button
+                onClick={() => { setMode('sign-up'); setError(null) }}
+                className="text-summit-emerald hover:text-emerald-700 font-medium transition-colors"
+              >
+                Sign up
+              </button>
+            </>
+          ) : (
+            <>
+              Already have an account?{' '}
+              <button
+                onClick={() => { setMode('sign-in'); setError(null) }}
+                className="text-summit-emerald hover:text-emerald-700 font-medium transition-colors"
+              >
+                Sign in
+              </button>
+            </>
+          )}
+        </p>
+
+        {/* Divider */}
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-stone-200" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-3 bg-white text-stone-500">or</span>
+          </div>
+        </div>
+
+        {/* Google OAuth */}
         <button
           onClick={handleGoogleSignIn}
-          disabled={loading}
+          disabled={emailLoading || googleLoading}
           className="w-full flex items-center justify-center px-4 py-3 border border-stone-300 rounded-lg shadow-sm text-sm font-medium text-stone-700 bg-white hover:bg-stone-50 disabled:bg-stone-100 disabled:cursor-not-allowed transition"
         >
-          {loading ? (
+          {googleLoading ? (
             <>
               <div className="w-5 h-5 border-2 border-stone-400 border-t-transparent rounded-full animate-spin mr-2" />
               Signing in...
@@ -65,18 +218,7 @@ export default function Login() {
           )}
         </button>
 
-        {/* TODO: Enable Apple Sign In when Apple Developer account is set up
-        <button
-          onClick={handleAppleSignIn}
-          disabled={loading}
-          className="w-full flex items-center justify-center px-4 py-3 border border-stone-900 rounded-lg shadow-sm text-sm font-medium text-white bg-black hover:bg-stone-800 disabled:bg-stone-600 disabled:cursor-not-allowed transition mt-3"
-        >
-          <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-          </svg>
-          Continue with Apple
-        </button>
-        */}
+        {/* TODO: Enable Apple Sign In when Apple Developer account is set up */}
       </div>
     </div>
   )

@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Phone, Email, ArrowBack, Autorenew } from '@mui/icons-material'
 import { getCurrentUser, getProfile, upsertProfile, softDeleteAccount } from '../services/authService'
+import { createPortalSession, getTierDisplayName, hasActiveSubscription } from '../services/subscriptionService'
 import TopNav from '../components/TopNav'
 import { formatPhoneToE164, isValidUSPhoneNumber } from '../utils/phoneFormatter'
-import { Card, Input, Textarea, Checkbox, Button, Banner, Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@summit/design-system'
+import { Card, Input, Textarea, Checkbox, Button, Banner, Tag, Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@summit/design-system'
 
 export default function Profile() {
   const navigate = useNavigate()
@@ -15,6 +16,8 @@ export default function Profile() {
   const [errors, setErrors] = useState({})
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [profileData, setProfileData] = useState(null)
+  const [managingSubscription, setManagingSubscription] = useState(false)
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -55,6 +58,7 @@ export default function Profile() {
       // Load profile data
       const profileResult = await getProfile(result.user.id)
       if (profileResult.success && profileResult.data) {
+        setProfileData(profileResult.data)
         setFormData({
           firstName: profileResult.data.first_name || '',
           lastName: profileResult.data.last_name || '',
@@ -306,6 +310,76 @@ export default function Profile() {
             </div>
           </form>
         </Card>
+
+        {/* Subscription Info */}
+        {user && (
+          <Card className="mt-8 p-8">
+            <h2 className="text-h3 text-summit-forest mb-4">Subscription</h2>
+            {profileData?.subscription_status ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-body text-text-secondary">Plan:</span>
+                  <span className="text-body font-semibold text-summit-forest">
+                    Summit {getTierDisplayName(profileData.subscription_tier)}
+                  </span>
+                  <Tag
+                    variant={
+                      profileData.subscription_status === 'active' ? 'success'
+                        : profileData.subscription_status === 'trialing' ? 'info'
+                        : profileData.subscription_status === 'past_due' ? 'warning'
+                        : 'error'
+                    }
+                    size="sm"
+                  >
+                    {profileData.subscription_status === 'active' ? 'Active'
+                      : profileData.subscription_status === 'trialing' ? 'Free Trial'
+                      : profileData.subscription_status === 'past_due' ? 'Past Due'
+                      : profileData.subscription_status === 'canceled' ? 'Canceled'
+                      : profileData.subscription_status}
+                  </Tag>
+                </div>
+
+                {profileData.subscription_status === 'trialing' && profileData.trial_ends_at && (
+                  <p className="text-body-sm text-text-muted">
+                    Trial ends {new Date(profileData.trial_ends_at).toLocaleDateString('en-US', {
+                      month: 'long', day: 'numeric', year: 'numeric'
+                    })}
+                  </p>
+                )}
+
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={async () => {
+                    setManagingSubscription(true)
+                    const result = await createPortalSession()
+                    if (result.success && result.url) {
+                      window.location.href = result.url
+                    } else {
+                      setErrors({ submit: 'Failed to open subscription management. Please try again.' })
+                      setManagingSubscription(false)
+                    }
+                  }}
+                  loading={managingSubscription}
+                  disabled={managingSubscription}
+                >
+                  Manage Subscription
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-body text-text-muted">No active subscription.</p>
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => navigate('/pricing')}
+                >
+                  View Plans
+                </Button>
+              </div>
+            )}
+          </Card>
+        )}
 
         {user && (
           <div className="mt-8 text-center">

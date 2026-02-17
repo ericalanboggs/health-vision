@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getCurrentUser } from '../services/authService'
+import { getCurrentUser, getProfile, upsertProfile } from '../services/authService'
+import { hasActiveSubscription } from '../services/subscriptionService'
 import { getCurrentWeekHabits } from '../services/habitService'
 import { getCurrentWeekReflection } from '../services/reflectionService'
 import { loadJourney } from '../services/journeyService'
@@ -132,6 +133,13 @@ export default function Dashboard() {
 
       if (!userId) {
         setLoading(false)
+        return
+      }
+
+      // Check subscription status
+      const profileResult = await getProfile(userId)
+      if (profileResult.success && profileResult.data && !hasActiveSubscription(profileResult.data)) {
+        navigate('/pricing', { replace: true })
         return
       }
 
@@ -274,8 +282,7 @@ export default function Dashboard() {
       }
 
       // Check if this is the user's first time on dashboard
-      const hasSeenWelcome = localStorage.getItem('hasSeenWelcome')
-      if (!hasSeenWelcome) {
+      if (profileResult.success && profileResult.data && !profileResult.data.has_seen_welcome) {
         setShowWelcomeModal(true)
       }
 
@@ -302,7 +309,9 @@ export default function Dashboard() {
 
   const handleCloseWelcomeModal = () => {
     setShowWelcomeModal(false)
-    localStorage.setItem('hasSeenWelcome', 'true')
+    if (user?.id) {
+      upsertProfile(user.id, { has_seen_welcome: true })
+    }
   }
 
   // Format habits into readable format with separate habit and schedule

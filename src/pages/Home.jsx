@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import supabase from '../lib/supabase'
 import { getProfile } from '../services/authService'
+import { hasActiveSubscription } from '../services/subscriptionService'
 import { Autorenew } from '@mui/icons-material'
 
 export default function Home() {
@@ -10,13 +11,34 @@ export default function Home() {
   const [redirecting, setRedirecting] = useState(false)
 
   useEffect(() => {
+    const routeUser = (profileResult) => {
+      const profile = profileResult?.data
+
+      if (profileResult?.success && profile?.deleted_at) {
+        console.log('Home: Account soft-deleted, navigating to welcome-back')
+        navigate('/welcome-back', { replace: true })
+      } else if (!profileResult?.success || !profile?.profile_completed) {
+        console.log('Home: Navigating to profile-setup')
+        navigate('/profile-setup', { replace: true })
+      } else if (!profile.onboarding_completed) {
+        console.log('Home: Onboarding not completed, navigating to /start')
+        navigate('/start', { replace: true })
+      } else if (!hasActiveSubscription(profile)) {
+        console.log('Home: No active subscription, navigating to pricing')
+        navigate('/pricing', { replace: true })
+      } else {
+        console.log('Home: Active subscription, navigating to dashboard')
+        navigate('/dashboard', { replace: true })
+      }
+    }
+
     const checkAuthAndRedirect = async () => {
       // Prevent multiple simultaneous navigations
       if (redirecting) return
       setRedirecting(true)
       if (!supabase) {
         console.error('Supabase is not configured')
-        navigate('/pilot', { replace: true })
+        navigate('/login', { replace: true })
         return
       }
 
@@ -81,30 +103,14 @@ export default function Home() {
           // Clear the hash
           window.history.replaceState(null, '', '/')
 
-          // Check if profile is complete
           const profileResult = await getProfile(session.user.id)
-
           console.log('Home: Profile result:', profileResult)
-          console.log('Home: Profile completed?', profileResult.data?.profile_completed)
-
-          if (profileResult.success && profileResult.data?.deleted_at) {
-            // Soft-deleted account - go to welcome-back
-            console.log('Home: Account soft-deleted, navigating to welcome-back')
-            navigate('/welcome-back', { replace: true })
-          } else if (profileResult.success && profileResult.data?.profile_completed) {
-            // Profile complete - go to dashboard
-            console.log('Home: Navigating to dashboard')
-            navigate('/dashboard', { replace: true })
-          } else {
-            // Profile incomplete - go to profile setup
-            console.log('Home: Navigating to profile-setup')
-            navigate('/profile-setup', { replace: true })
-          }
+          routeUser(profileResult)
         } else {
-          // Auth failed after retries, go to pilot intake
+          // Auth failed after retries, go to login
           setError('Authentication failed. Please try again.')
           setTimeout(() => {
-            navigate('/pilot', { replace: true })
+            navigate('/login', { replace: true })
           }, 2000)
         }
       } else {
@@ -112,29 +118,13 @@ export default function Home() {
         const { data } = await supabase.auth.getSession()
 
         if (data.session) {
-          // Check if profile is complete
           const profileResult = await getProfile(data.session.user.id)
-
           console.log('Home: Profile result:', profileResult)
-          console.log('Home: Profile completed?', profileResult.data?.profile_completed)
-
-          if (profileResult.success && profileResult.data?.deleted_at) {
-            // Soft-deleted account - go to welcome-back
-            console.log('Home: Account soft-deleted, navigating to welcome-back')
-            navigate('/welcome-back', { replace: true })
-          } else if (profileResult.success && profileResult.data?.profile_completed) {
-            // Profile complete - go to dashboard
-            console.log('Home: Navigating to dashboard')
-            navigate('/dashboard', { replace: true })
-          } else {
-            // Profile incomplete - go to profile setup
-            console.log('Home: Navigating to profile-setup')
-            navigate('/profile-setup', { replace: true })
-          }
+          routeUser(profileResult)
         } else {
-          // Not authenticated - go to pilot intake
-          console.log('Home: No session, navigating to pilot intake')
-          navigate('/pilot', { replace: true })
+          // Not authenticated - go to login
+          console.log('Home: No session, navigating to login')
+          navigate('/login', { replace: true })
         }
       }
     }

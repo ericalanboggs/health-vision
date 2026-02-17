@@ -5,7 +5,7 @@ import { Checkbox } from '@summit/design-system'
 import { generateActionPlan, generateMotivationalMessage } from '../../utils/planGenerator'
 import { enhanceActionPlan } from '../../utils/aiService'
 import { saveHabits } from '../../services/habitService'
-import { getCurrentUser } from '../../services/authService'
+import { getCurrentUser, upsertProfile } from '../../services/authService'
 import jsPDF from 'jspdf'
 
 // Cache key for AI suggestions
@@ -496,10 +496,14 @@ END:VEVENT
       const result = await saveHabits(habits)
       
       if (result.success) {
+        // Mark onboarding as completed
+        if (user) {
+          await upsertProfile(user.id, { onboarding_completed: true })
+        }
         setHabitsConfirmed(true)
-        // Redirect to dashboard after brief delay
+        // Redirect via Home router after brief delay
         setTimeout(() => {
-          navigate('/dashboard')
+          navigate('/')
         }, 2000)
       } else {
         alert('Failed to save habits. Please try again.')

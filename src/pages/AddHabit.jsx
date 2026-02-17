@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { ArrowBack, Science, AutoAwesome, Refresh, Add, Autorenew, ExpandMore, CheckCircle } from '@mui/icons-material'
 import { getCurrentWeekNumber } from '../utils/weekCalculator'
 import { getCurrentWeekHabits, saveHabitsForWeek, saveHabits } from '../services/habitService'
-import { getCurrentUser, getProfile } from '../services/authService'
+import { getCurrentUser, getProfile, upsertProfile } from '../services/authService'
 import { loadJourney } from '../services/journeyService'
 import { enhanceActionPlan } from '../utils/aiService'
 import { generateActionPlan } from '../utils/planGenerator'
@@ -353,7 +353,11 @@ export default function AddHabit() {
       const { success } = await saveHabits(newHabits)
 
       if (success) {
-        navigate('/dashboard')
+        // Mark onboarding as completed if coming from onboarding flow
+        if (fromQuickStart && user) {
+          await upsertProfile(user.id, { onboarding_completed: true })
+        }
+        navigate('/')
       } else {
         alert('Failed to save habits. Please try again.')
       }
