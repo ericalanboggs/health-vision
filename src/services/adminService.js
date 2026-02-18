@@ -177,7 +177,10 @@ export const getUserDetail = async (userId) => {
           smsOptIn: profile.sms_opt_in,
           createdAt: profile.created_at,
           lastLogin: profile.last_login_at,
-          timezone: profile.timezone
+          timezone: profile.timezone,
+          subscriptionTier: profile.subscription_tier || null,
+          subscriptionStatus: profile.subscription_status || null,
+          subscriptionCurrentPeriodEnd: profile.subscription_current_period_end || null,
         },
         pilotReadiness: {
           ready: pilotReady,
@@ -320,6 +323,61 @@ export const getConversation = async (userId, limit = 50) => {
     return { success: true, data }
   } catch (error) {
     console.error('Error fetching conversation:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Get coaching sessions for a user in a billing period
+ */
+export const getCoachingSessions = async (userId, start, end) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { data, error } = await supabase
+      .from('coaching_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('billing_period_start', start)
+      .eq('billing_period_end', end)
+      .order('session_date', { ascending: false })
+
+    if (error) throw error
+    return { success: true, data: data || [] }
+  } catch (error) {
+    console.error('Error fetching coaching sessions:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Log a coaching session for a user
+ */
+export const logCoachingSession = async (userId, { durationMinutes, notes, billingPeriodStart, billingPeriodEnd }) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { data, error } = await supabase
+      .from('coaching_sessions')
+      .insert({
+        user_id: userId,
+        duration_minutes: durationMinutes,
+        notes: notes || null,
+        logged_by: 'admin',
+        billing_period_start: billingPeriodStart,
+        billing_period_end: billingPeriodEnd,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error logging coaching session:', error)
     return { success: false, error: error.message }
   }
 }

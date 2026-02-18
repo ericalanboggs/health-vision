@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getUserDetail } from '../services/adminService'
-import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt } from '@mui/icons-material'
+import { getUserDetail, getCoachingSessions, logCoachingSession } from '../services/adminService'
+import { COACHING_CONFIG, getBillingPeriod } from '../services/subscriptionService'
+import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt, Forum } from '@mui/icons-material'
 import ConversationView from '../components/admin/ConversationView'
 
 /**
@@ -64,6 +65,9 @@ export default function AdminUserDetail() {
   const navigate = useNavigate()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [coachingSessions, setCoachingSessions] = useState([])
+  const [sessionNotes, setSessionNotes] = useState('')
+  const [loggingSession, setLoggingSession] = useState(false)
 
   useEffect(() => {
     loadUserDetail()
@@ -74,8 +78,42 @@ export default function AdminUserDetail() {
     const { success, data: userData } = await getUserDetail(userId)
     if (success) {
       setData(userData)
+      // Fetch coaching sessions if user has a coaching-eligible tier
+      const tier = userData.profile.subscriptionTier
+      if (tier && COACHING_CONFIG[tier]?.sessionsPerMonth > 0) {
+        const period = getBillingPeriod(userData.profile.subscriptionCurrentPeriodEnd)
+        const sessionsResult = await getCoachingSessions(userId, period.start, period.end)
+        if (sessionsResult.success) {
+          setCoachingSessions(sessionsResult.data)
+        }
+      }
     }
     setLoading(false)
+  }
+
+  const handleLogSession = async () => {
+    const tier = data.profile.subscriptionTier
+    const config = COACHING_CONFIG[tier]
+    if (!config) return
+
+    setLoggingSession(true)
+    const period = getBillingPeriod(data.profile.subscriptionCurrentPeriodEnd)
+    const result = await logCoachingSession(userId, {
+      durationMinutes: config.sessionDuration,
+      notes: sessionNotes.trim() || null,
+      billingPeriodStart: period.start,
+      billingPeriodEnd: period.end,
+    })
+
+    if (result.success) {
+      setSessionNotes('')
+      // Refresh sessions
+      const sessionsResult = await getCoachingSessions(userId, period.start, period.end)
+      if (sessionsResult.success) {
+        setCoachingSessions(sessionsResult.data)
+      }
+    }
+    setLoggingSession(false)
   }
 
   const formatDate = (timestamp) => {
@@ -284,6 +322,73 @@ export default function AdminUserDetail() {
             </div>
           </div>
         </div>
+
+        {/* Coaching Sessions — only for plus/premium */}
+        {(() => {
+          const tier = profile.subscriptionTier
+          const config = tier ? COACHING_CONFIG[tier] : null
+          if (!config || config.sessionsPerMonth === 0) return null
+
+          const period = getBillingPeriod(profile.subscriptionCurrentPeriodEnd)
+          const sessionsUsed = coachingSessions.length
+
+          return (
+            <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Forum className="w-5 h-5 text-summit-emerald" />
+                <h2 className="text-xl font-bold text-summit-forest">Coaching Sessions</h2>
+              </div>
+
+              <div className="text-sm text-stone-600 space-y-1 mb-4">
+                <div>
+                  <span className="font-medium">Tier:</span>{' '}
+                  <span className="capitalize">{tier}</span> — {config.sessionDuration} min, {config.sessionsPerMonth}/month
+                </div>
+                <div>
+                  <span className="font-medium">This period:</span>{' '}
+                  {sessionsUsed} of {config.sessionsPerMonth} used ({period.start} to {period.end})
+                </div>
+              </div>
+
+              {/* Session history */}
+              {coachingSessions.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  {coachingSessions.map((session) => (
+                    <div key={session.id} className="border border-stone-200 rounded-lg p-3 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-summit-forest">
+                          {new Date(session.session_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                        <span className="text-stone-500">{session.duration_minutes} min</span>
+                      </div>
+                      {session.notes && (
+                        <p className="text-stone-600 mt-1">{session.notes}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Log session form */}
+              <div className="border-t border-stone-200 pt-4">
+                <textarea
+                  value={sessionNotes}
+                  onChange={(e) => setSessionNotes(e.target.value)}
+                  placeholder="Session notes (optional)"
+                  rows={2}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent mb-3 resize-none"
+                />
+                <button
+                  onClick={handleLogSession}
+                  disabled={loggingSession}
+                  className="px-4 py-2 bg-summit-emerald text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  {loggingSession ? 'Logging...' : 'Log Session'}
+                </button>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Pilot Readiness Checklist */}
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">

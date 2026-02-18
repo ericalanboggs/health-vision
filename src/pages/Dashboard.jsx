@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCurrentUser, getProfile, upsertProfile } from '../services/authService'
-import { hasActiveSubscription } from '../services/subscriptionService'
+import { hasActiveSubscription, COACHING_CONFIG, getBillingPeriod, getMyCoachingSessions } from '../services/subscriptionService'
 import { getCurrentWeekHabits } from '../services/habitService'
 import { getCurrentWeekReflection } from '../services/reflectionService'
 import { loadJourney } from '../services/journeyService'
@@ -99,6 +99,8 @@ export default function Dashboard() {
   const [habitSummaries, setHabitSummaries] = useState({})
   const [habitStats, setHabitStats] = useState({})
   const [resourceTopics, setResourceTopics] = useState([])
+  const [profileData, setProfileData] = useState(null)
+  const [coachingSessionsUsed, setCoachingSessionsUsed] = useState(0)
   const [headerVisible, setHeaderVisible] = useState(true)
   const lastScrollY = useRef(0)
 
@@ -141,6 +143,19 @@ export default function Dashboard() {
       if (profileResult.success && profileResult.data && !hasActiveSubscription(profileResult.data)) {
         navigate('/pricing', { replace: true })
         return
+      }
+      if (profileResult.success && profileResult.data) {
+        setProfileData(profileResult.data)
+
+        // Fetch coaching session count for current billing period
+        const tier = profileResult.data.subscription_tier
+        if (tier && COACHING_CONFIG[tier]?.sessionsPerMonth > 0) {
+          const period = getBillingPeriod(profileResult.data.subscription_current_period_end)
+          const sessionsResult = await getMyCoachingSessions(userId, period.start, period.end)
+          if (sessionsResult.success) {
+            setCoachingSessionsUsed(sessionsResult.count)
+          }
+        }
       }
 
       // Run all data fetches in parallel, passing userId to avoid duplicate auth calls
@@ -583,42 +598,84 @@ export default function Dashboard() {
               </Button>
             </Card>
 
-            {/* Coaching Card */}
-            <Card className="border border-gray-200">
-              <CardHeader className="mb-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-summit-sage">
-                    <Forum className="h-5 w-5 text-summit-emerald" />
-                  </div>
-                  <CardTitle className="text-h3">Coaching</CardTitle>
-                  <div className="relative group/tooltip">
-                    <HelpOutline className="h-5 w-5 text-text-muted hover:text-summit-forest cursor-help transition" />
-                    <div className="absolute left-0 top-8 w-80 bg-summit-forest text-white p-4 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-10">
-                      <p className="font-semibold mb-2">What coaching means in Summit</p>
-                      <p className="text-sm leading-relaxed">This isn't someone telling you how to live your life. Coaching is about being heard, thinking things through together, and recognizing that you already have the answers—you just may need space and support to uncover them.</p>
-                      <div className="absolute -top-2 left-4 w-4 h-4 bg-summit-forest transform rotate-45"></div>
-                    </div>
-                  </div>
-                </div>
-                <Tag size="sm" variant="secondary" className="w-fit mb-2">
-                  15 minute session
-                </Tag>
-                <CardDescription className="text-body mb-3">
-                  Schedule a session with a Summit Health coach to workshop challenges and make a plan.
-                </CardDescription>
-              </CardHeader>
+            {/* Coaching Card — varies by tier */}
+            {(() => {
+              const tier = profileData?.subscription_tier || 'core'
+              const config = COACHING_CONFIG[tier] || COACHING_CONFIG.core
+              const allUsed = config.sessionsPerMonth > 0 && coachingSessionsUsed >= config.sessionsPerMonth
 
-              <Button
-                variant="primary"
-                rightIcon={<OpenInNew className="h-4 w-4" />}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  window.open('https://cal.com/eric-boggs/15min', '_blank', 'noopener,noreferrer')
-                }}
-              >
-                Schedule Session
-              </Button>
-            </Card>
+              return (
+                <Card className="border border-gray-200">
+                  <CardHeader className="mb-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-summit-sage">
+                        <Forum className="h-5 w-5 text-summit-emerald" />
+                      </div>
+                      <CardTitle className="text-h3">Coaching</CardTitle>
+                      <div className="relative group/tooltip">
+                        <HelpOutline className="h-5 w-5 text-text-muted hover:text-summit-forest cursor-help transition" />
+                        <div className="absolute left-0 top-8 w-80 bg-summit-forest text-white p-4 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-10">
+                          <p className="font-semibold mb-2">What coaching means in Summit</p>
+                          <p className="text-sm leading-relaxed">This isn't someone telling you how to live your life. Coaching is about being heard, thinking things through together, and recognizing that you already have the answers—you just may need space and support to uncover them.</p>
+                          <div className="absolute -top-2 left-4 w-4 h-4 bg-summit-forest transform rotate-45"></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {tier === 'core' ? (
+                      <>
+                        <Tag size="sm" variant="secondary" className="w-fit mb-2">
+                          Upgrade to access
+                        </Tag>
+                        <CardDescription className="text-body mb-3">
+                          Upgrade your plan to schedule 1-on-1 coaching sessions with a Summit Health coach.
+                        </CardDescription>
+                      </>
+                    ) : (
+                      <>
+                        <Tag size="sm" variant="secondary" className="w-fit mb-2">
+                          {config.sessionDuration} minute session
+                        </Tag>
+                        <CardDescription className="text-body mb-3">
+                          Schedule a session with a Summit Health coach to workshop challenges and make a plan.
+                        </CardDescription>
+                        <p className="text-body-sm text-text-muted">
+                          {coachingSessionsUsed} of {config.sessionsPerMonth} used this month
+                        </p>
+                      </>
+                    )}
+                  </CardHeader>
+
+                  {tier === 'core' ? (
+                    <Button
+                      variant="primary"
+                      rightIcon={<ArrowForward className="h-4 w-4" />}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        navigate('/pricing')
+                      }}
+                    >
+                      View Plans
+                    </Button>
+                  ) : allUsed ? (
+                    <Button variant="primary" disabled>
+                      All sessions used
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      rightIcon={<OpenInNew className="h-4 w-4" />}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        window.open(config.calLink, '_blank', 'noopener,noreferrer')
+                      }}
+                    >
+                      Schedule Session
+                    </Button>
+                  )}
+                </Card>
+              )
+            })()}
           </div>
         </div>
       </main>

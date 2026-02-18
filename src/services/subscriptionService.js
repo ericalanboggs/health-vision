@@ -2,6 +2,59 @@ import supabase from '../lib/supabase'
 import { trackEvent } from '../lib/posthog'
 
 /**
+ * Coaching configuration per subscription tier
+ */
+export const COACHING_CONFIG = {
+  core: { sessionsPerMonth: 0, sessionDuration: 0, calLink: null },
+  plus: { sessionsPerMonth: 1, sessionDuration: 15, calLink: 'https://cal.com/eric-boggs/15min' },
+  premium: { sessionsPerMonth: 2, sessionDuration: 30, calLink: 'https://cal.com/eric-boggs/30-minute-coaching-session' },
+}
+
+/**
+ * Derive billing period start/end from subscription_current_period_end.
+ * Falls back to calendar month if no period end is available.
+ */
+export const getBillingPeriod = (periodEnd) => {
+  const now = new Date()
+  if (periodEnd) {
+    const end = new Date(periodEnd)
+    const start = new Date(end)
+    start.setMonth(start.getMonth() - 1)
+    return {
+      start: start.toISOString().split('T')[0],
+      end: end.toISOString().split('T')[0],
+    }
+  }
+  // Fallback: calendar month
+  const start = new Date(now.getFullYear(), now.getMonth(), 1)
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  return {
+    start: start.toISOString().split('T')[0],
+    end: end.toISOString().split('T')[0],
+  }
+}
+
+/**
+ * Get coaching session count for a user in a billing period
+ */
+export const getMyCoachingSessions = async (userId, start, end) => {
+  try {
+    const { count, error } = await supabase
+      .from('coaching_sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('billing_period_start', start)
+      .eq('billing_period_end', end)
+
+    if (error) throw error
+    return { success: true, count: count || 0 }
+  } catch (error) {
+    console.error('Error fetching coaching sessions:', error)
+    return { success: true, count: 0 }
+  }
+}
+
+/**
  * Create a Stripe Checkout session and return the redirect URL
  * @param {string} priceId - Stripe price ID for the selected tier
  * @returns {Promise<{success: boolean, url?: string, error?: any}>}

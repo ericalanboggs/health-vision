@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle, ArrowBack, ExpandMore } from '@mui/icons-material'
-import { getCurrentUser } from '../services/authService'
-import { createCheckoutSession } from '../services/subscriptionService'
+import { getCurrentUser, getProfile } from '../services/authService'
+import { createCheckoutSession, createPortalSession, hasActiveSubscription } from '../services/subscriptionService'
 import { Button, Tag } from '@summit/design-system'
 
 const PRICE_IDS = {
@@ -69,10 +69,27 @@ const FAQS = [
   },
 ]
 
+const TIER_ORDER = { core: 0, plus: 1, premium: 2 }
+
 export default function Pricing() {
   const navigate = useNavigate()
   const [loadingTier, setLoadingTier] = useState(null)
   const [error, setError] = useState(null)
+  const [currentTier, setCurrentTier] = useState(null)
+  const isSubscriber = currentTier !== null
+
+  useEffect(() => {
+    const loadCurrentTier = async () => {
+      const { user } = await getCurrentUser()
+      if (user) {
+        const result = await getProfile(user.id)
+        if (result.success && result.data && hasActiveSubscription(result.data)) {
+          setCurrentTier(result.data.subscription_tier)
+        }
+      }
+    }
+    loadCurrentTier()
+  }, [])
 
   const handleSelectTier = async (tierKey) => {
     setError(null)
@@ -106,6 +123,29 @@ export default function Pricing() {
     }
   }
 
+  const handleChangePlan = async (tierKey) => {
+    setError(null)
+    setLoadingTier(tierKey)
+    try {
+      const result = await createPortalSession()
+      if (result.success && result.url) {
+        window.location.href = result.url
+      } else {
+        setError('Failed to open plan management. Please try again.')
+        setLoadingTier(null)
+      }
+    } catch (err) {
+      console.error('Portal error:', err)
+      setError('Something went wrong. Please try again.')
+      setLoadingTier(null)
+    }
+  }
+
+  const getTierButtonLabel = (tierKey) => {
+    if (!isSubscriber) return 'Start Free Trial'
+    return TIER_ORDER[tierKey] > TIER_ORDER[currentTier] ? 'Upgrade' : 'Downgrade'
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#F7FAF9] to-[#EEF3F1]">
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -125,7 +165,9 @@ export default function Pricing() {
           <p className="text-xs font-semibold tracking-[0.2em] uppercase text-summit-moss mb-3">Pricing</p>
           <h1 className="text-h1 text-summit-forest mb-4">Choose Your Plan</h1>
           <p className="text-body text-summit-forest/80 max-w-2xl mx-auto">
-            Every plan includes a 7-day free trial. All Summit features are included at every tier — plans differ only in coaching access.
+            {isSubscriber
+              ? 'All Summit features are included at every tier — plans differ only in coaching access. Changes take effect at the start of your next billing cycle.'
+              : 'Every plan includes a 7-day free trial. All Summit features are included at every tier — plans differ only in coaching access.'}
           </p>
         </div>
 
@@ -146,7 +188,7 @@ export default function Pricing() {
                 <span className="text-[44px] font-bold text-summit-forest tracking-tight">$12</span>
                 <span className="text-sm font-medium text-text-muted">/month</span>
               </div>
-              <Tag variant="secondary" size="sm">7-day free trial</Tag>
+              {!isSubscriber && <Tag variant="secondary" size="sm">7-day free trial</Tag>}
               <p className="mt-4 text-body font-semibold text-summit-forest leading-snug">
                 Everything you need to build lasting health habits.
               </p>
@@ -164,16 +206,22 @@ export default function Pricing() {
             </div>
 
             <div className="pt-4 border-t border-black/[0.06]">
-              <Button
-                variant="secondary"
-                size="lg"
-                className="w-full !rounded-xl"
-                onClick={() => handleSelectTier('core')}
-                loading={loadingTier === 'core'}
-                disabled={loadingTier !== null}
-              >
-                Start Free Trial
-              </Button>
+              {currentTier === 'core' ? (
+                <div className="w-full text-center py-3 text-body-sm font-semibold text-summit-moss">
+                  Current Plan
+                </div>
+              ) : (
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="w-full !rounded-xl"
+                  onClick={() => isSubscriber ? handleChangePlan('core') : handleSelectTier('core')}
+                  loading={loadingTier === 'core'}
+                  disabled={loadingTier !== null}
+                >
+                  {getTierButtonLabel('core')}
+                </Button>
+              )}
             </div>
           </div>
 
@@ -189,7 +237,7 @@ export default function Pricing() {
                   <span className="text-[44px] font-bold text-summit-forest tracking-tight">$29</span>
                   <span className="text-sm font-medium text-text-muted">/month</span>
                 </div>
-                <Tag variant="secondary" size="sm">7-day free trial</Tag>
+                {!isSubscriber && <Tag variant="secondary" size="sm">7-day free trial</Tag>}
                 <p className="mt-4 text-body font-semibold text-summit-forest leading-snug">
                   Everything in Core, plus coaching to keep you on track.
                 </p>
@@ -215,16 +263,22 @@ export default function Pricing() {
               </div>
 
               <div className="pt-4 border-t border-summit-emerald/20">
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="w-full !rounded-xl shadow-[0_6px_16px_rgba(21,143,90,0.3)] hover:shadow-[0_8px_20px_rgba(21,143,90,0.4)]"
-                  onClick={() => handleSelectTier('plus')}
-                  loading={loadingTier === 'plus'}
-                  disabled={loadingTier !== null}
-                >
-                  Start Free Trial
-                </Button>
+                {currentTier === 'plus' ? (
+                  <div className="w-full text-center py-3 text-body-sm font-semibold text-summit-moss">
+                    Current Plan
+                  </div>
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="w-full !rounded-xl shadow-[0_6px_16px_rgba(21,143,90,0.3)] hover:shadow-[0_8px_20px_rgba(21,143,90,0.4)]"
+                    onClick={() => isSubscriber ? handleChangePlan('plus') : handleSelectTier('plus')}
+                    loading={loadingTier === 'plus'}
+                    disabled={loadingTier !== null}
+                  >
+                    {getTierButtonLabel('plus')}
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -237,7 +291,7 @@ export default function Pricing() {
                 <span className="text-[44px] font-bold text-summit-forest tracking-tight">$89</span>
                 <span className="text-sm font-medium text-text-muted">/month</span>
               </div>
-              <Tag variant="secondary" size="sm">7-day free trial</Tag>
+              {!isSubscriber && <Tag variant="secondary" size="sm">7-day free trial</Tag>}
               <p className="mt-4 text-body font-semibold text-summit-forest leading-snug">
                 Everything in Plus, with deeper coaching for lasting change.
               </p>
@@ -266,16 +320,22 @@ export default function Pricing() {
             </div>
 
             <div className="pt-4 border-t border-black/[0.06]">
-              <Button
-                variant="secondary"
-                size="lg"
-                className="w-full !rounded-xl"
-                onClick={() => handleSelectTier('premium')}
-                loading={loadingTier === 'premium'}
-                disabled={loadingTier !== null}
-              >
-                Start Free Trial
-              </Button>
+              {currentTier === 'premium' ? (
+                <div className="w-full text-center py-3 text-body-sm font-semibold text-summit-moss">
+                  Current Plan
+                </div>
+              ) : (
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="w-full !rounded-xl"
+                  onClick={() => isSubscriber ? handleChangePlan('premium') : handleSelectTier('premium')}
+                  loading={loadingTier === 'premium'}
+                  disabled={loadingTier !== null}
+                >
+                  {getTierButtonLabel('premium')}
+                </Button>
+              )}
             </div>
           </div>
 
@@ -339,11 +399,15 @@ export default function Pricing() {
             <span>Cancel anytime</span>
           </div>
           <span className="text-gray-300">|</span>
-          <div className="flex items-center gap-1.5">
-            <CheckCircle className="h-4 w-4 text-summit-emerald" />
-            <span>No charge until trial ends</span>
-          </div>
-          <span className="text-gray-300">|</span>
+          {!isSubscriber && (
+            <>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle className="h-4 w-4 text-summit-emerald" />
+                <span>No charge until trial ends</span>
+              </div>
+              <span className="text-gray-300">|</span>
+            </>
+          )}
           <div className="flex items-center gap-1.5">
             <CheckCircle className="h-4 w-4 text-summit-emerald" />
             <span>Switch plans anytime</span>

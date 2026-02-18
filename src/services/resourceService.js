@@ -77,6 +77,34 @@ export const addResource = async (resource) => {
 }
 
 /**
+ * Toggle pinned status for a resource
+ */
+export const togglePinResource = async (resourceId, pinned) => {
+  try {
+    if (!supabase) {
+      return { success: false, error: 'Supabase is not configured' }
+    }
+
+    const { data, error } = await supabase
+      .from('user_resources')
+      .update({ pinned: !pinned })
+      .eq('id', resourceId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error toggling pin:', error)
+      return { success: false, error }
+    }
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error in togglePinResource:', error)
+    return { success: false, error }
+  }
+}
+
+/**
  * Delete a resource by ID
  */
 export const deleteResource = async (resourceId) => {
