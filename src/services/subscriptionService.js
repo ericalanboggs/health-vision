@@ -6,7 +6,7 @@ import { trackEvent } from '../lib/posthog'
  */
 export const COACHING_CONFIG = {
   core: { sessionsPerMonth: 0, sessionDuration: 0, calLink: null },
-  plus: { sessionsPerMonth: 1, sessionDuration: 15, calLink: 'https://cal.com/eric-boggs/15min' },
+  plus: { sessionsPerMonth: 1, sessionDuration: 30, calLink: 'https://cal.com/eric-boggs/30-minute-coaching-session' },
   premium: { sessionsPerMonth: 2, sessionDuration: 30, calLink: 'https://cal.com/eric-boggs/30-minute-coaching-session' },
 }
 

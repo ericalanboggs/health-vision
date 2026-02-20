@@ -142,6 +142,13 @@ const LandingPage = ({ onStart }) => {
           </div>
         </div>
       </div>
+      {/* Footer Disclaimer */}
+      <footer className="border-t border-stone-200 py-6 px-6">
+        <p className="text-center text-xs text-stone-400 max-w-2xl mx-auto">
+          Summit is a wellness coaching platform. It does not provide medical advice, diagnosis, or treatment.
+          Always consult a qualified healthcare provider for medical concerns.
+        </p>
+      </footer>
     </div>
   )
 }

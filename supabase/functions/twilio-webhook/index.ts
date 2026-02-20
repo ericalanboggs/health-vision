@@ -3,8 +3,59 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { crypto } from 'https://deno.land/std@0.168.0/crypto/mod.ts'
 
 const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
+const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
+const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+// ─── Crisis detection ─────────────────────────────────────────────────
+
+const CRISIS_PATTERNS = [
+  /\b(kill\s*(my\s*)?self|suicide|suicidal)\b/i,
+  /\b(want\s+to\s+die|wanna\s+die|ready\s+to\s+die)\b/i,
+  /\b(end\s+(my\s+)?life|end\s+it\s+all)\b/i,
+  /\b(self[\s-]?harm|hurt\s*(my\s*)?self|cutting\s*(my\s*)?self)\b/i,
+  /\b(no\s+reason\s+to\s+live|better\s+off\s+dead)\b/i,
+  /\b(overdose|od'?ing)\b/i,
+]
+
+const CRISIS_RESPONSE =
+  `If you or someone you know is in crisis, please reach out:\n\n` +
+  `988 Suicide & Crisis Lifeline: Call or text 988\n` +
+  `Crisis Text Line: Text HOME to 741741\n` +
+  `Emergency: Call 911\n\n` +
+  `You are not alone. These services are free, confidential, and available 24/7.`
+
+function isCrisisMessage(text: string): boolean {
+  return CRISIS_PATTERNS.some(pattern => pattern.test(text))
+}
+
+async function sendCrisisSMS(to: string): Promise<void> {
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_PHONE_NUMBER) {
+    console.error('Twilio credentials not configured for crisis response')
+    return
+  }
+
+  try {
+    await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
+        },
+        body: new URLSearchParams({
+          To: to,
+          From: TWILIO_PHONE_NUMBER,
+          Body: CRISIS_RESPONSE,
+        }),
+      }
+    )
+  } catch (error) {
+    console.error('Error sending crisis response SMS:', error)
+  }
+}
 
 /**
  * Validate Twilio webhook signature
@@ -140,6 +191,32 @@ serve(async (req) => {
       console.error('Error inserting inbound message:', insertError)
     } else {
       console.log(`✓ Logged inbound message from ${fromPhone}`)
+    }
+
+    // ─── CRISIS CHECK (first priority) ────────────────────────────────
+    if (isCrisisMessage(messageBody)) {
+      console.warn(`⚠️ CRISIS MESSAGE detected from ${fromPhone}: "${messageBody.substring(0, 80)}"`)
+
+      // Log crisis event
+      if (userId) {
+        await supabase.from('sms_messages').insert({
+          direction: 'outbound',
+          user_id: userId,
+          phone: fromPhone,
+          user_name: userName,
+          body: CRISIS_RESPONSE,
+          sent_by_type: 'system',
+          twilio_status: 'sent',
+        })
+      }
+
+      // Send crisis resources immediately
+      await sendCrisisSMS(fromPhone)
+
+      return new Response(
+        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+        { headers: { 'Content-Type': 'text/xml' } }
+      )
     }
 
     // Handle STOP/HELP keywords (Twilio handles these automatically, but we can log them)

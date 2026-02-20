@@ -185,7 +185,7 @@ function buildEmailHtml(firstName: string, habitCount: number): string {
                 Why tracking works
               </p>
               <p style="margin: 0; font-size: 14px; color: #6a6a6a; line-height: 1.6;">
-                Research shows that <strong>self-monitoring</strong> is one of the most effective behavior change techniques. When you track your habits, you:
+                Many people find that tracking their habits helps them stay consistent and build momentum. When you track, you:
               </p>
               <ul style="margin: 12px 0 0 0; padding-left: 20px; font-size: 14px; color: #6a6a6a; line-height: 1.8;">
                 <li><strong>Stay aware</strong> of your progress (or when you're slipping)</li>
@@ -193,9 +193,6 @@ function buildEmailHtml(firstName: string, habitCount: number): string {
                 <li><strong>Identify patterns</strong> in what helps or hinders you</li>
                 <li><strong>Feel motivated</strong> by seeing how far you've come</li>
               </ul>
-              <p style="margin: 16px 0 0 0; font-size: 14px; color: #6a6a6a; line-height: 1.6; font-style: italic;">
-                Studies show people who track their habits are 40% more likely to achieve their goals than those who don't.
-              </p>
             </td>
           </tr>
 
@@ -334,6 +331,10 @@ serve(async (req) => {
     }
 
     // Step 4: Get profile details and habit counts for these users
+    // Skip users in their first 7 days (they receive onboarding emails instead)
+    const sevenDaysAgo = new Date(now)
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7)
+
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('id, first_name, email')
@@ -341,6 +342,7 @@ serve(async (req) => {
       .eq('profile_completed', true)
       .not('email', 'is', null)
       .is('deleted_at', null)
+      .lt('created_at', sevenDaysAgo.toISOString())
 
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError)

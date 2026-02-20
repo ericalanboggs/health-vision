@@ -72,6 +72,9 @@ SELECT cron.schedule('send-habit-setup-emails', '0 15 * * 1', $$SELECT call_edge
 -- Habit tracking prompts - Wednesdays 3PM UTC (9AM CST)
 SELECT cron.schedule('send-habit-tracking-prompts', '0 15 * * 3', $$SELECT call_edge_function('send-habit-tracking-emails')$$);
 
+-- Onboarding emails (days 2-7) - Daily 2PM UTC (8AM CST)
+SELECT cron.schedule('send-onboarding-emails', '0 14 * * *', $$SELECT call_edge_function('send-onboarding-emails')$$);
+
 -- Weekly digest generation - Mondays 1PM UTC (7AM CST)
 SELECT cron.schedule('generate-weekly-digests', '0 13 * * 1', $$SELECT call_edge_function('generate-all-weekly-digests')$$);
 

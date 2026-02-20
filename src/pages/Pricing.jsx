@@ -36,8 +36,8 @@ const PREMIUM_COACHING = [
 const COMPARISON_ROWS = [
   ['Habit Tracking & Streaks', 'AI-Powered', 'AI-Powered', 'AI + Human Audit'],
   ['Weekly Progress Digests', 'Automated', 'Automated', 'Coach-Reviewed'],
-  ['Goal Setting', 'Self-Guided', '15-min Setup', 'Deep Strategy Session'],
-  ['Monthly 1:1 Coaching', '\u2014', '1 x 15-min Sprint', '2 x 30-min Deep Dives'],
+  ['Goal Setting', 'Self-Guided', 'Coach-Guided', 'Deep Strategy Session'],
+  ['Monthly 1:1 Coaching', '\u2014', '1 x 30-min Session', '2 x 30-min Deep Dives'],
   ['Text Support', 'SMS Reminders', 'SMS Reminders', 'Concierge 1:1 Texting'],
   ['Lifestyle Adjustments', 'DIY', 'Coach-Assisted', 'Proactive White-Glove'],
 ]
@@ -234,7 +234,7 @@ export default function Pricing() {
               <div className="text-center pb-4">
                 <h2 className="text-h2 text-summit-forest">Plus</h2>
                 <div className="mt-2 mb-2">
-                  <span className="text-[44px] font-bold text-summit-forest tracking-tight">$29</span>
+                  <span className="text-[44px] font-bold text-summit-forest tracking-tight">$49</span>
                   <span className="text-sm font-medium text-text-muted">/month</span>
                 </div>
                 {!isSubscriber && <Tag variant="secondary" size="sm">7-day free trial</Tag>}
@@ -245,10 +245,10 @@ export default function Pricing() {
 
               <div className="flex-1 pt-4 pb-6">
                 <p className="text-body-sm font-semibold text-summit-forest mb-2">
-                  1 focused session / month (15 min)
+                  1 coaching session / month (30 min)
                 </p>
                 <p className="text-xs text-summit-forest/70 mb-4">
-                  Short, action-oriented coaching for when you need a quick adjustment:
+                  Focused coaching for when you need to think through a challenge:
                 </p>
                 <div className="space-y-3">
                   {PLUS_COACHING.map((item) => (
@@ -288,7 +288,7 @@ export default function Pricing() {
             <div className="text-center pb-4">
               <h2 className="text-h2 text-summit-forest">Premium</h2>
               <div className="mt-2 mb-2">
-                <span className="text-[44px] font-bold text-summit-forest tracking-tight">$89</span>
+                <span className="text-[44px] font-bold text-summit-forest tracking-tight">$119</span>
                 <span className="text-sm font-medium text-text-muted">/month</span>
               </div>
               {!isSubscriber && <Tag variant="secondary" size="sm">7-day free trial</Tag>}

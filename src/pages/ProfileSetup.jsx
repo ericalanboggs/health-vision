@@ -213,6 +213,12 @@ export default function ProfileSetup() {
               />
             </div>
 
+            {/* Wellness Disclaimer */}
+            <p className="text-xs text-text-tertiary text-center leading-relaxed">
+              Summit provides wellness coaching and habit support — not medical advice.
+              Please consult a healthcare provider for medical concerns.
+            </p>
+
             {/* Submit Error */}
             {errors.submit && (
               <div className="bg-feedback-error-light border border-feedback-error rounded-lg p-4">

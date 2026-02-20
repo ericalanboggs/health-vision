@@ -231,12 +231,17 @@ serve(async (req) => {
     console.log(`Found ${userIdsWithHabits.size} users with habits`)
 
     // Step 2: Get all profiles with email and profile_completed = true
+    // Skip users in their first 7 days (they receive onboarding emails instead)
+    const sevenDaysAgo = new Date(now)
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7)
+
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('id, first_name, email, profile_completed')
       .eq('profile_completed', true)
       .not('email', 'is', null)
       .is('deleted_at', null)
+      .lt('created_at', sevenDaysAgo.toISOString())
 
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError)

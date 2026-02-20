@@ -7,12 +7,11 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
 /**
- * Build the welcome email HTML
+ * Build the Day 1 welcome email — Founder letter from Coach Eric
  */
 function buildEmailHtml(firstName: string): string {
   const appUrl = 'https://summit-pilot.vercel.app'
   const logoUrl = 'https://summit-pilot.vercel.app/summit-logo.png'
-  const calendarUrl = 'https://calendly.com/eric-boggs-summit/30min' // Update with actual calendar link
 
   return `
 <!DOCTYPE html>
@@ -43,27 +42,30 @@ function buildEmailHtml(firstName: string): string {
             </td>
           </tr>
 
-          <!-- Intro -->
+          <!-- Founder intro -->
           <tr>
-            <td style="padding: 0 40px 25px 40px;">
+            <td style="padding: 0 40px 16px 40px;">
               <p style="margin: 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
-                You've taken the first step toward your health summit - that future version of yourself living with more energy, strength, and wellbeing.
+                I hope you're as excited as I am for you to begin your journey to your health peak.
               </p>
               <p style="margin: 16px 0 0 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
-                Summit exists to help you get there - not through dramatic overhauls, but through <strong>small, consistent habits</strong> built into your daily life. The climb happens one step at a time.
+                Over the last 10 years, I've personally battled with anxiety, high cholesterol, and signs of inflammation. While medical advice was useful, I found that <strong>behavior change</strong> was the hardest part. Going it alone was difficult, but I found coaches and resources that helped me get there.
+              </p>
+              <p style="margin: 16px 0 0 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
+                I wanted to take what I learned — as both a person and a certified health coach — and build something that brings you personalized support, motivation, and the flexibility to "get health done" your way.
               </p>
             </td>
           </tr>
 
-          <!-- Features Section -->
+          <!-- Core Principles -->
           <tr>
-            <td style="padding: 0 40px 30px 40px;">
-              <p style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600; color: #1a1a1a;">
-                Here's how Summit supports your journey:
+            <td style="padding: 0 40px 20px 40px;">
+              <p style="margin: 0 0 16px 0; font-size: 18px; font-weight: 600; color: #1a1a1a;">
+                Core principles that define Summit:
               </p>
 
-              <!-- Feature 1: Vision -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
+              <!-- Principle 1 -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 16px;">
                 <tr>
                   <td style="width: 50px; vertical-align: top; padding-top: 2px;">
                     <div style="width: 40px; height: 40px; background-color: #dcfce7; border-radius: 10px; text-align: center; line-height: 40px;">
@@ -72,17 +74,17 @@ function buildEmailHtml(firstName: string): string {
                   </td>
                   <td style="vertical-align: top;">
                     <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #1a1a1a;">
-                      Define Your Vision
+                      Your vision first.
                     </p>
-                    <p style="margin: 0; font-size: 14px; color: #6a6a6a; line-height: 1.5;">
-                      Capture your "why" - the health goals that matter most to you. Your vision evolves as you do, serving as your North Star when motivation wavers.
+                    <p style="margin: 0; font-size: 14px; color: #6a6a6a; line-height: 1.6;">
+                      Health and wellness is personal. We use your own words to reinforce you along your journey — not words from gurus.
                     </p>
                   </td>
                 </tr>
               </table>
 
-              <!-- Feature 2: Habits -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
+              <!-- Principle 2 -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 16px;">
                 <tr>
                   <td style="width: 50px; vertical-align: top; padding-top: 2px;">
                     <div style="width: 40px; height: 40px; background-color: #dcfce7; border-radius: 10px; text-align: center; line-height: 40px;">
@@ -91,93 +93,83 @@ function buildEmailHtml(firstName: string): string {
                   </td>
                   <td style="vertical-align: top;">
                     <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #1a1a1a;">
-                      Build Smart Habits
+                      Your habits.
                     </p>
-                    <p style="margin: 0; font-size: 14px; color: #6a6a6a; line-height: 1.5;">
-                      AI recommends personalized habits based on your goals. Choose what resonates, schedule it into your week, and optionally track metrics like minutes, reps, or glasses of water.
+                    <p style="margin: 0; font-size: 14px; color: #6a6a6a; line-height: 1.6;">
+                      You know what works for you. Healthy habits can be molded and flexible — for example, "movement" can mean whatever excites you, for whatever amount of time fits your life.
                     </p>
                   </td>
                 </tr>
               </table>
 
-              <!-- Feature 3: SMS Support -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
+              <!-- Principle 3 -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 16px;">
                 <tr>
                   <td style="width: 50px; vertical-align: top; padding-top: 2px;">
                     <div style="width: 40px; height: 40px; background-color: #dcfce7; border-radius: 10px; text-align: center; line-height: 40px;">
-                      <span style="font-size: 20px;">&#128172;</span>
+                      <span style="font-size: 20px;">&#128336;</span>
                     </div>
                   </td>
                   <td style="vertical-align: top;">
                     <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #1a1a1a;">
-                      SMS Check-ins
+                      Your pace.
                     </p>
-                    <p style="margin: 0; font-size: 14px; color: #6a6a6a; line-height: 1.5;">
-                      Get friendly text reminders at the right moment. Reply to log your progress - no app required. Summit meets you where you are.
+                    <p style="margin: 0; font-size: 14px; color: #6a6a6a; line-height: 1.6;">
+                      Life is busy for all of us. What matters most is careful reflection on what worked, what didn't, and how you want to move forward. We celebrate that — not streaks and pressure.
                     </p>
                   </td>
                 </tr>
               </table>
 
-              <!-- Feature 4: Reflection -->
+              <!-- Principle 4 -->
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
                   <td style="width: 50px; vertical-align: top; padding-top: 2px;">
                     <div style="width: 40px; height: 40px; background-color: #dcfce7; border-radius: 10px; text-align: center; line-height: 40px;">
-                      <span style="font-size: 20px;">&#128221;</span>
+                      <span style="font-size: 20px;">&#129309;</span>
                     </div>
                   </td>
                   <td style="vertical-align: top;">
                     <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #1a1a1a;">
-                      Weekly Reflection
+                      Human support.
                     </p>
-                    <p style="margin: 0; font-size: 14px; color: #6a6a6a; line-height: 1.5;">
-                      Each week, pause to reflect on what's working and what needs adjusting. This simple practice helps you course-correct and build momentum over time.
+                    <p style="margin: 0; font-size: 14px; color: #6a6a6a; line-height: 1.6;">
+                      As a coach, I know there are times when just listening and being heard make all the difference. Our Plus and Premium plans offer the right mix of coaching to complement the daily experience.
                     </p>
                   </td>
                 </tr>
               </table>
+            </td>
+          </tr>
+
+          <!-- What's next -->
+          <tr>
+            <td style="padding: 0 40px 20px 40px;">
+              <p style="margin: 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
+                Over the next few days, I'll send you an email each morning to help you take advantage of the platform and prepare for the weekly framework that Summit supports.
+              </p>
             </td>
           </tr>
 
           <!-- CTA Button -->
           <tr>
             <td align="center" style="padding: 0 40px 30px 40px;">
-              <a href="${appUrl}" style="display: inline-block; padding: 16px 32px; background-color: #15803d; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
-                Start Your Journey
+              <a href="${appUrl}/dashboard" style="display: inline-block; padding: 16px 32px; background-color: #15803d; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
+                Go to Summit
               </a>
             </td>
           </tr>
 
-          <!-- Coach Section -->
-          <tr>
-            <td style="padding: 0 40px 30px 40px; border-top: 1px solid #e5e5e5;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top: 25px;">
-                <tr>
-                  <td>
-                    <p style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600; color: #1a1a1a;">
-                      You're not alone on this climb
-                    </p>
-                    <p style="margin: 0 0 16px 0; font-size: 14px; color: #6a6a6a; line-height: 1.6;">
-                      Hit a blocker? Need help thinking through your approach? A human coach is always available to support you. Schedule a free 30-minute session anytime.
-                    </p>
-                    <a href="${calendarUrl}" style="display: inline-block; padding: 10px 20px; background-color: #ffffff; color: #15803d; text-decoration: none; font-size: 14px; font-weight: 600; border: 2px solid #15803d; border-radius: 6px;">
-                      Book Coaching Time
-                    </a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Footer -->
+          <!-- Footer / Signoff -->
           <tr>
             <td style="padding: 20px 40px 40px 40px; background-color: #f9fafb; border-radius: 0 0 12px 12px;">
-              <p style="margin: 0 0 8px 0; font-size: 14px; color: #6a6a6a; text-align: center; line-height: 1.5;">
-                Here's to the journey ahead.
+              <p style="margin: 0 0 4px 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
+                I'm honored you're here.
               </p>
-              <p style="margin: 0 0 16px 0; font-size: 14px; color: #6a6a6a; text-align: center; line-height: 1.5;">
-                - Eric & the Summit Team
+              <p style="margin: 8px 0 16px 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
+                Best,<br>
+                <strong>Coach Eric</strong><br>
+                <span style="font-size: 14px; color: #6a6a6a;">Summit Founder</span>
               </p>
               <p style="margin: 0; font-size: 13px; color: #9a9a9a; text-align: center; line-height: 1.5;">
                 Questions? Just reply to this email.

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAllUsers, inviteUser } from '../services/adminService'
-import { CheckCircle, Warning, Autorenew, SwapVert, PersonAdd, Send } from '@mui/icons-material'
+import { CheckCircle, Warning, Autorenew, SwapVert, PersonAdd, Send, NotificationsActive } from '@mui/icons-material'
 import { Checkbox } from '@summit/design-system'
 import BulkActionToolbar from '../components/admin/BulkActionToolbar'
 import SendSMSModal from '../components/admin/SendSMSModal'
@@ -89,6 +89,22 @@ export default function Admin() {
 
     return 'active'
   }
+
+  // Calculate quiet users (no login in 5+ days, not brand new)
+  const quietUsers = useMemo(() => {
+    const now = new Date()
+    return users.filter(user => {
+      const createdAt = new Date(user.createdAt)
+      const daysSinceCreated = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24))
+      // Skip brand-new users still in onboarding
+      if (daysSinceCreated < 7) return false
+
+      const lastLogin = user.lastLogin ? new Date(user.lastLogin) : null
+      const daysSinceLogin = lastLogin ? Math.floor((now - lastLogin) / (1000 * 60 * 60 * 24)) : Infinity
+
+      return daysSinceLogin >= 5
+    })
+  }, [users])
 
   // Calculate filter counts
   const filterCounts = useMemo(() => {
@@ -274,6 +290,40 @@ export default function Admin() {
           onDelete={() => setShowDeleteModal(true)}
           onClear={clearSelection}
         />
+
+        {/* Quiet Users Alert */}
+        {quietUsers.length > 0 && (
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <div className="flex items-start gap-3">
+              <NotificationsActive className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-amber-900">
+                  {quietUsers.length} {quietUsers.length === 1 ? 'user has' : 'users have'} been quiet for 5+ days
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {quietUsers.map(user => {
+                    const lastLogin = user.lastLogin ? new Date(user.lastLogin) : null
+                    const daysAgo = lastLogin
+                      ? Math.floor((new Date() - lastLogin) / (1000 * 60 * 60 * 24))
+                      : null
+                    return (
+                      <button
+                        key={user.id}
+                        onClick={() => navigate(`/admin/users/${user.id}`)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-amber-200 text-xs font-medium text-amber-900 hover:bg-amber-100 transition-colors"
+                      >
+                        {user.name}
+                        <span className="text-amber-600">
+                          {daysAgo !== null ? `${daysAgo}d` : 'never'}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Engagement Filter */}
         <EngagementFilter
