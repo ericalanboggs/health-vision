@@ -43,9 +43,9 @@ export default function VerifyPhone() {
       return
     }
 
-    // If already verified, skip ahead
+    // If already verified, let Home handle routing
     if (profileResult.data.phone_verified) {
-      navigate('/start', { replace: true })
+      navigate('/', { replace: true })
       return
     }
 
@@ -157,7 +157,8 @@ export default function VerifyPhone() {
       } else if (data?.error) {
         setError(data.error)
       } else if (data?.success) {
-        navigate('/start', { replace: true })
+        // Route to Home which handles onboarding vs dashboard routing
+        navigate('/', { replace: true })
       }
     } catch (err) {
       console.error('Error verifying code:', err)
