@@ -20,6 +20,9 @@ export default function Home() {
       } else if (!profileResult?.success || !profile?.profile_completed) {
         console.log('Home: Navigating to profile-setup')
         navigate('/profile-setup', { replace: true })
+      } else if (profile.phone && !profile.phone_verified) {
+        console.log('Home: Phone not verified, navigating to /verify-phone')
+        navigate('/verify-phone', { replace: true })
       } else if (!profile.onboarding_completed) {
         console.log('Home: Onboarding not completed, navigating to /start')
         navigate('/start', { replace: true })

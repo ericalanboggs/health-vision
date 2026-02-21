@@ -20,6 +20,7 @@ import Terms from './pages/Terms'
 import AuthCallback from './pages/AuthCallback'
 import AuthTest from './pages/AuthTest'
 import AuthDebug from './pages/AuthDebug'
+import VerifyPhone from './pages/VerifyPhone'
 import WelcomeBack from './pages/WelcomeBack'
 import Dashboard from './pages/Dashboard'
 import DashboardSummit from './pages/DashboardSummit'
@@ -98,9 +99,19 @@ function App() {
           element={<ProfileSetup />} 
         />
         
+        {/* Phone verification */}
+        <Route
+          path="/verify-phone"
+          element={
+            <ProtectedRoute>
+              <VerifyPhone />
+            </ProtectedRoute>
+          }
+        />
+
         {/* First-time user experience */}
-        <Route 
-          path="/start" 
+        <Route
+          path="/start"
           element={
             <ProtectedRoute>
               <Start />
