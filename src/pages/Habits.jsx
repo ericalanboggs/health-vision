@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowBack,
   Science,
   Save,
   Edit,
@@ -40,24 +39,6 @@ export default function Habits() {
   const [trackingConfigs, setTrackingConfigs] = useState({})
   const [togglingTracking, setTogglingTracking] = useState(null) // habitName being toggled
   const [customUnitInputs, setCustomUnitInputs] = useState({}) // Local state for custom unit typing
-  const [headerVisible, setHeaderVisible] = useState(true)
-  const lastScrollY = useRef(0)
-
-  // Scroll hide/show behavior for header
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY
-      if (currentScrollY > lastScrollY.current && currentScrollY > 60) {
-        setHeaderVisible(false)
-      } else {
-        setHeaderVisible(true)
-      }
-      lastScrollY.current = currentScrollY
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const dayMap = {
@@ -614,7 +595,7 @@ END:VEVENT
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <p className="text-text-secondary">Loading habits...</p>
       </div>
     )
@@ -623,90 +604,71 @@ END:VEVENT
   const groupedHabits = getGroupedHabits()
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
-      {/* Header */}
-      <header className={`bg-transparent sticky top-0 z-10 transition-transform duration-300 ${headerVisible ? 'translate-y-0' : '-translate-y-full'}`}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2 text-text-secondary hover:text-summit-forest font-medium transition-colors"
-            >
-              <ArrowBack className="w-5 h-5 flex-shrink-0" />
-              <span className="hidden sm:inline">Back to Dashboard</span>
-            </button>
-            
-            {/* Overflow Menu - Only show if habits exist */}
-            {groupedHabits.length > 0 && (
-              <div className="relative">
-                <button
-                  onClick={() => setMenuOpen(!menuOpen)}
-                  className="p-2 text-text-secondary hover:text-summit-forest hover:bg-summit-mint rounded-lg transition"
-                  title="More actions"
-                >
-                  <MoreVert className="w-5 h-5" />
-                </button>
-
-                {menuOpen && (
-                  <>
-                    {/* Backdrop to close menu */}
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setMenuOpen(false)}
-                    />
-
-                    {/* Dropdown Menu */}
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
-                      <button
-                        onClick={() => {
-                          handleReminder()
-                          setMenuOpen(false)
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-left text-summit-forest hover:bg-summit-mint transition"
-                      >
-                        <CalendarMonth className="w-4 h-4 text-summit-emerald" />
-                        <span>Add to Calendar</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          handleCopyToClipboard()
-                          setMenuOpen(false)
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-left text-summit-forest hover:bg-summit-mint transition"
-                      >
-                        {copied ? (
-                          <>
-                            <Check className="w-4 h-4 text-summit-emerald" />
-                            <span>Copied!</span>
-                          </>
-                        ) : (
-                          <>
-                            <ContentCopy className="w-4 h-4 text-summit-emerald" />
-                            <span>Copy to Clipboard</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-6 flex items-start justify-between">
+        <div>
           <h1 className="text-h1 text-summit-forest mb-2">Your Habits</h1>
           <p className="text-body text-text-secondary">
             These habits repeat each week on the days you've scheduled.
           </p>
         </div>
 
+        {/* Overflow Menu - Only show if habits exist */}
+        {groupedHabits.length > 0 && (
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="p-2 text-text-secondary hover:text-summit-forest hover:bg-summit-mint rounded-lg transition"
+              title="More actions"
+            >
+              <MoreVert className="w-5 h-5" />
+            </button>
+
+            {menuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setMenuOpen(false)}
+                />
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
+                  <button
+                    onClick={() => {
+                      handleReminder()
+                      setMenuOpen(false)
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-left text-summit-forest hover:bg-summit-mint transition"
+                  >
+                    <CalendarMonth className="w-4 h-4 text-summit-emerald" />
+                    <span>Add to Calendar</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleCopyToClipboard()
+                      setMenuOpen(false)
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-left text-summit-forest hover:bg-summit-mint transition"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="w-4 h-4 text-summit-emerald" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <ContentCopy className="w-4 h-4 text-summit-emerald" />
+                        <span>Copy to Clipboard</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
         {groupedHabits.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 text-center">
+          <div className="bg-white rounded-2xl shadow-[0_4px_12px_0_rgba(2,44,35,0.12)] p-8 text-center">
             <Science className="w-16 h-16 text-summit-sage mx-auto mb-4" />
             <h2 className="text-h2 text-summit-forest mb-2">
               No Habits Set Yet
@@ -730,7 +692,7 @@ END:VEVENT
                 const isEditing = editingHabitIndex === index
 
                 return (
-                  <div key={index} className="bg-white border border-gray-200 rounded-2xl shadow-lg p-5">
+                  <div key={index} className="bg-white rounded-2xl shadow-[0_4px_12px_0_rgba(2,44,35,0.12)] p-5">
                     <div className="flex items-start justify-between mb-4">
                       {isEditing ? (
                         <textarea
@@ -984,7 +946,6 @@ END:VEVENT
             </div>
           </div>
         )}
-      </main>
 
       {/* Delete Confirmation Modal */}
       {deleteModal.isOpen && (
@@ -1022,6 +983,6 @@ END:VEVENT
           </div>
         </div>
       )}
-    </div>
+    </main>
   )
 }

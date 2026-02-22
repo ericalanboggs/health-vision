@@ -7,6 +7,10 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')
 const FRONTEND_URL = Deno.env.get('FRONTEND_URL')
 
+const STRIPE_PRICE_CORE = Deno.env.get('STRIPE_PRICE_CORE')
+const STRIPE_PRICE_PLUS = Deno.env.get('STRIPE_PRICE_PLUS')
+const STRIPE_PRICE_PREMIUM = Deno.env.get('STRIPE_PRICE_PREMIUM')
+
 const stripe = new Stripe(STRIPE_SECRET_KEY!, { apiVersion: '2023-10-16' })
 
 serve(async (req) => {
@@ -64,10 +68,12 @@ serve(async (req) => {
       )
     }
 
-    // Fetch all active recurring prices and group by product
-    const prices = await stripe.prices.list({ active: true, type: 'recurring', limit: 100 })
+    // Build products list from the specific price IDs we use
+    const knownPriceIds = [STRIPE_PRICE_CORE, STRIPE_PRICE_PLUS, STRIPE_PRICE_PREMIUM].filter(Boolean) as string[]
+    const prices = await Promise.all(knownPriceIds.map(id => stripe.prices.retrieve(id)))
+
     const productPriceMap: Record<string, string[]> = {}
-    for (const price of prices.data) {
+    for (const price of prices) {
       const productId = typeof price.product === 'string' ? price.product : price.product.id
       if (!productPriceMap[productId]) {
         productPriceMap[productId] = []

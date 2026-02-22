@@ -10,7 +10,7 @@ const cardVariants = cva(
   {
     variants: {
       variant: {
-        default: 'shadow-card',
+        default: 'shadow-[0_4px_12px_0_rgba(2,44,35,0.12)]',
         elevated: 'shadow-md hover:shadow-lg',
         outlined: 'border border-border-subtle shadow-none',
         ghost: 'bg-transparent shadow-none',
@@ -36,7 +36,7 @@ const cardVariants = cva(
     defaultVariants: {
       variant: 'default',
       padding: 'md',
-      radius: 'lg',
+      radius: 'xl',
       interactive: false,
     },
   }

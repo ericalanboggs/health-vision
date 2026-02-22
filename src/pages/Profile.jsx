@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Phone, Email, ArrowBack, Autorenew } from '@mui/icons-material'
+import { Phone, Email, Autorenew } from '@mui/icons-material'
 import { getCurrentUser, getProfile, upsertProfile, softDeleteAccount } from '../services/authService'
 import { createPortalSession, getTierDisplayName, hasActiveSubscription } from '../services/subscriptionService'
-import TopNav from '../components/TopNav'
 import { formatPhoneToE164, isValidUSPhoneNumber } from '../utils/phoneFormatter'
 import { Card, Input, Textarea, Checkbox, Button, Banner, Tag, Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@summit/design-system'
 
@@ -27,24 +26,6 @@ export default function Profile() {
     smsConsent: false,
     pilotReason: ''
   })
-  const [headerVisible, setHeaderVisible] = useState(true)
-  const lastScrollY = useRef(0)
-
-  // Headroom behavior for nav
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY
-      if (currentScrollY > lastScrollY.current && currentScrollY > 60) {
-        setHeaderVisible(false)
-      } else {
-        setHeaderVisible(true)
-      }
-      lastScrollY.current = currentScrollY
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
 
   useEffect(() => {
     loadUserProfile()
@@ -175,30 +156,15 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
-        <TopNav />
-        <div className="flex items-center justify-center py-12">
-          <Autorenew className="w-8 h-8 animate-spin text-summit-emerald" />
-        </div>
+      <div className="flex items-center justify-center py-20">
+        <Autorenew className="w-8 h-8 animate-spin text-summit-emerald" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
-      <div className={`sticky top-0 z-10 transition-transform duration-300 ${headerVisible ? 'translate-y-0' : '-translate-y-full'}`}>
-        <TopNav />
-      </div>
-
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-6">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-1 text-text-muted hover:text-summit-forest transition-colors mb-4"
-          >
-            <ArrowBack className="h-5 w-5" />
-            <span className="text-body">Back to Dashboard</span>
-          </button>
           <h1 className="text-h1 text-summit-forest">Profile Settings</h1>
           <p className="text-body text-text-muted mt-2">
             Update your personal information and preferences.
@@ -420,7 +386,6 @@ export default function Profile() {
             </Button>
           </ModalFooter>
         </Modal>
-      </main>
-    </div>
+    </main>
   )
 }

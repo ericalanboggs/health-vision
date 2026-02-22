@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowBack, CalendarMonth, Save, Autorenew, CheckCircle, Schedule, Edit, Visibility, ChevronLeft, ChevronRight } from '@mui/icons-material'
+import { CalendarMonth, Save, Autorenew, CheckCircle, Schedule, Edit, Visibility, ChevronLeft, ChevronRight } from '@mui/icons-material'
 import { saveReflection, getCurrentWeekReflection, getReflectionByWeek, getAllReflections } from '../services/reflectionService'
 import { getCurrentWeekNumber, getCurrentWeekDateRange, getWeekStartDate, getWeekEndDate, hasWeekPassed } from '../utils/weekCalculator'
 import { Banner } from '@summit/design-system'
@@ -20,25 +20,7 @@ export default function Reflection() {
     app_feedback: ''
   })
   const [weekReflections, setWeekReflections] = useState({}) // Store all weeks' reflections
-  const [headerVisible, setHeaderVisible] = useState(true)
   const [showBanner, setShowBanner] = useState(() => !localStorage.getItem('reflection-banner-dismissed'))
-  const lastScrollY = useRef(0)
-
-  // Headroom behavior for nav
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY
-      if (currentScrollY > lastScrollY.current && currentScrollY > 60) {
-        setHeaderVisible(false)
-      } else {
-        setHeaderVisible(true)
-      }
-      lastScrollY.current = currentScrollY
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
 
   useEffect(() => {
     loadAllReflections()
@@ -158,33 +140,19 @@ export default function Reflection() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <p className="text-stone-600">Loading reflection...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
-      {/* Header */}
-      <header className={`bg-transparent sticky top-0 z-10 transition-transform duration-300 ${headerVisible ? 'translate-y-0' : '-translate-y-full'}`}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2 text-stone-600 hover:text-summit-forest font-medium transition-colors"
-            >
-              <ArrowBack className="w-5 h-5 flex-shrink-0" />
-              <span className="hidden sm:inline">Back to Dashboard</span>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-summit-forest mb-4">Weekly Reflection</h1>
+          <h1 className="text-h1 text-summit-forest mb-2">Weekly Reflection</h1>
+          <p className="text-body text-text-secondary mb-4">
+            Reflect on your week and adjust your approach.
+          </p>
 
           {/* Info Banner */}
           {showBanner && (
@@ -201,7 +169,7 @@ export default function Reflection() {
 
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+        <div className="bg-white rounded-2xl shadow-[0_4px_12px_0_rgba(2,44,35,0.12)] p-6 sm:p-8">
           {/* Week Carousel */}
           <div className="flex items-center justify-center mb-6">
             <button
@@ -361,7 +329,6 @@ export default function Reflection() {
             </div>
           )}
         </div>
-      </main>
-    </div>
+    </main>
   )
 }

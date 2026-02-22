@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCurrentUser, getProfile, upsertProfile } from '../services/authService'
 import { hasActiveSubscription, COACHING_CONFIG, getBillingPeriod, getMyCoachingSessions } from '../services/subscriptionService'
@@ -60,14 +60,11 @@ import {
   Science,
   Schedule,
   ArrowForward,
-  Terrain,
   CheckCircle,
-  OpenInNew,
   HelpOutline,
   Forum,
   MenuBook,
 } from '@mui/icons-material'
-import TopNav from '../components/TopNav'
 import WelcomeModal from '../components/WelcomeModal'
 import {
   Card,
@@ -101,24 +98,6 @@ export default function Dashboard() {
   const [resourceTopics, setResourceTopics] = useState([])
   const [profileData, setProfileData] = useState(null)
   const [coachingSessionsUsed, setCoachingSessionsUsed] = useState(0)
-  const [headerVisible, setHeaderVisible] = useState(true)
-  const lastScrollY = useRef(0)
-
-  // Headroom behavior for nav
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY
-      if (currentScrollY > lastScrollY.current && currentScrollY > 60) {
-        setHeaderVisible(false)
-      } else {
-        setHeaderVisible(true)
-      }
-      lastScrollY.current = currentScrollY
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -388,60 +367,59 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <p className="text-text-secondary">Loading your journey...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
-      <div className={`sticky top-0 z-10 transition-transform duration-300 ${headerVisible ? 'translate-y-0' : '-translate-y-full'}`}>
-        <TopNav />
-      </div>
-
+    <>
       <WelcomeModal isOpen={showWelcomeModal} onClose={handleCloseWelcomeModal} />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
-        <h1 className="text-h1 text-summit-forest mb-8">Welcome to Your Summit</h1>
+        <p className="text-body-lg text-text-secondary mb-1">
+          Welcome, <span className="font-bold text-summit-forest">{profileData?.first_name || 'there'}</span>
+        </p>
+        <h3 className="text-h3 text-summit-forest mb-6">Your Summit</h3>
 
         {/* Vision Section */}
-        <Card
-          interactive
-          className="mb-8 cursor-pointer border border-gray-200"
+        <div
+          className="relative mb-8 flex cursor-pointer overflow-hidden rounded-2xl bg-white shadow-[0_4px_12px_0_rgba(2,44,35,0.12)] transition hover:shadow-[0_6px_16px_0_rgba(2,44,35,0.18)]"
           onClick={() => navigate('/vision?view=display')}
         >
-          <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-summit-sage">
-              <Terrain className="h-8 w-8 text-summit-emerald" />
+          {/* Left — Mountain illustration */}
+          <img
+            src="/summit-mountain.png"
+            alt=""
+            className="pointer-events-none absolute -left-32 -bottom-8 w-[300px] sm:w-[480px]"
+          />
+
+          {/* Right — Copy + CTA */}
+          <div className="relative z-10 flex flex-1 flex-col items-start justify-between gap-8 p-8 sm:ml-[280px]">
+            <div>
+              <div className="text-meta text-summit-moss mb-1">YOUR HEALTH VISION</div>
+              <p className="text-h1 sm:text-display text-summit-forest">
+                {visionData?.visionStatement || visionData?.feelingState || visionData?.whyMatters ? visionAdjectives : 'Create Your Vision'}
+              </p>
             </div>
 
-            <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <CardHeader>
-                <div className="text-meta text-summit-moss mb-1">YOUR HEALTH VISION</div>
-                <CardTitle className="text-h3">
-                  {visionData?.visionStatement || visionData?.feelingState || visionData?.whyMatters ? visionAdjectives : 'Create Your Vision'}
-                </CardTitle>
-              </CardHeader>
-
-              <Button variant="ghost" rightIcon={<ArrowForward className="h-4 w-4" />} className="flex-shrink-0">
-                {visionData?.visionStatement ? 'View & Edit Vision' : 'Create Vision'}
-              </Button>
-            </div>
+            <Button variant="primary" size="lg" rightIcon={<ArrowForward className="h-4 w-4" />}>
+              {visionData?.visionStatement ? 'View & Edit Vision' : 'Create Vision'}
+            </Button>
           </div>
-        </Card>
+        </div>
 
         {/* This Week's Climb Section */}
         <div>
-          <h2 className="text-h2 text-summit-forest mb-4">This Week's Climb</h2>
+          <h3 className="text-h3 text-summit-forest mb-4">This Week's Climb</h3>
 
-          {/* Weekly Sections Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-6">
           {/* Weekly Habits */}
           <Card
             interactive
-            className="cursor-pointer border border-gray-200"
+            className="cursor-pointer"
             onClick={() => navigate('/habits')}
           >
             <CardHeader className="mb-4">
@@ -503,7 +481,7 @@ export default function Dashboard() {
           {/* Weekly Reflection */}
           <Card
             interactive
-            className="cursor-pointer border border-gray-200"
+            className="cursor-pointer"
             onClick={() => navigate('/reflection')}
           >
             <CardHeader className="mb-4">
@@ -553,14 +531,14 @@ export default function Dashboard() {
 
         {/* Guides Section */}
         <div className="mt-8">
-          <h2 className="text-h2 text-summit-forest mb-4">Guides</h2>
+          <h3 className="text-h3 text-summit-forest mb-4">Guides</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-6">
             {/* Resources Card */}
             <Card
               interactive
-              className="cursor-pointer border border-gray-200"
-              onClick={() => navigate('/resources')}
+              className="cursor-pointer"
+              onClick={() => navigate('/guides')}
             >
               <CardHeader className="mb-4">
                 <div className="flex items-center gap-3 mb-3">
@@ -605,7 +583,7 @@ export default function Dashboard() {
               const allUsed = config.sessionsPerMonth > 0 && coachingSessionsUsed >= config.sessionsPerMonth
 
               return (
-                <Card className="border border-gray-200">
+                <Card>
                   <CardHeader className="mb-4">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-summit-sage">
@@ -664,10 +642,10 @@ export default function Dashboard() {
                   ) : (
                     <Button
                       variant="primary"
-                      rightIcon={<OpenInNew className="h-4 w-4" />}
+                      rightIcon={<ArrowForward className="h-4 w-4" />}
                       onClick={(e) => {
                         e.stopPropagation()
-                        window.open(config.calLink, '_blank', 'noopener,noreferrer')
+                        navigate('/coaching')
                       }}
                     >
                       Schedule Session
@@ -679,6 +657,6 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
-    </div>
+    </>
   )
 }

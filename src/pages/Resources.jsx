@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  ArrowBack,
   Search,
   Close,
   Add,
@@ -34,7 +33,6 @@ import {
   Tag,
   ToggleButtonGroup,
 } from '@summit/design-system'
-import TopNav from '../components/TopNav'
 
 const TYPE_ICON = {
   youtube: <OndemandVideo className="h-5 w-5 text-red-500" />,
@@ -73,23 +71,7 @@ export default function Resources() {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [overflowMenuId, setOverflowMenuId] = useState(null)
   const [toastMessage, setToastMessage] = useState(null)
-  const [headerVisible, setHeaderVisible] = useState(true)
-  const lastScrollY = useRef(0)
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY
-      if (currentScrollY > lastScrollY.current && currentScrollY > 60) {
-        setHeaderVisible(false)
-      } else {
-        setHeaderVisible(true)
-      }
-      lastScrollY.current = currentScrollY
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+  const addFormRef = useRef(null)
 
   useEffect(() => {
     const loadResources = async () => {
@@ -117,7 +99,7 @@ export default function Resources() {
   // Derive topics and types from resources
   const availableTopics = [...new Set(resources.map(r => r.topic).filter(Boolean))]
   const availableTypes = [...new Set(resources.map(r => r.resource_type).filter(Boolean))]
-  const showTypeFilter = availableTypes.length > 1
+  const showTypeFilter = false // Hidden until we have multiple resource types
 
   // Filter resources and sort pinned to top
   const filtered = resources.filter(r => {
@@ -186,30 +168,16 @@ export default function Resources() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <p className="text-text-secondary">Loading resources...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
-      <div className={`sticky top-0 z-10 transition-transform duration-300 ${headerVisible ? 'translate-y-0' : '-translate-y-full'}`}>
-        <TopNav />
-      </div>
-
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back button */}
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-1 text-text-muted hover:text-summit-forest mb-6 transition-colors"
-        >
-          <ArrowBack className="h-5 w-5" />
-          <span className="text-body">Back to Dashboard</span>
-        </button>
-
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
-        <h1 className="text-h1 text-summit-forest mb-2">Your Resources</h1>
+        <h1 className="text-h1 text-summit-forest mb-2">Guides</h1>
         <p className="text-body text-text-muted mb-6">
           Personalized content from your weekly digests.
         </p>
@@ -421,7 +389,7 @@ export default function Resources() {
 
         {/* Add Resource Button / Form */}
         {showAddForm ? (
-          <Card className="border border-gray-200">
+          <Card ref={addFormRef}>
             <CardHeader className="mb-4">
               <CardTitle className="text-h3">Add Resource</CardTitle>
             </CardHeader>
@@ -503,12 +471,14 @@ export default function Resources() {
           <Button
             variant="ghost"
             leftIcon={<Add className="h-5 w-5" />}
-            onClick={() => setShowAddForm(true)}
+            onClick={() => {
+              setShowAddForm(true)
+              setTimeout(() => addFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }), 50)
+            }}
           >
             Add Resource
           </Button>
         )}
-      </main>
 
       {/* Delete confirmation modal */}
       {confirmDeleteId && (
@@ -545,6 +515,6 @@ export default function Resources() {
           {toastMessage}
         </div>
       )}
-    </div>
+    </main>
   )
 }

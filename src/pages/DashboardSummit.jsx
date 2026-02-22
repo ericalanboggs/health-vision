@@ -18,7 +18,6 @@ import {
   OpenInNew,
   HelpOutline,
 } from '@mui/icons-material'
-import TopNav from '../components/TopNav'
 import WelcomeModal from '../components/WelcomeModal'
 import coachEric from '../assets/coach-eric.jpeg'
 import {
@@ -157,16 +156,14 @@ export default function DashboardSummit() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <p className="text-text-secondary">Loading your journey...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <TopNav />
-
+    <>
       <WelcomeModal isOpen={showWelcomeModal} onClose={handleCloseWelcomeModal} />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -351,6 +348,6 @@ export default function DashboardSummit() {
           </div>
         </Card>
       </main>
-    </div>
+    </>
   )
 }

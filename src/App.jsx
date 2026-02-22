@@ -22,12 +22,14 @@ import AuthTest from './pages/AuthTest'
 import AuthDebug from './pages/AuthDebug'
 import VerifyPhone from './pages/VerifyPhone'
 import WelcomeBack from './pages/WelcomeBack'
+import Coaching from './pages/Coaching'
 import Dashboard from './pages/Dashboard'
 import DashboardSummit from './pages/DashboardSummit'
 import Admin from './pages/Admin'
 import AdminUserDetail from './pages/AdminUserDetail'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
+import AppLayout from './components/AppLayout'
 import { trackEvent } from './lib/posthog'
 
 // Legacy health journey component wrapper
@@ -127,69 +129,18 @@ function App() {
           } 
         />
         
-        {/* Protected routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        {/* Summit Design System Preview */}
-        <Route
-          path="/dashboard-summit"
-          element={
-            <ProtectedRoute>
-              <DashboardSummit />
-            </ProtectedRoute>
-          }
-        />
-        {/* Profile - Public for Twilio verification */}
-        <Route 
-          path="/profile" 
-          element={<Profile />} 
-        />
-        <Route 
-          path="/habits" 
-          element={
-            <ProtectedRoute>
-              <Habits />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/add-habit" 
-          element={
-            <ProtectedRoute>
-              <AddHabit />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/schedule-habits" 
-          element={
-            <ProtectedRoute>
-              <ScheduleHabits />
-            </ProtectedRoute>
-          } 
-        />
-        <Route
-          path="/reflection"
-          element={
-            <ProtectedRoute>
-              <Reflection />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/resources"
-          element={
-            <ProtectedRoute>
-              <Resources />
-            </ProtectedRoute>
-          }
-        />
+        {/* Main app pages — shared navbar via AppLayout */}
+        <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard-summit" element={<DashboardSummit />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/habits" element={<Habits />} />
+          <Route path="/add-habit" element={<AddHabit />} />
+          <Route path="/schedule-habits" element={<ScheduleHabits />} />
+          <Route path="/reflection" element={<Reflection />} />
+          <Route path="/coaching" element={<Coaching />} />
+          <Route path="/guides" element={<Resources />} />
+        </Route>
         
         {/* Admin routes */}
         <Route 

@@ -57,6 +57,10 @@ export type { BannerProps } from './Banner'
 export { RadioSelect } from './RadioSelect'
 export type { RadioSelectProps, RadioOption } from './RadioSelect'
 
+// Navbar
+export { Navbar, NavLink } from './Navbar'
+export type { NavbarProps, NavLinkProps } from './Navbar'
+
 // Modal
 export {
   Modal,
