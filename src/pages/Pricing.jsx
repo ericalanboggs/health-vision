@@ -33,15 +33,6 @@ const PREMIUM_COACHING = [
   'Coach-assisted habit & schedule adjustments',
 ]
 
-const COMPARISON_ROWS = [
-  ['Habit Tracking & Streaks', 'AI-Powered', 'AI-Powered', 'AI + Human Audit'],
-  ['Weekly Progress Digests', 'Automated', 'Automated', 'Coach-Reviewed'],
-  ['Goal Setting', 'Self-Guided', 'Coach-Guided', 'Deep Strategy Session'],
-  ['Monthly 1:1 Coaching', '\u2014', '1 x 30-min Session', '2 x 30-min Deep Dives'],
-  ['Text Support', 'SMS Reminders', 'SMS Reminders', 'Concierge 1:1 Texting'],
-  ['Lifestyle Adjustments', 'DIY', 'Coach-Assisted', 'Proactive White-Glove'],
-]
-
 const FAQS = [
   {
     q: 'How does the 7-day free trial work?',
@@ -339,44 +330,6 @@ export default function Pricing() {
             </div>
           </div>
 
-        </div>
-
-        {/* Feature Comparison Table */}
-        <div className="mt-24">
-          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-summit-moss text-center mb-3">Compare</p>
-          <h2 className="text-h2 text-summit-forest text-center mb-10">
-            Self-Serve vs. Human-Assisted
-          </h2>
-          <div className="rounded-2xl overflow-hidden border border-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.06)]">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-summit-pine">
-                    <th className="px-6 py-4 text-body-sm font-semibold text-white">Feature</th>
-                    <th className="px-6 py-4 text-body-sm font-semibold text-white text-center">Core</th>
-                    <th className="px-6 py-4 text-body-sm font-semibold text-white text-center bg-white/10">Plus</th>
-                    <th className="px-6 py-4 text-body-sm font-semibold text-white text-center">Premium</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {COMPARISON_ROWS.map(([feature, core, plus, premium], i) => (
-                    <tr key={feature} className={i % 2 === 0 ? 'bg-white' : 'bg-black/[0.02]'}>
-                      <td className="px-6 py-4 text-body-sm font-semibold text-summit-forest">{feature}</td>
-                      <td className="px-6 py-4 text-body-sm text-text-secondary text-center">{core}</td>
-                      <td className="px-6 py-4 text-body-sm text-text-secondary text-center bg-summit-mint/20 font-medium">{plus}</td>
-                      <td className="px-6 py-4 text-body-sm text-text-secondary text-center">{premium}</td>
-                    </tr>
-                  ))}
-                  <tr className="bg-summit-sage/20">
-                    <td className="px-6 py-4 text-body-sm font-semibold text-summit-forest">Best For</td>
-                    <td className="px-6 py-4 text-body-sm font-semibold text-summit-moss text-center">The Solo Climber</td>
-                    <td className="px-6 py-4 text-body-sm font-semibold text-summit-moss text-center bg-summit-mint/30">The "Need a Nudge"</td>
-                    <td className="px-6 py-4 text-body-sm font-semibold text-summit-moss text-center">The Total Transformation</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
 
         {/* FAQ Section */}
