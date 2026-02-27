@@ -4,6 +4,9 @@ import { CalendarMonth, Save, Autorenew, CheckCircle, Schedule, Edit, Visibility
 import { saveReflection, getCurrentWeekReflection, getReflectionByWeek, getAllReflections } from '../services/reflectionService'
 import { getCurrentWeekNumber, getCurrentWeekDateRange, getWeekStartDate, getWeekEndDate, hasWeekPassed } from '../utils/weekCalculator'
 import { Banner } from '@summit/design-system'
+import { getCurrentUser } from '../services/authService'
+import { getActiveEnrollment, getChallengeHabitLog, advanceWeek, completeChallenge, getEffectiveWeek } from '../services/challengeService'
+import { getChallengeBySlug, getFocusAreaForWeek } from '../data/challengeConfig'
 
 export default function Reflection() {
   const navigate = useNavigate()
@@ -21,6 +24,12 @@ export default function Reflection() {
   })
   const [weekReflections, setWeekReflections] = useState({}) // Store all weeks' reflections
   const [showBanner, setShowBanner] = useState(() => !localStorage.getItem('reflection-banner-dismissed'))
+  const [activeEnrollment, setActiveEnrollment] = useState(null)
+  const [challengeHabitLog, setChallengeHabitLog] = useState([])
+  const [showChallengeModal, setShowChallengeModal] = useState(false)
+  const [challengeModalType, setChallengeModalType] = useState(null) // 'next-habit' or 'completed'
+  const [challengeReflection, setChallengeReflection] = useState({ learned: '', keepGoing: '' })
+  const [isFinalWeek, setIsFinalWeek] = useState(false)
 
   useEffect(() => {
     loadAllReflections()
@@ -47,6 +56,24 @@ export default function Reflection() {
       }
     } catch (error) {
       console.error('Failed to load reflections:', error)
+    }
+
+    // Load challenge enrollment
+    try {
+      const { success: userSuccess, user } = await getCurrentUser()
+      if (userSuccess && user) {
+        const enrollResult = await getActiveEnrollment(user.id)
+        if (enrollResult.success && enrollResult.data) {
+          setActiveEnrollment(enrollResult.data)
+          setIsFinalWeek(getEffectiveWeek(enrollResult.data) === 4)
+          const logResult = await getChallengeHabitLog(enrollResult.data.id)
+          if (logResult.success) {
+            setChallengeHabitLog(logResult.data)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load challenge enrollment:', error)
     }
 
     setWeekReflections(reflections)
@@ -107,7 +134,7 @@ export default function Reflection() {
     setSaving(true)
 
     const { success } = await saveReflection(selectedWeek, reflection)
-    
+
     if (success) {
       // Update the stored reflections
       setWeekReflections(prev => ({
@@ -117,16 +144,51 @@ export default function Reflection() {
           created_at: new Date().toISOString()
         }
       }))
-      
+
       setSaved(true)
+
+      // Check for active challenge prompt
+      if (activeEnrollment) {
+        const effectiveWeek = getEffectiveWeek(activeEnrollment)
+        const habitAddedThisWeek = challengeHabitLog.some(
+          h => h.week_number === effectiveWeek
+        )
+
+        if (effectiveWeek === 4) {
+          // Final week — show completion modal
+          setChallengeModalType('completed')
+          setShowChallengeModal(true)
+          setSaving(false)
+          return
+        } else if (!habitAddedThisWeek) {
+          // Not final week, habit not yet added — prompt to add next habit
+          setChallengeModalType('next-habit')
+          setShowChallengeModal(true)
+          setSaving(false)
+          return
+        } else {
+          // Habit added this week, advance to next week
+          await advanceWeek(activeEnrollment.id)
+        }
+      }
+
       setTimeout(() => {
         navigate('/dashboard')
       }, 1500)
     } else {
       alert('Failed to save reflection. Please try again.')
     }
-    
+
     setSaving(false)
+  }
+
+  const handleCompleteChallengeReflection = async () => {
+    if (!activeEnrollment) return
+    setSaving(true)
+    await completeChallenge(activeEnrollment.id, challengeReflection)
+    setSaving(false)
+    setShowChallengeModal(false)
+    navigate('/dashboard')
   }
 
   const isCurrentWeek = selectedWeek === currentWeek
@@ -329,6 +391,131 @@ export default function Reflection() {
             </div>
           )}
         </div>
+
+      {/* Challenge Modal */}
+      {showChallengeModal && activeEnrollment && (() => {
+        const ch = getChallengeBySlug(activeEnrollment.challenge_slug)
+        if (!ch) return null
+
+        if (challengeModalType === 'next-habit') {
+          // Determine next focus area
+          const effectiveWeek = getEffectiveWeek(activeEnrollment)
+          const savedOrder = activeEnrollment.survey_scores?.focusAreaOrder
+          let nextFA
+          if (savedOrder) {
+            const faSlug = savedOrder[effectiveWeek - 1]
+            nextFA = ch.focusAreas.find(f => f.slug === faSlug)
+          }
+          if (!nextFA) {
+            nextFA = getFocusAreaForWeek(ch, effectiveWeek)
+          }
+
+          return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+                <div className="text-center mb-4">
+                  <span className="text-4xl">{ch.icon}</span>
+                  <h3 className="text-xl font-semibold text-summit-forest mt-2">
+                    Time for your next challenge habit!
+                  </h3>
+                </div>
+                {nextFA && (
+                  <div className="bg-summit-mint border border-summit-sage rounded-lg p-4 mb-4">
+                    <p className="text-sm font-medium text-summit-forest mb-1">
+                      Week {effectiveWeek}: {nextFA.title}
+                    </p>
+                    <p className="text-sm text-text-secondary">{nextFA.description}</p>
+                  </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => {
+                      setShowChallengeModal(false)
+                      navigate(`/challenges/${ch.slug}/add-habit`)
+                    }}
+                    className="w-full bg-summit-emerald hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-lg transition"
+                  >
+                    Choose Your Habit
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowChallengeModal(false)
+                      navigate('/dashboard')
+                    }}
+                    className="w-full text-text-secondary hover:text-summit-forest font-medium px-6 py-2 rounded-lg transition"
+                  >
+                    Skip for now
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        }
+
+        if (challengeModalType === 'completed') {
+          return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+                <div className="text-center mb-4">
+                  <span className="text-4xl">{ch.icon}</span>
+                  <h3 className="text-xl font-semibold text-summit-forest mt-2">
+                    Congratulations!
+                  </h3>
+                  <p className="text-sm text-text-secondary mt-1">
+                    You've completed the {ch.title} challenge. Take a moment to reflect.
+                  </p>
+                </div>
+
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-summit-forest mb-1">
+                      What did you learn from this challenge?
+                    </label>
+                    <textarea
+                      value={challengeReflection.learned}
+                      onChange={(e) => setChallengeReflection(prev => ({ ...prev, learned: e.target.value }))}
+                      className="w-full h-24 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald resize-none"
+                      placeholder="I discovered that..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-summit-forest mb-1">
+                      Which habit from the challenge will you keep going?
+                    </label>
+                    <textarea
+                      value={challengeReflection.keepGoing}
+                      onChange={(e) => setChallengeReflection(prev => ({ ...prev, keepGoing: e.target.value }))}
+                      className="w-full h-24 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald resize-none"
+                      placeholder="I want to continue..."
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={handleCompleteChallengeReflection}
+                    disabled={saving || !challengeReflection.learned.trim() || !challengeReflection.keepGoing.trim()}
+                    className="w-full bg-summit-emerald hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg transition"
+                  >
+                    {saving ? 'Saving...' : 'Complete Challenge'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowChallengeModal(false)
+                      navigate('/dashboard')
+                    }}
+                    className="w-full text-text-secondary hover:text-summit-forest font-medium px-6 py-2 rounded-lg transition"
+                  >
+                    Skip for now
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        }
+
+        return null
+      })()}
     </main>
   )
 }

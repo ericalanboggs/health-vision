@@ -7,6 +7,8 @@ import { getCurrentWeekReflection } from '../services/reflectionService'
 import { loadJourney } from '../services/journeyService'
 import { getStreak, getHabitStats, getAllTrackingConfigs } from '../services/trackingService'
 import { getUserResources, categorizeResource } from '../services/resourceService'
+import { getActiveEnrollment, getEffectiveWeek } from '../services/challengeService'
+import { getChallengeBySlug } from '../data/challengeConfig'
 import {
   getCurrentWeekNumber,
   getCurrentWeekDateRange,
@@ -81,6 +83,7 @@ export default function Dashboard() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [currentHabits, setCurrentHabits] = useState([])
+  const [activeEnrollment, setActiveEnrollment] = useState(null)
   const [currentReflection, setCurrentReflection] = useState(null)
   const [weekNumber, setWeekNumber] = useState(1)
   const [weekDateRange, setWeekDateRange] = useState('')
@@ -143,14 +146,20 @@ export default function Dashboard() {
         reflectionResult,
         journeyResult,
         configsResult,
-        resourcesResult
+        resourcesResult,
+        enrollResult
       ] = await Promise.all([
         getCurrentWeekHabits(userId),
         getCurrentWeekReflection(userId),
         loadJourney(userId),
         getAllTrackingConfigs(userId),
-        getUserResources(userId)
+        getUserResources(userId),
+        getActiveEnrollment(userId)
       ])
+
+      if (enrollResult.success && enrollResult.data) {
+        setActiveEnrollment(enrollResult.data)
+      }
 
       // Process reflection
       if (reflectionResult.success && reflectionResult.data) {
@@ -358,7 +367,8 @@ export default function Dashboard() {
 
       return {
         habit: habitName,
-        schedule: daysStr
+        schedule: daysStr,
+        challenge_slug: habits[0]?.challenge_slug || null
       }
     })
   }
@@ -442,11 +452,24 @@ export default function Dashboard() {
                         key={index}
                         className="flex flex-col gap-2 p-3 rounded-lg bg-summit-mint border border-summit-sage"
                       >
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start justify-between gap-2 flex-wrap">
                           <p className="text-body text-summit-forest font-semibold">
+                            {habitData.challenge_slug && (() => {
+                              const ch = getChallengeBySlug(habitData.challenge_slug)
+                              return ch ? `${ch.icon} ` : ''
+                            })()}
                             {habitSummaries[habitData.habit] || habitData.habit}
                           </p>
-                          {hasStreak ? (
+                          {habitData.challenge_slug && activeEnrollment && getEffectiveWeek(activeEnrollment) === 0 ? (() => {
+                            const startDateStr = activeEnrollment.survey_scores?.week1StartDate
+                            if (!startDateStr) return null
+                            const formatted = new Date(startDateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                            return (
+                              <Tag size="sm" className="flex-shrink-0">
+                                Starts {formatted}
+                              </Tag>
+                            )
+                          })() : hasStreak ? (
                             <span className="text-body-sm text-summit-emerald font-semibold flex-shrink-0">
                               🔥 {stats.streak} {stats.streak === 1 ? 'day' : 'days'}
                             </span>

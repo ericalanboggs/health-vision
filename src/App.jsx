@@ -23,6 +23,9 @@ import AuthDebug from './pages/AuthDebug'
 import VerifyPhone from './pages/VerifyPhone'
 import WelcomeBack from './pages/WelcomeBack'
 import Coaching from './pages/Coaching'
+import ChallengesLanding from './pages/ChallengesLanding'
+import ChallengeDetail from './pages/ChallengeDetail'
+import ChallengeAddHabit from './pages/ChallengeAddHabit'
 import Dashboard from './pages/Dashboard'
 import DashboardSummit from './pages/DashboardSummit'
 import Admin from './pages/Admin'
@@ -139,6 +142,9 @@ function App() {
           <Route path="/schedule-habits" element={<ScheduleHabits />} />
           <Route path="/reflection" element={<Reflection />} />
           <Route path="/coaching" element={<Coaching />} />
+          <Route path="/challenges" element={<ChallengesLanding />} />
+          <Route path="/challenges/:slug" element={<ChallengeDetail />} />
+          <Route path="/challenges/:slug/add-habit" element={<ChallengeAddHabit />} />
           <Route path="/guides" element={<Resources />} />
         </Route>
         

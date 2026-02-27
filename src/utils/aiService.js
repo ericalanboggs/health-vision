@@ -327,3 +327,62 @@ Do not include any other text or explanation.`
     return 'Your Health Vision'
   }
 }
+
+/**
+ * Generate habit suggestions scoped to a challenge focus area
+ */
+export const generateChallengeHabitSuggestions = async (focusArea, visionData, surveyScores) => {
+  try {
+    const client = getOpenAIClient()
+
+    const prompt = `You are a health coach suggesting specific daily habits for a challenge focus area.
+
+FOCUS AREA: ${focusArea.title}
+DESCRIPTION: ${focusArea.description}
+EVIDENCE: ${focusArea.evidence}
+
+USER CONTEXT:
+Vision: ${visionData?.visionStatement || 'Not specified'}
+Current self-rating for this area: ${surveyScores?.[focusArea.slug] || 'Not rated'}/10
+Time capacity: ${visionData?.timeCapacity || '10 minutes/day'}
+Barriers: ${(visionData?.barriers || []).join(', ') || 'None'}
+
+DEFAULT HABIT OPTIONS (for reference, suggest similar or better):
+${focusArea.defaultHabits.map(h => `- ${h}`).join('\n')}
+
+Suggest 4-5 specific, actionable daily habits for this focus area.
+Tailor difficulty to their self-rating (lower score = gentler start).
+
+IMPORTANT FORMATTING RULES:
+- Do NOT include specific days of the week
+- Do NOT include time-specific references (like "tomorrow", "this evening")
+- Do NOT include frequency in the action itself
+- Keep actions timeless and focused on WHAT to do, not WHEN to do it
+
+Format as a JSON array:
+[{ "action": "...", "why": "...", "tip": "..." }]`
+
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an empathetic health coach who specializes in creating personalized, achievable action plans. You focus on small wins and meeting people where they are.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      response_format: { type: 'json_object' }
+    })
+
+    const content = response.choices[0].message.content
+    const parsed = JSON.parse(content)
+    return parsed.habits || parsed.suggestions || parsed
+  } catch (error) {
+    console.error('AI Challenge Suggestions Error:', error)
+    throw error
+  }
+}

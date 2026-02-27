@@ -44,6 +44,7 @@ export default function AppLayout() {
   const isActive = (path) => {
     if (path === '/habits') {
       return ['/habits', '/add-habit', '/schedule-habits'].includes(location.pathname)
+        || location.pathname.startsWith('/challenges')
     }
     return location.pathname === path
   }

@@ -114,7 +114,8 @@ export const saveTrackingConfig = async (habitName, config) => {
       metric_unit: config.metric_unit || null,
       metric_target: config.metric_target || null,
       ai_suggested_unit: config.ai_suggested_unit || null,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      ...(config.challenge_slug ? { challenge_slug: config.challenge_slug } : {}),
     }
 
     const { data, error } = await supabase

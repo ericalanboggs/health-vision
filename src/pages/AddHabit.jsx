@@ -74,12 +74,12 @@ export default function AddHabit() {
   const loadData = async () => {
     setLoading(true)
 
-    // Get current habits count
+    // Get current personal habits count (exclude challenge habits)
     const { success, data } = await getCurrentWeekHabits()
     if (success && data) {
       const habitGroups = {}
       data.forEach(habit => {
-        if (!habitGroups[habit.habit_name]) {
+        if (!habit.challenge_slug && !habitGroups[habit.habit_name]) {
           habitGroups[habit.habit_name] = true
         }
       })
@@ -200,8 +200,8 @@ export default function AddHabit() {
       if (prev.includes(index)) {
         return prev.filter(i => i !== index)
       } else {
-        // Limit total habits (current + new) to 3
-        if (currentHabitsCount + prev.length >= 3) {
+        // Limit total habits (current + new) to 5
+        if (currentHabitsCount + prev.length >= 5) {
           return prev // Silently prevent - UI already shows limit
         }
         return [...prev, index]
@@ -220,8 +220,8 @@ export default function AddHabit() {
       return
     }
 
-    if (currentHabitsCount >= 3) {
-      alert('You can have a maximum of 3 habits per week. Consider removing an existing habit first.')
+    if (currentHabitsCount >= 5) {
+      alert('You can have a maximum of 5 habits. Consider removing an existing habit first.')
       return
     }
 
@@ -373,8 +373,8 @@ export default function AddHabit() {
     setPhase('select')
   }
 
-  const maxHabitsReached = currentHabitsCount >= 3
-  const canAddMore = 3 - currentHabitsCount - selectedHabits.length > 0
+  const maxHabitsReached = currentHabitsCount >= 5
+  const canAddMore = 5 - currentHabitsCount - selectedHabits.length > 0
 
   if (loading) {
     return (
@@ -409,7 +409,7 @@ export default function AddHabit() {
             </div>
             <h1 className="text-h1 text-summit-forest mb-3">My Habit Plan</h1>
             <p className="text-body text-text-secondary">
-              Add up to 3 new habits to try that align to your Summit vision.
+              Add up to 5 new habits to try that align to your Summit vision.
             </p>
           </div>
 
@@ -702,8 +702,8 @@ export default function AddHabit() {
 
             <p className="text-body-sm text-text-secondary mb-6">
               {maxHabitsReached
-                ? 'You\'ve reached your limit of 3 habits this week.'
-                : 'Add up to 3 new habits to try that align to your Summit vision.'}
+                ? 'You\'ve reached your limit of 5 habits.'
+                : 'Add up to 5 new habits to try that align to your Summit vision.'}
             </p>
 
           {/* Custom Habit Input - Always visible first */}

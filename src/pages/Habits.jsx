@@ -14,6 +14,8 @@ import {
   Autorenew,
 } from '@mui/icons-material'
 import { getHabits, deleteAllUserHabits, saveHabits } from '../services/habitService'
+import { getActiveEnrollment, getChallengeHabitLog, getEffectiveWeek } from '../services/challengeService'
+import { getChallengeBySlug } from '../data/challengeConfig'
 import { getCurrentWeekNumber } from '../utils/weekCalculator' // Still used for pilot timeline display
 import { formatDaysDisplay, convertShortToFullDays } from '../utils/formatDays'
 import { getCurrentUser, getProfile } from '../services/authService'
@@ -39,6 +41,8 @@ export default function Habits() {
   const [trackingConfigs, setTrackingConfigs] = useState({})
   const [togglingTracking, setTogglingTracking] = useState(null) // habitName being toggled
   const [customUnitInputs, setCustomUnitInputs] = useState({}) // Local state for custom unit typing
+  const [activeEnrollment, setActiveEnrollment] = useState(null)
+  const [challengeHabitLog, setChallengeHabitLog] = useState([])
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const dayMap = {
@@ -141,10 +145,11 @@ export default function Habits() {
       userIdRef.current = userId
 
       // Run all data fetches in parallel
-      const [profileResult, habitsResult, configsResult] = await Promise.all([
+      const [profileResult, habitsResult, configsResult, enrollResult] = await Promise.all([
         getProfile(userId),
         getHabits(userId),
-        getAllTrackingConfigs(userId)
+        getAllTrackingConfigs(userId),
+        getActiveEnrollment(userId),
       ])
 
       // Process profile/timezone
@@ -159,6 +164,15 @@ export default function Habits() {
           configMap[config.habit_name] = config
         })
         setTrackingConfigs(configMap)
+      }
+
+      // Process challenge enrollment
+      if (enrollResult.success && enrollResult.data) {
+        setActiveEnrollment(enrollResult.data)
+        const logResult = await getChallengeHabitLog(enrollResult.data.id)
+        if (logResult.success) {
+          setChallengeHabitLog(logResult.data)
+        }
       }
 
       // Process habits
@@ -702,7 +716,27 @@ END:VEVENT
                           rows={2}
                         />
                       ) : (
-                        <p className="font-semibold text-summit-forest">{habitName}</p>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-semibold text-summit-forest">{habitName}</p>
+                            {habitList[0]?.challenge_slug && (() => {
+                              const ch = getChallengeBySlug(habitList[0].challenge_slug)
+                              return ch ? (
+                                <span className="text-xs px-1.5 py-0.5 rounded-full bg-summit-mint text-summit-emerald border border-summit-sage font-medium">
+                                  {ch.icon} {ch.title}
+                                </span>
+                              ) : null
+                            })()}
+                          </div>
+                          {habitList[0]?.challenge_slug && activeEnrollment && getEffectiveWeek(activeEnrollment) === 0 && (() => {
+                            const startDateStr = activeEnrollment.survey_scores?.week1StartDate
+                            if (!startDateStr) return null
+                            const formatted = new Date(startDateStr + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+                            return (
+                              <p className="text-xs text-text-muted mt-1">Starting on {formatted}</p>
+                            )
+                          })()}
+                        </div>
                       )}
 
                       {!isEditing && (
@@ -928,24 +962,92 @@ END:VEVENT
               })}
 
               {/* Add New Habit Button or Limit Message */}
-              {groupedHabits.length >= 3 ? (
-                <div className="mt-4 p-4 bg-summit-mint border border-summit-sage rounded-lg text-center">
-                  <p className="text-sm text-summit-forest">
-                    You've reached your limit of 3 habit experiments. Great work!
-                  </p>
-                </div>
-              ) : (
-                <button
-                  onClick={() => navigate('/add-habit')}
-                  className="w-full mt-4 p-4 border-2 border-dashed border-gray-300 hover:border-summit-emerald rounded-lg text-text-secondary hover:text-summit-emerald font-medium transition-all flex items-center justify-center gap-2 group"
-                >
-                  <Add className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                  Add New Habit
-                </button>
-              )}
+              {(() => {
+                const personalCount = groupedHabits.filter(([, list]) => !list[0]?.challenge_slug).length
+                return personalCount >= 5 ? (
+                  <div className="mt-4 p-4 bg-summit-mint border border-summit-sage rounded-lg text-center">
+                    <p className="text-sm text-summit-forest">
+                      You've reached your limit of 5 habit experiments. Great work!
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => navigate('/add-habit')}
+                    className="w-full mt-4 p-4 border-2 border-dashed border-gray-300 hover:border-summit-emerald rounded-lg text-text-secondary hover:text-summit-emerald font-medium transition-all flex items-center justify-center gap-2 group"
+                  >
+                    <Add className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    Add New Habit
+                  </button>
+                )
+              })()}
             </div>
           </div>
         )}
+
+      {/* Challenge Section */}
+      {activeEnrollment ? (() => {
+        const ch = getChallengeBySlug(activeEnrollment.challenge_slug)
+        if (!ch) return null
+        const effectiveWeek = getEffectiveWeek(activeEnrollment)
+        const habitAddedThisWeek = challengeHabitLog.some(h => h.week_number === (effectiveWeek || 1))
+        return (
+          <div className="mt-6">
+            <button
+              onClick={() => navigate(`/challenges/${ch.slug}`)}
+              className="w-full bg-white rounded-2xl shadow-[0_4px_12px_0_rgba(2,44,35,0.12)] p-5 text-left hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-2xl">{ch.icon}</span>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-summit-forest">{ch.title}</h3>
+                  <p className="text-sm text-text-secondary">
+                    {effectiveWeek === 0 ? 'Starting Soon' : `Week ${effectiveWeek} of 4`}
+                  </p>
+                </div>
+              </div>
+              {/* Progress dots */}
+              <div className="flex items-center gap-0 mb-2">
+                {[1, 2, 3, 4].map((week, i) => {
+                  const done = effectiveWeek > 0 && challengeHabitLog.some(h => h.week_number === week)
+                  const isCurrent = effectiveWeek > 0 && week === effectiveWeek
+                  return (
+                    <div key={week} className="flex items-center">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
+                        done ? 'bg-summit-emerald text-white'
+                          : isCurrent ? 'border-2 border-summit-emerald text-summit-emerald'
+                          : 'border-2 border-gray-300 text-gray-400'
+                      }`}>
+                        {done ? '\u2713' : week}
+                      </div>
+                      {i < 3 && <div className={`w-6 h-0.5 ${done ? 'bg-summit-emerald' : 'bg-gray-300'}`} />}
+                    </div>
+                  )
+                })}
+              </div>
+              {!habitAddedThisWeek && (
+                <p className="text-xs text-summit-emerald font-medium mt-2">
+                  Tap to add this week's challenge habit →
+                </p>
+              )}
+            </button>
+          </div>
+        )
+      })() : (
+        <div className="mt-6">
+          <button
+            onClick={() => navigate('/challenges')}
+            className="w-full bg-white rounded-2xl shadow-[0_4px_12px_0_rgba(2,44,35,0.12)] p-5 text-left hover:shadow-md transition-shadow border-2 border-dashed border-summit-sage"
+          >
+            <h3 className="font-semibold text-summit-forest mb-1">Try a Challenge</h3>
+            <p className="text-sm text-text-secondary">
+              Join a 4-week guided program to build lasting habits with research-backed focus areas.
+            </p>
+            <p className="text-xs text-summit-emerald font-medium mt-2">
+              Browse Challenges →
+            </p>
+          </button>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {deleteModal.isOpen && (

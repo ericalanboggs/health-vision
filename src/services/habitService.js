@@ -33,6 +33,7 @@ export const saveHabits = async (habits) => {
       day_of_week: habit.day_of_week,
       reminder_time: habit.reminder_time,
       timezone: habit.timezone || 'America/Chicago',
+      ...(habit.challenge_slug ? { challenge_slug: habit.challenge_slug } : {}),
     }))
 
     // Delete existing habits for the same user/habit/day combinations first
