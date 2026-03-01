@@ -19,7 +19,7 @@ export default function SmsConsent() {
           </p>
 
           {/* Visual mockup of the opt-in checkbox */}
-          <div className="bg-stone-50 border-2 border-stone-200 rounded-lg p-5 mb-4">
+          <div className="bg-stone-50 border-2 border-stone-200 rounded-lg p-5">
             <p className="text-sm text-stone-400 mb-3 uppercase tracking-wide font-medium">Opt-in as shown during sign-up:</p>
             <div className="flex items-start gap-3">
               <div className="mt-0.5 w-5 h-5 border-2 border-summit-emerald rounded bg-summit-emerald flex items-center justify-center flex-shrink-0">
@@ -36,10 +36,6 @@ export default function SmsConsent() {
               </div>
             </div>
           </div>
-
-          <p className="text-stone-600 text-sm">
-            Users may also text <strong>START</strong> to the Summit Health phone number to opt in to SMS messages.
-          </p>
         </section>
 
         {/* SMS Program Details */}
@@ -71,29 +67,6 @@ export default function SmsConsent() {
             <strong>Privacy:</strong> Your information will not be shared with third parties for
             marketing purposes.
           </p>
-        </section>
-
-        {/* Managing Consent */}
-        <section className="bg-white rounded-xl shadow-sm border border-stone-200 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-summit-forest mb-4">Managing Your Consent</h2>
-          <ul className="text-stone-600 space-y-3">
-            <li className="flex items-start gap-2">
-              <span className="text-summit-emerald font-bold mt-0.5">&#8226;</span>
-              <span>Reply <strong>STOP</strong> to any message to immediately unsubscribe</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-summit-emerald font-bold mt-0.5">&#8226;</span>
-              <span>Reply <strong>HELP</strong> for assistance</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-summit-emerald font-bold mt-0.5">&#8226;</span>
-              <span>Toggle SMS reminders on or off anytime in your profile settings at go.summithealth.app</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-summit-emerald font-bold mt-0.5">&#8226;</span>
-              <span>SMS consent is <strong>not required</strong> to use Summit Health</span>
-            </li>
-          </ul>
         </section>
 
         {/* Links */}
