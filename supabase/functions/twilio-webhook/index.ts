@@ -236,7 +236,25 @@ serve(async (req) => {
 
     if (upperBody === 'HELP') {
       console.log(`User ${fromPhone} requested help via SMS`)
-      // Twilio can be configured to auto-respond, or we can respond here
+      try {
+        await fetch(
+          `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
+            },
+            body: new URLSearchParams({
+              To: fromPhone,
+              From: TWILIO_PHONE_NUMBER!,
+              Body: 'Summit Health: For help, email hello@summithealth.app. Reply STOP to unsubscribe.',
+            }),
+          }
+        )
+      } catch (error) {
+        console.error('Error sending HELP response SMS:', error)
+      }
     }
 
     // Handle BACKUP keyword — route to sms-backup-plan for plan adjustment
