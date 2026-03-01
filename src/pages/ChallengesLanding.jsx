@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Tag } from '@summit/design-system'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Tag } from '@summit/design-system'
 import { CHALLENGES } from '../data/challengeConfig'
 import { getActiveEnrollment, getCompletedEnrollments, getEffectiveWeek } from '../services/challengeService'
 import { getCurrentUser } from '../services/authService'
@@ -45,14 +45,6 @@ export default function ChallengesLanding() {
     )
   }
 
-  const colorMap = {
-    blue: 'bg-blue-50 border-blue-200',
-    red: 'bg-red-50 border-red-200',
-    purple: 'bg-purple-50 border-purple-200',
-    yellow: 'bg-amber-50 border-amber-200',
-    green: 'bg-emerald-50 border-emerald-200',
-  }
-
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
@@ -67,55 +59,52 @@ export default function ChallengesLanding() {
           const isActive = activeEnrollment?.challenge_slug === challenge.slug
           const isCompleted = completedSlugs.has(challenge.slug)
           const hasActiveOther = activeEnrollment && !isActive
-          const cardColor = colorMap[challenge.color] || colorMap.blue
 
           return (
-            <button
+            <Card
               key={challenge.slug}
+              interactive={!hasActiveOther || isCompleted}
+              variant="outlined"
+              padding="md"
+              className={hasActiveOther && !isCompleted ? 'opacity-60' : ''}
               onClick={() => navigate(`/challenges/${challenge.slug}`)}
-              className={`text-left rounded-2xl border-2 p-5 transition-all ${cardColor} ${
-                hasActiveOther && !isCompleted
-                  ? 'opacity-60 cursor-default'
-                  : 'hover:shadow-md cursor-pointer'
-              }`}
-              disabled={false}
             >
-              <div className="flex items-start justify-between mb-3">
-                <span className="text-3xl">{challenge.icon}</span>
-                {isActive && (
-                  <Tag variant="info" size="sm">
-                    {getEffectiveWeek(activeEnrollment) === 0
-                      ? 'Starting Soon'
-                      : `In Progress — Week ${getEffectiveWeek(activeEnrollment)}`}
-                  </Tag>
-                )}
-                {isCompleted && !isActive && (
-                  <Tag variant="success" size="sm">Completed</Tag>
-                )}
-              </div>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <span className="text-3xl">{challenge.icon}</span>
+                  {isActive && (
+                    <Tag variant="info" size="sm">
+                      {getEffectiveWeek(activeEnrollment) === 0
+                        ? 'Starting Soon'
+                        : `In Progress — Week ${getEffectiveWeek(activeEnrollment)}`}
+                    </Tag>
+                  )}
+                  {isCompleted && !isActive && (
+                    <Tag variant="success" size="sm">Completed</Tag>
+                  )}
+                </div>
+                <CardTitle>{challenge.title}</CardTitle>
+                <CardDescription>{challenge.tagline}</CardDescription>
+              </CardHeader>
 
-              <h2 className="text-lg font-semibold text-summit-forest mb-1">
-                {challenge.title}
-              </h2>
-              <p className="text-sm text-text-secondary mb-3">{challenge.tagline}</p>
-
-              <div className="flex flex-wrap gap-1.5">
-                {challenge.focusAreas.map(fa => (
-                  <span
-                    key={fa.slug}
-                    className="text-xs px-2 py-0.5 rounded-full bg-white/70 text-summit-forest border border-white/50"
-                  >
-                    {fa.title}
-                  </span>
-                ))}
-              </div>
+              <CardContent className="mt-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {challenge.focusAreas.map(fa => (
+                    <Tag key={fa.slug} size="sm" variant="neutral">
+                      {fa.title}
+                    </Tag>
+                  ))}
+                </div>
+              </CardContent>
 
               {hasActiveOther && !isCompleted && (
-                <p className="text-xs text-text-muted mt-3">
-                  Complete your current challenge first
-                </p>
+                <CardFooter className="pt-2">
+                  <p className="text-xs text-text-muted">
+                    Complete your current challenge first
+                  </p>
+                </CardFooter>
               )}
-            </button>
+            </Card>
           )
         })}
       </div>
