@@ -23,6 +23,7 @@ import AuthDebug from './pages/AuthDebug'
 import VerifyPhone from './pages/VerifyPhone'
 import WelcomeBack from './pages/WelcomeBack'
 import Coaching from './pages/Coaching'
+import SmsConsent from './pages/SmsConsent'
 import ChallengesLanding from './pages/ChallengesLanding'
 import ChallengeDetail from './pages/ChallengeDetail'
 import ChallengeAddHabit from './pages/ChallengeAddHabit'
@@ -87,6 +88,7 @@ function App() {
         {/* Legal pages - Public */}
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/sms-consent" element={<SmsConsent />} />
 
         {/* Welcome back - reactivation flow */}
         <Route
@@ -123,15 +125,6 @@ function App() {
             </ProtectedRoute>
           } 
         />
-        <Route 
-          path="/vision" 
-          element={
-            <ProtectedRoute>
-              <Vision />
-            </ProtectedRoute>
-          } 
-        />
-        
         {/* Main app pages — shared navbar via AppLayout */}
         <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
@@ -146,6 +139,7 @@ function App() {
           <Route path="/challenges/:slug" element={<ChallengeDetail />} />
           <Route path="/challenges/:slug/add-habit" element={<ChallengeAddHabit />} />
           <Route path="/guides" element={<Resources />} />
+          <Route path="/vision" element={<Vision />} />
         </Route>
         
         {/* Admin routes */}
