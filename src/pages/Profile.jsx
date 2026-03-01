@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Phone, Email, Autorenew } from '@mui/icons-material'
 import { getCurrentUser, getProfile, upsertProfile, softDeleteAccount } from '../services/authService'
 import { createPortalSession, getTierDisplayName, hasActiveSubscription } from '../services/subscriptionService'
@@ -225,11 +225,16 @@ export default function Profile() {
                 checked={formData.smsConsent}
                 onChange={(e) => handleChange('smsConsent', e.target.checked)}
                 label="Enable SMS Habit Reminders (Optional)"
-                description="Get optional text reminders for your Summit habits. You'll receive one message per day, sent 15-30 minutes before your first habit, listing all your habits for that day. Message and data rates may apply. Reply STOP to unsubscribe anytime."
+                description="By checking this box, you consent to receive automated habit reminder and wellness text messages from Summit Health. Msg frequency varies. Msg & data rates may apply. Consent is not a condition of any purchase. Reply STOP to unsubscribe anytime, HELP for help."
                 shape="rounded"
                 align="top"
                 size="sm"
               />
+              <p className="text-xs text-stone-500 mt-2 ml-7">
+                <Link to="/privacy" className="text-summit-emerald hover:underline">Privacy Policy</Link>
+                {' & '}
+                <Link to="/terms" className="text-summit-emerald hover:underline">Terms</Link>
+              </p>
             </div>
 
             {/* Pilot Reason */}

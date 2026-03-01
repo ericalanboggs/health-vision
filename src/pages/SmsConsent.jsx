@@ -30,8 +30,14 @@ export default function SmsConsent() {
               <div>
                 <p className="font-semibold text-summit-forest text-sm">Enable SMS Habit Reminders (Optional)</p>
                 <p className="text-stone-500 text-sm mt-1">
-                  Summit can send gentle reminders before your first habit and quick check-ins after — so
-                  you can stay intentional, even on busy days. Message and data rates may apply. Reply STOP anytime.
+                  By checking this box, you consent to receive automated habit reminder and wellness text messages
+                  from Summit Health. Msg frequency varies. Msg & data rates may apply. Consent is not a condition
+                  of any purchase. Reply STOP to unsubscribe anytime, HELP for help.
+                </p>
+                <p className="text-xs text-stone-400 mt-1">
+                  <Link to="/privacy" className="text-summit-emerald hover:underline">Privacy Policy</Link>
+                  {' & '}
+                  <Link to="/terms" className="text-summit-emerald hover:underline">Terms</Link>
                 </p>
               </div>
             </div>
