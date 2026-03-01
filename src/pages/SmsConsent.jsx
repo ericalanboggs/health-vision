@@ -80,7 +80,7 @@ export default function SmsConsent() {
             </p>
             <p className="text-stone-700 mb-4">
               <strong>Message Frequency:</strong> Message frequency varies based on your preferences
-              and interactions. Expect 1-5 messages per day when opted in.
+              and interactions. Expect 1-2 messages per day when opted in.
             </p>
             <p className="text-stone-700 mb-4">
               <strong>Message and data rates may apply.</strong> Check with your mobile carrier for details.
