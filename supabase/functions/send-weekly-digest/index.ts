@@ -173,8 +173,8 @@ function buildHtmlTable(headers: string[], rows: string[][]): string {
  * Build the full HTML email with Summit template
  */
 function buildEmailHtml(content: string, firstName: string): string {
-  const logoUrl = 'https://summit-pilot.vercel.app/summit-logo.png'
-  const appUrl = 'https://summit-pilot.vercel.app'
+  const logoUrl = 'https://go.summithealth.app/summit-logo.png'
+  const appUrl = 'https://go.summithealth.app'
 
   return `
 <!DOCTYPE html>

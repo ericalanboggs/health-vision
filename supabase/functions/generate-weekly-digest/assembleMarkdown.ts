@@ -72,10 +72,10 @@ export function assembleMarkdown(
       sections.push(`- ${habitName} (${days})`)
     })
     sections.push(`\n`)
-    sections.push(`[Modify these in your app](https://summit-pilot.vercel.app)\n`)
+    sections.push(`[Modify these in your app](https://go.summithealth.app)\n`)
   } else {
     // No habits yet - simple CTA on its own line
-    sections.push(`[Add habits in your app →](https://summit-pilot.vercel.app)\n`)
+    sections.push(`[Add habits in your app →](https://go.summithealth.app)\n`)
   }
 
   // Patterns to reinforce
@@ -157,7 +157,7 @@ export function assembleMarkdown(
   } else {
     sections.push(`1. Watch or listen to ONE piece of content from above`)
     sections.push(`2. Pick ONE small action from the strategies to try`)
-    sections.push(`3. [Set up your first habit](https://summit-pilot.vercel.app) when you're ready`)
+    sections.push(`3. [Set up your first habit](https://go.summithealth.app) when you're ready`)
   }
   sections.push(`\n`)
 

@@ -1,12 +1,28 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { sendSMS as _sendSMS } from '../_shared/sms.ts'
 
-const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
-const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
-const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
+
+/** Convenience wrapper matching the old call signature */
+async function sendSMSWithLog(
+  to: string,
+  message: string,
+  supabase: ReturnType<typeof createClient>,
+  userId?: string,
+  userName?: string
+) {
+  return _sendSMS(
+    { to, body: message },
+    {
+      supabase,
+      logTable: 'sms_messages',
+      extra: { user_id: userId || null, user_name: userName || null },
+    }
+  )
+}
 
 interface TrackingConfig {
   habit_name: string
@@ -67,64 +83,6 @@ function getDayOfWeekInTimezone(timezone: string): number {
     return dayMap[weekdayStr] ?? 0
   } catch (error) {
     return new Date().getDay()
-  }
-}
-
-/**
- * Send SMS via Twilio and optionally log to sms_messages
- */
-async function sendSMS(
-  to: string,
-  message: string,
-  supabase?: ReturnType<typeof createClient>,
-  userId?: string,
-  userName?: string
-): Promise<{ success: boolean; sid?: string; error?: string }> {
-  try {
-    const response = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
-        },
-        body: new URLSearchParams({
-          To: to,
-          From: TWILIO_PHONE_NUMBER!,
-          Body: message,
-        }),
-      }
-    )
-
-    const data = await response.json()
-
-    if (response.ok) {
-      // Log outbound message to sms_messages if supabase client provided
-      if (supabase) {
-        try {
-          const { error: insertError } = await supabase.from('sms_messages').insert({
-            direction: 'outbound',
-            user_id: userId || null,
-            phone: to,
-            user_name: userName || null,
-            body: message,
-            sent_by: null, // System-sent
-            sent_by_type: 'system',
-            twilio_sid: data.sid,
-            twilio_status: data.status || 'sent',
-          })
-          if (insertError) console.error('Error logging outbound message:', insertError)
-        } catch (err) {
-          console.error('Error logging outbound message:', err)
-        }
-      }
-      return { success: true, sid: data.sid }
-    } else {
-      return { success: false, error: data.message || 'Twilio API error' }
-    }
-  } catch (error) {
-    return { success: false, error: error.message }
   }
 }
 
@@ -634,7 +592,7 @@ serve(async (req) => {
       )
 
       if (result.handled && result.response) {
-        await sendSMS(from, result.response, supabase, profile.id, userName)
+        await sendSMSWithLog(from, result.response, supabase, profile.id, userName)
       }
 
       return new Response(
@@ -707,7 +665,7 @@ serve(async (req) => {
                 : `${parsed.value} ${unit} logged ✓`
             }
 
-            await sendSMS(from, confirmationMessage, supabase, profile.id, userName)
+            await sendSMSWithLog(from, confirmationMessage, supabase, profile.id, userName)
 
             // Chain to next habit if available
             await chainToNextHabit(supabase, profile, from, userName, todayStr, userTimezone)
@@ -804,13 +762,13 @@ serve(async (req) => {
 
     // Send response
     if (needsClarification && clarificationQuestion) {
-      await sendSMS(from, clarificationQuestion, supabase, profile.id, userName)
+      await sendSMSWithLog(from, clarificationQuestion, supabase, profile.id, userName)
     } else if (loggedHabits.length > 0) {
       const response = parseResult.friendly_response ||
         (loggedHabits.length === 1
           ? `Logged ${loggedHabits[0]} ✓`
           : `Logged ${loggedHabits.length} habits ✓`)
-      await sendSMS(from, response, supabase, profile.id, userName)
+      await sendSMSWithLog(from, response, supabase, profile.id, userName)
     }
 
     return new Response(
@@ -893,7 +851,7 @@ async function chainToNextHabit(
       nextMessage = `How many ${unit} for "${nextConfig.habit_name}" today?`
     }
 
-    await sendSMS(phone, nextMessage, supabase, profile.id, userName)
+    await sendSMSWithLog(phone, nextMessage, supabase, profile.id, userName)
 
     // Log the follow-up
     await supabase.from('sms_followup_log').insert({

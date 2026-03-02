@@ -1,9 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { sendSMS } from '../_shared/sms.ts'
 
-const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
-const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
-const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
@@ -78,39 +76,6 @@ function getCurrentTimeInTimezone(timezone: string): { hours: number; minutes: n
       dayOfWeek: now.getUTCDay(),
       dateStr: now.toISOString().split('T')[0]
     }
-  }
-}
-
-/**
- * Send SMS via Twilio
- */
-async function sendSMS(to: string, message: string): Promise<{ success: boolean; sid?: string; error?: string }> {
-  try {
-    const response = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
-        },
-        body: new URLSearchParams({
-          To: to,
-          From: TWILIO_PHONE_NUMBER!,
-          Body: message,
-        }),
-      }
-    )
-
-    const data = await response.json()
-
-    if (response.ok) {
-      return { success: true, sid: data.sid }
-    } else {
-      return { success: false, error: data.message || 'Twilio API error' }
-    }
-  } catch (error) {
-    return { success: false, error: error.message }
   }
 }
 
@@ -282,7 +247,14 @@ serve(async (req) => {
 
       console.log(`Sending followup to ${profile.id}: "${message}"`)
 
-      const smsResult = await sendSMS(profile.phone, message)
+      const smsResult = await sendSMS(
+        { to: profile.phone, body: message },
+        {
+          supabase,
+          logTable: 'sms_messages',
+          extra: { user_id: profile.id, user_name: `${profile.first_name || ''}`.trim() || null },
+        }
+      )
 
       // Log the followup
       await supabase.from('sms_followup_log').insert({

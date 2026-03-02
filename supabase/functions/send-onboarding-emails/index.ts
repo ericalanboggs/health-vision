@@ -6,8 +6,8 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-const APP_URL = 'https://summit-pilot.vercel.app'
-const LOGO_URL = 'https://summit-pilot.vercel.app/summit-logo.png'
+const APP_URL = 'https://go.summithealth.app'
+const LOGO_URL = 'https://go.summithealth.app/summit-logo.png'
 
 interface Profile {
   id: string

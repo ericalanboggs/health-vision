@@ -1,13 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { sendSMS } from '../_shared/sms.ts'
 
-const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
-const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
-const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const PROGRAM_START_DATE = Deno.env.get('PROGRAM_START_DATE') || '2026-01-12'
-const APP_URL = 'https://summit-pilot.vercel.app'
+const APP_URL = 'https://go.summithealth.app'
 
 interface Profile {
   id: string
@@ -133,58 +131,25 @@ serve(async (req) => {
       const firstName = profile.first_name || 'there'
       const message = `Hi ${firstName}! 🏔️ It's the last day of the week - take a moment to reflect on your progress and plan for next week: ${APP_URL}/dashboard`
 
-      try {
-        // Send SMS via Twilio
-        const twilioResponse = await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
-            },
-            body: new URLSearchParams({
-              To: profile.phone,
-              From: TWILIO_PHONE_NUMBER!,
-              Body: message,
-            }),
-          }
-        )
-
-        const twilioData = await twilioResponse.json()
-
-        if (twilioResponse.ok) {
-          // Log successful reminder
-          await supabase.from('sms_reminders').insert({
+      const smsResult = await sendSMS(
+        { to: profile.phone, body: message },
+        {
+          supabase,
+          logTable: 'sms_reminders',
+          extra: {
             user_id: profile.id,
-            habit_id: null, // No habit for reflection reminders
-            phone: profile.phone,
-            message,
+            habit_id: null,
             scheduled_for: now.toISOString(),
-            status: 'sent',
-            twilio_sid: twilioData.sid,
-          })
-
-          results.push({ userId: profile.id, status: 'sent', phone: profile.phone })
-          console.log(`✓ Sent reflection reminder to ${profile.phone}`)
-        } else {
-          throw new Error(twilioData.message || 'Twilio API error')
+          },
         }
-      } catch (error) {
-        console.error(`✗ Failed to send reflection reminder to user ${profile.id}:`, error)
-        
-        // Log failed reminder
-        await supabase.from('sms_reminders').insert({
-          user_id: profile.id,
-          habit_id: null,
-          phone: profile.phone,
-          message,
-          scheduled_for: now.toISOString(),
-          status: 'failed',
-          error_message: error.message,
-        })
+      )
 
-        results.push({ userId: profile.id, status: 'failed', error: error.message })
+      if (smsResult.success) {
+        results.push({ userId: profile.id, status: 'sent', phone: profile.phone })
+        console.log(`✓ Sent reflection reminder to ${profile.phone}`)
+      } else {
+        console.error(`✗ Failed to send reflection reminder to user ${profile.id}:`, smsResult.error)
+        results.push({ userId: profile.id, status: 'failed', error: smsResult.error })
       }
     }
 

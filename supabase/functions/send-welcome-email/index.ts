@@ -10,8 +10,8 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
  * Build the Day 1 welcome email — Founder letter from Coach Eric
  */
 function buildEmailHtml(firstName: string): string {
-  const appUrl = 'https://summit-pilot.vercel.app'
-  const logoUrl = 'https://summit-pilot.vercel.app/summit-logo.png'
+  const appUrl = 'https://go.summithealth.app'
+  const logoUrl = 'https://go.summithealth.app/summit-logo.png'
 
   return `
 <!DOCTYPE html>

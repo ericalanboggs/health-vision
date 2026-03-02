@@ -1,65 +1,27 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { sendSMS as _sendSMS } from '../_shared/sms.ts'
 
-const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
-const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
-const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
 
-/**
- * Send SMS via Twilio and log to sms_messages
- */
+/** Convenience wrapper matching the old call signature */
 async function sendSMS(
   to: string,
   message: string,
   supabase: ReturnType<typeof createClient>,
   userId?: string,
   userName?: string
-): Promise<{ success: boolean; sid?: string; error?: string }> {
-  try {
-    const response = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
-        },
-        body: new URLSearchParams({
-          To: to,
-          From: TWILIO_PHONE_NUMBER!,
-          Body: message,
-        }),
-      }
-    )
-
-    const data = await response.json()
-
-    if (response.ok) {
-      try {
-        await supabase.from('sms_messages').insert({
-          direction: 'outbound',
-          user_id: userId || null,
-          phone: to,
-          user_name: userName || null,
-          body: message,
-          sent_by: null,
-          sent_by_type: 'system',
-          twilio_sid: data.sid,
-          twilio_status: data.status || 'sent',
-        })
-      } catch (err) {
-        console.error('Error logging outbound message:', err)
-      }
-      return { success: true, sid: data.sid }
-    } else {
-      return { success: false, error: data.message || 'Twilio API error' }
+) {
+  return _sendSMS(
+    { to, body: message },
+    {
+      supabase,
+      logTable: 'sms_messages',
+      extra: { user_id: userId || null, user_name: userName || null },
     }
-  } catch (error) {
-    return { success: false, error: error.message }
-  }
+  )
 }
 
 /**
@@ -656,7 +618,7 @@ serve(async (req) => {
           const daysStr = result.keptDays
             ? ` on ${result.keptDays.map(d => DAY_NAMES[d]).join(', ')}`
             : ''
-          const message = `Done! Updated → ${displayName}: ${targetStr}${context.suggested_days}x/wk${daysStr}.\nShowing up matters more than the duration. You've got this 💪\nText BACKUP again anytime or update your habits here: https://summit-pilot.vercel.app/habits`
+          const message = `Done! Updated → ${displayName}: ${targetStr}${context.suggested_days}x/wk${daysStr}.\nShowing up matters more than the duration. You've got this 💪\nText BACKUP again anytime or update your habits here: https://go.summithealth.app/habits`
           await sendSMS(from, message, supabase, profile.id, userName)
         } else {
           await sendSMS(
@@ -845,7 +807,7 @@ serve(async (req) => {
         const daysStr = result.keptDays
           ? ` on ${result.keptDays.map(d => DAY_NAMES[d]).join(', ')}`
           : ''
-        const message = `Done! Updated → ${displayName}: ${targetStr}${newDays}x/wk${daysStr}.\nAny effort counts — you're still in the game 💪\nText BACKUP again anytime or update your habits here: https://summit-pilot.vercel.app/habits`
+        const message = `Done! Updated → ${displayName}: ${targetStr}${newDays}x/wk${daysStr}.\nAny effort counts — you're still in the game 💪\nText BACKUP again anytime or update your habits here: https://go.summithealth.app/habits`
         await sendSMS(from, message, supabase, profile.id, userName)
       } else {
         await sendSMS(
@@ -911,7 +873,7 @@ serve(async (req) => {
           const daysStr = result.keptDays
             ? ` on ${result.keptDays.map(d => DAY_NAMES[d]).join(', ')}`
             : ''
-          const message = `Done! Updated → ${displayName}: ${targetStr}${minDays}x/wk${daysStr}.\nSmall wins add up 🙌\nText BACKUP again anytime or update your habits here: https://summit-pilot.vercel.app/habits`
+          const message = `Done! Updated → ${displayName}: ${targetStr}${minDays}x/wk${daysStr}.\nSmall wins add up 🙌\nText BACKUP again anytime or update your habits here: https://go.summithealth.app/habits`
           await sendSMS(from, message, supabase, profile.id, userName)
         } else {
           await sendSMS(from, `Sorry, had trouble updating that. Try texting BACKUP again?`, supabase, profile.id, userName)
@@ -961,7 +923,7 @@ serve(async (req) => {
 
         await sendSMS(
           from,
-          `Got it — ${context.selected_habit} has been removed from your plan. No judgment, just self-awareness.\nYou can add it back anytime: https://summit-pilot.vercel.app/habits`,
+          `Got it — ${context.selected_habit} has been removed from your plan. No judgment, just self-awareness.\nYou can add it back anytime: https://go.summithealth.app/habits`,
           supabase, profile.id, userName
         )
 

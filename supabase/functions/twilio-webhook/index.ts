@@ -1,10 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { crypto } from 'https://deno.land/std@0.168.0/crypto/mod.ts'
+import { sendSMS } from '../_shared/sms.ts'
 
 const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
-const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
-const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
@@ -31,29 +30,9 @@ function isCrisisMessage(text: string): boolean {
 }
 
 async function sendCrisisSMS(to: string): Promise<void> {
-  if (!TWILIO_ACCOUNT_SID || !TWILIO_PHONE_NUMBER) {
-    console.error('Twilio credentials not configured for crisis response')
-    return
-  }
-
-  try {
-    await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
-        },
-        body: new URLSearchParams({
-          To: to,
-          From: TWILIO_PHONE_NUMBER,
-          Body: CRISIS_RESPONSE,
-        }),
-      }
-    )
-  } catch (error) {
-    console.error('Error sending crisis response SMS:', error)
+  const result = await sendSMS({ to, body: CRISIS_RESPONSE })
+  if (!result.success) {
+    console.error('Error sending crisis response SMS:', result.error)
   }
 }
 
@@ -236,24 +215,9 @@ serve(async (req) => {
 
     if (upperBody === 'HELP') {
       console.log(`User ${fromPhone} requested help via SMS`)
-      try {
-        await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
-            },
-            body: new URLSearchParams({
-              To: fromPhone,
-              From: TWILIO_PHONE_NUMBER!,
-              Body: 'Summit Health: For help, email hello@summithealth.app. Reply STOP to unsubscribe.',
-            }),
-          }
-        )
-      } catch (error) {
-        console.error('Error sending HELP response SMS:', error)
+      const helpResult = await sendSMS({ to: fromPhone, body: 'Summit Health: For help, email hello@summithealth.app. Reply STOP to unsubscribe.' })
+      if (!helpResult.success) {
+        console.error('Error sending HELP response SMS:', helpResult.error)
       }
     }
 

@@ -1,9 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { sendSMS } from '../_shared/sms.ts'
 
-const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
-const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
-const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
@@ -433,60 +431,25 @@ serve(async (req) => {
 
       console.log(`Message length: ${message.length} characters (${sortedHabits.length} habits)`)
 
-      try {
-        // Send SMS via Twilio
-        const twilioResponse = await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
-            },
-            body: new URLSearchParams({
-              To: profile.phone,
-              From: TWILIO_PHONE_NUMBER!,
-              Body: message,
-            }),
-          }
-        )
-
-        const twilioData = await twilioResponse.json()
-
-        if (twilioResponse.ok) {
-          // Log successful reminder (store first habit ID as reference)
-          await supabase.from('sms_reminders').insert({
+      const smsResult = await sendSMS(
+        { to: profile.phone, body: message },
+        {
+          supabase,
+          logTable: 'sms_reminders',
+          extra: {
             user_id: userId,
             habit_id: sortedHabits[0].id,
-            phone: profile.phone,
-            message,
             scheduled_for: now.toISOString(),
-            status: 'sent',
-            twilio_sid: twilioData.sid,
-          })
-
-          results.push({ userId, status: 'sent', phone: profile.phone, habitCount: sortedHabits.length })
-          console.log(`✓ Sent daily reminder to ${profile.phone} with ${sortedHabits.length} habits`)
-        } else {
-          throw new Error(twilioData.message || 'Twilio API error')
+          },
         }
-      } catch (error) {
-        console.error(`✗ Failed to send reminder to user ${userId}:`, error)
-        
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        
-        // Log failed reminder
-        await supabase.from('sms_reminders').insert({
-          user_id: userId,
-          habit_id: sortedHabits[0].id,
-          phone: profile.phone,
-          message,
-          scheduled_for: now.toISOString(),
-          status: 'failed',
-          error_message: errorMessage,
-        })
+      )
 
-        results.push({ userId, status: 'failed', error: errorMessage })
+      if (smsResult.success) {
+        results.push({ userId, status: 'sent', phone: profile.phone, habitCount: sortedHabits.length })
+        console.log(`✓ Sent daily reminder to ${profile.phone} with ${sortedHabits.length} habits`)
+      } else {
+        console.error(`✗ Failed to send reminder to user ${userId}:`, smsResult.error)
+        results.push({ userId, status: 'failed', error: smsResult.error })
       }
     }
 

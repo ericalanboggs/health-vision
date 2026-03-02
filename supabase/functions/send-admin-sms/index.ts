@@ -1,9 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { sendSMS } from '../_shared/sms.ts'
 
-const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
-const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
-const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
@@ -89,78 +87,35 @@ serve(async (req) => {
     let failedCount = 0
 
     // Send to each recipient with a small delay between sends
-    for (const recipient of recipients) {
-      try {
-        // Send SMS via Twilio
-        const twilioResponse = await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
-            },
-            body: new URLSearchParams({
-              To: recipient.phone,
-              From: TWILIO_PHONE_NUMBER!,
-              Body: message,
-            }),
-          }
-        )
+    for (let i = 0; i < recipients.length; i++) {
+      const recipient = recipients[i]
 
-        const twilioData = await twilioResponse.json()
-
-        if (twilioResponse.ok) {
-          // Log successful send to sms_messages table
-          await supabase.from('sms_messages').insert({
-            direction: 'outbound',
+      const smsResult = await sendSMS(
+        { to: recipient.phone, body: message },
+        {
+          supabase,
+          logTable: 'sms_messages',
+          extra: {
             user_id: recipient.userId,
-            phone: recipient.phone,
             user_name: recipient.name,
-            body: message,
             sent_by: user.id,
             sent_by_type: 'admin',
-            twilio_sid: twilioData.sid,
-            twilio_status: twilioData.status || 'sent',
-          })
-
-          results.push({
-            userId: recipient.userId,
-            status: 'sent',
-            twilioSid: twilioData.sid,
-          })
-          sentCount++
-          console.log(`✓ Sent SMS to ${recipient.name} (${recipient.phone})`)
-        } else {
-          throw new Error(twilioData.message || `Twilio error: ${twilioData.code}`)
+          },
         }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      )
 
-        // Log failed send
-        await supabase.from('sms_messages').insert({
-          direction: 'outbound',
-          user_id: recipient.userId,
-          phone: recipient.phone,
-          user_name: recipient.name,
-          body: message,
-          sent_by: user.id,
-          sent_by_type: 'admin',
-          twilio_status: 'failed',
-          error_message: errorMessage,
-        })
-
-        results.push({
-          userId: recipient.userId,
-          status: 'failed',
-          error: errorMessage,
-        })
+      if (smsResult.success) {
+        results.push({ userId: recipient.userId, status: 'sent', twilioSid: smsResult.sid })
+        sentCount++
+        console.log(`✓ Sent SMS to ${recipient.name} (${recipient.phone})`)
+      } else {
+        results.push({ userId: recipient.userId, status: 'failed', error: smsResult.error })
         failedCount++
-        console.error(`✗ Failed to send SMS to ${recipient.name}: ${errorMessage}`)
+        console.error(`✗ Failed to send SMS to ${recipient.name}: ${smsResult.error}`)
       }
 
       // Small delay between sends to avoid rate limiting (100ms)
-      if (recipients.indexOf(recipient) < recipients.length - 1) {
+      if (i < recipients.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 100))
       }
     }

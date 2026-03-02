@@ -30,8 +30,8 @@ function getWeekStart(): Date {
  * Build the HTML email content
  */
 function buildEmailHtml(firstName: string): string {
-  const appUrl = 'https://summit-pilot.vercel.app/habits'
-  const logoUrl = 'https://summit-pilot.vercel.app/summit-logo.png'
+  const appUrl = 'https://go.summithealth.app/habits'
+  const logoUrl = 'https://go.summithealth.app/summit-logo.png'
 
   return `
 <!DOCTYPE html>

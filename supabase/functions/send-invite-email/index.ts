@@ -10,8 +10,8 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
  * Build the invitation email HTML
  */
 function buildEmailHtml(): string {
-  const appUrl = 'https://summit-pilot.vercel.app/login'
-  const logoUrl = 'https://summit-pilot.vercel.app/summit-logo.png'
+  const appUrl = 'https://go.summithealth.app/login'
+  const logoUrl = 'https://go.summithealth.app/summit-logo.png'
 
   return `
 <!DOCTYPE html>
