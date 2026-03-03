@@ -380,11 +380,13 @@ serve(async (req) => {
       }
 
       // Check if we already sent a daily reminder to this user today
+      const todayStart = new Date(now.getTime())
+      todayStart.setHours(0, 0, 0, 0)
       const { data: existingReminder } = await supabase
         .from('sms_reminders')
         .select('id')
         .eq('user_id', userId)
-        .gte('sent_at', new Date(now.setHours(0, 0, 0, 0)).toISOString())
+        .gte('sent_at', todayStart.toISOString())
         .maybeSingle()
 
       if (existingReminder) {

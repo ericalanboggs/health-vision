@@ -1,6 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendSMS as _sendSMS } from '../_shared/sms.ts'
+import { sendEmail } from '../_shared/resend.ts'
+
+const COACH_FLAG_EMAIL = 'eric@summithealth.app'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -12,14 +15,17 @@ async function sendSMSWithLog(
   message: string,
   supabase: ReturnType<typeof createClient>,
   userId?: string,
-  userName?: string
+  userName?: string,
+  sentByType?: string
 ) {
+  const extra: Record<string, unknown> = { user_id: userId || null, user_name: userName || null }
+  if (sentByType) extra.sent_by_type = sentByType
   return _sendSMS(
     { to, body: message },
     {
       supabase,
       logTable: 'sms_messages',
-      extra: { user_id: userId || null, user_name: userName || null },
+      extra,
     }
   )
 }
@@ -221,6 +227,187 @@ RULES:
   } catch (error) {
     console.error('Error in smart parsing:', error)
     return { understood: false, habits: [] }
+  }
+}
+
+/**
+ * Log a coach flag internally and email the admin
+ */
+async function handleCoachFlag(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  phone: string,
+  userName: string | null,
+  userMessage: string,
+  coachReply: string,
+  flagReason: string | null
+): Promise<void> {
+  const reason = flagReason || 'User may need human support'
+
+  // Insert internal-only flag row
+  await supabase.from('sms_messages').insert({
+    direction: 'outbound',
+    user_id: userId,
+    phone,
+    user_name: userName,
+    body: `[COACH FLAG] ${reason}`,
+    twilio_status: 'internal',
+    sent_by_type: 'system',
+  })
+
+  // Email the admin with context
+  const displayName = userName || phone
+  try {
+    await sendEmail({
+      to: COACH_FLAG_EMAIL,
+      subject: `[Summit Coach Flag] ${displayName}`,
+      html: `
+        <h2>Coach Flag: ${displayName}</h2>
+        <p><strong>Reason:</strong> ${reason}</p>
+        <p><strong>User message:</strong> "${userMessage}"</p>
+        <p><strong>Summit replied:</strong> "${coachReply}"</p>
+        <hr>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>User ID:</strong> ${userId}</p>
+        <p style="color:#888;font-size:12px;">This flag was generated automatically by Summit's coaching fallback.</p>
+      `,
+    })
+    console.log(`Coach flag email sent to ${COACH_FLAG_EMAIL}`)
+  } catch (err) {
+    console.error('Failed to send coach flag email:', err)
+  }
+}
+
+/**
+ * Generate a coaching response for non-habit messages
+ */
+async function generateCoachingResponse(
+  messageBody: string,
+  firstName: string,
+  supabase: ReturnType<typeof createClient>,
+  userId: string
+): Promise<{ response: string; flagForHumanCoach: boolean; flagReason: string | null }> {
+  const fallback = {
+    response: `Hey ${firstName}, I hear you. I'm here if you want to talk — or just text your habits when you're ready.`,
+    flagForHumanCoach: false,
+    flagReason: null,
+  }
+
+  if (!OPENAI_API_KEY) return fallback
+
+  try {
+    // Load user context in parallel
+    const [visionResult, reflectionsResult, smsHistoryResult] = await Promise.all([
+      supabase
+        .from('health_journeys')
+        .select('form_data')
+        .eq('user_id', userId)
+        .maybeSingle(),
+      supabase
+        .from('weekly_reflections')
+        .select('went_well, friction, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(3),
+      supabase
+        .from('sms_messages')
+        .select('direction, body, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(10),
+    ])
+
+    const vision = visionResult.data?.form_data || {}
+    const reflections = reflectionsResult.data || []
+    const smsHistory = (smsHistoryResult.data || []).reverse()
+
+    const conversationContext = smsHistory
+      .map((m: { direction: string; body: string }) =>
+        `${m.direction === 'inbound' ? 'User' : 'Summit'}: ${m.body}`
+      )
+      .join('\n')
+
+    const reflectionContext = reflections
+      .map((r: { went_well: string; friction: string }) =>
+        `Went well: ${r.went_well || 'n/a'} | Hard: ${r.friction || 'n/a'}`
+      )
+      .join('\n')
+
+    const systemPrompt = `You are Summit, a warm and grounded health coach. The user sent a message that isn't about habit tracking. Respond with empathy and brevity.
+
+RULES:
+- If the message is simple/conversational (e.g., "thank you", "that's great", "ok", "cool", "thanks"), reply with a brief warm acknowledgment (under 50 chars). Don't offer suggestions or ask questions — just land the moment.
+- For substantive messages: validate what they said, offer 1-2 brief concrete options (not commands)
+- Stay under 320 characters total — this is SMS
+- No emojis, no "great job", no "keep it up"
+- Be warm but real. Don't sound like an app notification.
+- If the user seems distressed, frustrated, or wanting to quit, set flag_for_human_coach to true
+
+Respond with JSON only:
+{
+  "response": "your SMS reply under 320 chars",
+  "flag_for_human_coach": true/false,
+  "flag_reason": "brief reason if flagged, or null"
+}`
+
+    const userPrompt = `USER'S NAME: ${firstName}
+VISION: ${vision.visionStatement || 'Not set'}
+WHY IT MATTERS: ${vision.whyMatters || 'Not set'}
+
+RECENT REFLECTIONS:
+${reflectionContext || 'None'}
+
+RECENT SMS CONVERSATION:
+${conversationContext || 'None'}
+
+NEW MESSAGE FROM USER: "${messageBody}"`
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        max_tokens: 300,
+        temperature: 0.7,
+      }),
+    })
+
+    if (!response.ok) {
+      console.error('OpenAI coaching error:', response.status)
+      return fallback
+    }
+
+    const data = await response.json()
+    let content = data.choices?.[0]?.message?.content?.trim() || ''
+
+    // Parse JSON from response
+    if (content.startsWith('```')) {
+      content = content.replace(/^```json?\n?/, '').replace(/\n?```$/, '')
+    }
+
+    const parsed = JSON.parse(content)
+
+    // Enforce character limit
+    let coachResponse = parsed.response || fallback.response
+    if (coachResponse.length > 320) {
+      coachResponse = coachResponse.slice(0, 317) + '...'
+    }
+
+    return {
+      response: coachResponse,
+      flagForHumanCoach: !!parsed.flag_for_human_coach,
+      flagReason: parsed.flag_reason || null,
+    }
+  } catch (error) {
+    console.error('Error generating coaching response:', error)
+    return fallback
   }
 }
 
@@ -692,7 +879,14 @@ serve(async (req) => {
       .eq('tracking_enabled', true)
 
     if (!allConfigs || allConfigs.length === 0) {
-      console.log('No tracking configs - message logged for admin')
+      console.log('No tracking configs - routing to coaching fallback')
+      const coachResult = await generateCoachingResponse(body, firstName, supabase, profile.id)
+      await sendSMSWithLog(from, coachResult.response, supabase, profile.id, userName, 'coach')
+
+      if (coachResult.flagForHumanCoach) {
+        await handleCoachFlag(supabase, profile.id, from, userName, body, coachResult.response, coachResult.flagReason)
+      }
+
       return new Response(
         '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
         { headers: { 'Content-Type': 'text/xml' } }
@@ -703,8 +897,14 @@ serve(async (req) => {
     const parseResult = await smartParseMessage(body, firstName, allConfigs)
 
     if (!parseResult.understood || parseResult.habits.length === 0) {
-      console.log('Smart parse: message not understood as habit logging')
-      // Don't respond - might be admin conversation
+      console.log('Smart parse: message not understood as habit logging - routing to coaching')
+      const coachResult = await generateCoachingResponse(body, firstName, supabase, profile.id)
+      await sendSMSWithLog(from, coachResult.response, supabase, profile.id, userName, 'coach')
+
+      if (coachResult.flagForHumanCoach) {
+        await handleCoachFlag(supabase, profile.id, from, userName, body, coachResult.response, coachResult.flagReason)
+      }
+
       return new Response(
         '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
         { headers: { 'Content-Type': 'text/xml' } }

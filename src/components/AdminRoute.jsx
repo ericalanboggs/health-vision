@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { getCurrentUser } from '../services/authService'
 import { Autorenew } from '@mui/icons-material'
 
-const ADMIN_EMAIL = 'eric.alan.boggs@gmail.com'
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL
 
 export default function AdminRoute({ children }) {
   const [loading, setLoading] = useState(true)

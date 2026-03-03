@@ -1,6 +1,6 @@
 // All emails stored in lowercase for case-insensitive matching
 const PILOT_ALLOWLIST = [
-  'eric.alan.boggs@gmail.com',
+  import.meta.env.VITE_ADMIN_EMAIL,
   'jsears023@gmail.com',
   'waved129@gmail.com',
   'sperost@gmail.com',

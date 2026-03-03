@@ -257,12 +257,13 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 
-    // Get all users with completed profiles and email
+    // Get all users with completed profiles and email (exclude soft-deleted)
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('id, first_name, email')
       .eq('profile_completed', true)
       .not('email', 'is', null)
+      .is('deleted_at', null)
 
     if (profilesError) throw profilesError
 

@@ -81,6 +81,14 @@ SELECT cron.schedule('generate-weekly-digests', '0 13 * * 1', $$SELECT call_edge
 -- Weekly digest sending - Mondays 2PM UTC (8AM CST)
 SELECT cron.schedule('send-weekly-digests', '0 14 * * 1', $$SELECT call_edge_function('send-all-weekly-digests')$$);
 
+-- Delivery completeness check - Daily 3PM UTC (9AM CST)
+-- Detects missing deliveries (SMS reminders that never fired, digests that never generated)
+SELECT cron.schedule('delivery-completeness-check', '0 15 * * *', $$SELECT call_edge_function('delivery-completeness-check')$$);
+
+-- Weekly synthesis SMS - Fridays 8PM UTC (2PM CST / 3PM EST)
+-- Sends a personalized "you've been seen" summary of the user's week
+SELECT cron.schedule('send-weekly-synthesis-sms', '0 20 * * 5', $$SELECT call_edge_function('send-weekly-synthesis-sms')$$);
+
 -- =====================================================
 -- Useful commands
 -- =====================================================

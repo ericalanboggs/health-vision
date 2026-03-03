@@ -1,19 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 
-// Import modules from generate-weekly-digest
-import { loadUserContext } from '../generate-weekly-digest/loadUserContext.ts'
-import { normalizeReflection } from '../generate-weekly-digest/normalizeReflection.ts'
-import { generateWeeklyFocus } from '../generate-weekly-digest/generateWeeklyFocus.ts'
-import { generateInsight, getReflectionPrompt } from '../generate-weekly-digest/generateInsight.ts'
-import { ContentRecommendationEngine } from '../generate-weekly-digest/contentRecommendationEngine.ts'
-import { assembleMarkdown, generateSubject } from '../generate-weekly-digest/assembleMarkdown.ts'
-import { refineEmailCopy } from '../generate-weekly-digest/refineEmailCopy.ts'
-
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
-const YOUTUBE_API_KEY = Deno.env.get('YOUTUBE_API_KEY')
 const PROGRAM_START_DATE = Deno.env.get('PROGRAM_START_DATE') || '2026-01-12'
 
 interface Profile {
@@ -31,6 +20,16 @@ function getCurrentWeekNumber(): number {
   return Math.max(1, weekNumber)
 }
 
+/**
+ * Fan-out orchestrator: dispatches per-user digest generation.
+ *
+ * Each user gets their own `generate-weekly-digest` invocation with its own
+ * 150s timeout, so this scales to any number of users.
+ *
+ * We use a 5s AbortController timeout per request — just enough to confirm
+ * the request reached Supabase. The per-user function continues running
+ * independently even after we stop waiting for the response.
+ */
 serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization')
@@ -52,19 +51,20 @@ serve(async (req) => {
       weekNumber = getCurrentWeekNumber()
     }
 
-    console.log(`\n=== Generate All Weekly Digests ===`)
+    console.log(`\n=== Generate All Weekly Digests (Fan-Out) ===`)
     console.log(`Week: ${weekNumber}`)
     console.log(`Dry run: ${dryRun}`)
     console.log(`Timestamp: ${new Date().toISOString()}\n`)
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 
-    // Get all users with completed profiles
+    // Get all users with completed profiles (exclude soft-deleted)
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('id, first_name, email')
       .eq('profile_completed', true)
       .not('email', 'is', null)
+      .is('deleted_at', null)
 
     if (profilesError) throw profilesError
 
@@ -101,99 +101,77 @@ serve(async (req) => {
       )
     }
 
-    const results: Array<{ userId: string; email: string; status: string; error?: string }> = []
+    // Fan out: invoke generate-weekly-digest for each user
+    // Each gets its own function invocation with its own timeout
+    const functionUrl = `${SUPABASE_URL}/functions/v1/generate-weekly-digest`
+    const results: Array<{ userId: string; email: string; status: string }> = []
 
-    for (const user of usersToProcess as Profile[]) {
-      console.log(`\n--- Generating for ${user.first_name} (${user.id}) ---`)
+    async function dispatchForUser(user: Profile) {
+      const controller = new AbortController()
+      // 5s timeout — just confirm the request was received by Supabase.
+      // The per-user function continues running independently.
+      const timeoutId = setTimeout(() => controller.abort(), 5000)
 
       try {
-        // Load user context
-        const context = await loadUserContext(supabase, user.id, weekNumber)
-
-        // Normalize reflection signals
-        context.reflection_signals = normalizeReflection(context.reflection)
-
-        // Generate weekly focus
-        const focus = await generateWeeklyFocus(context, OPENAI_API_KEY!)
-
-        // Load past recommendations to avoid duplicates
-        const { data: pastDigests } = await supabase
-          .from('weekly_digests')
-          .select('recommendations')
-          .eq('user_id', user.id)
-          .lt('week_number', weekNumber)
-
-        const pastVideoIds: string[] = []
-        if (pastDigests) {
-          for (const digest of pastDigests) {
-            if (digest.recommendations && Array.isArray(digest.recommendations)) {
-              for (const rec of digest.recommendations) {
-                if (rec.url?.includes('youtube.com')) {
-                  const match = rec.url.match(/[?&]v=([^&]+)/)
-                  if (match) pastVideoIds.push(match[1])
-                }
-              }
-            }
-          }
-        }
-
-        // Generate content recommendations
-        const contentEngine = new ContentRecommendationEngine(YOUTUBE_API_KEY!)
-        contentEngine.setExcludedVideoIds(pastVideoIds)
-        const recommendations = await contentEngine.generateRecommendations(context)
-
-        // Generate insight
-        const insight = await generateInsight(context, OPENAI_API_KEY!)
-        const reflectionPrompt = getReflectionPrompt(context)
-
-        // Assemble email
-        const draftMarkdown = assembleMarkdown(context, focus, recommendations, insight, reflectionPrompt)
-        const emailMarkdown = await refineEmailCopy(draftMarkdown, OPENAI_API_KEY!)
-        const subject = generateSubject(context, focus)
-
-        // Save to database
-        const { error: saveError } = await supabase
-          .from('weekly_digests')
-          .upsert({
-            user_id: user.id,
-            week_number: weekNumber,
-            subject,
-            weekly_focus: focus,
-            strategies: focus.strategies,
-            recommendations,
-            email_markdown: emailMarkdown,
-            status: 'draft',
-            generated_at: new Date().toISOString(),
-          }, {
-            onConflict: 'user_id,week_number'
-          })
-
-        if (saveError) throw saveError
-
-        console.log(`✓ Generated digest for ${user.email}`)
-        results.push({ userId: user.id, email: user.email, status: 'generated' })
-
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ user_id: user.id, week_number: weekNumber }),
+          signal: controller.signal,
+        })
+        clearTimeout(timeoutId)
+        // If we get here, the function already completed (fast)
+        console.log(`✓ ${user.first_name} (${user.email}): completed ${response.status}`)
+        return { userId: user.id, email: user.email, status: response.ok ? 'completed' : `error_${response.status}` }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        console.error(`✗ Failed for ${user.email}:`, errorMessage)
-        results.push({ userId: user.id, email: user.email, status: 'failed', error: errorMessage })
+        clearTimeout(timeoutId)
+        if (error.name === 'AbortError') {
+          // Request was sent, function is running, we just didn't wait for completion
+          console.log(`→ ${user.first_name} (${user.email}): dispatched (running in background)`)
+          return { userId: user.id, email: user.email, status: 'dispatched' }
+        }
+        const msg = error instanceof Error ? error.message : 'Unknown'
+        console.error(`✗ ${user.email}: ${msg}`)
+        return { userId: user.id, email: user.email, status: 'failed' }
       }
-
-      // Delay to avoid rate limits on OpenAI/YouTube
-      await new Promise(resolve => setTimeout(resolve, 2000))
     }
 
-    const generated = results.filter(r => r.status === 'generated').length
+    // Dispatch in batches of 5 to avoid overwhelming the function infrastructure
+    const BATCH_SIZE = 5
+    for (let i = 0; i < usersToProcess.length; i += BATCH_SIZE) {
+      const batch = (usersToProcess as Profile[]).slice(i, i + BATCH_SIZE)
+      console.log(`\nBatch ${Math.floor(i / BATCH_SIZE) + 1} (${batch.length} users)...`)
+
+      const batchResults = await Promise.allSettled(batch.map(dispatchForUser))
+
+      for (const result of batchResults) {
+        if (result.status === 'fulfilled') {
+          results.push(result.value)
+        } else {
+          console.error('Unexpected batch error:', result.reason)
+        }
+      }
+
+      // Brief delay between batches
+      if (i + BATCH_SIZE < usersToProcess.length) {
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+    }
+
+    const dispatched = results.filter(r => r.status === 'dispatched' || r.status === 'completed').length
     const failed = results.filter(r => r.status === 'failed').length
 
     console.log(`\n=== Complete ===`)
-    console.log(`Generated: ${generated}, Failed: ${failed}`)
+    console.log(`Dispatched: ${dispatched}, Failed: ${failed}`)
 
     return new Response(
       JSON.stringify({
-        message: 'Batch digest generation complete',
+        message: 'Fan-out digest generation complete',
         week_number: weekNumber,
-        generated,
+        dispatched,
         failed,
         results,
       }),

@@ -150,7 +150,7 @@ export default function PilotIntake() {
             Don't have access yet?
           </p>
           <a
-            href="mailto:eric.alan.boggs@gmail.com?subject=Summit Pilot Access Request&body=Hi Eric,%0D%0A%0D%0AI'd like to request access to the Summit Pilot program.%0D%0A%0D%0AWhy I'm interested:%0D%0A[Please share a bit about your health goals and why you'd like to join the pilot]%0D%0A%0D%0AThanks!"
+            href="mailto:eric@summithealth.app?subject=Summit Pilot Access Request&body=Hi Eric,%0D%0A%0D%0AI'd like to request access to the Summit Pilot program.%0D%0A%0D%0AWhy I'm interested:%0D%0A[Please share a bit about your health goals and why you'd like to join the pilot]%0D%0A%0D%0AThanks!"
             className="inline-flex items-center gap-2 text-summit-emerald hover:text-summit-forest font-medium transition"
           >
             <Email className="w-4 h-4" />

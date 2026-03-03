@@ -339,7 +339,7 @@ export default function DashboardSummit() {
                 rightIcon={<OpenInNew className="h-4 w-4" />}
                 onClick={(e) => {
                   e.stopPropagation()
-                  window.open('https://cal.com/eric-boggs/30min', '_blank', 'noopener,noreferrer')
+                  window.open('https://cal.com/summit-health/30min', '_blank', 'noopener,noreferrer')
                 }}
               >
                 Schedule Session

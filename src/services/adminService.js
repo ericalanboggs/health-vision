@@ -1,7 +1,7 @@
 import supabase from '../lib/supabase'
 import { addPilotEmail } from '../config/pilotAllowlist'
 
-const ADMIN_EMAIL = 'eric.alan.boggs@gmail.com'
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL
 const SUPABASE_FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL?.replace('.supabase.co', '.supabase.co/functions/v1') || ''
 
 /**

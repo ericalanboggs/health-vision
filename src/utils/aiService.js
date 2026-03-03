@@ -1,16 +1,37 @@
-import OpenAI from 'openai'
+import supabase from '../lib/supabase'
 
-// Initialize OpenAI client
-// Note: In production, use environment variables and a backend API
-const getOpenAIClient = () => {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY
-  if (!apiKey) {
-    throw new Error('OpenAI API key not found. Please add VITE_OPENAI_API_KEY to your .env file')
+const SUPABASE_FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL?.replace('.supabase.co', '.supabase.co/functions/v1') || ''
+
+/**
+ * Call the ai-chat edge function (proxies to OpenAI server-side)
+ */
+const callAI = async (messages, { temperature, max_tokens, response_format } = {}) => {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) {
+    throw new Error('Not authenticated — please sign in to use AI features')
   }
-  return new OpenAI({
-    apiKey,
-    dangerouslyAllowBrowser: true // Note: In production, call from backend
+
+  const body = { messages }
+  if (temperature !== undefined) body.temperature = temperature
+  if (max_tokens !== undefined) body.max_tokens = max_tokens
+  if (response_format) body.response_format = response_format
+
+  const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/ai-chat`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(body),
   })
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}))
+    throw new Error(errBody.error || `AI request failed (${res.status})`)
+  }
+
+  const { content } = await res.json()
+  return content
 }
 
 /**
@@ -18,8 +39,6 @@ const getOpenAIClient = () => {
  */
 export const enhanceActionPlan = async (formData, actionPlan, previousSuggestions = []) => {
   try {
-    const client = getOpenAIClient()
-
     // Build the "already suggested" section
     const alreadySuggestedText = previousSuggestions.length > 0
       ? `\n\nALREADY SUGGESTED (DO NOT REPEAT THESE):
@@ -73,25 +92,19 @@ Format as a JSON array of objects with this structure:
 
 Keep actions brief, specific, and encouraging. Focus on small wins that build momentum.`
 
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
+    const content = await callAI(
+      [
         {
           role: 'system',
           content: 'You are an empathetic health coach who specializes in creating personalized, achievable action plans. You focus on small wins and meeting people where they are.'
         },
-        {
-          role: 'user',
-          content: prompt
-        }
+        { role: 'user', content: prompt }
       ],
-      temperature: 0.7,
-      response_format: { type: 'json_object' }
-    })
+      { temperature: 0.7, response_format: { type: 'json_object' } }
+    )
 
-    const content = response.choices[0].message.content
     const parsed = JSON.parse(content)
-    
+
     // Handle different possible response formats
     return parsed.actions || parsed.plan || parsed
   } catch (error) {
@@ -105,8 +118,6 @@ Keep actions brief, specific, and encouraging. Focus on small wins that build mo
  */
 export const enhanceBarrierStrategy = async (barrier, userContext) => {
   try {
-    const client = getOpenAIClient()
-    
     const prompt = `You are a health coach helping someone overcome a specific barrier.
 
 BARRIER: ${barrier}
@@ -120,23 +131,18 @@ Format as a JSON object:
   "tactics": ["Specific tactic 1", "Specific tactic 2", "Specific tactic 3"]
 }`
 
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
+    const content = await callAI(
+      [
         {
           role: 'system',
           content: 'You are a practical health coach who gives specific, actionable advice tailored to individual circumstances.'
         },
-        {
-          role: 'user',
-          content: prompt
-        }
+        { role: 'user', content: prompt }
       ],
-      temperature: 0.7,
-      response_format: { type: 'json_object' }
-    })
+      { temperature: 0.7, response_format: { type: 'json_object' } }
+    )
 
-    return JSON.parse(response.choices[0].message.content)
+    return JSON.parse(content)
   } catch (error) {
     console.error('AI Barrier Strategy Error:', error)
     throw error
@@ -148,8 +154,6 @@ Format as a JSON object:
  */
 export const generateMotivationalMessage = async (formData) => {
   try {
-    const client = getOpenAIClient()
-
     const prompt = `Create a brief, personalized motivational message for someone starting their health journey.
 
 Their vision: ${formData.visionStatement || 'Not specified'}
@@ -165,23 +169,18 @@ Write 2-3 sentences that are:
 
 Just return the message text, no JSON.`
 
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
+    const content = await callAI(
+      [
         {
           role: 'system',
           content: 'You are an empathetic health coach who writes brief, personalized encouragement.'
         },
-        {
-          role: 'user',
-          content: prompt
-        }
+        { role: 'user', content: prompt }
       ],
-      temperature: 0.8,
-      max_tokens: 150
-    })
+      { temperature: 0.8, max_tokens: 150 }
+    )
 
-    return response.choices[0].message.content.trim()
+    return content.trim()
   } catch (error) {
     console.error('AI Motivational Message Error:', error)
     throw error
@@ -193,8 +192,6 @@ Just return the message text, no JSON.`
  */
 export const summarizeHabitAction = async (habitText) => {
   try {
-    const client = getOpenAIClient()
-
     const prompt = `Summarize this habit into a short, actionable phrase of 2-3 words maximum. Start with a verb, followed by a noun.
 
 Habit: "${habitText}"
@@ -207,24 +204,18 @@ Examples:
 
 Return ONLY the short phrase in title case, no quotes or punctuation at the end.`
 
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
+    const content = await callAI(
+      [
         {
           role: 'system',
           content: 'You create concise, actionable summaries. Return only the requested format.'
         },
-        {
-          role: 'user',
-          content: prompt
-        }
+        { role: 'user', content: prompt }
       ],
-      temperature: 0.3,
-      max_tokens: 10
-    })
+      { temperature: 0.3, max_tokens: 10 }
+    )
 
-    const result = response.choices[0].message.content.trim()
-    return result
+    return content.trim()
   } catch (error) {
     console.error('AI Habit Summary Error:', error)
     // Return first 2-3 words as fallback
@@ -239,8 +230,6 @@ Return ONLY the short phrase in title case, no quotes or punctuation at the end.
  */
 export const consolidateVisionText = async (visionText) => {
   try {
-    const client = getOpenAIClient()
-
     const prompt = `Rewrite this vision statement to be clear, concise, and free of redundancy. Combine similar ideas and remove repetition while preserving the person's authentic voice and goals.
 
 Original: "${visionText}"
@@ -254,23 +243,18 @@ Rules:
 
 Return ONLY the rewritten vision text, no quotes or explanation.`
 
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
+    const content = await callAI(
+      [
         {
           role: 'system',
           content: 'You are an editor who consolidates text for clarity while preserving authentic voice. Return only the requested format.'
         },
-        {
-          role: 'user',
-          content: prompt
-        }
+        { role: 'user', content: prompt }
       ],
-      temperature: 0.4,
-      max_tokens: 150
-    })
+      { temperature: 0.4, max_tokens: 150 }
+    )
 
-    return response.choices[0].message.content.trim()
+    return content.trim()
   } catch (error) {
     console.error('AI Vision Consolidation Error:', error)
     // Return original text if API fails
@@ -283,8 +267,6 @@ Return ONLY the rewritten vision text, no quotes or explanation.`
  */
 export const extractVisionAdjectives = async (visionText) => {
   try {
-    const client = getOpenAIClient()
-
     const prompt = `Extract exactly 3 key adjectives from this vision statement that capture the person's desired state or feelings. Choose the most powerful and distinctive words.
 
 Vision: "${visionText}"
@@ -293,23 +275,18 @@ Return ONLY the 3 adjectives separated by commas, in title case (first letter ca
 
 Do not include any other text or explanation.`
 
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
+    const content = await callAI(
+      [
         {
           role: 'system',
           content: 'You extract key adjectives from text with precision. Return only the requested format.'
         },
-        {
-          role: 'user',
-          content: prompt
-        }
+        { role: 'user', content: prompt }
       ],
-      temperature: 0.3,
-      max_tokens: 20
-    })
+      { temperature: 0.3, max_tokens: 20 }
+    )
 
-    const result = response.choices[0].message.content.trim()
+    const result = content.trim()
 
     // Ensure title case (capitalize first letter of each word, rest lowercase)
     const titleCased = result
@@ -333,8 +310,6 @@ Do not include any other text or explanation.`
  */
 export const generateChallengeHabitSuggestions = async (focusArea, visionData, surveyScores) => {
   try {
-    const client = getOpenAIClient()
-
     const prompt = `You are a health coach suggesting specific daily habits for a challenge focus area.
 
 FOCUS AREA: ${focusArea.title}
@@ -362,23 +337,17 @@ IMPORTANT FORMATTING RULES:
 Format as a JSON array:
 [{ "action": "...", "why": "...", "tip": "..." }]`
 
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
+    const content = await callAI(
+      [
         {
           role: 'system',
           content: 'You are an empathetic health coach who specializes in creating personalized, achievable action plans. You focus on small wins and meeting people where they are.'
         },
-        {
-          role: 'user',
-          content: prompt
-        }
+        { role: 'user', content: prompt }
       ],
-      temperature: 0.7,
-      response_format: { type: 'json_object' }
-    })
+      { temperature: 0.7, response_format: { type: 'json_object' } }
+    )
 
-    const content = response.choices[0].message.content
     const parsed = JSON.parse(content)
     return parsed.habits || parsed.suggestions || parsed
   } catch (error) {

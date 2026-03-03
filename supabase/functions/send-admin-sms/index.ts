@@ -6,7 +6,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
 // Admin email for authorization
-const ADMIN_EMAIL = 'eric.alan.boggs@gmail.com'
+const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') || 'eric.alan.boggs@gmail.com'
 
 interface Recipient {
   userId: string
