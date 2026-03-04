@@ -96,7 +96,7 @@ function buildEmailHtml(firstName: string): string {
                       Your habits.
                     </p>
                     <p style="margin: 0; font-size: 14px; color: #6a6a6a; line-height: 1.6;">
-                      You know what works for you. Healthy habits can be molded and flexible — for example, "movement" can mean whatever excites you, for whatever amount of time fits your life.
+                      You know what works for you. Healthy habits are meant to be flexible — 'movement' can mean a walk, gardening, a bike ride, or anything else that gets you going, for however long fits your day.
                     </p>
                   </td>
                 </tr>
