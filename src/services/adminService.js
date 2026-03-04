@@ -1,7 +1,10 @@
 import supabase from '../lib/supabase'
 import { addPilotEmail } from '../config/pilotAllowlist'
 
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL
+const ADMIN_EMAILS = [
+  'eric.alan.boggs@gmail.com',
+  'eric@summithealth.app',
+]
 const SUPABASE_FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL?.replace('.supabase.co', '.supabase.co/functions/v1') || ''
 
 /**
@@ -10,7 +13,7 @@ const SUPABASE_FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL?.replace('.supa
 export const isAdmin = async () => {
   try {
     const { data: { user } } = await supabase.auth.getUser()
-    return user?.email === ADMIN_EMAIL
+    return ADMIN_EMAILS.includes(user?.email?.toLowerCase())
   } catch (error) {
     console.error('Error checking admin status:', error)
     return false
