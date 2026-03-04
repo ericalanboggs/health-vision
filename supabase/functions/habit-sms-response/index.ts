@@ -664,6 +664,7 @@ serve(async (req) => {
       .from('profiles')
       .select('*')
       .eq('phone', from)
+      .is('deleted_at', null)
       .maybeSingle()
 
     if (profileError || !profile) {

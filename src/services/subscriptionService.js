@@ -125,11 +125,18 @@ export const createPortalSession = async () => {
 
 /**
  * Check if a profile has an active subscription (trialing or active)
- * @param {object} profile - Profile object with subscription_status field
+ * Admin emails bypass the subscription gate.
+ * @param {object} profile - Profile object with subscription_status and email fields
  * @returns {boolean}
  */
+const ADMIN_EMAILS = [
+  import.meta.env.VITE_ADMIN_EMAIL,
+  'eric@summithealth.app',
+].filter(Boolean).map(e => e.toLowerCase())
+
 export const hasActiveSubscription = (profile) => {
   if (!profile) return false
+  if (profile.email && ADMIN_EMAILS.includes(profile.email.toLowerCase())) return true
   return profile.subscription_status === 'trialing' || profile.subscription_status === 'active'
 }
 
