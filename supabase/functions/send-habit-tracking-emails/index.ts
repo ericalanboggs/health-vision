@@ -337,7 +337,7 @@ serve(async (req) => {
 
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, first_name, email')
+      .select('id, first_name, email, subscription_status, trial_ends_at')
       .in('id', userIdsWithoutTracking)
       .eq('profile_completed', true)
       .not('email', 'is', null)
@@ -358,11 +358,27 @@ serve(async (req) => {
       )
     }
 
+    // Filter to users with active subscription or active trial
+    const activeProfiles = (profiles || []).filter(p => {
+      if (p.subscription_status === 'active') return true
+      if (p.trial_ends_at && new Date(p.trial_ends_at) > new Date()) return true
+      return false
+    })
+
+    console.log(`${activeProfiles.length} users with active subscription or trial`)
+
+    if (activeProfiles.length === 0) {
+      return new Response(
+        JSON.stringify({ message: 'No users with active subscription/trial', count: 0 }),
+        { headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Get habit counts for each user
     const { data: habitCounts, error: countError } = await supabase
       .from('weekly_habits')
       .select('user_id, habit_name')
-      .in('user_id', profiles.map(p => p.id))
+      .in('user_id', activeProfiles.map(p => p.id))
 
     if (countError) {
       console.error('Error fetching habit counts:', countError)
@@ -378,7 +394,7 @@ serve(async (req) => {
       userHabitCounts[habit.user_id].add(habit.habit_name)
     }
 
-    const targetUsers: Profile[] = profiles.map(p => ({
+    const targetUsers: Profile[] = activeProfiles.map(p => ({
       ...p,
       habit_count: userHabitCounts[p.id]?.size || 0
     })).filter(p => p.habit_count > 0)

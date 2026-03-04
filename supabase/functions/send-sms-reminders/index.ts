@@ -319,6 +319,22 @@ serve(async (req) => {
       )
     }
 
+    // Filter to users with active subscription or active trial
+    const activeProfiles = profiles.filter((p: Profile) => {
+      if (p.subscription_status === 'active') return true
+      if (p.trial_ends_at && new Date(p.trial_ends_at) > new Date()) return true
+      return false
+    })
+
+    console.log(`Found ${activeProfiles.length} users with active subscription/trial (filtered from ${profiles.length})`)
+
+    if (activeProfiles.length === 0) {
+      return new Response(
+        JSON.stringify({ message: 'No users with active subscription/trial', count: 0 }),
+        { headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Fetch vision data for all users
     const { data: visionJourneys, error: visionError } = await supabase
       .from('health_journeys')
@@ -332,7 +348,7 @@ serve(async (req) => {
     console.log(`Found ${visionJourneys?.length || 0} user visions`)
 
     // Create maps for quick lookup
-    const profileMap = new Map(profiles.map((p: Profile) => [p.id, p]))
+    const profileMap = new Map(activeProfiles.map((p: Profile) => [p.id, p]))
     const visionMap = new Map(
       visionJourneys?.map((v: any) => [
         v.user_id,

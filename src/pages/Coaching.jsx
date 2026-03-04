@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCurrentUser, getProfile, upsertProfile } from '../services/authService'
-import { hasActiveSubscription, COACHING_CONFIG, getBillingPeriod, getMyCoachingSessions } from '../services/subscriptionService'
+import { hasActiveSubscription, isOnTrial, COACHING_CONFIG, getBillingPeriod, getMyCoachingSessions } from '../services/subscriptionService'
 import { ArrowForward, Forum, EventBusy } from '@mui/icons-material'
 import Cal from '@calcom/embed-react'
 import {
@@ -88,6 +88,38 @@ export default function Coaching() {
       <div className="flex items-center justify-center py-20">
         <p className="text-text-secondary">Loading...</p>
       </div>
+    )
+  }
+
+  // Trial users — no coaching access
+  if (isOnTrial(profile)) {
+    return (
+      <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-h1 text-summit-forest mb-2">Coaching</h1>
+        <p className="text-body-lg text-text-secondary mb-8">
+          1-on-1 sessions with a Summit Health coach
+        </p>
+        <Card>
+          <CardHeader className="mb-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-summit-sage">
+                <Forum className="h-5 w-5 text-summit-emerald" />
+              </div>
+              <CardTitle className="text-h3">Coaching is available on paid plans</CardTitle>
+            </div>
+            <CardDescription className="text-body">
+              Subscribe to Plus or Premium to schedule 1-on-1 coaching sessions.
+            </CardDescription>
+          </CardHeader>
+          <Button
+            variant="primary"
+            rightIcon={<ArrowForward className="h-4 w-4" />}
+            onClick={() => navigate('/pricing')}
+          >
+            View Plans
+          </Button>
+        </Card>
+      </main>
     )
   }
 

@@ -67,7 +67,7 @@ serve(async (req) => {
     // Get all users with SMS consent
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, first_name, phone, sms_opt_in')
+      .select('id, first_name, phone, sms_opt_in, subscription_status, trial_ends_at')
       .eq('sms_opt_in', true)
       .is('deleted_at', null)
 
@@ -85,8 +85,24 @@ serve(async (req) => {
       )
     }
 
+    // Filter to users with active subscription or active trial
+    const activeProfiles = profiles.filter((p: Profile) => {
+      if (p.subscription_status === 'active') return true
+      if (p.trial_ends_at && new Date(p.trial_ends_at) > new Date()) return true
+      return false
+    })
+
+    console.log(`Found ${activeProfiles.length} users with active subscription/trial (filtered from ${profiles.length})`)
+
+    if (activeProfiles.length === 0) {
+      return new Response(
+        JSON.stringify({ message: 'No users with active subscription/trial', count: 0 }),
+        { headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Get all reflections for current week
-    const userIds = profiles.map((p: Profile) => p.id)
+    const userIds = activeProfiles.map((p: Profile) => p.id)
     const { data: reflections, error: reflectionsError } = await supabase
       .from('weekly_reflections')
       .select('user_id')
@@ -102,7 +118,7 @@ serve(async (req) => {
 
     // Find users who haven't completed their reflection
     const completedUserIds = new Set(reflections?.map((r: any) => r.user_id) || [])
-    const usersNeedingReminder = profiles.filter((p: Profile) => !completedUserIds.has(p.id))
+    const usersNeedingReminder = activeProfiles.filter((p: Profile) => !completedUserIds.has(p.id))
 
     console.log(`${usersNeedingReminder.length} users need reflection reminders`)
 
@@ -157,7 +173,7 @@ serve(async (req) => {
       JSON.stringify({
         message: 'Reflection reminder check complete',
         weekNumber: currentWeekNumber,
-        totalUsers: profiles.length,
+        totalUsers: activeProfiles.length,
         remindersAttempted: results.length,
         results,
       }),

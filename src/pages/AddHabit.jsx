@@ -355,7 +355,11 @@ export default function AddHabit() {
       if (success) {
         // Mark onboarding as completed if coming from onboarding flow
         if (fromQuickStart && user) {
-          await upsertProfile(user.id, { onboarding_completed: true })
+          await upsertProfile(user.id, {
+            onboarding_completed: true,
+            trial_started_at: new Date().toISOString(),
+            trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          })
         }
         navigate('/')
       } else {

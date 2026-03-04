@@ -237,7 +237,7 @@ serve(async (req) => {
 
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, first_name, email, profile_completed')
+      .select('id, first_name, email, profile_completed, subscription_status, trial_ends_at')
       .eq('profile_completed', true)
       .not('email', 'is', null)
       .is('deleted_at', null)
@@ -250,8 +250,17 @@ serve(async (req) => {
 
     console.log(`Found ${profiles?.length || 0} completed profiles with email`)
 
+    // Filter to users with active subscription or active trial
+    const activeProfiles = (profiles || []).filter(p => {
+      if (p.subscription_status === 'active') return true
+      if (p.trial_ends_at && new Date(p.trial_ends_at) > new Date()) return true
+      return false
+    })
+
+    console.log(`${activeProfiles.length} users with active subscription or trial`)
+
     // Step 3: Filter to only users without habits
-    const targetUsers = (profiles || []).filter((p: Profile) => !userIdsWithHabits.has(p.id))
+    const targetUsers = activeProfiles.filter((p: Profile) => !userIdsWithHabits.has(p.id))
     console.log(`Found ${targetUsers.length} users with profiles but no habits`)
 
     if (targetUsers.length === 0) {

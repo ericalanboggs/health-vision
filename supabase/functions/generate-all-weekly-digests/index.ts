@@ -61,7 +61,7 @@ serve(async (req) => {
     // Get all users with completed profiles (exclude soft-deleted)
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, first_name, email')
+      .select('id, first_name, email, subscription_status, trial_ends_at')
       .eq('profile_completed', true)
       .not('email', 'is', null)
       .is('deleted_at', null)
@@ -69,6 +69,15 @@ serve(async (req) => {
     if (profilesError) throw profilesError
 
     console.log(`Found ${profiles?.length || 0} eligible users`)
+
+    // Filter to users with active subscription or active trial
+    const activeProfiles = (profiles || []).filter(p => {
+      if (p.subscription_status === 'active') return true
+      if (p.trial_ends_at && new Date(p.trial_ends_at) > new Date()) return true
+      return false
+    })
+
+    console.log(`${activeProfiles.length} users with active subscription or trial`)
 
     // Check who already has a digest for this week
     const { data: existingDigests } = await supabase
@@ -80,7 +89,7 @@ serve(async (req) => {
     console.log(`${usersWithDigest.size} users already have digests for week ${weekNumber}`)
 
     // Filter to users without digests
-    const usersToProcess = (profiles || []).filter((p: Profile) => !usersWithDigest.has(p.id))
+    const usersToProcess = activeProfiles.filter((p: Profile) => !usersWithDigest.has(p.id))
     console.log(`${usersToProcess.length} users need digests generated`)
 
     if (dryRun) {

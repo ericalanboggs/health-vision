@@ -89,6 +89,12 @@ SELECT cron.schedule('delivery-completeness-check', '0 15 * * *', $$SELECT call_
 -- Sends a personalized "you've been seen" summary of the user's week
 SELECT cron.schedule('send-weekly-synthesis-sms', '0 20 * * 5', $$SELECT call_edge_function('send-weekly-synthesis-sms')$$);
 
+-- Trial expiry SMS (Day 6 of trial) - Daily 2PM UTC (8AM CST)
+SELECT cron.schedule('send-trial-expiry-sms', '0 14 * * *', $$SELECT call_edge_function('send-trial-expiry-sms')$$);
+
+-- Post-trial drip emails (Days 1, 3, 5 after expiry) - Daily 2PM UTC (8AM CST)
+SELECT cron.schedule('send-trial-drip-emails', '0 14 * * *', $$SELECT call_edge_function('send-trial-drip-emails')$$);
+
 -- =====================================================
 -- Useful commands
 -- =====================================================

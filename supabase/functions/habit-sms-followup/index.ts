@@ -117,11 +117,25 @@ serve(async (req) => {
       )
     }
 
-    console.log(`Found ${profiles.length} users with SMS opt-in and followup time`)
+    // Filter to users with active subscription or active trial
+    const activeProfiles = profiles.filter((p: Profile) => {
+      if (p.subscription_status === 'active') return true
+      if (p.trial_ends_at && new Date(p.trial_ends_at) > new Date()) return true
+      return false
+    })
+
+    console.log(`Found ${activeProfiles.length} users with active subscription/trial (filtered from ${profiles.length})`)
+
+    if (activeProfiles.length === 0) {
+      return new Response(
+        JSON.stringify({ message: 'No users with active subscription/trial', count: 0 }),
+        { headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
     const results = []
 
-    for (const profile of profiles as Profile[]) {
+    for (const profile of activeProfiles as Profile[]) {
       const userTimezone = profile.timezone || 'America/Chicago'
       const userLocalTime = getCurrentTimeInTimezone(userTimezone)
 

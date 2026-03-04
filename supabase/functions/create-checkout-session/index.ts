@@ -87,7 +87,6 @@ serve(async (req) => {
       customer: stripeCustomerId,
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
-      subscription_data: { trial_period_days: 7 },
       allow_promotion_codes: true,
       success_url: `${FRONTEND_URL}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${FRONTEND_URL}/pricing`,

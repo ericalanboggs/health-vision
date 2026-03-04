@@ -260,7 +260,7 @@ serve(async (req) => {
     // Get all users with completed profiles and email (exclude soft-deleted)
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, first_name, email')
+      .select('id, first_name, email, subscription_status, trial_ends_at')
       .eq('profile_completed', true)
       .not('email', 'is', null)
       .is('deleted_at', null)
@@ -272,6 +272,22 @@ serve(async (req) => {
     if (!profiles || profiles.length === 0) {
       return new Response(
         JSON.stringify({ message: 'No eligible users found', count: 0 }),
+        { headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Filter to users with active subscription or active trial
+    const activeProfiles = (profiles || []).filter(p => {
+      if (p.subscription_status === 'active') return true
+      if (p.trial_ends_at && new Date(p.trial_ends_at) > new Date()) return true
+      return false
+    })
+
+    console.log(`${activeProfiles.length} users with active subscription or trial`)
+
+    if (activeProfiles.length === 0) {
+      return new Response(
+        JSON.stringify({ message: 'No users with active subscription/trial', count: 0 }),
         { headers: { 'Content-Type': 'application/json' } }
       )
     }
@@ -301,11 +317,11 @@ serve(async (req) => {
     console.log(`${usersAlreadySent.size} users already received digest this week`)
 
     // Filter to users who haven't received email and have a digest
-    const usersToProcess = profiles.filter((p: Profile) =>
+    const usersToProcess = activeProfiles.filter((p: Profile) =>
       !usersAlreadySent.has(p.id) && digestsByUser.has(p.id)
     )
 
-    const usersWithoutDigest = profiles.filter((p: Profile) =>
+    const usersWithoutDigest = activeProfiles.filter((p: Profile) =>
       !usersAlreadySent.has(p.id) && !digestsByUser.has(p.id)
     )
 

@@ -148,7 +148,7 @@ serve(async (req) => {
     // Get profiles for eligible users
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, first_name, phone, sms_opt_in, timezone')
+      .select('id, first_name, phone, sms_opt_in, timezone, subscription_status, trial_ends_at')
       .in('id', uniqueUserIds)
       .eq('sms_opt_in', true)
       .is('deleted_at', null)
@@ -167,7 +167,21 @@ serve(async (req) => {
       )
     }
 
-    console.log(`Eligible users with SMS: ${profiles.length}`)
+    // Filter to users with active subscription or active trial
+    const activeSubscriptionProfiles = profiles.filter((p: { subscription_status: string; trial_ends_at: string | null }) => {
+      if (p.subscription_status === 'active') return true
+      if (p.trial_ends_at && new Date(p.trial_ends_at) > new Date()) return true
+      return false
+    })
+
+    console.log(`Active subscription/trial users: ${activeSubscriptionProfiles.length} (filtered from ${profiles.length})`)
+
+    if (activeSubscriptionProfiles.length === 0) {
+      return new Response(
+        JSON.stringify({ message: 'No users with active subscription/trial', sent: 0 }),
+        { headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Deduplication: check who already got a synthesis this week
     const { data: alreadySent } = await supabase
@@ -176,15 +190,15 @@ serve(async (req) => {
       .eq('sent_by_type', 'synthesis')
       .eq('direction', 'outbound')
       .gte('created_at', mondayTimestamp)
-      .in('user_id', profiles.map((p: { id: string }) => p.id))
+      .in('user_id', activeSubscriptionProfiles.map((p: { id: string }) => p.id))
 
     const alreadySentIds = new Set((alreadySent || []).map((r: { user_id: string }) => r.user_id))
-    const eligibleProfiles = profiles.filter((p: { id: string }) => !alreadySentIds.has(p.id))
+    const eligibleProfiles = activeSubscriptionProfiles.filter((p: { id: string }) => !alreadySentIds.has(p.id))
 
     if (eligibleProfiles.length === 0) {
       console.log('All eligible users already received synthesis this week')
       return new Response(
-        JSON.stringify({ message: 'All users already received synthesis', sent: 0, skipped: profiles.length }),
+        JSON.stringify({ message: 'All users already received synthesis', sent: 0, skipped: activeSubscriptionProfiles.length }),
         { headers: { 'Content-Type': 'application/json' } }
       )
     }

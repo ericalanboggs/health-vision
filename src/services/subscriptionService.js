@@ -138,7 +138,21 @@ export const hasActiveSubscription = (profile, authEmail) => {
   if (!profile) return false
   const email = authEmail || profile.email
   if (email && ADMIN_EMAILS.includes(email.toLowerCase())) return true
-  return profile.subscription_status === 'trialing' || profile.subscription_status === 'active'
+  if (profile.subscription_status === 'active') return true
+  if (profile.trial_ends_at && new Date(profile.trial_ends_at) > new Date()) return true
+  return false
+}
+
+export const isOnTrial = (profile) => {
+  if (!profile) return false
+  if (profile.subscription_status === 'active') return false
+  return profile.trial_ends_at && new Date(profile.trial_ends_at) > new Date()
+}
+
+export const getTrialDaysRemaining = (profile) => {
+  if (!profile?.trial_ends_at) return 0
+  const diff = new Date(profile.trial_ends_at) - new Date()
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
 }
 
 export { ADMIN_EMAILS }

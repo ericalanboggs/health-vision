@@ -694,6 +694,27 @@ serve(async (req) => {
 
     const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || null
 
+    // Check if user has active subscription or trial
+    const hasAccess = profile.subscription_status === 'active' ||
+      (profile.trial_ends_at && new Date(profile.trial_ends_at) > new Date())
+
+    if (!hasAccess) {
+      console.log(`⚠ User ${profile.id} trial expired, no active subscription`)
+      const firstName = profile.first_name || 'there'
+      await sendSMSWithLog(
+        from,
+        `${firstName}, your Summit trial has ended. Visit go.summithealth.app/pricing to keep going.`,
+        supabase,
+        profile.id,
+        userName || undefined,
+        'system'
+      )
+      return new Response(
+        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+        { headers: { 'Content-Type': 'text/xml' } }
+      )
+    }
+
     // Log the inbound message
     try {
       await supabase.from('sms_messages').insert({

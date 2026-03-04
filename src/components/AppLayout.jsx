@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { Menu, X, User, LogOut } from 'lucide-react'
 import { signOut, getCurrentUser, getProfile } from '../services/authService'
+import { isOnTrial, getTrialDaysRemaining } from '../services/subscriptionService'
 import { Navbar, NavLink } from '@summit/design-system'
 
 const NAV_LINKS = [
@@ -17,15 +18,22 @@ export default function AppLayout() {
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const [onboardingComplete, setOnboardingComplete] = useState(null)
+  const [trialDays, setTrialDays] = useState(null)
   const menuRef = useRef(null)
 
-  // Check onboarding status
+  // Check onboarding status and trial
   useEffect(() => {
     const checkOnboarding = async () => {
       const { user } = await getCurrentUser()
       if (user) {
         const result = await getProfile(user.id)
-        setOnboardingComplete(result?.data?.onboarding_completed ?? false)
+        const profile = result?.data
+        setOnboardingComplete(profile?.onboarding_completed ?? false)
+        if (profile && isOnTrial(profile)) {
+          setTrialDays(getTrialDaysRemaining(profile))
+        } else {
+          setTrialDays(null)
+        }
       }
     }
     checkOnboarding()
@@ -66,6 +74,14 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
+      {trialDays !== null && trialDays > 0 && (
+        <div className="bg-summit-sage text-summit-forest text-center py-2 px-4 text-body-sm">
+          {trialDays} day{trialDays !== 1 ? 's' : ''} left in your free trial.{' '}
+          <button onClick={() => navigate('/pricing')} className="underline font-semibold">
+            Choose a plan
+          </button>
+        </div>
+      )}
       {showNav ? (
         <Navbar
           logo={

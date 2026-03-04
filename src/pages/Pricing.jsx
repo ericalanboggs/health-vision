@@ -35,8 +35,8 @@ const PREMIUM_COACHING = [
 
 const FAQS = [
   {
-    q: 'How does the 7-day free trial work?',
-    a: 'Start any plan and get full access for 7 days — habits, reminders, reflections, digests, and coaching (on Plus & Premium). You won\'t be charged until day 8. Cancel anytime before then with no charge.',
+    q: 'Is there a free trial?',
+    a: 'Yes! New users get 7 days of free access to habits, reminders, reflections, and digests — no credit card required. Coaching is available once you subscribe to a Plus or Premium plan.',
   },
   {
     q: 'Are the coaches real humans?',
@@ -142,7 +142,7 @@ export default function Pricing() {
   }
 
   const getTierButtonLabel = (tierKey) => {
-    if (!isSubscriber) return 'Start Free Trial'
+    if (!isSubscriber) return 'Subscribe'
     return TIER_ORDER[tierKey] > TIER_ORDER[currentTier] ? 'Upgrade' : 'Downgrade'
   }
 
@@ -167,7 +167,7 @@ export default function Pricing() {
           <p className="text-body text-summit-forest/80 max-w-2xl mx-auto">
             {isSubscriber
               ? 'All Summit features are included at every tier — plans differ only in coaching access. Changes take effect at the start of your next billing cycle.'
-              : 'Every plan includes a 7-day free trial. All Summit features are included at every tier — plans differ only in coaching access.'}
+              : 'All Summit features are included at every tier — plans differ only in coaching access.'}
           </p>
         </div>
 
@@ -188,7 +188,6 @@ export default function Pricing() {
                 <span className="text-[44px] font-bold text-summit-forest tracking-tight">$12</span>
                 <span className="text-sm font-medium text-text-muted">/month</span>
               </div>
-              {!isSubscriber && <Tag variant="secondary" size="sm">7-day free trial</Tag>}
               <p className="mt-4 text-body font-semibold text-summit-forest leading-snug">
                 Everything you need to build lasting health habits.
               </p>
@@ -237,7 +236,6 @@ export default function Pricing() {
                   <span className="text-[44px] font-bold text-summit-forest tracking-tight">$49</span>
                   <span className="text-sm font-medium text-text-muted">/month</span>
                 </div>
-                {!isSubscriber && <Tag variant="secondary" size="sm">7-day free trial</Tag>}
                 <p className="mt-4 text-body font-semibold text-summit-forest leading-snug">
                   Everything in Core, plus coaching to keep you on track.
                 </p>
@@ -291,7 +289,6 @@ export default function Pricing() {
                 <span className="text-[44px] font-bold text-summit-forest tracking-tight">$119</span>
                 <span className="text-sm font-medium text-text-muted">/month</span>
               </div>
-              {!isSubscriber && <Tag variant="secondary" size="sm">7-day free trial</Tag>}
               <p className="mt-4 text-body font-semibold text-summit-forest leading-snug">
                 Everything in Plus, with deeper coaching for lasting change.
               </p>
@@ -361,15 +358,6 @@ export default function Pricing() {
             <span>Cancel anytime</span>
           </div>
           <span className="text-gray-300">|</span>
-          {!isSubscriber && (
-            <>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle className="h-4 w-4 text-summit-emerald" />
-                <span>No charge until trial ends</span>
-              </div>
-              <span className="text-gray-300">|</span>
-            </>
-          )}
           <div className="flex items-center gap-1.5">
             <CheckCircle className="h-4 w-4 text-summit-emerald" />
             <span>Switch plans anytime</span>

@@ -216,6 +216,7 @@ function buildDay5Html(firstName: string): string {
     paragraph(`Reflections are due each week by the end of the week. If you miss one, no worries — you can always pick it up the following week.`),
     spacer(10),
     ctaButton('Start My Weekly Reflection', `${APP_URL}/reflection`),
+    paragraph(`<em>P.S. You have a few days left in your free trial.</em>`),
   ].join('')
 
   return wrapEmail('The Power of Weekly Reflection', body)
@@ -236,6 +237,7 @@ function buildDay6Html(firstName: string): string {
     spacer(10),
     paragraph(`<em>No action needed today. Your first digest is on its way.</em>`),
     spacer(10),
+    paragraph(`<em>P.S. Your trial ends tomorrow — <a href="${APP_URL}/pricing" style="color: #15803d;">pick a plan to keep going</a>.</em>`),
   ].join('')
 
   return wrapEmail('Your Weekly Fuel', body)
@@ -257,6 +259,7 @@ function buildDay7Html(firstName: string): string {
     ]),
     spacer(10),
     ctaButton('Go to Dashboard', `${APP_URL}/dashboard`),
+    paragraph(`<em>P.S. Today is the last day of your free trial. <a href="${APP_URL}/pricing" style="color: #15803d;">Choose a plan</a> to keep everything going.</em>`),
   ].join('')
 
   return wrapEmail('Your First Week with Summit', body)
@@ -409,7 +412,7 @@ serve(async (req) => {
 
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, first_name, email, created_at')
+      .select('id, first_name, email, created_at, subscription_status, trial_ends_at')
       .eq('profile_completed', true)
       .not('email', 'is', null)
       .is('deleted_at', null)
@@ -429,9 +432,25 @@ serve(async (req) => {
       )
     }
 
+    // Filter to users with active subscription or active trial
+    const activeProfiles = (profiles || []).filter(p => {
+      if (p.subscription_status === 'active') return true
+      if (p.trial_ends_at && new Date(p.trial_ends_at) > new Date()) return true
+      return false
+    })
+
+    console.log(`${activeProfiles.length} users with active subscription or trial`)
+
+    if (activeProfiles.length === 0) {
+      return new Response(
+        JSON.stringify({ message: 'No users with active subscription/trial in onboarding window', count: 0 }),
+        { headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Group users by their onboarding day
     const usersByDay: Record<number, Profile[]> = {}
-    for (const profile of profiles) {
+    for (const profile of activeProfiles) {
       const day = getOnboardingDay(profile.created_at)
       if (day >= 2 && day <= 7) {
         if (!usersByDay[day]) usersByDay[day] = []
@@ -442,7 +461,7 @@ serve(async (req) => {
     console.log('Users by onboarding day:', Object.entries(usersByDay).map(([d, u]) => `Day ${d}: ${u.length}`).join(', '))
 
     // Check which onboarding emails have already been sent
-    const allUserIds = profiles.map(p => p.id)
+    const allUserIds = activeProfiles.map(p => p.id)
     const { data: existingEmails, error: existingError } = await supabase
       .from('email_reminders')
       .select('user_id, email_type')
