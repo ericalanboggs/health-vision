@@ -8,7 +8,6 @@ import {
   ArrowForward,
   ArrowBack,
   Check,
-  OpenInNew,
 } from '@mui/icons-material'
 
 // Material Symbol component for icons not in @mui/icons-material
@@ -416,15 +415,16 @@ const IntroPage = ({ onSelectPath }) => {
 
         <div className="space-y-4 text-body text-stone-600 leading-relaxed mb-6">
           <p>
-            Research shows that connecting daily actions to a meaningful future vision is associated with lower disease risk and reduced mortality.{' '}
+            Research shows that connecting daily actions to a meaningful future vision is associated with{' '}
             <a
               href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8669210/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-baseline gap-0.5 text-summit-emerald hover:text-summit-forest"
+              className="underline text-summit-emerald hover:text-summit-forest"
             >
-              <OpenInNew style={{ width: 10, height: 10, verticalAlign: 'super' }} />
-            </a>
+              lower disease risk
+            </a>{' '}
+            and reduced mortality.
           </p>
           <p>
             A clear vision makes habit formation easier—even when it's hard—because it gives you something to return to when motivation fades.
