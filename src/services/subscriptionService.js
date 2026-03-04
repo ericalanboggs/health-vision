@@ -130,9 +130,9 @@ export const createPortalSession = async () => {
  * @returns {boolean}
  */
 const ADMIN_EMAILS = [
-  import.meta.env.VITE_ADMIN_EMAIL,
+  'eric.alan.boggs@gmail.com',
   'eric@summithealth.app',
-].filter(Boolean).map(e => e.toLowerCase())
+]
 
 export const hasActiveSubscription = (profile, authEmail) => {
   if (!profile) return false

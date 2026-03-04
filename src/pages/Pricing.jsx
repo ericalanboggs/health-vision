@@ -71,9 +71,9 @@ export default function Pricing() {
   const isSubscriber = currentTier !== null
 
   const ADMIN_EMAILS = [
-    import.meta.env.VITE_ADMIN_EMAIL,
+    'eric.alan.boggs@gmail.com',
     'eric@summithealth.app',
-  ].filter(Boolean).map(e => e.toLowerCase())
+  ]
 
   useEffect(() => {
     const loadCurrentTier = async () => {
