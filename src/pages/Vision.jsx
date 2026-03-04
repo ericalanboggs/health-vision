@@ -423,7 +423,7 @@ const IntroPage = ({ onSelectPath }) => {
               rel="noopener noreferrer"
               className="inline-flex items-baseline gap-0.5 text-summit-emerald hover:text-summit-forest"
             >
-              <OpenInNew className="w-3.5 h-3.5" />
+              <OpenInNew style={{ width: 10, height: 10, verticalAlign: 'super' }} />
             </a>
           </p>
           <p>
