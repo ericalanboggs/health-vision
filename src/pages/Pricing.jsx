@@ -70,6 +70,8 @@ export default function Pricing() {
   const [isAdmin, setIsAdmin] = useState(false)
   const isSubscriber = currentTier !== null
 
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+
   const ADMIN_EMAILS = [
     'eric.alan.boggs@gmail.com',
     'eric@summithealth.app',
