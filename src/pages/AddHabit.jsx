@@ -409,7 +409,7 @@ export default function AddHabit() {
             </div>
             <h1 className="text-h1 text-summit-forest mb-3">My Habit Plan</h1>
             <p className="text-body text-text-secondary">
-              Choose 1-3 habits that align to your Summit vision that you'd like to start practicing today.
+              Pick 1–3 habits you want to start building today.
             </p>
           </div>
 
