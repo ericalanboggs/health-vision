@@ -62,7 +62,7 @@ export default function AppLayout() {
     return location.pathname === path
   }
 
-  const showNav = onboardingComplete === true
+  const showNav = onboardingComplete === true || location.pathname === '/dashboard'
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
