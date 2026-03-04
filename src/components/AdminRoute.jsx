@@ -3,7 +3,10 @@ import { Navigate } from 'react-router-dom'
 import { getCurrentUser } from '../services/authService'
 import { Autorenew } from '@mui/icons-material'
 
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL
+const ADMIN_EMAILS = [
+  'eric.alan.boggs@gmail.com',
+  'eric@summithealth.app',
+]
 
 export default function AdminRoute({ children }) {
   const [loading, setLoading] = useState(true)
@@ -16,7 +19,7 @@ export default function AdminRoute({ children }) {
   const checkAdmin = async () => {
     const { success, user } = await getCurrentUser()
 
-    if (success && user && user.email === ADMIN_EMAIL) {
+    if (success && user && ADMIN_EMAILS.includes(user.email?.toLowerCase())) {
       setIsAdmin(true)
     } else {
       setIsAdmin(false)
