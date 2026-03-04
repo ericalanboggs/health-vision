@@ -134,11 +134,14 @@ const ADMIN_EMAILS = [
   'eric@summithealth.app',
 ].filter(Boolean).map(e => e.toLowerCase())
 
-export const hasActiveSubscription = (profile) => {
+export const hasActiveSubscription = (profile, authEmail) => {
   if (!profile) return false
-  if (profile.email && ADMIN_EMAILS.includes(profile.email.toLowerCase())) return true
+  const email = authEmail || profile.email
+  if (email && ADMIN_EMAILS.includes(email.toLowerCase())) return true
   return profile.subscription_status === 'trialing' || profile.subscription_status === 'active'
 }
+
+export { ADMIN_EMAILS }
 
 /**
  * Get display name for a subscription tier

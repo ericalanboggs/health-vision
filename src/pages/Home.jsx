@@ -11,7 +11,7 @@ export default function Home() {
   const [redirecting, setRedirecting] = useState(false)
 
   useEffect(() => {
-    const routeUser = (profileResult) => {
+    const routeUser = (profileResult, userEmail) => {
       const profile = profileResult?.data
 
       if (profileResult?.success && profile?.deleted_at) {
@@ -26,7 +26,7 @@ export default function Home() {
       } else if (!profile.onboarding_completed) {
         console.log('Home: Onboarding not completed, navigating to /start')
         navigate('/start', { replace: true })
-      } else if (!hasActiveSubscription(profile)) {
+      } else if (!hasActiveSubscription(profile, userEmail)) {
         console.log('Home: No active subscription, navigating to pricing')
         navigate('/pricing', { replace: true })
       } else {
@@ -108,7 +108,7 @@ export default function Home() {
 
           const profileResult = await getProfile(session.user.id)
           console.log('Home: Profile result:', profileResult)
-          routeUser(profileResult)
+          routeUser(profileResult, session.user.email)
         } else {
           // Auth failed after retries, go to login
           setError('Authentication failed. Please try again.')
@@ -123,7 +123,7 @@ export default function Home() {
         if (data.session) {
           const profileResult = await getProfile(data.session.user.id)
           console.log('Home: Profile result:', profileResult)
-          routeUser(profileResult)
+          routeUser(profileResult, data.session.user.email)
         } else {
           // Not authenticated - go to login
           console.log('Home: No session, navigating to login')

@@ -122,7 +122,7 @@ export default function Dashboard() {
 
       // Check subscription status
       const profileResult = await getProfile(userId)
-      if (profileResult.success && profileResult.data && !hasActiveSubscription(profileResult.data)) {
+      if (profileResult.success && profileResult.data && !hasActiveSubscription(profileResult.data, userResult.user?.email)) {
         navigate('/pricing', { replace: true })
         return
       }

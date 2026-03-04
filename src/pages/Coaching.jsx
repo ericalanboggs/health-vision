@@ -44,7 +44,7 @@ export default function Coaching() {
         return
       }
 
-      if (!hasActiveSubscription(profileResult.data)) {
+      if (!hasActiveSubscription(profileResult.data, userResult.user?.email)) {
         navigate('/pricing', { replace: true })
         return
       }
