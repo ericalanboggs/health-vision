@@ -115,7 +115,7 @@ export default function ProfileSetup() {
           sms_consent: formData.smsConsent
         })
 
-        navigate('/verify-phone')
+        navigate(formData.smsConsent ? '/verify-phone' : '/')
       } else {
         setErrors({ submit: 'Failed to save profile. Please try again.' })
       }
