@@ -67,12 +67,21 @@ export default function Pricing() {
   const [loadingTier, setLoadingTier] = useState(null)
   const [error, setError] = useState(null)
   const [currentTier, setCurrentTier] = useState(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const isSubscriber = currentTier !== null
+
+  const ADMIN_EMAILS = [
+    import.meta.env.VITE_ADMIN_EMAIL,
+    'eric@summithealth.app',
+  ].filter(Boolean).map(e => e.toLowerCase())
 
   useEffect(() => {
     const loadCurrentTier = async () => {
       const { user } = await getCurrentUser()
       if (user) {
+        if (ADMIN_EMAILS.includes(user.email?.toLowerCase())) {
+          setIsAdmin(true)
+        }
         const result = await getProfile(user.id)
         if (result.success && result.data && hasActiveSubscription(result.data)) {
           setCurrentTier(result.data.subscription_tier)
@@ -366,6 +375,17 @@ export default function Pricing() {
             <span>Switch plans anytime</span>
           </div>
         </div>
+
+        {isAdmin && (
+          <div className="mt-8 text-center">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="text-xs text-text-muted hover:text-summit-forest transition-colors underline"
+            >
+              Skip (admin)
+            </button>
+          </div>
+        )}
       </main>
     </div>
   )
