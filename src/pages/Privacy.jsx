@@ -110,6 +110,8 @@ export default function Privacy() {
               </ul>
               <p className="text-stone-600 mt-4">
                 We do not sell, rent, or share your phone number with third parties for marketing purposes.
+                All the above categories exclude text messaging originator opt-in data and consent;
+                this information will not be shared with any third parties.
               </p>
             </section>
 

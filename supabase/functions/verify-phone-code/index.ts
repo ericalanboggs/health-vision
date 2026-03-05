@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { sendSMS } from '../_shared/sms.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -121,6 +122,32 @@ serve(async (req) => {
     }
 
     console.log(`Phone verified for user ${user.id}`)
+
+    // Send opt-in confirmation SMS (required for A2P recurring campaigns)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('phone, sms_opt_in')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.phone && profile?.sms_opt_in) {
+      const confirmResult = await sendSMS(
+        {
+          to: profile.phone,
+          body: 'Welcome to Summit Health Habit Reminders! Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to cancel.',
+        },
+        {
+          supabase,
+          logTable: 'sms_messages',
+          extra: { user_id: user.id, sent_by_type: 'system' },
+        }
+      )
+      if (confirmResult.success) {
+        console.log(`Opt-in confirmation SMS sent to user ${user.id}`)
+      } else {
+        console.error(`Failed to send opt-in confirmation SMS: ${confirmResult.error}`)
+      }
+    }
 
     return new Response(
       JSON.stringify({ success: true }),

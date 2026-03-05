@@ -216,10 +216,36 @@ serve(async (req) => {
 
     if (upperBody === 'HELP') {
       console.log(`User ${fromPhone} requested help via SMS`)
-      const helpResult = await sendSMS({ to: fromPhone, body: 'Summit Health: For help, email hello@summithealth.app. Reply STOP to unsubscribe.' })
+      const helpResult = await sendSMS({ to: fromPhone, body: 'Summit Health Habit Reminders: For help, visit go.summithealth.app or email hello@summithealth.app. Msg & data rates may apply. Msg frequency varies. Reply STOP to cancel.' })
       if (!helpResult.success) {
         console.error('Error sending HELP response SMS:', helpResult.error)
       }
+    }
+
+    // Handle opt-in keywords (START, SUBSCRIBE, YES)
+    if (['START', 'SUBSCRIBE', 'YES'].includes(upperBody)) {
+      console.log(`User ${fromPhone} requested opt-in via SMS keyword: ${upperBody}`)
+      if (userId) {
+        await supabase
+          .from('profiles')
+          .update({ sms_opt_in: true })
+          .eq('id', userId)
+        console.log(`Updated user ${userId} sms_opt_in to true`)
+        const optInResult = await sendSMS(
+          { to: fromPhone, body: 'Welcome to Summit Health Habit Reminders! You are now subscribed to recurring messages. Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to cancel.' },
+          { supabase, logTable: 'sms_messages', extra: { user_id: userId, sent_by_type: 'system' } }
+        )
+        if (!optInResult.success) {
+          console.error('Error sending opt-in confirmation SMS:', optInResult.error)
+        }
+      } else {
+        // Unknown phone number — direct them to sign up
+        await sendSMS({ to: fromPhone, body: 'Summit Health: To subscribe, create an account at go.summithealth.app and enable SMS reminders during setup.' })
+      }
+      return new Response(
+        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+        { headers: { 'Content-Type': 'text/xml' } }
+      )
     }
 
     // Handle BACKUP keyword — route to sms-backup-plan for plan adjustment

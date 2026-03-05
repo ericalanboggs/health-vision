@@ -45,10 +45,7 @@ export default function SmsConsent() {
           <div className="bg-white border border-stone-200 rounded-lg p-5">
             <p className="text-sm text-stone-400 mb-3 uppercase tracking-wide font-medium">Opt-in as shown during sign-up:</p>
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 w-5 h-5 border-2 border-summit-emerald rounded bg-summit-emerald flex items-center justify-center flex-shrink-0">
-                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
+              <div className="mt-0.5 w-5 h-5 border-2 border-stone-300 rounded bg-white flex-shrink-0">
               </div>
               <div>
                 <p className="font-semibold text-summit-forest text-sm">Enable SMS Habit Reminders (Optional)</p>
