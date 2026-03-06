@@ -19,47 +19,61 @@ function getMondayOfWeek(): string {
 }
 
 /**
+ * Pick one habit to highlight: prefer the newest (first week being tracked), fall back to most consistent.
+ */
+function pickHighlightHabit(
+  habitSummaries: { name: string; completed: number; scheduled: number; isNew: boolean }[],
+): { name: string; isNew: boolean } {
+  // Prefer a new habit they completed at least once
+  const newHabits = habitSummaries.filter(h => h.isNew && h.completed > 0)
+  if (newHabits.length > 0) {
+    return { name: newHabits[0].name, isNew: true }
+  }
+
+  // Fall back to most consistent (highest completion rate, at least 1 completed)
+  const completed = habitSummaries.filter(h => h.completed > 0)
+  if (completed.length === 0 && habitSummaries.length > 0) {
+    return { name: habitSummaries[0].name, isNew: false }
+  }
+  completed.sort((a, b) => (b.completed / b.scheduled) - (a.completed / a.scheduled))
+  return { name: completed[0].name, isNew: false }
+}
+
+/**
  * Generate synthesis message via OpenAI
  */
 async function generateSynthesis(
   firstName: string,
-  habitSummaries: { name: string; completed: number; scheduled: number }[],
+  highlightHabit: { name: string; isNew: boolean },
   visionStatement: string | null,
-  recentReflection: { went_well: string | null; friction: string | null } | null,
 ): Promise<string> {
-  const totalCompleted = habitSummaries.reduce((sum, h) => sum + h.completed, 0)
-  const totalScheduled = habitSummaries.reduce((sum, h) => sum + h.scheduled, 0)
-
-  const fallback = `${firstName}, you showed up ${totalCompleted} time${totalCompleted !== 1 ? 's' : ''} this week out of ${totalScheduled} scheduled. Every one of those counted. See you next week.`
+  const fallback = `${firstName}, you kept showing up for ${highlightHabit.name} this week. That matters.`
 
   if (!OPENAI_API_KEY) return fallback
 
-  const habitLines = habitSummaries
-    .map(h => `- ${h.name}: ${h.completed}/${h.scheduled} days`)
-    .join('\n')
+  const systemPrompt = `You are Summit, a friend and health coach texting someone on Friday. One SMS, plain text, under 250 characters.
 
-  const systemPrompt = `You are Summit, a warm health coach writing a brief Friday synthesis SMS. One message, plain text, under 300 characters.
+VOICE:
+- Talk like a real person. Short sentences. A little texture.
+- You can celebrate — "way to go", "that's real", "hell of a week" — but earn it. Be specific to the habit.
+- You can encourage them to keep going and wish them a good weekend.
+- Exactly one exclamation mark allowed. No more.
+- NEVER sound like a greeting card. No "wonderful step", "continued progress", "proud of you", "journey", or "aligning with your vision."
+- If a vision statement is provided, you can nod to where they're headed — in your own words, not theirs verbatim.
 
 RULES:
-- Name what they did (e.g., "You showed up for meditation 4 out of 5 days")
-- If something was hard, name it gently (no shame)
-- Pull one thread toward their vision/goals
-- Warm, not clinical. No streaks, no gamification, no emojis
-- Do NOT say "great job" or "keep it up" - be specific
-- Under 300 characters, plain text only
+- Name the ONE habit provided
+- If it's a new habit, note they just started it
+- No numbers, counts, streaks, or fractions
+- No emojis
+- 1-3 sentences max. Land it and stop.
 - Address them by first name`
 
   const userPrompt = `NAME: ${firstName}
-
-THIS WEEK'S HABITS:
-${habitLines}
-
+HABIT TO HIGHLIGHT: ${highlightHabit.name}${highlightHabit.isNew ? ' (just started this week)' : ''}
 VISION: ${visionStatement || 'Not set'}
 
-RECENT REFLECTION:
-${recentReflection ? `Went well: ${recentReflection.went_well || 'n/a'}\nHard: ${recentReflection.friction || 'n/a'}` : 'None'}
-
-Write the synthesis SMS (under 300 chars):`
+Write the Friday SMS (under 300 chars):`
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -205,25 +219,26 @@ serve(async (req) => {
 
     console.log(`Users to send synthesis: ${eligibleProfiles.length} (skipped ${alreadySentIds.size} already sent)`)
 
-    // Batch-load vision data and reflections for all eligible users
+    // Batch-load vision data and entries for all eligible users
     const eligibleIds = eligibleProfiles.map((p: { id: string }) => p.id)
 
-    const [visionsResult, reflectionsResult, entriesResult, habitsResult] = await Promise.all([
+    const [visionsResult, entriesResult, priorEntriesResult, habitsResult] = await Promise.all([
       supabase
         .from('health_journeys')
         .select('user_id, form_data')
         .in('user_id', eligibleIds),
-      supabase
-        .from('weekly_reflections')
-        .select('user_id, went_well, friction, created_at')
-        .in('user_id', eligibleIds)
-        .order('created_at', { ascending: false }),
       supabase
         .from('habit_tracking_entries')
         .select('user_id, habit_name, entry_date, completed, metric_value')
         .in('user_id', eligibleIds)
         .gte('entry_date', mondayStr)
         .lte('entry_date', todayStr),
+      // Prior entries: any entries before this week, to detect new habits
+      supabase
+        .from('habit_tracking_entries')
+        .select('user_id, habit_name')
+        .in('user_id', eligibleIds)
+        .lt('entry_date', mondayStr),
       supabase
         .from('weekly_habits')
         .select('user_id, habit_name, day_of_week')
@@ -236,12 +251,11 @@ serve(async (req) => {
       visionMap.set(v.user_id, v.form_data?.visionStatement || null)
     }
 
-    // Most recent reflection per user
-    const reflectionMap = new Map<string, { went_well: string | null; friction: string | null }>()
-    for (const r of reflectionsResult.data || []) {
-      if (!reflectionMap.has(r.user_id)) {
-        reflectionMap.set(r.user_id, { went_well: r.went_well, friction: r.friction })
-      }
+    // Build set of habits each user had before this week
+    const priorHabitMap = new Map<string, Set<string>>()
+    for (const e of priorEntriesResult.data || []) {
+      if (!priorHabitMap.has(e.user_id)) priorHabitMap.set(e.user_id, new Set())
+      priorHabitMap.get(e.user_id)!.add(e.habit_name)
     }
 
     // Count tracking entries per user per habit this week
@@ -253,16 +267,14 @@ serve(async (req) => {
       userEntries.set(e.habit_name, (userEntries.get(e.habit_name) || 0) + 1)
     }
 
-    // Count scheduled days per user per habit (Mon-Fri = days 1-5, but use all days Mon through today's day)
+    // Count scheduled days per user per habit (Mon through today)
     const todayDow = new Date().getUTCDay() // 0=Sun
     const scheduledMap = new Map<string, Map<string, number>>()
     for (const h of habitsResult.data || []) {
-      // Count only days from Monday (1) through today
       const dow = h.day_of_week
-      // Monday=1, and we include days up to todayDow
       const isInRange = todayDow === 0
-        ? dow >= 1 && dow <= 6 // Sunday: count whole Mon-Sat
-        : dow >= 1 && dow <= todayDow // Otherwise Mon through today
+        ? dow >= 1 && dow <= 6
+        : dow >= 1 && dow <= todayDow
       if (!isInRange) continue
 
       if (!scheduledMap.has(h.user_id)) scheduledMap.set(h.user_id, new Map())
@@ -277,16 +289,17 @@ serve(async (req) => {
       const firstName = profile.first_name || 'there'
       const userId = profile.id
 
-      // Build habit summaries
+      // Build habit summaries with isNew flag
       const userEntries = entryMap.get(userId) || new Map()
       const userScheduled = scheduledMap.get(userId) || new Map()
+      const userPriorHabits = priorHabitMap.get(userId) || new Set()
 
-      // Combine all habits the user had entries or schedules for
       const allHabits = new Set([...userEntries.keys(), ...userScheduled.keys()])
       const habitSummaries = [...allHabits].map(name => ({
         name,
         completed: userEntries.get(name) || 0,
         scheduled: userScheduled.get(name) || userEntries.get(name) || 0,
+        isNew: !userPriorHabits.has(name),
       }))
 
       if (habitSummaries.length === 0) {
@@ -294,10 +307,10 @@ serve(async (req) => {
         continue
       }
 
+      const highlightHabit = pickHighlightHabit(habitSummaries)
       const visionStatement = visionMap.get(userId) || null
-      const reflection = reflectionMap.get(userId) || null
 
-      const synthesisMessage = await generateSynthesis(firstName, habitSummaries, visionStatement, reflection)
+      const synthesisMessage = await generateSynthesis(firstName, highlightHabit, visionStatement)
 
       console.log(`User ${firstName} (${userId}): "${synthesisMessage}" (${synthesisMessage.length} chars)`)
 
