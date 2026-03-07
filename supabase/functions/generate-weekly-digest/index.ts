@@ -13,7 +13,8 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
 const YOUTUBE_API_KEY = Deno.env.get('YOUTUBE_API_KEY')
-const SPOTIFY_ACCESS_TOKEN = Deno.env.get('SPOTIFY_ACCESS_TOKEN')
+const SPOTIFY_CLIENT_ID = Deno.env.get('SPOTIFY_CLIENT_ID')
+const SPOTIFY_CLIENT_SECRET = Deno.env.get('SPOTIFY_CLIENT_SECRET')
 
 /**
  * Generate Weekly Digest - Milestone 1 (Coach Review Mode)
@@ -79,6 +80,7 @@ serve(async (req) => {
       .not('recommendations', 'is', null)
 
     const pastVideoIds: string[] = []
+    const pastEpisodeIds: string[] = []
     if (pastDigests) {
       for (const digest of pastDigests) {
         if (digest.recommendations && Array.isArray(digest.recommendations)) {
@@ -89,16 +91,24 @@ serve(async (req) => {
                 pastVideoIds.push(match[1])
               }
             }
+            if (rec.url && rec.url.includes('open.spotify.com/episode/')) {
+              const match = rec.url.match(/open\.spotify\.com\/episode\/([a-zA-Z0-9]+)/)
+              if (match) {
+                pastEpisodeIds.push(match[1])
+              }
+            }
           }
         }
       }
     }
     console.log(`Found ${pastVideoIds.length} previously sent video IDs to exclude`)
+    console.log(`Found ${pastEpisodeIds.length} previously sent episode IDs to exclude`)
 
     // Step 4: Generate personalized content recommendations
     console.log('Step 4: Generating personalized content recommendations...')
-    const contentEngine = new ContentRecommendationEngine(YOUTUBE_API_KEY!, OPENAI_API_KEY!)
+    const contentEngine = new ContentRecommendationEngine(YOUTUBE_API_KEY!, OPENAI_API_KEY!, SPOTIFY_CLIENT_ID!, SPOTIFY_CLIENT_SECRET!)
     contentEngine.setExcludedVideoIds(pastVideoIds)
+    contentEngine.setExcludedEpisodeIds(pastEpisodeIds)
     const recommendations = await contentEngine.generateRecommendations(context)
 
     // Step 5: Generate personal insight ("What I Noticed")

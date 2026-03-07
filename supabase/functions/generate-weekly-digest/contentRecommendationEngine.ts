@@ -1,5 +1,6 @@
 import { UserContext, ReflectionSignals, ContentRecommendation, FrictionTheme } from './types.ts'
 import { YouTubeAPI } from './youtubeApi.ts'
+import { SpotifyAPI, PodcastCategory } from './spotifyApi.ts'
 
 /**
  * Content Recommendation Engine
@@ -16,11 +17,16 @@ import { YouTubeAPI } from './youtubeApi.ts'
 export class ContentRecommendationEngine {
   private readonly youtubeAPI: YouTubeAPI
   private readonly openaiApiKey: string | null
+  private readonly spotifyAPI: SpotifyAPI | null
   private excludeVideoIds: Set<string> = new Set()
+  private excludeEpisodeIds: Set<string> = new Set()
 
-  constructor(youtubeApiKey: string, openaiApiKey?: string) {
+  constructor(youtubeApiKey: string, openaiApiKey?: string, spotifyClientId?: string, spotifyClientSecret?: string) {
     this.youtubeAPI = new YouTubeAPI(youtubeApiKey)
     this.openaiApiKey = openaiApiKey || null
+    this.spotifyAPI = (spotifyClientId && spotifyClientSecret)
+      ? new SpotifyAPI(spotifyClientId, spotifyClientSecret)
+      : null
   }
 
   /**
@@ -29,6 +35,14 @@ export class ContentRecommendationEngine {
   setExcludedVideoIds(videoIds: string[]): void {
     this.excludeVideoIds = new Set(videoIds)
     console.log(`📋 Excluding ${this.excludeVideoIds.size} previously sent videos`)
+  }
+
+  /**
+   * Set episode IDs to exclude (from previous weeks)
+   */
+  setExcludedEpisodeIds(episodeIds: string[]): void {
+    this.excludeEpisodeIds = new Set(episodeIds)
+    console.log(`📋 Excluding ${this.excludeEpisodeIds.size} previously sent podcast episodes`)
   }
 
   /**
@@ -97,9 +111,17 @@ export class ContentRecommendationEngine {
       recommendations.push(...habitContent.slice(0, slotsRemaining))
     }
 
-    // Deduplicate by video ID and limit to top 6
+    // PRIORITY 5: Podcast episodes (1-2 from Spotify)
+    if (this.spotifyAPI) {
+      console.log(`🎯 PRIORITY 5: Adding podcast recommendations...`)
+      const podcastContent = await this.getPodcastRecommendations(habitCategories, goalSignals, frictionThemes)
+      recommendations.push(...podcastContent)
+      console.log(`✅ Added ${podcastContent.length} podcast recommendations`)
+    }
+
+    // Deduplicate by video/episode ID and limit to top 7
     const uniqueRecommendations = this.deduplicateRecommendations(recommendations)
-    return uniqueRecommendations.slice(0, 6)
+    return uniqueRecommendations.slice(0, 7)
   }
 
   /**
@@ -375,8 +397,124 @@ Return ONLY the JSON array, no other text.`
         return false
       }
 
+      // Check if this podcast episode was sent in previous weeks
+      const episodeIdMatch = rec.url.match(/open\.spotify\.com\/episode\/([a-zA-Z0-9]+)/)
+      if (episodeIdMatch && this.excludeEpisodeIds.has(episodeIdMatch[1])) {
+        console.log(`🚫 Filtering out previously sent episode: ${episodeIdMatch[1]}`)
+        return false
+      }
+
       return true
     })
+  }
+
+  /**
+   * Get podcast recommendations from Spotify curated shows.
+   * Maps user habit categories to podcast categories, searches for friction themes,
+   * and falls back to hardcoded episodes if the API fails.
+   */
+  private async getPodcastRecommendations(
+    habitCategories: string[],
+    goalSignals: string[],
+    frictionThemes: FrictionTheme[]
+  ): Promise<ContentRecommendation[]> {
+    const recommendations: ContentRecommendation[] = []
+    const maxPodcasts = 2
+
+    // Map habit categories / goal signals to podcast categories
+    const podcastCategories: PodcastCategory[] = []
+    if (habitCategories.includes('mindfulness') || goalSignals.includes('stress_management')) {
+      podcastCategories.push('mindfulness')
+    }
+    if (habitCategories.includes('strengthTraining') || goalSignals.includes('energy')) {
+      podcastCategories.push('fitness')
+    }
+    if (habitCategories.includes('nutrition')) {
+      podcastCategories.push('nutrition')
+    }
+    if (habitCategories.includes('sleep')) {
+      podcastCategories.push('sleep')
+    }
+    if (habitCategories.includes('productivity') || goalSignals.includes('focus')) {
+      podcastCategories.push('productivity')
+    }
+    if (habitCategories.includes('wellness') || goalSignals.includes('gratitude') || goalSignals.includes('family')) {
+      podcastCategories.push('wellness')
+    }
+    // Default to wellness if nothing matched
+    if (podcastCategories.length === 0) {
+      podcastCategories.push('wellness')
+    }
+
+    try {
+      // Step 1: If friction themes exist, search for the top theme (max 1 episode)
+      if (frictionThemes.length > 0 && this.spotifyAPI) {
+        const topTheme = frictionThemes[0]
+        console.log(`🎙️ Searching Spotify for friction theme: "${topTheme.searchQuery}"`)
+        const searchResults = await this.spotifyAPI.searchEpisodes(topTheme.searchQuery, 3)
+        const freshResults = searchResults.filter(ep => !this.excludeEpisodeIds.has(ep.id))
+
+        if (freshResults.length > 0) {
+          const ep = freshResults[0]
+          const showName = ep.name // We don't have show context from search, use episode name context
+          recommendations.push(SpotifyAPI.toRecommendation(ep, 'Podcast', topTheme.whyRelevant))
+        }
+      }
+
+      // Step 2: Fill remaining slots from curated shows
+      if (recommendations.length < maxPodcasts && this.spotifyAPI) {
+        for (const category of podcastCategories) {
+          if (recommendations.length >= maxPodcasts) break
+
+          const needed = maxPodcasts - recommendations.length
+          const episodes = await this.spotifyAPI.getEpisodesFromCuratedShows(
+            category,
+            needed,
+            this.excludeEpisodeIds
+          )
+
+          for (const ep of episodes) {
+            if (recommendations.length >= maxPodcasts) break
+            // Skip if already added (by URL)
+            const epUrl = ep.external_urls?.spotify || `https://open.spotify.com/episode/${ep.id}`
+            if (recommendations.some(r => r.url === epUrl)) continue
+
+            const showName = SpotifyAPI.getShowNameForCategory(category)
+            const whyRelevant = this.getPodcastReason(category)
+            recommendations.push(SpotifyAPI.toRecommendation(ep, showName, whyRelevant))
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching podcast recommendations:', error)
+    }
+
+    // Fallback: if we got nothing from the API, use hardcoded episodes
+    if (recommendations.length === 0) {
+      console.log('🎙️ Using fallback podcast episodes')
+      const fallbackCategory = podcastCategories[0] || 'wellness'
+      const fallback = SpotifyAPI.getFallbackEpisode(fallbackCategory)
+      if (fallback) {
+        recommendations.push(fallback)
+      }
+    }
+
+    return recommendations
+  }
+
+  /**
+   * Generate a "why this for you" reason for a podcast category
+   */
+  private getPodcastReason(category: PodcastCategory): string {
+    const reasons: Record<PodcastCategory, string> = {
+      mindfulness: 'Supports your mindfulness practice with expert guidance.',
+      fitness: 'Science-backed insights to support your fitness goals.',
+      nutrition: 'Practical nutrition advice for healthier eating habits.',
+      sleep: 'Helps improve your sleep quality and recovery.',
+      productivity: 'Strategies for deep work and focused productivity.',
+      wellness: 'Research-backed strategies for well-being and fulfillment.',
+    }
+    return reasons[category] || reasons.wellness
   }
 
   /**
@@ -504,79 +642,6 @@ Return ONLY the JSON array, no other text.`
     console.log('📊 Recommendation types:', recommendations.map(r => r.type))
 
     return recommendations
-  }
-
-  /**
-   * Get a curated podcast based on user's habit categories
-   */
-  private getCuratedPodcast(habitCategories: string[], goalSignals: string[]): ContentRecommendation | null {
-    // Mindfulness/stress focused
-    if (habitCategories.includes('mindfulness') || goalSignals.includes('stress_management')) {
-      return {
-        type: 'podcast' as const,
-        title: 'Ten Percent Happier with Dan Harris',
-        url: 'https://open.spotify.com/show/1CfW319UkBMVhCXfei8huv',
-        brief_description: 'Practical meditation guidance from experts',
-        why_this_for_you: 'Supports your mindfulness practice with expert guidance.',
-        duration_minutes: 45,
-        source: 'Ten Percent Happier',
-        thumbnail_url: 'https://i.scdn.co/image/ab6765630000ba8a7a4e4b9b8b9b8b9b8b9b8b9b'
-      }
-    }
-
-    // Fitness/health focused
-    if (habitCategories.includes('strengthTraining') || habitCategories.includes('nutrition') || goalSignals.includes('health') || goalSignals.includes('energy')) {
-      return {
-        type: 'podcast' as const,
-        title: 'Huberman Lab',
-        url: 'https://open.spotify.com/show/79CkJF3UJTHFV8Dse3Ez0P',
-        brief_description: 'Science-based tools for everyday life, health, and performance',
-        why_this_for_you: 'Science-backed insights to optimize your health and fitness goals.',
-        duration_minutes: 120,
-        source: 'Andrew Huberman',
-        thumbnail_url: 'https://i.scdn.co/image/ab6765630000ba8a7a4e4b9b8b9b8b9b8b9b8b9b'
-      }
-    }
-
-    // Productivity focused
-    if (habitCategories.includes('productivity') || goalSignals.includes('focus')) {
-      return {
-        type: 'podcast' as const,
-        title: 'Deep Questions with Cal Newport',
-        url: 'https://open.spotify.com/show/0e9lFr3AdJByoBpM6tAbxD',
-        brief_description: 'Building a focused life in a distracted world',
-        why_this_for_you: 'Strategies for deep work and focused productivity.',
-        duration_minutes: 60,
-        source: 'Cal Newport',
-        thumbnail_url: 'https://i.scdn.co/image/ab6765630000ba8a7a4e4b9b8b9b8b9b8b9b8b9b'
-      }
-    }
-
-    // Family/relationships focused
-    if (goalSignals.includes('family')) {
-      return {
-        type: 'podcast' as const,
-        title: 'Good Inside with Dr. Becky Kennedy',
-        url: 'https://open.spotify.com/show/69su0q4Xfwq3mQdFC0eMjA',
-        brief_description: 'Practical strategies for parenting and relationships',
-        why_this_for_you: 'Supports your goal of being present with your family.',
-        duration_minutes: 45,
-        source: 'Dr. Becky Kennedy',
-        thumbnail_url: 'https://i.scdn.co/image/ab6765630000ba8a7a4e4b9b8b9b8b9b8b9b8b9b'
-      }
-    }
-
-    // Default wellness podcast
-    return {
-      type: 'podcast' as const,
-      title: 'The Happiness Lab with Dr. Laurie Santos',
-      url: 'https://open.spotify.com/show/3i5TCKhc6GY42pOWkpWveG',
-      brief_description: 'Science-based insights on what actually makes us happy',
-      why_this_for_you: 'Research-backed strategies for well-being and fulfillment.',
-      duration_minutes: 40,
-      source: 'Dr. Laurie Santos',
-      thumbnail_url: 'https://i.scdn.co/image/ab6765630000ba8a7a4e4b9b8b9b8b9b8b9b8b9b'
-    }
   }
 
   /**
@@ -888,119 +953,6 @@ Return ONLY the JSON array, no other text.`
     }
 
     return challenges
-  }
-
-  /**
-   * Get content specific to user's current habits
-   */
-  private getHabitSpecificContent(habitCategories: string[]): ContentRecommendation[] {
-    const recommendations: ContentRecommendation[] = []
-
-    habitCategories.forEach(category => {
-      const categoryContent = this.contentDatabase[category as keyof typeof this.contentDatabase]
-      if (categoryContent && categoryContent.length > 0) {
-        // Take the most relevant content from each category
-        const content = categoryContent[0] // Most relevant item
-        recommendations.push({
-          ...content,
-          why_this_for_you: `Supports your ${category.replace(/([A-Z])/g, ' $1').toLowerCase()} habit with practical strategies.`
-        })
-      }
-    })
-
-    return recommendations
-  }
-
-  /**
-   * Get content aligned with user's goals
-   */
-  private getGoalAlignedContent(goalSignals: string[]): ContentRecommendation[] {
-    const recommendations: ContentRecommendation[] = []
-
-    goalSignals.forEach(signal => {
-      let content: any[] = []
-
-      switch (signal) {
-        case 'energy':
-          content = [...this.contentDatabase.strengthTraining, ...this.contentDatabase.nutrition]
-          break
-        case 'family':
-          content = [...this.contentDatabase.productivity, ...this.contentDatabase.mindfulness]
-          break
-        case 'health':
-          content = [...this.contentDatabase.strengthTraining, ...this.contentDatabase.nutrition, ...this.contentDatabase.sleep]
-          break
-        case 'stress_management':
-          content = [...this.contentDatabase.mindfulness, ...this.contentDatabase.sleep]
-          break
-        case 'focus':
-          content = [...this.contentDatabase.productivity, ...this.contentDatabase.mindfulness]
-          break
-      }
-
-      if (content.length > 0) {
-        const selectedContent = content[Math.floor(Math.random() * Math.min(2, content.length))]
-        recommendations.push({
-          ...selectedContent,
-          why_this_for_you: `Aligns with your goal to improve ${signal.replace('_', ' ')}.`
-        })
-      }
-    })
-
-    return recommendations
-  }
-
-  /**
-   * Get content to address specific challenges
-   */
-  private getChallengeBasedContent(challengeAreas: string[]): ContentRecommendation[] {
-    const recommendations: ContentRecommendation[] = []
-
-    challengeAreas.forEach(challenge => {
-      let content: any[] = []
-
-      switch (challenge) {
-        case 'low_energy':
-          content = [...this.contentDatabase.nutrition, ...this.contentDatabase.sleep]
-          break
-        case 'time_constraints':
-          content = [...this.contentDatabase.productivity, ...this.contentDatabase.mindfulness]
-          break
-        case 'habit_formation':
-          content = [...this.contentDatabase.motivation, ...this.contentDatabase.strengthTraining]
-          break
-      }
-
-      if (content.length > 0) {
-        const selectedContent = content[Math.floor(Math.random() * Math.min(2, content.length))]
-        recommendations.push({
-          ...selectedContent,
-          why_this_for_you: `Addresses your ${challenge.replace('_', ' ')} challenges with targeted strategies.`
-        })
-      }
-    })
-
-    return recommendations
-  }
-
-  /**
-   * Get motivational content for all users
-   */
-  private getMotivationalContent(context: UserContext): ContentRecommendation {
-    const motivationalContent = {
-      type: 'article' as const,
-      title: 'The Science of Habit Streaks',
-      url: 'https://jamesclear.com/habit-streaks',
-      brief_description: 'Why consistency beats intensity every time',
-      duration_minutes: 5,
-      source: 'James Clear',
-      thumbnail_url: 'https://via.placeholder.com/300x300'
-    }
-    
-    return {
-      ...motivationalContent,
-      why_this_for_you: `Reinforces your commitment to building meaningful habits, ${context.user_name.split(' ')[0]}.`
-    }
   }
 
 }

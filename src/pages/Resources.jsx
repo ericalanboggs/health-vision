@@ -99,7 +99,7 @@ export default function Resources() {
   // Derive topics and types from resources
   const availableTopics = [...new Set(resources.map(r => r.topic).filter(Boolean))]
   const availableTypes = [...new Set(resources.map(r => r.resource_type).filter(Boolean))]
-  const showTypeFilter = false // Hidden until we have multiple resource types
+  const showTypeFilter = availableTypes.length > 1
 
   // Filter resources and sort pinned to top
   const filtered = resources.filter(r => {
