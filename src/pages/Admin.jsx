@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAllUsers, inviteUser } from '../services/adminService'
-import { CheckCircle, Warning, Autorenew, SwapVert, PersonAdd, Send, NotificationsActive } from '@mui/icons-material'
+import { Autorenew, SwapVert, PersonAdd, Send, NotificationsActive } from '@mui/icons-material'
 import { Checkbox } from '@summit/design-system'
 import BulkActionToolbar from '../components/admin/BulkActionToolbar'
 import SendSMSModal from '../components/admin/SendSMSModal'
@@ -15,6 +15,8 @@ export default function Admin() {
   const [sortBy, setSortBy] = useState('createdAt')
   const [sortDesc, setSortDesc] = useState(true)
   const [engagementFilter, setEngagementFilter] = useState(null)
+  const [tierFilter, setTierFilter] = useState(null)
+  const [smsFilter, setSmsFilter] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviting, setInviting] = useState(false)
   const [inviteStatus, setInviteStatus] = useState(null)
@@ -113,7 +115,9 @@ export default function Admin() {
       new: 0,
       active: 0,
       inactive: 0,
-      no_habits: 0
+      no_habits: 0,
+      tierCounts: { all: users.length, free: 0, core: 0, plus: 0, premium: 0 },
+      smsOptOutCount: 0
     }
 
     users.forEach(user => {
@@ -121,15 +125,34 @@ export default function Admin() {
       if (counts[status] !== undefined) {
         counts[status]++
       }
+
+      const tier = (user.subscriptionTier || 'free').toLowerCase()
+      if (counts.tierCounts[tier] !== undefined) {
+        counts.tierCounts[tier]++
+      }
+
+      if (!user.smsOptIn) {
+        counts.smsOptOutCount++
+      }
     })
 
     return counts
   }, [users])
 
+  const statusOrdinal = { new: 0, active: 1, no_habits: 2, inactive: 3 }
+
   const getSortedUsers = () => {
-    let filtered = engagementFilter
-      ? users.filter(u => getEngagementStatus(u) === engagementFilter)
-      : users
+    let filtered = users
+
+    if (engagementFilter) {
+      filtered = filtered.filter(u => getEngagementStatus(u) === engagementFilter)
+    }
+    if (tierFilter) {
+      filtered = filtered.filter(u => (u.subscriptionTier || 'free').toLowerCase() === tierFilter)
+    }
+    if (smsFilter) {
+      filtered = filtered.filter(u => !u.smsOptIn)
+    }
 
     return [...filtered].sort((a, b) => {
       let aVal, bVal
@@ -143,9 +166,9 @@ export default function Admin() {
           aVal = a.lastLogin ? new Date(a.lastLogin).getTime() : 0
           bVal = b.lastLogin ? new Date(b.lastLogin).getTime() : 0
           break
-        case 'pilotReady':
-          aVal = a.pilotReady ? 1 : 0
-          bVal = b.pilotReady ? 1 : 0
+        case 'status':
+          aVal = statusOrdinal[getEngagementStatus(a)] ?? 99
+          bVal = statusOrdinal[getEngagementStatus(b)] ?? 99
           break
         case 'createdAt':
         default:
@@ -330,13 +353,19 @@ export default function Admin() {
           activeFilter={engagementFilter}
           onFilterChange={setEngagementFilter}
           counts={filterCounts}
+          tierFilter={tierFilter}
+          onTierFilterChange={setTierFilter}
+          tierCounts={filterCounts.tierCounts}
+          smsFilter={smsFilter}
+          onSmsFilterChange={setSmsFilter}
+          smsOptOutCount={filterCounts.smsOptOutCount}
         />
 
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden">
           <div className="p-4 border-b border-stone-200">
             <span className="text-sm text-stone-600">
               {sortedUsers.length} {sortedUsers.length === 1 ? 'user' : 'users'}
-              {engagementFilter && ` (filtered)`}
+              {(engagementFilter || tierFilter || smsFilter) && ` (filtered)`}
             </span>
           </div>
 
@@ -371,9 +400,6 @@ export default function Admin() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">
                     Phone
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-stone-600 uppercase tracking-wider">
-                    SMS
-                  </th>
                   <th
                     className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider cursor-pointer hover:bg-stone-100"
                     onClick={() => handleSort('lastLogin')}
@@ -388,7 +414,7 @@ export default function Admin() {
                   </th>
                   <th
                     className="px-4 py-3 text-center text-xs font-medium text-stone-600 uppercase tracking-wider cursor-pointer hover:bg-stone-100"
-                    onClick={() => handleSort('pilotReady')}
+                    onClick={() => handleSort('status')}
                   >
                     <div className="flex items-center gap-1 justify-center">
                       Status
@@ -438,16 +464,6 @@ export default function Admin() {
                       {user.phone}
                     </td>
                     <td
-                      className="px-4 py-3 text-sm text-center"
-                      onClick={() => navigate(`/admin/users/${user.id}`)}
-                    >
-                      {user.smsOptIn ? (
-                        <span className="text-summit-emerald font-medium">Y</span>
-                      ) : (
-                        <span className="text-stone-400">N</span>
-                      )}
-                    </td>
-                    <td
                       className="px-4 py-3 text-sm text-stone-600"
                       onClick={() => navigate(`/admin/users/${user.id}`)}
                     >
@@ -465,20 +481,26 @@ export default function Admin() {
                       className="px-4 py-3 text-center"
                       onClick={() => navigate(`/admin/users/${user.id}`)}
                     >
-                      {user.pilotReady ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-summit-mint text-summit-forest">
-                          <CheckCircle className="w-3 h-3" />
-                          Pilot Ready
-                        </span>
-                      ) : (
-                        <span
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800"
-                          title={`Missing: ${!user.hasLoggedIn ? 'Login, ' : ''}${!user.hasHealthVision ? 'Health Vision, ' : ''}${!user.hasActiveHabits ? 'Habits' : ''}`}
-                        >
-                          <Warning className="w-3 h-3" />
-                          Needs Setup
-                        </span>
-                      )}
+                      {(() => {
+                        const status = getEngagementStatus(user)
+                        const badgeConfig = {
+                          new: { label: 'New', classes: 'bg-blue-100 text-blue-700' },
+                          active: { label: 'Active', classes: 'bg-summit-mint text-summit-forest' },
+                          inactive: { label: 'Inactive', classes: 'bg-amber-100 text-amber-800' },
+                          no_habits: { label: 'No Habits', classes: 'bg-red-100 text-red-700' },
+                        }
+                        const badge = badgeConfig[status] || badgeConfig.inactive
+                        return (
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badge.classes}`}>
+                              {badge.label}
+                            </span>
+                            {user.memberDuration && (
+                              <span className="text-xs text-stone-400">{user.memberDuration}</span>
+                            )}
+                          </div>
+                        )
+                      })()}
                     </td>
                   </tr>
                 ))}

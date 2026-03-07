@@ -57,18 +57,25 @@ export const getAllUsers = async () => {
 
     if (habitsError) throw habitsError
 
+    // Calculate compact member duration string from created_at
+    const getMemberDuration = (createdAt) => {
+      if (!createdAt) return ''
+      const now = new Date()
+      const created = new Date(createdAt)
+      const diffMs = now - created
+      const diffDays = Math.floor(diffMs / 86400000)
+
+      if (diffDays < 1) return '<1d'
+      if (diffDays < 14) return `${diffDays}d`
+      if (diffDays < 60) return `${Math.floor(diffDays / 7)}w`
+      if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo`
+      return `${Math.floor(diffDays / 365)}y`
+    }
+
     // Combine data
     const usersData = profiles.map(profile => {
-      const journey = journeys?.find(j => j.user_id === profile.id)
       const userHabits = habits?.filter(h => h.user_id === profile.id) || []
-
-      // Calculate pilot readiness
-      const hasLoggedIn = !!profile.last_login_at || profile.profile_completed
-      const hasHealthVision = !!(journey?.form_data?.visionStatement)
       const activeHabitsCount = new Set(userHabits.map(h => h.habit_name)).size
-      const hasActiveHabits = activeHabitsCount > 0
-
-      const pilotReady = hasLoggedIn && hasHealthVision && hasActiveHabits
 
       return {
         id: profile.id,
@@ -78,10 +85,8 @@ export const getAllUsers = async () => {
         smsOptIn: profile.sms_opt_in,
         lastLogin: profile.last_login_at,
         activeHabitsCount,
-        pilotReady,
-        hasLoggedIn,
-        hasHealthVision,
-        hasActiveHabits,
+        subscriptionTier: profile.subscription_tier || 'free',
+        memberDuration: getMemberDuration(profile.created_at),
         createdAt: profile.created_at
       }
     })
