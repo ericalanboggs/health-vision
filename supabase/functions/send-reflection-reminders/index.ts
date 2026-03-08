@@ -145,7 +145,7 @@ serve(async (req) => {
       }
 
       const firstName = profile.first_name || 'there'
-      const message = `Hi ${firstName}! 🏔️ It's the last day of the week - take a moment to reflect on your progress and plan for next week: ${APP_URL}/dashboard`
+      const message = `Hi ${firstName}! 🏔️ It's the last day of the week - take a moment to reflect on your progress and plan for next week: ${APP_URL}/reflection`
 
       const smsResult = await sendSMS(
         { to: profile.phone, body: message },

@@ -349,7 +349,11 @@ Format as a JSON array:
     )
 
     const parsed = JSON.parse(content)
-    return parsed.habits || parsed.suggestions || parsed
+    // Handle various response shapes the model might return
+    const arr = Array.isArray(parsed)
+      ? parsed
+      : parsed.habits || parsed.suggestions || parsed.data || parsed.actions
+    return Array.isArray(arr) ? arr : []
   } catch (error) {
     console.error('AI Challenge Suggestions Error:', error)
     throw error

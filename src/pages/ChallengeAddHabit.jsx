@@ -112,11 +112,16 @@ export default function ChallengeAddHabit() {
   }, [slug])
 
   const setDefaultSuggestions = (fa) => {
+    const why = fa.evidence
+      ? fa.evidence.length > 120
+        ? fa.evidence.slice(0, 117) + '...'
+        : fa.evidence
+      : `Supports your ${fa.title.toLowerCase()} goals`
     setSuggestions(
       fa.defaultHabits.map(h => ({
         action: h,
-        why: 'Research-backed habit for this focus area',
-        tip: 'Start small and build consistency',
+        why,
+        tip: `Even a few minutes counts — consistency matters more than duration`,
       }))
     )
   }
