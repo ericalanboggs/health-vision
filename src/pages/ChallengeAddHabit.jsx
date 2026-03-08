@@ -459,20 +459,20 @@ export default function ChallengeAddHabit() {
               }
             })
             return (
-              <div className="mb-6 rounded-xl border border-stone-200 bg-stone-50 p-4">
-                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-3">Your other habits</p>
+              <Card variant="outlined" padding="sm" radius="xl" className="mb-6">
+                <p className="text-xs font-semibold text-summit-emerald uppercase tracking-wider mb-3">Your other habits</p>
                 <div className="space-y-2">
                   {Object.entries(grouped).map(([name, info]) => (
                     <div key={name} className="flex items-baseline justify-between gap-3">
                       <span className="text-sm font-medium text-summit-forest truncate">{name}</span>
-                      <span className="text-xs text-stone-500 whitespace-nowrap flex-shrink-0">
+                      <span className="text-xs text-text-muted whitespace-nowrap flex-shrink-0">
                         {info.days.sort((a, b) => a - b).map(d => dayLabels[d]).join(', ')}
                         {info.time && ` · ${info.time}`}
                       </span>
                     </div>
                   ))}
                 </div>
-              </div>
+              </Card>
             )
           })()}
 
