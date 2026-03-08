@@ -4,7 +4,7 @@ import { ArrowBack, AutoAwesome, Refresh, Autorenew, CheckCircle } from '@mui/ic
 import { Button, Card, Input } from '@summit/design-system'
 import { getChallengeBySlug, getFocusAreaForWeek } from '../data/challengeConfig'
 import { getActiveEnrollment, logChallengeHabit, getEffectiveWeek } from '../services/challengeService'
-import { saveHabits } from '../services/habitService'
+import { saveHabits, getHabits } from '../services/habitService'
 import { saveTrackingConfig, getAiSuggestion } from '../services/trackingService'
 import { getCurrentUser, getProfile } from '../services/authService'
 import { loadJourney } from '../services/journeyService'
@@ -29,6 +29,7 @@ export default function ChallengeAddHabit() {
   const [userTimezone, setUserTimezone] = useState('America/Chicago')
   const [dayCommitments, setDayCommitments] = useState([])
   const [timePreference, setTimePreference] = useState('mid-morning')
+  const [existingHabits, setExistingHabits] = useState([])
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const dayMap = {
@@ -55,12 +56,17 @@ export default function ChallengeAddHabit() {
       }
       setUserId(user.id)
 
-      // Load enrollment, profile, and vision data in parallel
-      const [enrollResult, profileResult, journeyResult] = await Promise.all([
+      // Load enrollment, profile, vision, and existing habits in parallel
+      const [enrollResult, profileResult, journeyResult, habitsResult] = await Promise.all([
         getActiveEnrollment(user.id),
         getProfile(user.id),
         loadJourney(),
+        getHabits(user.id),
       ])
+
+      if (habitsResult.success && habitsResult.data?.length > 0) {
+        setExistingHabits(habitsResult.data)
+      }
 
       if (!enrollResult.success || !enrollResult.data || enrollResult.data.challenge_slug !== slug) {
         navigate(`/challenges/${slug}`)
@@ -431,6 +437,44 @@ export default function ChallengeAddHabit() {
               </div>
             </div>
           </div>
+
+          {/* Existing habits reference */}
+          {existingHabits.length > 0 && (() => {
+            const dayLabels = { 0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat' }
+            const formatTime = (t) => {
+              if (!t) return null
+              const hour = parseInt(t.split(':')[0], 10)
+              if (isNaN(hour)) return null
+              const suffix = hour >= 12 ? 'pm' : 'am'
+              const h = hour % 12 || 12
+              return `${h}${suffix}`
+            }
+            // Group by habit name
+            const grouped = {}
+            existingHabits.forEach(h => {
+              if (!grouped[h.habit_name]) grouped[h.habit_name] = { days: [], time: null }
+              grouped[h.habit_name].days.push(h.day_of_week)
+              if (!grouped[h.habit_name].time) {
+                grouped[h.habit_name].time = formatTime(h.reminder_time || h.time_of_day)
+              }
+            })
+            return (
+              <div className="mb-6 rounded-xl border border-stone-200 bg-stone-50 p-4">
+                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-3">Your other habits</p>
+                <div className="space-y-2">
+                  {Object.entries(grouped).map(([name, info]) => (
+                    <div key={name} className="flex items-baseline justify-between gap-3">
+                      <span className="text-sm font-medium text-summit-forest truncate">{name}</span>
+                      <span className="text-xs text-stone-500 whitespace-nowrap flex-shrink-0">
+                        {info.days.sort((a, b) => a - b).map(d => dayLabels[d]).join(', ')}
+                        {info.time && ` · ${info.time}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
 
           {dayCommitments.length > 0 && (
             <Button
