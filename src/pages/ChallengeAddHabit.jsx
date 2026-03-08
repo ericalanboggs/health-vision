@@ -291,7 +291,7 @@ export default function ChallengeAddHabit() {
               disabled={generating}
               className="text-body-sm text-summit-forest hover:text-summit-emerald font-medium flex items-center gap-1 transition-colors"
             >
-              <Refresh className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
+              <Refresh className="w-4 h-4" />
               Refresh
             </button>
           </div>
