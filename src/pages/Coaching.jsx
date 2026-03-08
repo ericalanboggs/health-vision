@@ -266,7 +266,7 @@ export default function Coaching() {
         ) : (
           <div className="rounded-2xl overflow-hidden border border-summit-sage bg-white" style={{ minHeight: '600px' }}>
             <Cal
-              calLink="eric-boggs/30-minute-coaching-session"
+              calLink="summit-health/30min"
               config={{
                 theme: 'light',
                 hideEventTypeDetails: false,
