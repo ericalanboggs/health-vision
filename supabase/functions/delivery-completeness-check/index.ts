@@ -159,10 +159,10 @@ serve(async (req) => {
       digestDiagnostics.weekNumber = weekNumber
       console.log(`Monday — checking digest completeness for week ${weekNumber}`)
 
-      // Get all eligible users (profile_completed + has email + not deleted)
-      const { data: eligibleUsers, error: eligErr } = await supabase
+      // Get all eligible users (profile_completed + has email + not deleted + active sub or trial)
+      const { data: allProfiles, error: eligErr } = await supabase
         .from('profiles')
-        .select('id, first_name, email')
+        .select('id, first_name, email, subscription_status, trial_ends_at')
         .eq('profile_completed', true)
         .not('email', 'is', null)
         .is('deleted_at', null)
@@ -171,6 +171,12 @@ serve(async (req) => {
         console.error('Error querying profiles for digest check:', eligErr)
         throw eligErr
       }
+
+      const now = new Date()
+      const eligibleUsers = (allProfiles || []).filter(p =>
+        p.subscription_status === 'active' ||
+        (p.trial_ends_at && new Date(p.trial_ends_at) > now)
+      )
 
       // Get users who have a digest for this week
       const { data: sentDigests, error: digErr } = await supabase
