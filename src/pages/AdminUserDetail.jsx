@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getUserDetail, getCoachingSessions, logCoachingSession } from '../services/adminService'
+import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource } from '../services/adminService'
 import { COACHING_CONFIG, getBillingPeriod } from '../services/subscriptionService'
-import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt, Forum } from '@mui/icons-material'
+import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt, Forum, Edit as EditIcon, Close, Add, PushPin, PushPinOutlined, DeleteOutline } from '@mui/icons-material'
+import { Tag } from '@summit/design-system'
 import ConversationView from '../components/admin/ConversationView'
 
 /**
@@ -68,6 +69,10 @@ export default function AdminUserDetail() {
   const [coachingSessions, setCoachingSessions] = useState([])
   const [sessionNotes, setSessionNotes] = useState('')
   const [loggingSession, setLoggingSession] = useState(false)
+  const [editingResources, setEditingResources] = useState(false)
+  const [showAddResourceForm, setShowAddResourceForm] = useState(false)
+  const [addResourceForm, setAddResourceForm] = useState({ title: '', url: '', resource_type: 'link', duration_minutes: '', admin_note: '' })
+  const [savingResource, setSavingResource] = useState(false)
 
   useEffect(() => {
     loadUserDetail()
@@ -114,6 +119,49 @@ export default function AdminUserDetail() {
       }
     }
     setLoggingSession(false)
+  }
+
+  const handleDeleteResource = async (resourceId) => {
+    const result = await adminDeleteResource(resourceId)
+    if (result.success) {
+      setData(prev => ({
+        ...prev,
+        resources: prev.resources.filter(r => r.id !== resourceId)
+      }))
+    }
+  }
+
+  const handleTogglePin = async (resourceId, currentPinned) => {
+    const result = await adminTogglePinResource(resourceId, currentPinned)
+    if (result.success) {
+      setData(prev => ({
+        ...prev,
+        resources: prev.resources.map(r =>
+          r.id === resourceId ? { ...r, pinned: !currentPinned } : r
+        )
+      }))
+    }
+  }
+
+  const handleAddResource = async () => {
+    if (!addResourceForm.title.trim() || !addResourceForm.url.trim()) return
+    setSavingResource(true)
+    const result = await adminAddResource(userId, {
+      title: addResourceForm.title.trim(),
+      url: addResourceForm.url.trim(),
+      resource_type: addResourceForm.resource_type,
+      duration_minutes: addResourceForm.duration_minutes ? parseInt(addResourceForm.duration_minutes) : null,
+      admin_note: addResourceForm.admin_note.trim() || null,
+    })
+    if (result.success) {
+      setData(prev => ({
+        ...prev,
+        resources: [result.data, ...(prev.resources || [])]
+      }))
+      setAddResourceForm({ title: '', url: '', resource_type: 'link', duration_minutes: '', admin_note: '' })
+      setShowAddResourceForm(false)
+    }
+    setSavingResource(false)
   }
 
   const formatDate = (timestamp) => {
@@ -165,7 +213,7 @@ export default function AdminUserDetail() {
     )
   }
 
-  const { profile, pilotReadiness, healthVision, habits, reflections } = data
+  const { profile, pilotReadiness, healthVision, habits, reflections, resources } = data
 
   return (
     <div className="min-h-screen bg-white">
@@ -555,6 +603,177 @@ export default function AdminUserDetail() {
             </div>
           ) : (
             <p className="text-stone-500 italic">No reflections submitted yet</p>
+          )}
+        </div>
+
+        {/* Current Resources */}
+        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-summit-forest">Current Resources</h2>
+            <button
+              onClick={() => { setEditingResources(!editingResources); setShowAddResourceForm(false) }}
+              className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-500 hover:text-summit-forest transition-colors"
+              title={editingResources ? 'Exit edit mode' : 'Edit resources'}
+            >
+              {editingResources ? <Close className="w-5 h-5" /> : <EditIcon className="w-5 h-5" />}
+            </button>
+          </div>
+          {resources && resources.length > 0 ? (
+            <div className="space-y-6">
+              {Object.entries(
+                resources.reduce((groups, r) => {
+                  const week = r.week_number ?? 'Admin'
+                  if (!groups[week]) groups[week] = []
+                  groups[week].push(r)
+                  return groups
+                }, {})
+              ).map(([week, items]) => (
+                <div key={week}>
+                  <h3 className="text-sm font-medium text-stone-700 mb-2">
+                    {week === 'Admin' ? 'Admin-assigned' : `Week ${week}`}
+                  </h3>
+                  <div className="space-y-2">
+                    {items.map((resource) => (
+                      <div
+                        key={resource.id}
+                        className={`flex items-center gap-2 text-sm rounded-lg p-2 -mx-2 ${
+                          resource.pinned ? 'border-l-2 border-summit-emerald/40 bg-summit-mint/20 pl-3' : ''
+                        }`}
+                      >
+                        <span className="flex-shrink-0">
+                          {resource.pinned && <PushPin className="w-4 h-4 text-summit-emerald" />}
+                          {!resource.pinned && resource.resource_type === 'youtube' && '\uD83C\uDFA5'}
+                          {!resource.pinned && resource.resource_type === 'podcast' && '\uD83C\uDF99\uFE0F'}
+                          {!resource.pinned && resource.resource_type === 'article' && '\uD83D\uDCD6'}
+                          {!resource.pinned && !['youtube', 'podcast', 'article'].includes(resource.resource_type) && '\uD83D\uDD17'}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <a
+                            href={resource.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-summit-emerald hover:text-green-700 font-medium hover:underline"
+                          >
+                            {resource.title}
+                          </a>
+                          {resource.admin_note && (
+                            <div className="mt-1">
+                              <Tag variant="info" size="sm">{resource.admin_note}</Tag>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 text-stone-500">
+                            {resource.source && <span>{resource.source}</span>}
+                            {resource.duration_minutes && (
+                              <span>{resource.duration_minutes} min</span>
+                            )}
+                            {resource.origin === 'admin' && (
+                              <span className="text-xs text-amber-600">admin</span>
+                            )}
+                          </div>
+                        </div>
+                        {editingResources && (
+                          <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                            <button
+                              onClick={() => handleTogglePin(resource.id, resource.pinned)}
+                              className="p-1 rounded hover:bg-stone-100 text-stone-400 hover:text-summit-emerald transition-colors"
+                              title={resource.pinned ? 'Unpin' : 'Pin'}
+                            >
+                              {resource.pinned
+                                ? <PushPin className="w-4 h-4 text-summit-emerald" />
+                                : <PushPinOutlined className="w-4 h-4" />
+                              }
+                            </button>
+                            <button
+                              onClick={() => handleDeleteResource(resource.id)}
+                              className="p-1 rounded hover:bg-red-50 text-stone-400 hover:text-red-600 transition-colors"
+                              title="Delete resource"
+                            >
+                              <DeleteOutline className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-stone-500 italic">No resources yet</p>
+          )}
+
+          {/* Add Resource Form */}
+          {editingResources && !showAddResourceForm && (
+            <button
+              onClick={() => setShowAddResourceForm(true)}
+              className="mt-4 flex items-center gap-2 text-sm text-summit-emerald hover:text-green-700 font-medium transition-colors"
+            >
+              <Add className="w-4 h-4" />
+              Add Resource
+            </button>
+          )}
+
+          {editingResources && showAddResourceForm && (
+            <div className="mt-4 border border-stone-200 rounded-lg p-4 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  value={addResourceForm.title}
+                  onChange={(e) => setAddResourceForm(f => ({ ...f, title: e.target.value }))}
+                  placeholder="Title *"
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent"
+                />
+                <input
+                  type="url"
+                  value={addResourceForm.url}
+                  onChange={(e) => setAddResourceForm(f => ({ ...f, url: e.target.value }))}
+                  placeholder="URL *"
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent"
+                />
+                <select
+                  value={addResourceForm.resource_type}
+                  onChange={(e) => setAddResourceForm(f => ({ ...f, resource_type: e.target.value }))}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent bg-white"
+                >
+                  <option value="link">Link</option>
+                  <option value="youtube">YouTube</option>
+                  <option value="podcast">Podcast</option>
+                  <option value="article">Article</option>
+                </select>
+                <input
+                  type="number"
+                  value={addResourceForm.duration_minutes}
+                  onChange={(e) => setAddResourceForm(f => ({ ...f, duration_minutes: e.target.value }))}
+                  placeholder="Duration (min)"
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent"
+                />
+              </div>
+              <input
+                type="text"
+                value={addResourceForm.admin_note}
+                onChange={(e) => setAddResourceForm(f => ({ ...f, admin_note: e.target.value }))}
+                placeholder="Coach's note (optional)"
+                className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleAddResource}
+                  disabled={savingResource || !addResourceForm.title.trim() || !addResourceForm.url.trim()}
+                  className="px-4 py-2 bg-summit-emerald text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  {savingResource ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAddResourceForm(false)
+                    setAddResourceForm({ title: '', url: '', resource_type: 'link', duration_minutes: '', admin_note: '' })
+                  }}
+                  className="px-4 py-2 text-stone-600 hover:text-stone-800 text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           )}
         </div>
           </div>

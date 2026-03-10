@@ -143,6 +143,16 @@ export const getUserDetail = async (userId) => {
 
     if (reflectionsError) throw reflectionsError
 
+    // Get resources
+    const { data: resources, error: resourcesError } = await supabase
+      .from('user_resources')
+      .select('*')
+      .eq('user_id', userId)
+      .order('week_number', { ascending: false })
+      .order('created_at', { ascending: false })
+
+    if (resourcesError) throw resourcesError
+
     // Calculate pilot readiness
     const hasLoggedIn = profile.profile_completed
     const hasHealthVision = !!(journey?.form_data?.visionStatement)
@@ -198,7 +208,8 @@ export const getUserDetail = async (userId) => {
         },
         healthVision: journey?.form_data || null,
         habits: groupedHabits,
-        reflections: reflections || []
+        reflections: reflections || [],
+        resources: resources || []
       }
     }
   } catch (error) {
@@ -386,6 +397,84 @@ export const logCoachingSession = async (userId, { durationMinutes, notes, billi
     return { success: true, data }
   } catch (error) {
     console.error('Error logging coaching session:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Add a resource to a user (admin-assigned)
+ */
+export const adminAddResource = async (userId, { title, url, resource_type, duration_minutes, admin_note }) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { data, error } = await supabase
+      .from('user_resources')
+      .insert({
+        user_id: userId,
+        title,
+        url,
+        resource_type: resource_type || 'link',
+        duration_minutes: duration_minutes || null,
+        admin_note: admin_note || null,
+        origin: 'admin',
+        pinned: false,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error adding resource:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Delete a resource by id
+ */
+export const adminDeleteResource = async (resourceId) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { error } = await supabase
+      .from('user_resources')
+      .delete()
+      .eq('id', resourceId)
+
+    if (error) throw error
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting resource:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Toggle pinned status of a resource
+ */
+export const adminTogglePinResource = async (resourceId, currentPinned) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { data, error } = await supabase
+      .from('user_resources')
+      .update({ pinned: !currentPinned })
+      .eq('id', resourceId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error toggling pin:', error)
     return { success: false, error: error.message }
   }
 }
