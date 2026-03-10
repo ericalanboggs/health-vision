@@ -206,7 +206,7 @@ function buildDay4Html(firstName: string): string {
 function buildDay5Html(firstName: string): string {
   const body = [
     heading(`${firstName}, let's talk about reflection`),
-    paragraph(`As your week moves along, you'll start to notice what works and what blocks you. Your <strong>Reflection</strong> area in the app is where you capture those insights.`),
+    paragraph(`As your week moves along, you'll start to notice what works and what blocks you. Your <strong>Reflection</strong> area on your dashboard is where you capture those insights.`),
     subheading('Why reflection matters'),
     bulletList([
       `<strong>Document and learn.</strong> What will you do next time to adjust? That single question is more powerful than any streak counter.`,

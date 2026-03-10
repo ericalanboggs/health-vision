@@ -72,10 +72,10 @@ export function assembleMarkdown(
       sections.push(`- ${habitName} (${days})`)
     })
     sections.push(`\n`)
-    sections.push(`[Modify these in your app](https://go.summithealth.app)\n`)
+    sections.push(`[Modify these in Summit](https://go.summithealth.app)\n`)
   } else {
     // No habits yet - simple CTA on its own line
-    sections.push(`[Add habits in your app →](https://go.summithealth.app)\n`)
+    sections.push(`[Add habits in Summit →](https://go.summithealth.app)\n`)
   }
 
   // Patterns to reinforce
@@ -149,7 +149,7 @@ export function assembleMarkdown(
   sections.push(`## Your One-Minute Action Plan ⚡\n`)
   sections.push(`Before this week starts:\n`)
   if (context.habits.length > 0) {
-    sections.push(`1. Review your habits in the app`)
+    sections.push(`1. Review your habits on your dashboard`)
     sections.push(`2. Pick ONE strategy from above to try`)
     if (recommendations.length > 0) {
       sections.push(`3. Choose ONE piece of content to consume this week`)

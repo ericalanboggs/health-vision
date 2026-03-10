@@ -420,7 +420,7 @@ serve(async (req) => {
       if (!habits || habits.length === 0) {
         await sendSMS(
           from,
-          `Hey ${firstName}, you don't have any habits set up yet. Set up habits in the app first, then text BACKUP anytime to adjust.`,
+          `Hey ${firstName}, you don't have any habits set up yet. Set up habits on your dashboard first, then text BACKUP anytime to adjust.`,
           supabase, profile.id, userName
         )
         return new Response(
