@@ -75,49 +75,51 @@ export class ContentRecommendationEngine {
       frictionThemes: frictionThemes.map(t => t.theme)
     })
 
+    // Reserve 2 slots for podcasts — videos fill at most maxVideoSlots
+    const maxVideoSlots = 5
+
     // PRIORITY 1: Reflection-based content (THIS IS THE MAIN SOURCE)
     // Pull from what didn't go well + what user will try differently
     if (hasReflection) {
       console.log(`🎯 PRIORITY 1: Fetching reflection-based content (${frictionThemes.length} themes)...`)
       const frictionContent = await this.getFrictionBasedContent(frictionThemes)
-      recommendations.push(...frictionContent)
-      console.log(`✅ Added ${frictionContent.length} reflection-based recommendations`)
+      recommendations.push(...frictionContent.slice(0, maxVideoSlots))
+      console.log(`✅ Added ${Math.min(frictionContent.length, maxVideoSlots)} reflection-based recommendations`)
     }
 
     // PRIORITY 2: Vision-based content (for users without habits OR without reflection)
     if (!hasHabits || (!hasReflection && goalSignals.length > 0)) {
       console.log(`🎯 PRIORITY 2: Generating vision-based recommendations...`)
       const visionContent = await this.getVisionBasedContent(context, goalSignals)
-      // Only add vision content if we need more recommendations
-      const slotsRemaining = 6 - recommendations.length
-      recommendations.push(...visionContent.slice(0, slotsRemaining))
+      const slotsRemaining = maxVideoSlots - recommendations.length
+      if (slotsRemaining > 0) {
+        recommendations.push(...visionContent.slice(0, slotsRemaining))
+      }
     }
 
     // PRIORITY 3: AI-generated content (when no reflection data exists)
     // Uses OpenAI to generate targeted search queries based on vision/habits
-    if (!hasReflection && recommendations.length < 5) {
+    if (!hasReflection && recommendations.length < maxVideoSlots) {
       console.log(`🎯 PRIORITY 3: Generating AI-powered recommendations...`)
       const aiContent = await this.getAIGeneratedContent(context)
-      const slotsRemaining = 6 - recommendations.length
+      const slotsRemaining = maxVideoSlots - recommendations.length
       recommendations.push(...aiContent.slice(0, slotsRemaining))
       console.log(`✅ Added ${Math.min(aiContent.length, slotsRemaining)} AI-generated recommendations`)
     }
 
     // PRIORITY 4: Habit-based content (fills remaining slots, only if we need more)
-    if (recommendations.length < 5) {
-      console.log(`🎯 PRIORITY 4: Adding habit-based content to fill ${6 - recommendations.length} remaining slots...`)
+    if (recommendations.length < maxVideoSlots) {
+      console.log(`🎯 PRIORITY 4: Adding habit-based content to fill ${maxVideoSlots - recommendations.length} remaining slots...`)
       const habitContent = await this.getRealTimeContent(context, habitCategories, goalSignals)
-      const slotsRemaining = 6 - recommendations.length
+      const slotsRemaining = maxVideoSlots - recommendations.length
       recommendations.push(...habitContent.slice(0, slotsRemaining))
     }
 
     // PRIORITY 5: Podcast episodes (1-2 from Spotify)
-    if (this.spotifyAPI) {
-      console.log(`🎯 PRIORITY 5: Adding podcast recommendations...`)
-      const podcastContent = await this.getPodcastRecommendations(habitCategories, goalSignals, frictionThemes)
-      recommendations.push(...podcastContent)
-      console.log(`✅ Added ${podcastContent.length} podcast recommendations`)
-    }
+    console.log(`🎯 PRIORITY 5: Adding podcast recommendations...`)
+    const podcastContent = await this.getPodcastRecommendations(habitCategories, goalSignals, frictionThemes)
+    recommendations.push(...podcastContent)
+    console.log(`✅ Added ${podcastContent.length} podcast recommendations`)
 
     // Deduplicate by video/episode ID and limit to top 7
     const uniqueRecommendations = this.deduplicateRecommendations(recommendations)
@@ -447,6 +449,10 @@ Return ONLY the JSON array, no other text.`
     }
 
     try {
+      if (!this.spotifyAPI) {
+        console.log('⚠️ Spotify API not configured — skipping live search, will use fallbacks')
+      }
+
       // Step 1: If friction themes exist, search for the top theme (max 1 episode)
       if (frictionThemes.length > 0 && this.spotifyAPI) {
         const topTheme = frictionThemes[0]
