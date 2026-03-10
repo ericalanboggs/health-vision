@@ -373,6 +373,11 @@ export default function Resources() {
                               {resource.description}
                             </p>
                           )}
+                          {resource.admin_note && (
+                            <p className="text-body-sm text-summit-emerald mt-1 italic">
+                              Summit Note: {resource.admin_note}
+                            </p>
+                          )}
                           {resource.topic && (
                             <Tag size="sm" variant="secondary" className="mt-2">
                               {resource.topic}

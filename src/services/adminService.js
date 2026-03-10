@@ -169,7 +169,9 @@ export const getUserDetail = async (userId) => {
           weekNumber: habit.week_number,
           days: [],
           times: new Set(),
-          createdAt: habit.created_at
+          createdAt: habit.created_at,
+          challengeSlug: habit.challenge_slug || null,
+          timezone: habit.timezone || null
         }
       }
       habitGroups[habit.habit_name].days.push(habit.day_of_week)
@@ -475,6 +477,100 @@ export const adminTogglePinResource = async (resourceId, currentPinned) => {
     return { success: true, data }
   } catch (error) {
     console.error('Error toggling pin:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Delete a habit (all rows for that habit name) for a user
+ */
+export const adminDeleteHabit = async (userId, habitName) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { error } = await supabase
+      .from('weekly_habits')
+      .delete()
+      .eq('user_id', userId)
+      .eq('habit_name', habitName)
+
+    if (error) throw error
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting habit:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Update a habit: delete old rows, insert new rows (one per day)
+ */
+export const adminUpdateHabit = async (userId, oldHabitName, { name, days, reminderTime, timezone, challengeSlug }) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    // Delete old rows
+    const { error: deleteError } = await supabase
+      .from('weekly_habits')
+      .delete()
+      .eq('user_id', userId)
+      .eq('habit_name', oldHabitName)
+
+    if (deleteError) throw deleteError
+
+    // Insert new rows (one per day)
+    const rows = days.map(day => ({
+      user_id: userId,
+      habit_name: name,
+      day_of_week: day,
+      reminder_time: reminderTime || null,
+      time_of_day: reminderTime || null,
+      timezone: timezone || null,
+      challenge_slug: challengeSlug || null,
+    }))
+
+    const { error: insertError } = await supabase
+      .from('weekly_habits')
+      .insert(rows)
+
+    if (insertError) throw insertError
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating habit:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Add a new habit for a user (one row per day)
+ */
+export const adminAddHabit = async (userId, { name, days, reminderTime, timezone }) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const rows = days.map(day => ({
+      user_id: userId,
+      habit_name: name,
+      day_of_week: day,
+      reminder_time: reminderTime || null,
+      time_of_day: reminderTime || null,
+      timezone: timezone || null,
+    }))
+
+    const { error } = await supabase
+      .from('weekly_habits')
+      .insert(rows)
+
+    if (error) throw error
+    return { success: true }
+  } catch (error) {
+    console.error('Error adding habit:', error)
     return { success: false, error: error.message }
   }
 }

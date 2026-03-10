@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource } from '../services/adminService'
+import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit } from '../services/adminService'
 import { COACHING_CONFIG, getBillingPeriod } from '../services/subscriptionService'
 import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt, Forum, Edit as EditIcon, Close, Add, PushPin, PushPinOutlined, DeleteOutline } from '@mui/icons-material'
 import { Tag } from '@summit/design-system'
@@ -73,6 +73,12 @@ export default function AdminUserDetail() {
   const [showAddResourceForm, setShowAddResourceForm] = useState(false)
   const [addResourceForm, setAddResourceForm] = useState({ title: '', url: '', resource_type: 'link', duration_minutes: '', admin_note: '' })
   const [savingResource, setSavingResource] = useState(false)
+  const [editingHabits, setEditingHabits] = useState(false)
+  const [editingHabitName, setEditingHabitName] = useState(null)
+  const [editHabitForm, setEditHabitForm] = useState({ name: '', days: [], reminderTime: '' })
+  const [showAddHabitForm, setShowAddHabitForm] = useState(false)
+  const [addHabitForm, setAddHabitForm] = useState({ name: '', days: [], reminderTime: '' })
+  const [savingHabit, setSavingHabit] = useState(false)
 
   useEffect(() => {
     loadUserDetail()
@@ -162,6 +168,94 @@ export default function AdminUserDetail() {
       setShowAddResourceForm(false)
     }
     setSavingResource(false)
+  }
+
+  const handleDeleteHabit = async (habitName) => {
+    const result = await adminDeleteHabit(userId, habitName)
+    if (result.success) {
+      setData(prev => ({
+        ...prev,
+        habits: prev.habits.filter(h => h.name !== habitName)
+      }))
+    }
+  }
+
+  const handleStartEditHabit = (habit) => {
+    setEditingHabitName(habit.name)
+    setEditHabitForm({
+      name: habit.name,
+      days: [...habit.days],
+      reminderTime: habit.times[0] || ''
+    })
+  }
+
+  const handleSaveEditHabit = async (originalName, habit) => {
+    if (!editHabitForm.name.trim() || editHabitForm.days.length === 0) return
+    setSavingHabit(true)
+    const result = await adminUpdateHabit(userId, originalName, {
+      name: editHabitForm.name.trim(),
+      days: editHabitForm.days,
+      reminderTime: editHabitForm.reminderTime || null,
+      timezone: habit.timezone,
+      challengeSlug: habit.challengeSlug,
+    })
+    if (result.success) {
+      setData(prev => ({
+        ...prev,
+        habits: prev.habits.map(h =>
+          h.name === originalName
+            ? {
+                ...h,
+                name: editHabitForm.name.trim(),
+                days: editHabitForm.days,
+                times: editHabitForm.reminderTime ? [editHabitForm.reminderTime] : [],
+                frequency: editHabitForm.days.length,
+              }
+            : h
+        )
+      }))
+      setEditingHabitName(null)
+    }
+    setSavingHabit(false)
+  }
+
+  const handleAddHabit = async () => {
+    if (!addHabitForm.name.trim() || addHabitForm.days.length === 0) return
+    setSavingHabit(true)
+    const result = await adminAddHabit(userId, {
+      name: addHabitForm.name.trim(),
+      days: addHabitForm.days,
+      reminderTime: addHabitForm.reminderTime || null,
+      timezone: profile?.timezone || null,
+    })
+    if (result.success) {
+      setData(prev => ({
+        ...prev,
+        habits: [
+          ...prev.habits,
+          {
+            name: addHabitForm.name.trim(),
+            days: addHabitForm.days,
+            times: addHabitForm.reminderTime ? [addHabitForm.reminderTime] : [],
+            frequency: addHabitForm.days.length,
+            createdAt: new Date().toISOString(),
+            challengeSlug: null,
+            timezone: profile?.timezone || null,
+          }
+        ]
+      }))
+      setAddHabitForm({ name: '', days: [], reminderTime: '' })
+      setShowAddHabitForm(false)
+    }
+    setSavingHabit(false)
+  }
+
+  const toggleDay = (daysArray, setDays, day) => {
+    if (daysArray.includes(day)) {
+      setDays(daysArray.filter(d => d !== day))
+    } else {
+      setDays([...daysArray, day].sort())
+    }
   }
 
   const formatDate = (timestamp) => {
@@ -523,36 +617,191 @@ export default function AdminUserDetail() {
 
         {/* Current Habits */}
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
-          <h2 className="text-xl font-bold text-summit-forest mb-4">Current Habits</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-summit-forest">Current Habits</h2>
+            <button
+              onClick={() => { setEditingHabits(!editingHabits); setEditingHabitName(null); setShowAddHabitForm(false) }}
+              className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-500 hover:text-summit-forest transition-colors"
+              title={editingHabits ? 'Exit edit mode' : 'Edit habits'}
+            >
+              {editingHabits ? <Close className="w-5 h-5" /> : <EditIcon className="w-5 h-5" />}
+            </button>
+          </div>
           {habits.length > 0 ? (
             <div className="space-y-4">
               {habits.map((habit, index) => (
                 <div key={index} className="border border-stone-200 rounded-lg p-4">
-                  <h3 className="font-medium text-summit-forest mb-2">{habit.name}</h3>
-                  <div className="text-sm text-stone-600 space-y-1">
-                    <div>
-                      <span className="font-medium">Frequency:</span> {habit.frequency} day{habit.frequency !== 1 ? 's' : ''}/week
-                    </div>
-                    <div>
-                      <span className="font-medium">Days:</span> {habit.days.map(d => getDayName(d)).join(', ')}
-                    </div>
-                    {habit.times.length > 0 && (
+                  {editingHabitName === habit.name ? (
+                    /* Inline edit form */
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={editHabitForm.name}
+                        onChange={(e) => setEditHabitForm(f => ({ ...f, name: e.target.value }))}
+                        placeholder="Habit name"
+                        className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent"
+                      />
                       <div>
-                        <span className="font-medium">Time:</span> {habit.times.map(t => formatTime(t)).join(', ')}
+                        <span className="text-sm font-medium text-stone-600 mb-1 block">Days</span>
+                        <div className="flex gap-1">
+                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label, i) => (
+                            <button
+                              key={i}
+                              onClick={() => toggleDay(editHabitForm.days, (d) => setEditHabitForm(f => ({ ...f, days: d })), i)}
+                              className={`px-2 py-1 text-xs rounded-md font-medium transition-colors ${
+                                editHabitForm.days.includes(i)
+                                  ? 'bg-summit-emerald text-white'
+                                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    )}
-                    <div>
-                      <span className="font-medium">Week:</span> {habit.weekNumber}
+                      <input
+                        type="time"
+                        value={editHabitForm.reminderTime}
+                        onChange={(e) => setEditHabitForm(f => ({ ...f, reminderTime: e.target.value }))}
+                        className="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent"
+                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleSaveEditHabit(habit.name, habit)}
+                          disabled={savingHabit || !editHabitForm.name.trim() || editHabitForm.days.length === 0}
+                          className="px-4 py-2 bg-summit-emerald text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+                        >
+                          {savingHabit ? 'Saving...' : 'Save'}
+                        </button>
+                        <button
+                          onClick={() => setEditingHabitName(null)}
+                          className="px-4 py-2 text-stone-600 hover:text-stone-800 text-sm font-medium transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <span className="font-medium">Created:</span> {formatDate(habit.createdAt)}
-                    </div>
-                  </div>
+                  ) : (
+                    /* Read-only view */
+                    <>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-summit-forest">{habit.name}</h3>
+                          {habit.challengeSlug && (
+                            <Tag variant="info" size="sm">{habit.challengeSlug}</Tag>
+                          )}
+                        </div>
+                        {editingHabits && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleStartEditHabit(habit)}
+                              className="p-1 rounded hover:bg-stone-100 text-stone-400 hover:text-summit-emerald transition-colors"
+                              title="Edit habit"
+                            >
+                              <EditIcon className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteHabit(habit.name)}
+                              className="p-1 rounded hover:bg-red-50 text-stone-400 hover:text-red-600 transition-colors"
+                              title="Delete habit"
+                            >
+                              <DeleteOutline className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-sm text-stone-600 space-y-1">
+                        <div>
+                          <span className="font-medium">Frequency:</span> {habit.frequency} day{habit.frequency !== 1 ? 's' : ''}/week
+                        </div>
+                        <div>
+                          <span className="font-medium">Days:</span> {habit.days.map(d => getDayName(d)).join(', ')}
+                        </div>
+                        {habit.times.length > 0 && (
+                          <div>
+                            <span className="font-medium">Time:</span> {habit.times.map(t => formatTime(t)).join(', ')}
+                          </div>
+                        )}
+                        <div>
+                          <span className="font-medium">Week:</span> {habit.weekNumber}
+                        </div>
+                        <div>
+                          <span className="font-medium">Created:</span> {formatDate(habit.createdAt)}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
           ) : (
             <p className="text-stone-500 italic">No active habits</p>
+          )}
+
+          {/* Add Habit button */}
+          {editingHabits && !showAddHabitForm && (
+            <button
+              onClick={() => setShowAddHabitForm(true)}
+              className="mt-4 flex items-center gap-2 text-sm text-summit-emerald hover:text-green-700 font-medium transition-colors"
+            >
+              <Add className="w-4 h-4" />
+              Add Habit
+            </button>
+          )}
+
+          {/* Add Habit form */}
+          {editingHabits && showAddHabitForm && (
+            <div className="mt-4 border border-stone-200 rounded-lg p-4 space-y-3">
+              <input
+                type="text"
+                value={addHabitForm.name}
+                onChange={(e) => setAddHabitForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="Habit name *"
+                className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent"
+              />
+              <div>
+                <span className="text-sm font-medium text-stone-600 mb-1 block">Days *</span>
+                <div className="flex gap-1">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label, i) => (
+                    <button
+                      key={i}
+                      onClick={() => toggleDay(addHabitForm.days, (d) => setAddHabitForm(f => ({ ...f, days: d })), i)}
+                      className={`px-2 py-1 text-xs rounded-md font-medium transition-colors ${
+                        addHabitForm.days.includes(i)
+                          ? 'bg-summit-emerald text-white'
+                          : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <input
+                type="time"
+                value={addHabitForm.reminderTime}
+                onChange={(e) => setAddHabitForm(f => ({ ...f, reminderTime: e.target.value }))}
+                className="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleAddHabit}
+                  disabled={savingHabit || !addHabitForm.name.trim() || addHabitForm.days.length === 0}
+                  className="px-4 py-2 bg-summit-emerald text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  {savingHabit ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAddHabitForm(false)
+                    setAddHabitForm({ name: '', days: [], reminderTime: '' })
+                  }}
+                  className="px-4 py-2 text-stone-600 hover:text-stone-800 text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           )}
         </div>
 
