@@ -332,16 +332,40 @@ export const getConversation = async (userId, limit = 50) => {
       return { success: false, error: 'Unauthorized' }
     }
 
-    const { data, error } = await supabase
-      .from('sms_messages')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true })
-      .limit(limit)
+    // Fetch sms_messages and sms_reminders in parallel
+    const [messagesResult, remindersResult] = await Promise.all([
+      supabase
+        .from('sms_messages')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true })
+        .limit(limit),
+      supabase
+        .from('sms_reminders')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true })
+        .limit(limit),
+    ])
 
-    if (error) throw error
+    if (messagesResult.error) throw messagesResult.error
+    if (remindersResult.error) throw remindersResult.error
 
-    return { success: true, data }
+    // Normalize reminders to match the message shape
+    const normalizedReminders = (remindersResult.data || []).map((r) => ({
+      id: r.id,
+      direction: 'outbound',
+      body: r.message,
+      created_at: r.sent_at || r.created_at,
+      sent_by_type: 'reminder',
+      _source: 'reminder',
+    }))
+
+    // Merge and sort chronologically
+    const combined = [...(messagesResult.data || []), ...normalizedReminders]
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+
+    return { success: true, data: combined }
   } catch (error) {
     console.error('Error fetching conversation:', error)
     return { success: false, error: error.message }

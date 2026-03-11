@@ -125,13 +125,33 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
           filter: `user_id=eq.${userId}`
         },
         (payload) => {
-          // Add new message to the list
           setMessages((prev) => {
-            // Check if message already exists (avoid duplicates)
-            if (prev.some(m => m.id === payload.new.id)) {
-              return prev
-            }
+            if (prev.some(m => m.id === payload.new.id)) return prev
             return [...prev, payload.new]
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'sms_reminders',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload) => {
+          const r = payload.new
+          const normalized = {
+            id: r.id,
+            direction: 'outbound',
+            body: r.message,
+            created_at: r.sent_at || r.created_at,
+            sent_by_type: 'reminder',
+            _source: 'reminder',
+          }
+          setMessages((prev) => {
+            if (prev.some(m => m.id === normalized.id)) return prev
+            return [...prev, normalized]
           })
         }
       )
@@ -269,21 +289,30 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
               key={msg.id}
               className={`flex ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
             >
-              <div
-                className={`max-w-[80%] rounded-2xl px-3 py-2 ${
-                  msg.direction === 'outbound'
-                    ? 'bg-summit-emerald text-white rounded-br-sm'
-                    : 'bg-white border border-stone-200 text-summit-forest rounded-bl-sm'
-                }`}
-              >
-                <p className="text-sm whitespace-pre-wrap break-words">{msg.body}</p>
-                <p
-                  className={`text-xs mt-1 ${
-                    msg.direction === 'outbound' ? 'text-white/70' : 'text-stone-400'
+              <div className="max-w-[80%]">
+                {msg._source === 'reminder' && (
+                  <p className="text-[10px] font-medium text-stone-400 uppercase tracking-wide mb-0.5 text-right">
+                    Reminder
+                  </p>
+                )}
+                <div
+                  className={`rounded-2xl px-3 py-2 ${
+                    msg.direction === 'outbound'
+                      ? msg._source === 'reminder'
+                        ? 'bg-summit-emerald/70 text-white rounded-br-sm'
+                        : 'bg-summit-emerald text-white rounded-br-sm'
+                      : 'bg-white border border-stone-200 text-summit-forest rounded-bl-sm'
                   }`}
                 >
-                  {formatTimestamp(msg.created_at)}
-                </p>
+                  <p className="text-sm whitespace-pre-wrap break-words">{msg.body}</p>
+                  <p
+                    className={`text-xs mt-1 ${
+                      msg.direction === 'outbound' ? 'text-white/70' : 'text-stone-400'
+                    }`}
+                  >
+                    {formatTimestamp(msg.created_at)}
+                  </p>
+                </div>
               </div>
             </div>
           ))
