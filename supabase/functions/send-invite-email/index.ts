@@ -19,7 +19,7 @@ function buildEmailHtml(): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>You've Been Granted Access to Summit</title>
+  <title>Welcome to Summit</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5;">
@@ -37,7 +37,7 @@ function buildEmailHtml(): string {
           <tr>
             <td align="center" style="padding: 0 40px 20px 40px;">
               <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #1a1a1a; line-height: 1.3;">
-                You've Been Granted Access!
+                Welcome to Summit!
               </h1>
             </td>
           </tr>
@@ -46,7 +46,7 @@ function buildEmailHtml(): string {
           <tr>
             <td style="padding: 0 40px 25px 40px;">
               <p style="margin: 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
-                Great news! You've been invited to join the <strong>Summit Pilot Program</strong> - a 3-week experiment in sustainable health change.
+                You've been invited to join <strong>Summit</strong> — a platform for sustainable health change.
               </p>
               <p style="margin: 16px 0 0 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
                 Summit helps you reach your health goals not through dramatic overhauls, but through <strong>small, consistent habits</strong> built into your daily life. The climb happens one step at a time.
@@ -222,7 +222,7 @@ serve(async (req) => {
       .single()
 
     // Send the invitation email
-    const subject = "You've Been Granted Access to Summit!"
+    const subject = "Welcome to Summit!"
     const html = buildEmailHtml()
 
     console.log(`Sending invitation email to ${email}`)
