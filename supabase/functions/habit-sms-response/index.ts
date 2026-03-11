@@ -669,21 +669,7 @@ serve(async (req) => {
 
     if (profileError || !profile) {
       console.log(`❌ No user found for phone ${from}`)
-
-      try {
-        await supabase.from('sms_messages').insert({
-          direction: 'inbound',
-          user_id: null,
-          phone: from,
-          user_name: null,
-          body: body,
-          twilio_sid: messageSid,
-          twilio_status: 'received',
-        })
-      } catch (err) {
-        console.error('Error logging unknown user message:', err)
-      }
-
+      // Inbound message already logged by twilio-webhook
       return new Response(
         '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
         { headers: { 'Content-Type': 'text/xml' } }
@@ -715,21 +701,7 @@ serve(async (req) => {
       )
     }
 
-    // Log the inbound message
-    try {
-      await supabase.from('sms_messages').insert({
-        direction: 'inbound',
-        user_id: profile.id,
-        phone: from,
-        user_name: userName,
-        body: body,
-        twilio_sid: messageSid,
-        twilio_status: 'received',
-      })
-      console.log('✓ Logged inbound message')
-    } catch (err) {
-      console.error('Error logging inbound message:', err)
-    }
+    // Inbound message already logged by twilio-webhook — no duplicate insert needed
 
     const userTimezone = profile.timezone || 'America/Chicago'
     const todayStr = getTodayInTimezone(userTimezone)
