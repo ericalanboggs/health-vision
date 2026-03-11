@@ -362,8 +362,16 @@ export const getConversation = async (userId, limit = 500) => {
       _source: 'reminder',
     }))
 
-    // Merge and sort chronologically
-    const combined = [...(messagesResult.data || []), ...normalizedReminders]
+    // Merge, deduplicate by twilio_sid, and sort chronologically
+    const all = [...(messagesResult.data || []), ...normalizedReminders]
+    const seen = new Set()
+    const combined = all
+      .filter((msg) => {
+        if (!msg.twilio_sid) return true
+        if (seen.has(msg.twilio_sid)) return false
+        seen.add(msg.twilio_sid)
+        return true
+      })
       .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
 
     return { success: true, data: combined }
