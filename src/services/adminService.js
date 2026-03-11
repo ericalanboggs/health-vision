@@ -230,6 +230,7 @@ export const inviteUser = async (email) => {
       return { success: false, error: 'Unauthorized' }
     }
 
+    const { data: { user: adminUser } } = await supabase.auth.getUser()
     const normalizedEmail = email.toLowerCase().trim()
 
     // Add to in-memory allowlist (for current session)
@@ -241,7 +242,7 @@ export const inviteUser = async (email) => {
       .upsert({
         email: normalizedEmail,
         invited_at: new Date().toISOString(),
-        invited_by: ADMIN_EMAIL
+        invited_by: adminUser?.email || 'admin'
       }, {
         onConflict: 'email'
       })
@@ -326,7 +327,7 @@ export const sendAdminSMS = async (recipients, message) => {
  * @param {string} userId
  * @param {number} limit
  */
-export const getConversation = async (userId, limit = 50) => {
+export const getConversation = async (userId, limit = 500) => {
   try {
     if (!await isAdmin()) {
       return { success: false, error: 'Unauthorized' }
@@ -338,13 +339,13 @@ export const getConversation = async (userId, limit = 50) => {
         .from('sms_messages')
         .select('*')
         .eq('user_id', userId)
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false })
         .limit(limit),
       supabase
         .from('sms_reminders')
         .select('*')
         .eq('user_id', userId)
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false })
         .limit(limit),
     ])
 
