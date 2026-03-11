@@ -7,15 +7,19 @@ RETURNS TRIGGER AS $$
 BEGIN
   -- Only trigger when profile_completed changes from false/null to true
   IF (NEW.profile_completed = true AND (OLD.profile_completed IS NULL OR OLD.profile_completed = false)) THEN
-    -- Call the edge function via pg_net
-    PERFORM net.http_post(
-      url := current_setting('app.settings.supabase_url') || '/functions/v1/send-welcome-email',
-      headers := jsonb_build_object(
-        'Content-Type', 'application/json',
-        'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key')
-      ),
-      body := jsonb_build_object('userId', NEW.id)
-    );
+    BEGIN
+      -- Call the edge function via pg_net
+      PERFORM net.http_post(
+        url := current_setting('app.settings.supabase_url') || '/functions/v1/send-welcome-email',
+        headers := jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key')
+        ),
+        body := jsonb_build_object('userId', NEW.id)
+      );
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'send_welcome_email_on_profile_complete failed: %', SQLERRM;
+    END;
   END IF;
 
   RETURN NEW;
@@ -35,14 +39,18 @@ CREATE OR REPLACE FUNCTION send_welcome_email_on_profile_insert()
 RETURNS TRIGGER AS $$
 BEGIN
   IF (NEW.profile_completed = true) THEN
-    PERFORM net.http_post(
-      url := current_setting('app.settings.supabase_url') || '/functions/v1/send-welcome-email',
-      headers := jsonb_build_object(
-        'Content-Type', 'application/json',
-        'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key')
-      ),
-      body := jsonb_build_object('userId', NEW.id)
-    );
+    BEGIN
+      PERFORM net.http_post(
+        url := current_setting('app.settings.supabase_url') || '/functions/v1/send-welcome-email',
+        headers := jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key')
+        ),
+        body := jsonb_build_object('userId', NEW.id)
+      );
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'send_welcome_email_on_profile_insert failed: %', SQLERRM;
+    END;
   END IF;
 
   RETURN NEW;
