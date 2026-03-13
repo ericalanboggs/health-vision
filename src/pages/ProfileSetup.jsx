@@ -4,6 +4,7 @@ import { Person, Phone, Email, Autorenew } from '@mui/icons-material'
 import { getCurrentUser } from '../services/authService'
 import { upsertProfile } from '../services/authService'
 import { trackEvent } from '../lib/posthog'
+import supabase from '../lib/supabase'
 import { formatPhoneToE164, isValidUSPhoneNumber, formatPhoneAsYouType } from '../utils/phoneFormatter'
 import { Button, Input, Checkbox, Card } from '@summit/design-system'
 
@@ -114,6 +115,11 @@ export default function ProfileSetup() {
           has_phone: !!formData.phone,
           sms_consent: formData.smsConsent
         })
+
+        // Notify admin of new signup (fire-and-forget)
+        supabase.functions.invoke('notify-new-signup', {
+          body: { userId: user.id }
+        }).catch(err => console.error('notify-new-signup error:', err))
 
         navigate(formData.smsConsent ? '/verify-phone' : '/')
       } else {
