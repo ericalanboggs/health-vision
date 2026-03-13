@@ -197,7 +197,7 @@ serve(async (req) => {
 
       const existingHabitNames = new Set(
         (existingEntries || [])
-          .filter(e => e.completed === true || e.metric_value !== null)
+          .filter(e => e.completed !== null || e.metric_value !== null)
           .map(e => e.habit_name)
       )
 
