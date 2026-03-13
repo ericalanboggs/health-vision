@@ -116,7 +116,10 @@ export default function ProfileSetup() {
           sms_consent: formData.smsConsent
         })
 
-        // Notify admin of new signup (fire-and-forget)
+        // Send welcome email + notify admin (fire-and-forget)
+        supabase.functions.invoke('send-welcome-email', {
+          body: { userId: user.id }
+        }).catch(err => console.error('send-welcome-email error:', err))
         supabase.functions.invoke('notify-new-signup', {
           body: { userId: user.id }
         }).catch(err => console.error('notify-new-signup error:', err))
