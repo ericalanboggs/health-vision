@@ -134,6 +134,20 @@ export const getUserDetail = async (userId) => {
 
     if (habitsError) throw habitsError
 
+    // Get tracking configs
+    const { data: trackingConfigs, error: trackingError } = await supabase
+      .from('habit_tracking_config')
+      .select('habit_name, tracking_type, tracking_enabled, metric_unit, metric_target')
+      .eq('user_id', userId)
+
+    if (trackingError) throw trackingError
+
+    // Build tracking lookup by habit name
+    const trackingByHabit = {}
+    trackingConfigs?.forEach(tc => {
+      trackingByHabit[tc.habit_name] = tc
+    })
+
     // Get reflections
     const { data: reflections, error: reflectionsError } = await supabase
       .from('weekly_reflections')
@@ -180,11 +194,20 @@ export const getUserDetail = async (userId) => {
       }
     })
 
-    const groupedHabits = Object.values(habitGroups).map(group => ({
-      ...group,
-      times: Array.from(group.times),
-      frequency: group.days.length
-    }))
+    const groupedHabits = Object.values(habitGroups).map(group => {
+      const tc = trackingByHabit[group.name]
+      return {
+        ...group,
+        times: Array.from(group.times),
+        frequency: group.days.length,
+        tracking: tc ? {
+          enabled: tc.tracking_enabled,
+          type: tc.tracking_type,
+          unit: tc.metric_unit,
+          target: tc.metric_target,
+        } : null,
+      }
+    })
 
     return {
       success: true,

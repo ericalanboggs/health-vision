@@ -728,6 +728,14 @@ export default function AdminUserDetail() {
                         <div>
                           <span className="font-medium">Created:</span> {formatDate(habit.createdAt)}
                         </div>
+                        <div>
+                          <span className="font-medium">Tracking:</span>{' '}
+                          {habit.tracking?.enabled
+                            ? habit.tracking.type === 'boolean'
+                              ? 'Yes/No'
+                              : `${habit.tracking.unit || 'metric'}${habit.tracking.target ? ` (target: ${habit.tracking.target})` : ''}`
+                            : 'Off'}
+                        </div>
                       </div>
                     </>
                   )}

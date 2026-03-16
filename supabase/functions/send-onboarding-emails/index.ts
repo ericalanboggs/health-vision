@@ -252,9 +252,9 @@ function buildDay7Html(firstName: string): string {
     paragraph(`Summit is different. We aim to support you through ups <em>and</em> downs, and we fully understand that behavior change isn't a straight line.`),
     subheading('What to know going forward'),
     bulletList([
-      `<strong>Update your climb.</strong> Your progress indicator on the dashboard is yours to update as you feel growth happening. It's a personal marker, not a score.`,
-      `<strong>Real outcomes take many forms.</strong> Summit users have reported feeling better, having greater confidence and autonomy, more peace, and more energy. Progress isn't always what you expect.`,
       `<strong>You have dials, not switches.</strong> You can adjust habits, days, tracking, and SMS at any time. Turn things down when life gets heavy. Turn them back up when you're ready.`,
+      `<strong>Real outcomes take many forms.</strong> Summit users have reported feeling better, having greater confidence and autonomy, more peace, and more energy. Progress isn't always what you expect.`,
+      `<strong>Refine your vision.</strong> Your vision isn't a one-time exercise — it grows with you. Return to it over time to add detail, shift your focus, or update where you are on the mountain. The clearer it gets, the more useful Summit becomes.`,
       `<strong>It's OK to take a break.</strong> If you ever need to step away, Summit will be here when you come back. No guilt. No "you missed 47 days" notifications.`,
     ]),
     spacer(10),
