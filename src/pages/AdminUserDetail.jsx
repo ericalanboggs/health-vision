@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit } from '../services/adminService'
 import { COACHING_CONFIG, getBillingPeriod } from '../services/subscriptionService'
-import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt, Forum, Edit as EditIcon, Close, Add, PushPin, PushPinOutlined, DeleteOutline } from '@mui/icons-material'
+import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt, Forum, Edit as EditIcon, Close, Add, PushPin, PushPinOutlined, DeleteOutline, Chat } from '@mui/icons-material'
 import { Tag } from '@summit/design-system'
 import ConversationView from '../components/admin/ConversationView'
+import SMSThreadsPanel from '../components/admin/SMSThreadsPanel'
 
 /**
  * Derive coaching archetype from form data
@@ -73,6 +74,7 @@ export default function AdminUserDetail() {
   const [showAddResourceForm, setShowAddResourceForm] = useState(false)
   const [addResourceForm, setAddResourceForm] = useState({ title: '', url: '', resource_type: 'link', duration_minutes: '', admin_note: '' })
   const [savingResource, setSavingResource] = useState(false)
+  const [showThreadsPanel, setShowThreadsPanel] = useState(false)
   const [editingHabits, setEditingHabits] = useState(false)
   const [editingHabitName, setEditingHabitName] = useState(null)
   const [editHabitForm, setEditHabitForm] = useState({ name: '', days: [], reminderTime: '' })
@@ -320,7 +322,16 @@ export default function AdminUserDetail() {
             <ArrowBack className="w-5 h-5" />
             Back to Admin
           </button>
-          <h1 className="text-3xl font-bold text-summit-forest">{profile.name}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-summit-forest">{profile.name}</h1>
+            <button
+              onClick={() => setShowThreadsPanel(true)}
+              className="p-2 text-stone-500 hover:text-summit-emerald hover:bg-stone-100 rounded-lg transition"
+              title="Messages"
+            >
+              <Chat className="w-5 h-5" />
+            </button>
+          </div>
           <p className="text-stone-600 mt-1">{profile.email}</p>
         </div>
       </header>
@@ -1048,6 +1059,11 @@ export default function AdminUserDetail() {
           </div>
         </div>
       </main>
+
+      <SMSThreadsPanel
+        isOpen={showThreadsPanel}
+        onClose={() => setShowThreadsPanel(false)}
+      />
     </div>
   )
 }

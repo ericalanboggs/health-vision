@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAllUsers, inviteUser } from '../services/adminService'
-import { Autorenew, SwapVert, PersonAdd, Send, NotificationsActive } from '@mui/icons-material'
+import { Autorenew, SwapVert, PersonAdd, Send, NotificationsActive, Chat } from '@mui/icons-material'
 import { Checkbox } from '@summit/design-system'
 import BulkActionToolbar from '../components/admin/BulkActionToolbar'
 import SendSMSModal from '../components/admin/SendSMSModal'
+import SMSThreadsPanel from '../components/admin/SMSThreadsPanel'
 import DeleteConfirmModal from '../components/admin/DeleteConfirmModal'
 import EngagementFilter from '../components/admin/EngagementFilter'
 
@@ -27,6 +28,7 @@ export default function Admin() {
   // Modal state
   const [showSMSModal, setShowSMSModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showThreadsPanel, setShowThreadsPanel] = useState(false)
 
   useEffect(() => {
     loadUsers()
@@ -269,6 +271,13 @@ export default function Admin() {
             {selectedUserIds.size === 0 && (
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowThreadsPanel(true)}
+                    className="p-2 text-stone-500 hover:text-summit-emerald hover:bg-stone-100 rounded-lg transition"
+                    title="Messages"
+                  >
+                    <Chat className="w-5 h-5" />
+                  </button>
                   <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
                     <PersonAdd className="w-5 h-5 text-summit-moss" />
                     <input
@@ -523,6 +532,11 @@ export default function Admin() {
         onClose={() => setShowDeleteModal(false)}
         users={selectedUsers}
         onSuccess={handleDeleteSuccess}
+      />
+
+      <SMSThreadsPanel
+        isOpen={showThreadsPanel}
+        onClose={() => setShowThreadsPanel(false)}
       />
     </div>
   )

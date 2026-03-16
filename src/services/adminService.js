@@ -632,6 +632,47 @@ export const adminAddHabit = async (userId, { name, days, reminderTime, timezone
 }
 
 /**
+ * Get recent SMS threads (most recent message per user)
+ */
+export const getRecentThreads = async () => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { data, error } = await supabase
+      .from('sms_messages')
+      .select('id, user_id, user_name, phone, body, direction, created_at')
+      .order('created_at', { ascending: false })
+      .limit(200)
+
+    if (error) throw error
+
+    // Deduplicate by user_id — keep only the most recent message per user
+    const seen = new Map()
+    for (const msg of data || []) {
+      if (!seen.has(msg.user_id)) {
+        seen.set(msg.user_id, {
+          userId: msg.user_id,
+          userName: msg.user_name || msg.phone || 'Unknown',
+          phone: msg.phone,
+          lastMessage: {
+            body: msg.body,
+            direction: msg.direction,
+            created_at: msg.created_at,
+          },
+        })
+      }
+    }
+
+    return { success: true, data: Array.from(seen.values()) }
+  } catch (error) {
+    console.error('Error fetching recent threads:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
  * Delete users and all their data
  * @param {string[]} userIds
  */
