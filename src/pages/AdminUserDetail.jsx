@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit } from '../services/adminService'
+import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit, adminUpdateTrackingConfig } from '../services/adminService'
 import { COACHING_CONFIG, getBillingPeriod } from '../services/subscriptionService'
 import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt, Forum, Edit as EditIcon, Close, Add, PushPin, PushPinOutlined, DeleteOutline, Chat } from '@mui/icons-material'
 import { Tag } from '@summit/design-system'
@@ -77,7 +77,7 @@ export default function AdminUserDetail() {
   const [showThreadsPanel, setShowThreadsPanel] = useState(false)
   const [editingHabits, setEditingHabits] = useState(false)
   const [editingHabitName, setEditingHabitName] = useState(null)
-  const [editHabitForm, setEditHabitForm] = useState({ name: '', days: [], reminderTime: '' })
+  const [editHabitForm, setEditHabitForm] = useState({ name: '', days: [], reminderTime: '', trackingEnabled: false, trackingType: 'boolean', metricUnit: '', metricTarget: '' })
   const [showAddHabitForm, setShowAddHabitForm] = useState(false)
   const [addHabitForm, setAddHabitForm] = useState({ name: '', days: [], reminderTime: '' })
   const [savingHabit, setSavingHabit] = useState(false)
@@ -187,7 +187,11 @@ export default function AdminUserDetail() {
     setEditHabitForm({
       name: habit.name,
       days: [...habit.days],
-      reminderTime: habit.times[0] || ''
+      reminderTime: habit.times[0] || '',
+      trackingEnabled: habit.tracking?.enabled || false,
+      trackingType: habit.tracking?.type || 'boolean',
+      metricUnit: habit.tracking?.unit || '',
+      metricTarget: habit.tracking?.target || '',
     })
   }
 
@@ -201,6 +205,14 @@ export default function AdminUserDetail() {
       timezone: habit.timezone,
       challengeSlug: habit.challengeSlug,
     })
+    // Save tracking config
+    const habitNameForTracking = editHabitForm.name.trim()
+    await adminUpdateTrackingConfig(userId, habitNameForTracking, {
+      trackingEnabled: editHabitForm.trackingEnabled,
+      trackingType: editHabitForm.trackingType,
+      metricUnit: editHabitForm.metricUnit || null,
+      metricTarget: editHabitForm.metricTarget ? Number(editHabitForm.metricTarget) : null,
+    })
     if (result.success) {
       setData(prev => ({
         ...prev,
@@ -208,10 +220,16 @@ export default function AdminUserDetail() {
           h.name === originalName
             ? {
                 ...h,
-                name: editHabitForm.name.trim(),
+                name: habitNameForTracking,
                 days: editHabitForm.days,
                 times: editHabitForm.reminderTime ? [editHabitForm.reminderTime] : [],
                 frequency: editHabitForm.days.length,
+                tracking: {
+                  enabled: editHabitForm.trackingEnabled,
+                  type: editHabitForm.trackingType,
+                  unit: editHabitForm.trackingType === 'metric' ? editHabitForm.metricUnit : null,
+                  target: editHabitForm.trackingType === 'metric' ? editHabitForm.metricTarget : null,
+                },
               }
             : h
         )
@@ -676,6 +694,54 @@ export default function AdminUserDetail() {
                         onChange={(e) => setEditHabitForm(f => ({ ...f, reminderTime: e.target.value }))}
                         className="border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent"
                       />
+                      {/* Tracking config */}
+                      <div className="border-t border-stone-200 pt-3 space-y-2">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium text-stone-600">Tracking</span>
+                          <button
+                            type="button"
+                            onClick={() => setEditHabitForm(f => ({ ...f, trackingEnabled: !f.trackingEnabled }))}
+                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                              editHabitForm.trackingEnabled ? 'bg-summit-emerald' : 'bg-stone-300'
+                            }`}
+                          >
+                            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
+                              editHabitForm.trackingEnabled ? 'translate-x-4' : 'translate-x-0.5'
+                            }`} />
+                          </button>
+                          <span className="text-xs text-stone-500">{editHabitForm.trackingEnabled ? 'On' : 'Off'}</span>
+                        </div>
+                        {editHabitForm.trackingEnabled && (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <select
+                              value={editHabitForm.trackingType}
+                              onChange={(e) => setEditHabitForm(f => ({ ...f, trackingType: e.target.value }))}
+                              className="border border-stone-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald"
+                            >
+                              <option value="boolean">Yes / No</option>
+                              <option value="metric">Metric</option>
+                            </select>
+                            {editHabitForm.trackingType === 'metric' && (
+                              <>
+                                <input
+                                  type="text"
+                                  value={editHabitForm.metricUnit}
+                                  onChange={(e) => setEditHabitForm(f => ({ ...f, metricUnit: e.target.value }))}
+                                  placeholder="Unit (e.g. minutes)"
+                                  className="border border-stone-300 rounded-lg px-2 py-1.5 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-summit-emerald"
+                                />
+                                <input
+                                  type="number"
+                                  value={editHabitForm.metricTarget}
+                                  onChange={(e) => setEditHabitForm(f => ({ ...f, metricTarget: e.target.value }))}
+                                  placeholder="Target"
+                                  className="border border-stone-300 rounded-lg px-2 py-1.5 text-sm w-20 focus:outline-none focus:ring-2 focus:ring-summit-emerald"
+                                />
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleSaveEditHabit(habit.name, habit)}

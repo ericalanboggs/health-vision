@@ -602,6 +602,37 @@ export const adminTogglePinResource = async (resourceId, currentPinned) => {
 }
 
 /**
+ * Update tracking config for a habit
+ */
+export const adminUpdateTrackingConfig = async (userId, habitName, { trackingEnabled, trackingType, metricUnit, metricTarget }) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { data, error } = await supabase
+      .from('habit_tracking_config')
+      .upsert({
+        user_id: userId,
+        habit_name: habitName,
+        tracking_enabled: trackingEnabled,
+        tracking_type: trackingType || 'boolean',
+        metric_unit: trackingType === 'metric' ? (metricUnit || null) : null,
+        metric_target: trackingType === 'metric' ? (metricTarget || null) : null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,habit_name' })
+      .select()
+      .single()
+
+    if (error) throw error
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error updating tracking config:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
  * Delete a habit (all rows for that habit name) for a user
  */
 export const adminDeleteHabit = async (userId, habitName) => {
