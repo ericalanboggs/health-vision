@@ -193,9 +193,13 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
   }
 
   const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp)
+    // Supabase returns timestamps like "2026-03-17 18:33:00+00" — normalize to valid ISO 8601
+    const normalized = timestamp.replace(' ', 'T').replace(/\+00$/, '+00:00')
+    const date = new Date(normalized)
     const now = new Date()
-    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24))
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const msgDay = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    const diffDays = Math.round((today - msgDay) / (1000 * 60 * 60 * 24))
 
     const timeStr = date.toLocaleTimeString('en-US', {
       hour: 'numeric',
