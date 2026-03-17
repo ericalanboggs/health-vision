@@ -306,6 +306,45 @@ export const inviteUser = async (email) => {
 }
 
 /**
+ * Send a personalized email to a user
+ * @param {string} userId
+ * @param {{ subject: string, body: string, ctaText: string, category: string }} emailData
+ */
+export const sendAdminEmail = async (userId, { subject, body, ctaText, category }) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/send-admin-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({ userId, subject, body, ctaText, category })
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      console.error('Error sending admin email:', result)
+      return { success: false, error: result.error || 'Failed to send email' }
+    }
+
+    return { success: true, data: result }
+  } catch (error) {
+    console.error('Error sending admin email:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
  * Send SMS to one or more users
  * @param {Array<{userId: string, phone: string, name: string}>} recipients
  * @param {string} message
