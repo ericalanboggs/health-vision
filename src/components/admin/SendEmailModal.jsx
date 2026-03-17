@@ -43,6 +43,7 @@ const TEMPLATES = [
  */
 export default function SendEmailModal({ isOpen, onClose, user, onSuccess }) {
   const [selectedTemplate, setSelectedTemplate] = useState(null)
+  const [toEmail, setToEmail] = useState('')
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [ctaText, setCtaText] = useState('')
@@ -53,6 +54,7 @@ export default function SendEmailModal({ isOpen, onClose, user, onSuccess }) {
   useEffect(() => {
     if (isOpen) {
       setSelectedTemplate(null)
+      setToEmail(user.email || '')
       setSubject('')
       setBody('')
       setCtaText('')
@@ -80,6 +82,7 @@ export default function SendEmailModal({ isOpen, onClose, user, onSuccess }) {
         body: body.trim(),
         ctaText: ctaText.trim() || 'Open Summit',
         category: selectedTemplate || 'general',
+        toOverride: toEmail.trim() !== user.email ? toEmail.trim() : undefined,
       })
 
       if (response.success) {
@@ -145,6 +148,21 @@ export default function SendEmailModal({ isOpen, onClose, user, onSuccess }) {
             </div>
           </div>
 
+          {/* To */}
+          <div>
+            <label className="block text-sm font-medium text-stone-600 mb-1">
+              To
+            </label>
+            <input
+              type="email"
+              value={toEmail}
+              onChange={(e) => setToEmail(e.target.value)}
+              placeholder={user.email}
+              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition"
+              disabled={sending}
+            />
+          </div>
+
           {/* Subject */}
           <div>
             <label className="block text-sm font-medium text-stone-600 mb-1">
@@ -207,7 +225,7 @@ export default function SendEmailModal({ isOpen, onClose, user, onSuccess }) {
                 <>
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-green-800">
-                    Email sent to {user.email}
+                    Email sent to {toEmail}
                   </p>
                 </>
               ) : (

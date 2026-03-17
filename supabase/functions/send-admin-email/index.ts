@@ -52,7 +52,7 @@ function buildEmailHtml(body: string, ctaText: string, ctaUrl: string): string {
           <!-- CTA Button -->
           <tr>
             <td align="center" style="padding: 0 40px 30px 40px;">
-              <a href="${ctaUrl}" style="display: inline-block; padding: 16px 32px; background-color: #15803d; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
+              <a href="${ctaUrl}" style="display: inline-block; padding: 16px 32px; background-color: rgb(16, 185, 129); color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
                 ${ctaText}
               </a>
             </td>
@@ -118,7 +118,7 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { userId, subject, body, ctaText, category } = await req.json()
+    const { userId, subject, body, ctaText, category, toOverride } = await req.json()
 
     if (!userId || !subject || !body) {
       return new Response(
@@ -154,27 +154,28 @@ serve(async (req) => {
     const finalSubject = subject.replace(/\{\{name\}\}/g, firstName)
     const finalBody = body.replace(/\{\{name\}\}/g, firstName)
 
+    const recipientEmail = toOverride || profile.email
     const ctaUrl = 'https://go.summithealth.app/dashboard'
     const finalCtaText = ctaText || 'Open Summit'
 
     const html = buildEmailHtml(finalBody, finalCtaText, ctaUrl)
 
-    console.log(`Admin ${user.email} sending email to ${profile.email} (${userId}), category: ${category || 'none'}`)
+    console.log(`Admin ${user.email} sending email to ${recipientEmail} (${userId}), category: ${category || 'none'}`)
 
-    const result = await sendEmail({ to: profile.email, subject: finalSubject, html })
+    const result = await sendEmail({ to: recipientEmail, subject: finalSubject, html })
 
     if (result.success) {
       // Log to email_reminders
       await supabase.from('email_reminders').insert({
         user_id: userId,
-        email: profile.email,
+        email: recipientEmail,
         email_type: `admin-${category || 'general'}`,
         subject: finalSubject,
         status: 'sent',
         resend_id: result.id,
       })
 
-      console.log(`Sent admin email to ${profile.email}`)
+      console.log(`Sent admin email to ${recipientEmail}`)
 
       return new Response(
         JSON.stringify({ success: true, resendId: result.id }),
@@ -184,14 +185,14 @@ serve(async (req) => {
       // Log failure
       await supabase.from('email_reminders').insert({
         user_id: userId,
-        email: profile.email,
+        email: recipientEmail,
         email_type: `admin-${category || 'general'}`,
         subject: finalSubject,
         status: 'failed',
         error_message: result.error,
       })
 
-      console.error(`Failed to send admin email to ${profile.email}:`, result.error)
+      console.error(`Failed to send admin email to ${recipientEmail}:`, result.error)
 
       return new Response(
         JSON.stringify({ error: 'Failed to send email', details: result.error }),

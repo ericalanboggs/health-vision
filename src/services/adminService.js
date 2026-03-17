@@ -310,7 +310,7 @@ export const inviteUser = async (email) => {
  * @param {string} userId
  * @param {{ subject: string, body: string, ctaText: string, category: string }} emailData
  */
-export const sendAdminEmail = async (userId, { subject, body, ctaText, category }) => {
+export const sendAdminEmail = async (userId, { subject, body, ctaText, category, toOverride }) => {
   try {
     if (!await isAdmin()) {
       return { success: false, error: 'Unauthorized' }
@@ -327,7 +327,7 @@ export const sendAdminEmail = async (userId, { subject, body, ctaText, category 
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.access_token}`
       },
-      body: JSON.stringify({ userId, subject, body, ctaText, category })
+      body: JSON.stringify({ userId, subject, body, ctaText, category, toOverride })
     })
 
     const result = await response.json()
