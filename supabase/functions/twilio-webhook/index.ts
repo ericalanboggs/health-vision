@@ -223,7 +223,10 @@ serve(async (req) => {
     }
 
     // Handle opt-in keywords (START, SUBSCRIBE, YES)
-    if (['START', 'SUBSCRIBE', 'YES'].includes(upperBody)) {
+    // Only treat YES as opt-in if user is NOT already opted in — otherwise it's a habit reply
+    const isOptInKeyword = upperBody === 'START' || upperBody === 'SUBSCRIBE' ||
+      (upperBody === 'YES' && (!profile || !profile.sms_opt_in))
+    if (isOptInKeyword) {
       console.log(`User ${fromPhone} requested opt-in via SMS keyword: ${upperBody}`)
       if (userId) {
         await supabase
