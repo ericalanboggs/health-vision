@@ -107,7 +107,9 @@ export default function ProfileSetup() {
         phone: formattedPhone,
         sms_opt_in: formData.smsConsent,
         profile_completed: true,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        trial_started_at: new Date().toISOString(),
+        trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       })
 
       if (result.success) {
