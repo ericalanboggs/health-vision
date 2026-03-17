@@ -346,6 +346,70 @@ export const sendAdminSMS = async (recipients, message) => {
 }
 
 /**
+ * Clear admin SMS hold for a user (resume AI auto-replies)
+ * @param {string} userId
+ */
+export const clearAdminSmsHold = async (userId) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/send-admin-sms`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({ action: 'resume-ai', userId })
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      return { success: false, error: result.error || 'Failed to resume AI' }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error clearing admin SMS hold:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Get admin SMS hold status for a user
+ * @param {string} userId
+ * @returns {{ holdUntil: string } | null}
+ */
+export const getAdminSmsHoldStatus = async (userId) => {
+  try {
+    if (!await isAdmin()) return null
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('admin_sms_hold_until')
+      .eq('id', userId)
+      .single()
+
+    if (error || !data?.admin_sms_hold_until) return null
+
+    // Check if hold is still active
+    if (new Date(data.admin_sms_hold_until) <= new Date()) return null
+
+    return { holdUntil: data.admin_sms_hold_until }
+  } catch (error) {
+    console.error('Error checking admin SMS hold status:', error)
+    return null
+  }
+}
+
+/**
  * Get SMS conversation history for a user
  * @param {string} userId
  * @param {number} limit

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Send, EmojiEmotions, Autorenew, SmsOutlined, Add, Chat, Close, Image, AttachFile } from '@mui/icons-material'
-import { getConversation, sendAdminSMS } from '../../services/adminService'
+import { getConversation, sendAdminSMS, getAdminSmsHoldStatus, clearAdminSmsHold } from '../../services/adminService'
 import supabase from '../../lib/supabase'
 
 // Summit-themed emoji palette
@@ -70,6 +70,8 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
   const [showAddMenu, setShowAddMenu] = useState(false)
+  const [holdUntil, setHoldUntil] = useState(null)
+  const [resumingAi, setResumingAi] = useState(false)
 
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
@@ -80,9 +82,10 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
   // Extract first name for templates
   const firstName = userName?.split(' ')[0] || 'there'
 
-  // Load conversation on mount
+  // Load conversation and hold status on mount
   useEffect(() => {
     loadConversation()
+    loadHoldStatus()
   }, [userId])
 
   // Auto-scroll to bottom when messages change
@@ -171,6 +174,20 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
     setLoading(false)
   }
 
+  const loadHoldStatus = async () => {
+    const status = await getAdminSmsHoldStatus(userId)
+    setHoldUntil(status?.holdUntil || null)
+  }
+
+  const handleResumeAi = async () => {
+    setResumingAi(true)
+    const { success } = await clearAdminSmsHold(userId)
+    if (success) {
+      setHoldUntil(null)
+    }
+    setResumingAi(false)
+  }
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
@@ -242,6 +259,7 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
 
     if (success) {
       await loadConversation()
+      await loadHoldStatus()
     } else {
       setMessage(messageText)
     }
@@ -272,6 +290,23 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
           </span>
         )}
       </div>
+
+      {/* Admin SMS Hold Banner */}
+      {holdUntil && (
+        <div className="flex items-center justify-between px-4 py-2 bg-amber-50 border-b border-amber-200 text-amber-800 text-sm">
+          <span>
+            AI paused until {new Date(holdUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })},{' '}
+            {new Date(holdUntil).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+          </span>
+          <button
+            onClick={handleResumeAi}
+            disabled={resumingAi}
+            className="text-amber-700 hover:text-amber-900 font-medium underline underline-offset-2 disabled:opacity-50"
+          >
+            {resumingAi ? 'Resuming...' : 'Resume AI'}
+          </button>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 bg-stone-50">

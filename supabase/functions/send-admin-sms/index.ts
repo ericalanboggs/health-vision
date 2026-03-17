@@ -66,7 +66,39 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { recipients, message }: { recipients: Recipient[]; message: string } = await req.json()
+    const body = await req.json()
+
+    // Handle resume-ai action: clear admin_sms_hold_until for a user
+    if (body.action === 'resume-ai') {
+      const { userId } = body
+      if (!userId) {
+        return new Response(
+          JSON.stringify({ error: 'userId is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ admin_sms_hold_until: null })
+        .eq('id', userId)
+
+      if (updateError) {
+        console.error('Error clearing admin SMS hold:', updateError)
+        return new Response(
+          JSON.stringify({ error: 'Failed to clear hold' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      console.log(`Admin ${user.email} resumed AI for user ${userId}`)
+      return new Response(
+        JSON.stringify({ success: true, action: 'resume-ai' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const { recipients, message }: { recipients: Recipient[]; message: string } = body
 
     if (!recipients || recipients.length === 0) {
       return new Response(
@@ -119,6 +151,22 @@ serve(async (req) => {
       // Small delay between sends to avoid rate limiting (100ms)
       if (i < recipients.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 100))
+      }
+    }
+
+    // Set admin_sms_hold_until = NOW() + 24h for all successfully-sent recipients
+    const sentUserIds = results.filter(r => r.status === 'sent').map(r => r.userId)
+    if (sentUserIds.length > 0) {
+      const holdUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      const { error: holdError } = await supabase
+        .from('profiles')
+        .update({ admin_sms_hold_until: holdUntil })
+        .in('id', sentUserIds)
+
+      if (holdError) {
+        console.error('Error setting admin SMS hold:', holdError)
+      } else {
+        console.log(`Set admin SMS hold until ${holdUntil} for ${sentUserIds.length} user(s)`)
       }
     }
 

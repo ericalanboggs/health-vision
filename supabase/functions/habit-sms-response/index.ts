@@ -678,6 +678,15 @@ serve(async (req) => {
 
     console.log(`✓ Found user: ${profile.id} (${profile.first_name})`)
 
+    // Check if admin SMS hold is active — suppress AI auto-replies
+    if (profile.admin_sms_hold_until && new Date(profile.admin_sms_hold_until) > new Date()) {
+      console.log(`⏸ Admin SMS hold active until ${profile.admin_sms_hold_until} — suppressing AI reply`)
+      return new Response(
+        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+        { headers: { 'Content-Type': 'text/xml' } }
+      )
+    }
+
     const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || null
 
     // Check if user has active subscription or trial

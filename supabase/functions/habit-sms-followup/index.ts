@@ -136,6 +136,12 @@ serve(async (req) => {
     const results = []
 
     for (const profile of activeProfiles as Profile[]) {
+      // Skip users with active admin SMS hold
+      if (profile.admin_sms_hold_until && new Date(profile.admin_sms_hold_until) > new Date()) {
+        console.log(`User ${profile.id}: Admin SMS hold active until ${profile.admin_sms_hold_until} — skipping followup`)
+        continue
+      }
+
       const userTimezone = profile.timezone || 'America/Chicago'
       const userLocalTime = getCurrentTimeInTimezone(userTimezone)
 
