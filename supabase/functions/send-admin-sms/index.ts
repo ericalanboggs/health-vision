@@ -5,8 +5,10 @@ import { sendSMS } from '../_shared/sms.ts'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-// Admin email for authorization
-const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') || 'eric.alan.boggs@gmail.com'
+// Admin emails for authorization
+const ADMIN_EMAILS = (Deno.env.get('ADMIN_EMAILS') || 'eric.alan.boggs@gmail.com,eric@summithealth.app')
+  .split(',')
+  .map(e => e.trim().toLowerCase())
 
 interface Recipient {
   userId: string
@@ -56,7 +58,7 @@ serve(async (req) => {
       )
     }
 
-    if (user.email !== ADMIN_EMAIL) {
+    if (!ADMIN_EMAILS.includes(user.email?.toLowerCase())) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized - admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
