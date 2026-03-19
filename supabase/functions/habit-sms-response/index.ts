@@ -678,13 +678,9 @@ serve(async (req) => {
 
     console.log(`✓ Found user: ${profile.id} (${profile.first_name})`)
 
-    // Check if admin SMS hold is active — suppress AI auto-replies
-    if (profile.admin_sms_hold_until && new Date(profile.admin_sms_hold_until) > new Date()) {
-      console.log(`⏸ Admin SMS hold active until ${profile.admin_sms_hold_until} — suppressing AI reply`)
-      return new Response(
-        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
-        { headers: { 'Content-Type': 'text/xml' } }
-      )
+    const adminHoldActive = profile.admin_sms_hold_until && new Date(profile.admin_sms_hold_until) > new Date()
+    if (adminHoldActive) {
+      console.log(`⏸ Admin SMS hold active until ${profile.admin_sms_hold_until} — will suppress AI coaching replies but allow habit tracking`)
     }
 
     const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || null
@@ -872,6 +868,17 @@ serve(async (req) => {
     // ============================================
     // STEP 3: Smart parsing (no context)
     // ============================================
+
+    // If admin hold is active, suppress AI coaching/smart-parse replies
+    // (Steps 1 & 2 above still handle direct habit tracking responses)
+    if (adminHoldActive) {
+      console.log(`⏸ Admin SMS hold — suppressing AI reply for unrecognized message`)
+      return new Response(
+        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+        { headers: { 'Content-Type': 'text/xml' } }
+      )
+    }
+
     console.log('No followup context - attempting smart parse')
 
     // Get all enabled tracking configs for this user

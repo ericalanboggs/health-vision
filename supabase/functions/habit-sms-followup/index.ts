@@ -34,7 +34,7 @@ interface Habit {
 /**
  * Get current time in a specific timezone
  */
-function getCurrentTimeInTimezone(timezone: string): { hours: number; minutes: number; dayOfWeek: number; dateStr: string } {
+function getCurrentTimeInTimezone(timezone: string): { hours: number; minutes: number; dayOfWeek: number; dateStr: string; todayStartUtc: string } {
   try {
     const now = new Date()
 
@@ -66,7 +66,27 @@ function getCurrentTimeInTimezone(timezone: string): { hours: number; minutes: n
     })
     const dateStr = dateFormatter.format(now)
 
-    return { hours, minutes, dayOfWeek, dateStr }
+    // Compute midnight in user's timezone as a UTC ISO string
+    // This avoids timezone bugs when filtering timestamptz columns
+    const midnightLocal = new Date(`${dateStr}T00:00:00`)
+    // Get the UTC offset for this timezone at midnight
+    const utcFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      timeZoneName: 'shortOffset',
+    })
+    const offsetPart = utcFormatter.formatToParts(midnightLocal).find(p => p.type === 'timeZoneName')?.value || ''
+    // Parse offset like "GMT-4" or "GMT+5:30" into minutes
+    const offsetMatch = offsetPart.match(/GMT([+-]?)(\d+)(?::(\d+))?/)
+    let offsetMinutes = 0
+    if (offsetMatch) {
+      const sign = offsetMatch[1] === '-' ? -1 : 1
+      offsetMinutes = sign * (parseInt(offsetMatch[2]) * 60 + parseInt(offsetMatch[3] || '0'))
+    }
+    // Midnight in user's tz = dateStr T00:00:00 minus their UTC offset
+    const todayStartUtcMs = new Date(`${dateStr}T00:00:00Z`).getTime() - offsetMinutes * 60 * 1000
+    const todayStartUtc = new Date(todayStartUtcMs).toISOString()
+
+    return { hours, minutes, dayOfWeek, dateStr, todayStartUtc }
   } catch (error) {
     console.error(`Error getting time for timezone ${timezone}:`, error)
     const now = new Date()
@@ -74,7 +94,8 @@ function getCurrentTimeInTimezone(timezone: string): { hours: number; minutes: n
       hours: now.getUTCHours(),
       minutes: now.getUTCMinutes(),
       dayOfWeek: now.getUTCDay(),
-      dateStr: now.toISOString().split('T')[0]
+      dateStr: now.toISOString().split('T')[0],
+      todayStartUtc: `${now.toISOString().split('T')[0]}T00:00:00Z`,
     }
   }
 }
@@ -136,12 +157,6 @@ serve(async (req) => {
     const results = []
 
     for (const profile of activeProfiles as Profile[]) {
-      // Skip users with active admin SMS hold
-      if (profile.admin_sms_hold_until && new Date(profile.admin_sms_hold_until) > new Date()) {
-        console.log(`User ${profile.id}: Admin SMS hold active until ${profile.admin_sms_hold_until} — skipping followup`)
-        continue
-      }
-
       const userTimezone = profile.timezone || 'America/Chicago'
       const userLocalTime = getCurrentTimeInTimezone(userTimezone)
 
@@ -217,12 +232,12 @@ serve(async (req) => {
         continue
       }
 
-      // Check which habits already have a followup sent today
+      // Check which habits already have a followup sent today (using timezone-aware UTC midnight)
       const { data: existingFollowups } = await supabase
         .from('sms_followup_log')
         .select('habit_name')
         .eq('user_id', profile.id)
-        .gte('sent_at', `${userLocalTime.dateStr}T00:00:00`)
+        .gte('sent_at', userLocalTime.todayStartUtc)
 
       const habitsWithFollowupSent = new Set(existingFollowups?.map(f => f.habit_name) || [])
 
