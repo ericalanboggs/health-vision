@@ -66,10 +66,10 @@ function buildHabitsHtml(habits: WeeklyHabit[]): string {
           ${escapeHtml(h.habit_name)}
         </td>
         <td style="padding: 6px 12px; font-size: 14px; color: #6a6a6a; border-bottom: 1px solid #f0f0f0;">
-          ${h.day_of_week ? escapeHtml(h.day_of_week) : '—'}
+          ${h.day_of_week != null ? escapeHtml(String(h.day_of_week)) : '—'}
         </td>
         <td style="padding: 6px 12px; font-size: 14px; color: #6a6a6a; border-bottom: 1px solid #f0f0f0;">
-          ${h.time_of_day ? escapeHtml(h.time_of_day) : '—'}
+          ${h.time_of_day ? escapeHtml(String(h.time_of_day)) : '—'}
         </td>
       </tr>`
     )
@@ -269,14 +269,20 @@ serve(async (req) => {
       )
     }
 
-    // Load vision (health journey)
-    const { data: journey } = await supabase
+    // Load vision (health journey) — data is in form_data JSONB column
+    const { data: journeyRow } = await supabase
       .from('health_journeys')
-      .select('vision_statement, why_matters, feeling_state')
+      .select('form_data')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
+
+    const journey = journeyRow?.form_data ? {
+      vision_statement: journeyRow.form_data.visionStatement || null,
+      why_matters: journeyRow.form_data.whyMatters || null,
+      feeling_state: journeyRow.form_data.feelingState || null,
+    } : null
 
     // Load habits
     const { data: habits } = await supabase
