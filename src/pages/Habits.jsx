@@ -281,13 +281,15 @@ export default function Habits() {
         const timeSlot = timePreferences[index] || 'mid-morning'
         const timeOption = timeOfDayOptions.find(opt => opt.value === timeSlot)
         const reminderTime = `${String(timeOption.hour).padStart(2, '0')}:00:00`
+        const challengeSlug = habitGroups[originalHabitName]?.challenge_slug
 
         selectedDays.forEach(day => {
           newHabits.push({
             habit_name: habitName,
             day_of_week: dayMap[day],
             reminder_time: reminderTime,
-            timezone: userTimezone
+            timezone: userTimezone,
+            ...(challengeSlug ? { challenge_slug: challengeSlug } : {}),
           })
         })
       })
@@ -365,6 +367,7 @@ export default function Habits() {
           const timeSlot = timePreferences[originalIndex] || 'mid-morning'
           const timeOption = timeOfDayOptions.find(opt => opt.value === timeSlot)
           const reminderTime = `${String(timeOption.hour).padStart(2, '0')}:00:00`
+          const challengeSlug = habitGroups[habitName]?.[0]?.challenge_slug
 
           selectedDays.forEach(day => {
             newHabits.push({
@@ -372,7 +375,8 @@ export default function Habits() {
               day_of_week: dayMap[day],
               reminder_time: reminderTime,
               time_of_day: reminderTime,
-              timezone: userTimezone
+              timezone: userTimezone,
+              ...(challengeSlug ? { challenge_slug: challengeSlug } : {}),
             })
           })
         })
