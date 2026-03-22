@@ -29,6 +29,7 @@ export default function Reflection() {
   const [showChallengeModal, setShowChallengeModal] = useState(false)
   const [challengeModalType, setChallengeModalType] = useState(null) // 'next-habit' or 'completed'
   const [challengeReflection, setChallengeReflection] = useState({ learned: '', keepGoing: '' })
+  const [challengeModalWeek, setChallengeModalWeek] = useState(null)
   const [isFinalWeek, setIsFinalWeek] = useState(false)
 
   useEffect(() => {
@@ -43,7 +44,6 @@ export default function Reflection() {
     setLoading(true)
     const week = getCurrentWeekNumber()
     setCurrentWeek(week)
-    setSelectedWeek(week) // Default to current week
 
     // Load all reflections at once, indexed by week_number
     const reflections = {}
@@ -76,7 +76,9 @@ export default function Reflection() {
       console.error('Failed to load challenge enrollment:', error)
     }
 
+    // Set data first, THEN selectedWeek — so the useEffect sees loaded data
     setWeekReflections(reflections)
+    setSelectedWeek(week)
     setLoading(false)
   }
 
@@ -150,9 +152,6 @@ export default function Reflection() {
       // Check for active challenge prompt
       if (activeEnrollment) {
         const effectiveWeek = getEffectiveWeek(activeEnrollment)
-        const habitAddedThisWeek = challengeHabitLog.some(
-          h => h.week_number === effectiveWeek
-        )
 
         if (effectiveWeek === 4) {
           // Final week — show completion modal
@@ -160,15 +159,36 @@ export default function Reflection() {
           setShowChallengeModal(true)
           setSaving(false)
           return
-        } else if (!habitAddedThisWeek) {
-          // Not final week, habit not yet added — prompt to add next habit
+        }
+
+        const habitAddedThisWeek = challengeHabitLog.some(
+          h => h.week_number === effectiveWeek
+        )
+
+        if (!habitAddedThisWeek) {
+          // Current week's habit not yet added — prompt for it
+          setChallengeModalWeek(effectiveWeek)
           setChallengeModalType('next-habit')
           setShowChallengeModal(true)
           setSaving(false)
           return
-        } else {
-          // Habit added this week, advance to next week
-          await advanceWeek(activeEnrollment.id)
+        }
+
+        // Current week's habit is done — advance and prompt for next week
+        await advanceWeek(activeEnrollment.id)
+        const nextWeek = effectiveWeek + 1
+
+        if (nextWeek <= 4) {
+          const habitAddedForNextWeek = challengeHabitLog.some(
+            h => h.week_number === nextWeek
+          )
+          if (!habitAddedForNextWeek) {
+            setChallengeModalWeek(nextWeek)
+            setChallengeModalType('next-habit')
+            setShowChallengeModal(true)
+            setSaving(false)
+            return
+          }
         }
       }
 
@@ -398,8 +418,8 @@ export default function Reflection() {
         if (!ch) return null
 
         if (challengeModalType === 'next-habit') {
-          // Determine next focus area
-          const effectiveWeek = getEffectiveWeek(activeEnrollment)
+          // Determine next focus area using the week set by handleSave
+          const effectiveWeek = challengeModalWeek || getEffectiveWeek(activeEnrollment)
           const savedOrder = activeEnrollment.survey_scores?.focusAreaOrder
           let nextFA
           if (savedOrder) {
@@ -431,7 +451,7 @@ export default function Reflection() {
                   <button
                     onClick={() => {
                       setShowChallengeModal(false)
-                      navigate(`/challenges/${ch.slug}/add-habit`)
+                      navigate(`/challenges/${ch.slug}/add-habit`, { state: { week: effectiveWeek } })
                     }}
                     className="w-full bg-summit-emerald hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-lg transition"
                   >

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { ArrowBack, AutoAwesome, Refresh, Autorenew, CheckCircle } from '@mui/icons-material'
 import { Button, Card, Input } from '@summit/design-system'
 import { getChallengeBySlug, getFocusAreaForWeek } from '../data/challengeConfig'
@@ -13,6 +13,8 @@ import { generateChallengeHabitSuggestions } from '../utils/aiService'
 export default function ChallengeAddHabit() {
   const { slug } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const weekOverride = location.state?.week || null
   const challenge = getChallengeBySlug(slug)
 
   const [loading, setLoading] = useState(true)
@@ -80,10 +82,10 @@ export default function ChallengeAddHabit() {
         setUserTimezone(profileResult.data.timezone)
       }
 
-      // Determine focus area for current week
-      // Use saved order if available
+      // Determine focus area for target week
+      // Use weekOverride (from reflection modal) if provided, else calendar-based
       const savedOrder = enroll.survey_scores?.focusAreaOrder
-      const weekForHabit = getEffectiveWeek(enroll) || 1
+      const weekForHabit = weekOverride || getEffectiveWeek(enroll) || 1
       let fa
       if (savedOrder) {
         const faSlug = savedOrder[weekForHabit - 1]
@@ -216,7 +218,7 @@ export default function ChallengeAddHabit() {
 
       // Log in challenge_habit_log
       const faSlug = focusArea.slug
-      await logChallengeHabit(enrollment.id, getEffectiveWeek(enrollment) || 1, faSlug, habit.action)
+      await logChallengeHabit(enrollment.id, weekOverride || getEffectiveWeek(enrollment) || 1, faSlug, habit.action)
 
       navigate('/habits')
     } catch (error) {
@@ -241,7 +243,7 @@ export default function ChallengeAddHabit() {
         <Autorenew className="w-6 h-6 animate-spin text-summit-emerald" />
         <p className="ml-3 text-text-secondary">
           {enrollment
-            ? `Preparing Week ${getEffectiveWeek(enrollment) || 1} habit challenge options...`
+            ? `Preparing Week ${weekOverride || getEffectiveWeek(enrollment) || 1} habit challenge options...`
             : 'Preparing your challenge habit options...'}
         </p>
       </div>
@@ -264,7 +266,7 @@ export default function ChallengeAddHabit() {
           <div className="flex items-center gap-2 mb-2">
             <span className="text-2xl">{challenge.icon}</span>
             <span className="text-xs font-semibold text-summit-emerald bg-summit-mint px-2 py-0.5 rounded-full">
-              Week {getEffectiveWeek(enrollment) || 1}
+              Week {weekOverride || getEffectiveWeek(enrollment) || 1}
             </span>
           </div>
           <h1 className="text-h1 text-summit-forest mb-1">{focusArea.title}</h1>
