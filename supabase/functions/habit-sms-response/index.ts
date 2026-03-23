@@ -49,6 +49,11 @@ interface SmartParseResult {
     clarification_context?: Record<string, unknown>
     clarification_question?: string
   }>
+  goal_updates?: Array<{
+    habit_name: string
+    metric_target?: number
+    metric_unit?: string
+  }>
   ambiguous_habits?: string[]
   clarification_question?: string
   friendly_response?: string
@@ -176,6 +181,13 @@ Analyze and respond with JSON:
       "clarification_question": "question if needs_clarification"
     }
   ],
+  "goal_updates": [
+    {
+      "habit_name": "exact habit name from list",
+      "metric_target": number,
+      "metric_unit": "unit string or omit if unchanged"
+    }
+  ],
   "clarification_question": "overall question if needed",
   "friendly_response": "brief confirmation under 100 chars"
 }
@@ -186,6 +198,8 @@ RULES:
 - "8 glasses" but tracks "oz" → ask oz per glass
 - Ambiguous match → ask which habit
 - Metric habit + "did it" → ask for number
+- If user sets or changes a goal/target (e.g., "I want to drink 80 oz"), return it in goal_updates — NOT in habits
+- goal_updates is for changing the target, habits is for logging today's value
 - Unrelated message → understood: false
 - Keep questions SHORT (SMS)`
 
@@ -970,14 +984,41 @@ serve(async (req) => {
       }
     }
 
+    // Process goal updates (e.g., "I want to drink 80 oz of water a day")
+    const updatedGoals: string[] = []
+    if (parseResult.goal_updates?.length) {
+      for (const update of parseResult.goal_updates) {
+        const updateData: Record<string, unknown> = {}
+        if (update.metric_target !== undefined) updateData.metric_target = update.metric_target
+        if (update.metric_unit) updateData.metric_unit = update.metric_unit
+
+        if (Object.keys(updateData).length > 0) {
+          const { error } = await supabase
+            .from('habit_tracking_config')
+            .update(updateData)
+            .eq('user_id', profile.id)
+            .eq('habit_name', update.habit_name)
+
+          if (!error) {
+            updatedGoals.push(update.habit_name)
+            console.log(`Updated goal for "${update.habit_name}": ${JSON.stringify(updateData)}`)
+          } else {
+            console.error(`Error updating goal for "${update.habit_name}":`, error)
+          }
+        }
+      }
+    }
+
     // Send response
     if (needsClarification && clarificationQuestion) {
       await sendSMSWithLog(from, clarificationQuestion, supabase, profile.id, userName)
-    } else if (loggedHabits.length > 0) {
+    } else if (loggedHabits.length > 0 || updatedGoals.length > 0) {
       const response = parseResult.friendly_response ||
         (loggedHabits.length === 1
           ? `Logged ${loggedHabits[0]} ✓`
-          : `Logged ${loggedHabits.length} habits ✓`)
+          : loggedHabits.length > 1
+            ? `Logged ${loggedHabits.length} habits ✓`
+            : `Updated goal for ${updatedGoals[0]} ✓`)
       await sendSMSWithLog(from, response, supabase, profile.id, userName)
     }
 
