@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getAllUsers, inviteUser } from '../services/adminService'
+import { getAllUsers, getChallengeParticipants, inviteUser } from '../services/adminService'
 import { Autorenew, SwapVert, PersonAdd, Send, NotificationsActive, Chat } from '@mui/icons-material'
 import { Checkbox } from '@summit/design-system'
 import BulkActionToolbar from '../components/admin/BulkActionToolbar'
@@ -18,6 +18,9 @@ export default function Admin() {
   const [engagementFilter, setEngagementFilter] = useState(null)
   const [tierFilter, setTierFilter] = useState(null)
   const [smsFilter, setSmsFilter] = useState(false)
+  const [activeTab, setActiveTab] = useState('summit')
+  const [challengeParticipants, setChallengeParticipants] = useState([])
+  const [challengeLoading, setChallengeLoading] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviting, setInviting] = useState(false)
   const [inviteStatus, setInviteStatus] = useState(null)
@@ -32,6 +35,7 @@ export default function Admin() {
 
   useEffect(() => {
     loadUsers()
+    loadChallengeParticipants()
   }, [])
 
   const loadUsers = async () => {
@@ -41,6 +45,15 @@ export default function Admin() {
       setUsers(data)
     }
     setLoading(false)
+  }
+
+  const loadChallengeParticipants = async () => {
+    setChallengeLoading(true)
+    const { success, data } = await getChallengeParticipants()
+    if (success) {
+      setChallengeParticipants(data)
+    }
+    setChallengeLoading(false)
   }
 
   const formatRelativeTime = (timestamp) => {
@@ -314,8 +327,107 @@ export default function Admin() {
         </div>
       </header>
 
+      {/* Tabs */}
+      <div className="border-b border-stone-200 bg-white">
+        <div className="px-6 flex gap-0">
+          <button
+            onClick={() => setActiveTab('summit')}
+            className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'summit'
+                ? 'border-summit-emerald text-summit-emerald'
+                : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
+            }`}
+          >
+            Summit Users
+          </button>
+          <button
+            onClick={() => setActiveTab('challenge')}
+            className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'challenge'
+                ? 'border-summit-emerald text-summit-emerald'
+                : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
+            }`}
+          >
+            Challenge Participants
+            {challengeParticipants.length > 0 && (
+              <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-medium bg-summit-mint text-summit-forest">
+                {challengeParticipants.length}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
       <main className="px-6 py-8">
-        {/* Bulk Action Toolbar */}
+        {activeTab === 'challenge' && (
+          <>
+            <div className="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden">
+              <div className="p-4 border-b border-stone-200">
+                <span className="text-sm text-stone-600">
+                  {challengeParticipants.length} {challengeParticipants.length === 1 ? 'participant' : 'participants'}
+                </span>
+              </div>
+
+              {challengeLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Autorenew className="w-8 h-8 animate-spin text-summit-emerald" />
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-stone-50 border-b border-stone-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">First Name</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">Email</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">Phone</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">Registered</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-stone-600 uppercase tracking-wider">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-200">
+                      {challengeParticipants.map(p => (
+                        <tr key={p.enrollmentId} className="hover:bg-stone-50">
+                          <td className="px-4 py-3 text-sm font-medium text-summit-forest">{p.name}</td>
+                          <td className="px-4 py-3 text-sm text-stone-600">{p.email}</td>
+                          <td className="px-4 py-3 text-sm text-stone-600">{p.phone}</td>
+                          <td className="px-4 py-3 text-sm text-stone-600">
+                            {new Date(p.registeredAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {(() => {
+                              const badgeConfig = {
+                                pending: { label: 'Pending', classes: 'bg-amber-100 text-amber-800' },
+                                paid: { label: 'Paid', classes: 'bg-blue-100 text-blue-700' },
+                                active: { label: 'Active', classes: 'bg-summit-mint text-summit-forest' },
+                                completed: { label: 'Completed', classes: 'bg-stone-100 text-stone-600' },
+                              }
+                              const badge = badgeConfig[p.status] || badgeConfig.pending
+                              return (
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badge.classes}`}>
+                                  {badge.label}
+                                </span>
+                              )
+                            })()}
+                          </td>
+                        </tr>
+                      ))}
+                      {challengeParticipants.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-8 text-center text-sm text-stone-400">
+                            No challenge participants yet
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {activeTab === 'summit' && <>
+        {/* Bulk Action Toolbar - Summit tab only */}
         <BulkActionToolbar
           selectedCount={selectedUserIds.size}
           onSendSMS={() => setShowSMSModal(true)}
@@ -517,6 +629,7 @@ export default function Admin() {
             </table>
           </div>
         </div>
+        </>}
       </main>
 
       {/* Modals */}

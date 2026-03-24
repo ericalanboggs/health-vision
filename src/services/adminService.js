@@ -99,6 +99,43 @@ export const getAllUsers = async () => {
 }
 
 /**
+ * Get challenge participants (lite challenge enrollments + profile info)
+ */
+export const getChallengeParticipants = async () => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { data: enrollments, error: enrollError } = await supabase
+      .from('lite_challenge_enrollments')
+      .select('*, profiles!inner(first_name, last_name, email, phone, created_at)')
+      .order('created_at', { ascending: false })
+
+    if (enrollError) throw enrollError
+
+    const participants = (enrollments || []).map(e => ({
+      id: e.user_id,
+      enrollmentId: e.id,
+      name: `${e.profiles.first_name || ''} ${e.profiles.last_name || ''}`.trim() || 'N/A',
+      email: e.profiles.email || 'N/A',
+      phone: e.profiles.phone || 'N/A',
+      registeredAt: e.created_at,
+      status: e.status,
+      deliveryTrack: e.delivery_track,
+      challengeSlug: e.challenge_slug,
+      cohortStartDate: e.cohort_start_date,
+      paidAt: e.paid_at,
+    }))
+
+    return { success: true, data: participants }
+  } catch (error) {
+    console.error('Error fetching challenge participants:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
  * Get detailed user data for admin view
  */
 export const getUserDetail = async (userId) => {
