@@ -37,6 +37,7 @@ export const getAllUsers = async () => {
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('*')
+      .or('challenge_type.is.null,challenge_type.neq.lite')
       .order('created_at', { ascending: false })
 
     console.log('Profiles result:', { profiles, profilesError })
