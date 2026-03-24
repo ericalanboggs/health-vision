@@ -14,6 +14,8 @@ export interface SMSPayload {
   to: string
   body: string
   from?: string
+  accountSid?: string
+  authToken?: string
 }
 
 export interface SMSLogOptions {
@@ -38,20 +40,23 @@ export async function sendSMS(
   maxRetries = 3
 ): Promise<SMSResult> {
   const { to, body } = payload
+  const sid = payload.accountSid || TWILIO_ACCOUNT_SID!
+  const token = payload.authToken || TWILIO_AUTH_TOKEN!
+  const fromNumber = payload.from || TWILIO_PHONE_NUMBER!
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
+        `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
+            Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
           },
           body: new URLSearchParams({
             To: to,
-            From: payload.from || TWILIO_PHONE_NUMBER!,
+            From: fromNumber,
             Body: body,
           }),
         }

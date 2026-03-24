@@ -4,6 +4,9 @@ import { sendSMS } from '../_shared/sms.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+const TWILIO_PHONE_NUMBER_LITE = Deno.env.get('TWILIO_PHONE_NUMBER_LITE')
+const TWILIO_ACCOUNT_SID_LITE = Deno.env.get('TWILIO_ACCOUNT_SID_LITE')
+const TWILIO_AUTH_TOKEN_LITE = Deno.env.get('TWILIO_AUTH_TOKEN_LITE')
 
 serve(async (req) => {
   // Handle CORS
@@ -47,7 +50,7 @@ serve(async (req) => {
     // Look up user's phone from profiles
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('phone')
+      .select('phone, challenge_type')
       .eq('id', user.id)
       .maybeSingle()
 
@@ -102,7 +105,15 @@ serve(async (req) => {
     }
 
     // Send SMS via Twilio (no logging for verification codes)
-    const smsResult = await sendSMS({ to: phone, body: `Your Summit verification code is: ${code}. It expires in 10 minutes.` })
+    const isLite = profile.challenge_type === 'lite'
+    const liteOverrides = isLite && TWILIO_PHONE_NUMBER_LITE
+      ? { from: TWILIO_PHONE_NUMBER_LITE, accountSid: TWILIO_ACCOUNT_SID_LITE!, authToken: TWILIO_AUTH_TOKEN_LITE! }
+      : {}
+    const smsResult = await sendSMS({
+      to: phone,
+      body: `Your Summit verification code is: ${code}. It expires in 10 minutes.`,
+      ...liteOverrides,
+    })
 
     if (!smsResult.success) {
       console.error('SMS send error:', smsResult.error)

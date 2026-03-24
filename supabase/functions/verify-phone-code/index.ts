@@ -4,6 +4,9 @@ import { sendSMS } from '../_shared/sms.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+const TWILIO_PHONE_NUMBER_LITE = Deno.env.get('TWILIO_PHONE_NUMBER_LITE')
+const TWILIO_ACCOUNT_SID_LITE = Deno.env.get('TWILIO_ACCOUNT_SID_LITE')
+const TWILIO_AUTH_TOKEN_LITE = Deno.env.get('TWILIO_AUTH_TOKEN_LITE')
 
 serve(async (req) => {
   // Handle CORS
@@ -126,15 +129,20 @@ serve(async (req) => {
     // Send opt-in confirmation SMS (required for A2P recurring campaigns)
     const { data: profile } = await supabase
       .from('profiles')
-      .select('phone, sms_opt_in')
+      .select('phone, sms_opt_in, challenge_type')
       .eq('id', user.id)
       .single()
 
     if (profile?.phone && profile?.sms_opt_in) {
+      const isLite = profile.challenge_type === 'lite'
+      const confirmBody = isLite
+        ? 'Welcome to the Tech Neck Challenge! You\'ll get 5 coaching texts/day starting Monday. Msg & data rates may apply. Reply HELP for help, STOP to cancel.'
+        : 'Welcome to Summit Health Habit Reminders! Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to cancel.'
       const confirmResult = await sendSMS(
         {
           to: profile.phone,
-          body: 'Welcome to Summit Health Habit Reminders! Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to cancel.',
+          body: confirmBody,
+          ...(isLite && TWILIO_PHONE_NUMBER_LITE ? { from: TWILIO_PHONE_NUMBER_LITE, accountSid: TWILIO_ACCOUNT_SID_LITE!, authToken: TWILIO_AUTH_TOKEN_LITE! } : {}),
         },
         {
           supabase,
