@@ -104,6 +104,7 @@ export default function TechNeckStatus() {
       <main className="max-w-lg mx-auto px-4">
         <Card className="text-center">
           <CardHeader>
+            <img src="/summit-logo.png" alt="Summit" className="w-20 mx-auto mb-4" />
             <p className="text-xs font-semibold tracking-[0.2em] uppercase text-summit-moss mb-3">
               Tech Neck Challenge
             </p>
@@ -114,7 +115,7 @@ export default function TechNeckStatus() {
                   Complete Your Enrollment
                 </CardTitle>
                 <CardDescription className="text-body mt-2">
-                  One last step — pay $1 to lock in your spot.
+                  One last step — pay $1 to lock in your spot. &#128170;
                 </CardDescription>
               </>
             )}
@@ -161,16 +162,17 @@ export default function TechNeckStatus() {
                 )}
                 <div className="bg-summit-mint/30 rounded-xl p-4 text-left">
                   <p className="text-body-sm font-semibold text-summit-forest mb-2">What you'll get:</p>
-                  <ul className="text-body-sm text-text-secondary space-y-1">
+                  <ul className="text-body-sm text-text-secondary space-y-2 list-none">
                     {enrollment.delivery_track === 'sms' ? (
                       <>
-                        <li>5 coaching texts per day (8am - 5pm)</li>
-                        <li>A morning email overview each day</li>
+                        <li className="flex items-start gap-2"><span className="text-summit-emerald flex-shrink-0">&#10003;</span> 5 coaching texts per day (8am - 5pm)</li>
+                        <li className="flex items-start gap-2"><span className="text-summit-emerald flex-shrink-0">&#10003;</span> A morning email overview each day</li>
                       </>
                     ) : (
-                      <li>A daily email with all 5 coaching cues</li>
+                      <li className="flex items-start gap-2"><span className="text-summit-emerald flex-shrink-0">&#10003;</span> A daily email with all 5 coaching cues</li>
                     )}
-                    <li>End-of-challenge summary with your routine</li>
+                    <li className="flex items-start gap-2"><span className="text-summit-emerald flex-shrink-0">&#10003;</span> End-of-challenge summary with your routine</li>
+                    <li className="flex items-start gap-2"><span className="text-summit-emerald flex-shrink-0">&#10003;</span> Better posture, and awareness of your triggers</li>
                   </ul>
                 </div>
                 <Button
