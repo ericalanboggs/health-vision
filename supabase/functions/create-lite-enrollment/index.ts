@@ -15,7 +15,7 @@ const CORS_HEADERS = {
 function buildTechNeckWelcomeHtml(firstName: string, confirmUrl: string, logoUrl: string, smsOptIn: boolean): string {
   const phoneNote = smsOptIn
     ? `<p style="margin: 16px 0 0 0; font-size: 14px; color: #6a6a6a; line-height: 1.6;">
-        After confirming your email, we'll verify your phone number so you can receive your daily coaching texts.
+        We'll verify your phone number when you log in so you can receive your daily coaching texts.
       </p>`
     : ''
 
@@ -55,7 +55,7 @@ function buildTechNeckWelcomeHtml(firstName: string, confirmUrl: string, logoUrl
                 You're one step away from joining the 5-Day Tech Neck Challenge. Over 5 days, you'll get evidence-based stretches, strengthening exercises, and posture tips — ending with a 2-minute daily routine you can keep forever.
               </p>
               <p style="margin: 16px 0 0 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
-                Click the button below to confirm your email and finish enrolling.
+                You're signed up! Next step: verify your phone and pay $1 to lock in your spot.
               </p>
               ${phoneNote}
             </td>
@@ -65,7 +65,7 @@ function buildTechNeckWelcomeHtml(firstName: string, confirmUrl: string, logoUrl
           <tr>
             <td align="center" style="padding: 8px 40px 30px 40px;">
               <a href="${confirmUrl}" style="display: inline-block; padding: 16px 32px; background-color: #15803d; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
-                Confirm My Email
+                View Your Challenge
               </a>
             </td>
           </tr>
@@ -132,25 +132,22 @@ serve(async (req) => {
   }
 
   try {
-    const { firstName, email, phone, smsConsent, timezone } = await req.json()
+    const { firstName, email, phone, smsConsent, timezone, password } = await req.json()
 
-    if (!firstName || !email || !phone) {
+    if (!firstName || !email || !phone || !password) {
       return new Response(
-        JSON.stringify({ error: 'firstName, email, and phone are required' }),
+        JSON.stringify({ error: 'firstName, email, phone, and password are required' }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
       )
     }
 
-    // Generate random password — user never sees it (email link handles auth)
-    const password = crypto.randomUUID()
-
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 
-    // 1. Create auth user (NOT auto-confirmed — user must verify email)
+    // 1. Create auth user (auto-confirmed — frontend handles sign-in, phone OTP verifies identity)
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
-      email_confirm: false,
+      email_confirm: true,
     })
 
     if (authError) {
@@ -196,32 +193,19 @@ serve(async (req) => {
       throw enrollError
     }
 
-    // 4. Generate confirmation link and send Tech Neck welcome email
-    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: 'signup',
-      email,
-      password,
+    // 4. Send Tech Neck welcome email
+    const logoUrl = `${FRONTEND_URL}/summit-logo.png`
+    const challengeUrl = `${FRONTEND_URL}/tech-neck/status`
+    const welcomeHtml = buildTechNeckWelcomeHtml(firstName, challengeUrl, logoUrl, smsConsent !== false)
+    const emailResult = await sendEmail({
+      to: email,
+      subject: `Welcome to the Tech Neck Challenge, ${firstName}!`,
+      html: welcomeHtml,
     })
-
-    if (linkError) {
-      console.error('Error generating confirmation link:', linkError)
-      // Non-fatal — user can request resend
+    if (emailResult.success) {
+      console.log(`Sent Tech Neck welcome email to ${email}`)
     } else {
-      const confirmUrl = linkData?.properties?.action_link
-      if (confirmUrl) {
-        const logoUrl = `${FRONTEND_URL}/summit-logo.png`
-        const welcomeHtml = buildTechNeckWelcomeHtml(firstName, confirmUrl, logoUrl, smsConsent !== false)
-        const emailResult = await sendEmail({
-          to: email,
-          subject: `Welcome to the Tech Neck Challenge, ${firstName}!`,
-          html: welcomeHtml,
-        })
-        if (emailResult.success) {
-          console.log(`Sent Tech Neck welcome email to ${email}`)
-        } else {
-          console.error(`Failed to send Tech Neck welcome email:`, emailResult.error)
-        }
-      }
+      console.error(`Failed to send Tech Neck welcome email:`, emailResult.error)
     }
 
     return new Response(

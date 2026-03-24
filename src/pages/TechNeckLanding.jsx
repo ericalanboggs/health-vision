@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { CheckCircle } from '@mui/icons-material'
 import { Button, Card, CardHeader, CardTitle, CardContent, Input, Checkbox, Banner } from '@summit/design-system'
+import supabase from '../lib/supabase'
 
 const DAY_PREVIEW = [
   { day: 'Monday', theme: 'Environment', desc: 'Fix your screen setup and workspace ergonomics' },
@@ -27,6 +28,7 @@ function formatPhone(digits) {
 }
 
 export default function TechNeckLanding() {
+  const navigate = useNavigate()
   const [form, setForm] = useState({
     firstName: '',
     email: '',
@@ -35,7 +37,6 @@ export default function TechNeckLanding() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [submitted, setSubmitted] = useState(false)
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -64,6 +65,9 @@ export default function TechNeckLanding() {
     setLoading(true)
 
     try {
+      // Generate a random password for the account (user never sees it)
+      const password = crypto.randomUUID()
+
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
       const res = await fetch(`${supabaseUrl}/functions/v1/create-lite-enrollment`, {
@@ -76,6 +80,7 @@ export default function TechNeckLanding() {
           firstName: form.firstName,
           email: form.email,
           phone: `+1${form.phone}`,
+          password,
           smsConsent: form.smsConsent,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
@@ -92,42 +97,24 @@ export default function TechNeckLanding() {
         throw new Error(data?.error || `Request failed: ${res.status}`)
       }
 
-      // Show "check your email" confirmation
-      setSubmitted(true)
-      setLoading(false)
+      // Auto sign-in with the generated password
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: form.email,
+        password,
+      })
+
+      if (signInError) {
+        console.error('Auto sign-in failed:', signInError)
+        throw new Error('Account created but sign-in failed. Please try logging in.')
+      }
+
+      // Session created — Home.jsx will route to verify-phone or tech-neck/status
+      navigate('/', { replace: true })
     } catch (err) {
       console.error('Enrollment error:', err)
       setError(err.message || 'Something went wrong. Please try again.')
       setLoading(false)
     }
-  }
-
-  if (submitted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint flex items-center justify-center">
-        <main className="max-w-lg mx-auto px-4">
-          <Card className="text-center">
-            <CardHeader>
-              <img src="/summit-logo.png" alt="Summit" className="w-24 mx-auto mb-4" />
-              <CardTitle as="h1" className="text-h1 text-summit-forest">
-                Check Your Email
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="mt-4 space-y-4">
-              <p className="text-body text-text-secondary">
-                We sent a confirmation link to <strong className="text-summit-forest">{form.email}</strong>.
-              </p>
-              <p className="text-body-sm text-text-muted">
-                Click the link to verify your email{form.smsConsent ? ', then we\'ll verify your phone number' : ''} before completing enrollment.
-              </p>
-              <Banner variant="info" className="text-left">
-                Don't see it? Check your spam folder, or try signing up again.
-              </Banner>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    )
   }
 
   return (
