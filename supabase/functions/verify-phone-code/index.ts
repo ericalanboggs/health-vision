@@ -136,7 +136,7 @@ serve(async (req) => {
     if (profile?.phone && profile?.sms_opt_in) {
       const isLite = profile.challenge_type === 'lite'
       const confirmBody = isLite
-        ? 'Welcome to the Tech Neck Challenge! You\'ll get 5 coaching texts/day starting Monday. Msg & data rates may apply. Reply HELP for help, STOP to cancel.'
+        ? '\u26f0\ufe0f Welcome to the Tech Neck Challenge, brought to you by Summit Health! You\'ll get 5 coaching texts/day starting Monday. Msg & data rates may apply. Reply HELP for help, STOP to cancel.'
         : 'Welcome to Summit Health Habit Reminders! Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to cancel.'
       const confirmResult = await sendSMS(
         {
