@@ -37,8 +37,9 @@ export default function SmsConsent() {
         <section className="mb-8">
           <h2 className="text-xl font-semibold text-summit-forest mb-4">How You Opt In</h2>
           <p className="text-stone-600 mb-4">
-            During account setup at <strong>go.summithealth.app</strong>, users are presented with an
-            optional SMS consent checkbox. SMS reminders are not required to use Summit Health.
+            During sign-up at <strong>go.summithealth.app</strong>, you are presented with an
+            optional SMS consent checkbox. SMS is not required to participate, but is strongly
+            recommended for the best experience.
           </p>
 
           {/* Visual mockup of the opt-in checkbox */}
@@ -48,10 +49,10 @@ export default function SmsConsent() {
               <div className="mt-0.5 w-5 h-5 border-2 border-stone-300 rounded bg-white flex-shrink-0">
               </div>
               <div>
-                <p className="font-semibold text-summit-forest text-sm">Enable SMS Habit Reminders (Optional)</p>
+                <p className="font-semibold text-summit-forest text-sm">Get daily coaching texts (Optional)</p>
                 <p className="text-stone-500 text-sm mt-1">
-                  By checking this box, you consent to receive automated habit reminder and wellness text messages
-                  from Summit Health. Msg frequency varies. Msg & data rates may apply. Consent is not a condition
+                  By checking this box, you consent to receive automated coaching and wellness text messages
+                  from Summit Health. Msg frequency varies by program. Msg & data rates may apply. Consent is not a condition
                   of any purchase. Reply STOP to unsubscribe anytime, HELP for help.
                 </p>
                 <p className="text-xs text-stone-400 mt-1">
@@ -64,13 +65,33 @@ export default function SmsConsent() {
           </div>
         </section>
 
-        {/* SMS Program Details */}
+        {/* SMS Programs */}
         <section className="mb-8">
-          <h2 className="text-xl font-semibold text-summit-forest mb-4">SMS Program Details</h2>
-          <div className="bg-summit-mint/50 border border-summit-sage rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-summit-forest mb-4">SMS Programs</h2>
+
+          {/* Lite Challenge */}
+          <div className="bg-white border border-stone-200 rounded-lg p-6 mb-6">
+            <h3 className="text-lg font-semibold text-summit-forest mb-3">5-Day Tech Neck Challenge</h3>
             <p className="text-stone-700 mb-4">
-              <strong>Program Name:</strong> Summit Health Habit Reminders
+              <strong>Description:</strong> A 5-day coaching challenge delivered via text message.
+              You'll receive evidence-based stretches, strengthening exercises, and posture tips to
+              help fix tech neck — ending with a 2-minute daily routine you can keep.
             </p>
+            <p className="text-stone-700 mb-4">
+              <strong>Message Frequency:</strong> 5 text messages per day for 5 days (Monday through Friday),
+              sent at approximately 8am, 10am, 12pm, 3pm, and 5pm in your local timezone. 25 messages total.
+            </p>
+            <p className="text-stone-700 mb-4">
+              <strong>Cost:</strong> One-time $1 enrollment fee. Standard message and data rates may apply.
+            </p>
+            <p className="text-stone-700">
+              <strong>Duration:</strong> Messages end automatically after 5 days. No ongoing subscription.
+            </p>
+          </div>
+
+          {/* Full Summit */}
+          <div className="bg-white border border-stone-200 rounded-lg p-6 mb-6">
+            <h3 className="text-lg font-semibold text-summit-forest mb-3">Summit Health Habit Reminders</h3>
             <p className="text-stone-700 mb-4">
               <strong>Description:</strong> Personalized SMS messages including daily habit reminders,
               check-ins, and health coaching support to help you build sustainable wellness habits.
@@ -79,9 +100,14 @@ export default function SmsConsent() {
               <strong>Message Frequency:</strong> Message frequency varies based on your preferences
               and interactions. Expect 1-2 messages per day when opted in.
             </p>
-            <p className="text-stone-700 mb-4">
-              <strong>Message and data rates may apply.</strong> Check with your mobile carrier for details.
+            <p className="text-stone-700">
+              <strong>Cost:</strong> Included with your Summit Health subscription. Standard message and data rates may apply.
             </p>
+          </div>
+
+          {/* Shared details */}
+          <div className="bg-white border border-stone-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-summit-forest mb-3">For All Programs</h3>
             <p className="text-stone-700 mb-4">
               <strong>To opt out:</strong> Text <strong>STOP</strong> to
               cancel and stop receiving messages at any time.

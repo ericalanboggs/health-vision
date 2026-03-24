@@ -263,7 +263,7 @@ serve(async (req) => {
     // Get user profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, first_name, email')
+      .select('id, first_name, email, challenge_type')
       .eq('id', userId)
       .single()
 
@@ -279,6 +279,15 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'User has no email address' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Skip lite challenge users — they get a separate welcome email from create-lite-enrollment
+    if (profile.challenge_type === 'lite') {
+      console.log(`Skipping general welcome email for lite user ${profile.email}`)
+      return new Response(
+        JSON.stringify({ message: 'Skipped — lite challenge user gets separate welcome', userId }),
+        { headers: { 'Content-Type': 'application/json' } }
       )
     }
 

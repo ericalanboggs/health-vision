@@ -17,6 +17,7 @@ interface Profile {
   phone: string | null
   timezone: string | null
   created_at: string | null
+  challenge_type: string | null
 }
 
 interface HealthJourney {
@@ -74,6 +75,89 @@ function buildHabitsHtml(habits: WeeklyHabit[]): string {
       </tr>`
     )
     .join('')
+}
+
+function buildLiteEmailHtml(profile: Profile): string {
+  const firstName = profile.first_name || 'Unknown'
+  const adminUrl = `${APP_URL}/admin/users/${profile.id}`
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tech Neck Challenge Sign-up: ${escapeHtml(firstName)}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 40px 40px 20px 40px; background-color: #15803d; border-radius: 12px 12px 0 0;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; line-height: 1.3;">
+                Tech Neck Challenge
+              </h1>
+              <p style="margin: 8px 0 0 0; font-size: 18px; color: #dcfce7;">
+                New sign-up: ${escapeHtml(firstName)}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Profile Details -->
+          <tr>
+            <td style="padding: 24px 40px 24px 40px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="padding: 4px 0; font-size: 14px; color: #6a6a6a; width: 100px;">Name</td>
+                  <td style="padding: 4px 0; font-size: 14px; color: #1a1a1a;">${escapeHtml(firstName)}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; font-size: 14px; color: #6a6a6a;">Email</td>
+                  <td style="padding: 4px 0; font-size: 14px; color: #1a1a1a;">${profile.email ? escapeHtml(profile.email) : 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; font-size: 14px; color: #6a6a6a;">Phone</td>
+                  <td style="padding: 4px 0; font-size: 14px; color: #1a1a1a;">${profile.phone ? escapeHtml(profile.phone) : 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; font-size: 14px; color: #6a6a6a;">Timezone</td>
+                  <td style="padding: 4px 0; font-size: 14px; color: #1a1a1a;">${profile.timezone ? escapeHtml(profile.timezone) : 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; font-size: 14px; color: #6a6a6a;">Signed up</td>
+                  <td style="padding: 4px 0; font-size: 14px; color: #1a1a1a;">${formatDate(profile.created_at)}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- CTA Button -->
+          <tr>
+            <td align="center" style="padding: 8px 40px 32px 40px;">
+              <a href="${adminUrl}" style="display: inline-block; padding: 14px 28px; background-color: #15803d; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
+                View in Admin
+              </a>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 16px 40px; background-color: #f9fafb; border-radius: 0 0 12px 12px;">
+              <p style="margin: 0; font-size: 13px; color: #9a9a9a; text-align: center;">
+                Summit Health — internal admin notification
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`
 }
 
 function buildEmailHtml(
@@ -257,7 +341,7 @@ serve(async (req) => {
     // Load profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, email, phone, timezone, created_at')
+      .select('id, first_name, last_name, email, phone, timezone, created_at, challenge_type')
       .eq('id', userId)
       .single()
 
@@ -269,33 +353,42 @@ serve(async (req) => {
       )
     }
 
-    // Load vision (health journey) — data is in form_data JSONB column
-    const { data: journeyRow } = await supabase
-      .from('health_journeys')
-      .select('form_data')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    const journey = journeyRow?.form_data ? {
-      vision_statement: journeyRow.form_data.visionStatement || null,
-      why_matters: journeyRow.form_data.whyMatters || null,
-      feeling_state: journeyRow.form_data.feelingState || null,
-    } : null
-
-    // Load habits
-    const { data: habits } = await supabase
-      .from('weekly_habits')
-      .select('habit_name, day_of_week, time_of_day')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true })
-
-    // Build and send email
+    const isLite = profile.challenge_type === 'lite'
     const firstName = profile.first_name || 'Unknown'
     const lastName = profile.last_name || ''
-    const subject = `New signup: ${firstName} ${lastName}`.trim()
-    const html = buildEmailHtml(profile as Profile, journey as HealthJourney | null, (habits || []) as WeeklyHabit[])
+
+    let subject: string
+    let html: string
+
+    if (isLite) {
+      subject = `Tech Neck Challenge Sign-up: ${firstName}`
+      html = buildLiteEmailHtml(profile as Profile)
+    } else {
+      // Load vision (health journey) — data is in form_data JSONB column
+      const { data: journeyRow } = await supabase
+        .from('health_journeys')
+        .select('form_data')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      const journey = journeyRow?.form_data ? {
+        vision_statement: journeyRow.form_data.visionStatement || null,
+        why_matters: journeyRow.form_data.whyMatters || null,
+        feeling_state: journeyRow.form_data.feelingState || null,
+      } : null
+
+      // Load habits
+      const { data: habits } = await supabase
+        .from('weekly_habits')
+        .select('habit_name, day_of_week, time_of_day')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true })
+
+      subject = `New signup: ${firstName} ${lastName}`.trim()
+      html = buildEmailHtml(profile as Profile, journey as HealthJourney | null, (habits || []) as WeeklyHabit[])
+    }
 
     console.log(`Sending new signup notification for ${profile.email} (${userId})`)
 

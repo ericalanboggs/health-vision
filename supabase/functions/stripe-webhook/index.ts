@@ -57,6 +57,33 @@ serve(async (req) => {
           break
         }
 
+        // Lite challenge one-time payment
+        if (session.mode === 'payment' && session.metadata?.challenge_type === 'lite') {
+          const challengeSlug = session.metadata.challenge_slug || 'tech-neck'
+          console.log(`Lite challenge payment completed for user ${userId}, slug: ${challengeSlug}`)
+
+          const { error: enrollError } = await supabase
+            .from('lite_challenge_enrollments')
+            .update({
+              status: 'paid',
+              stripe_payment_intent_id: session.payment_intent as string,
+              paid_at: new Date().toISOString(),
+            })
+            .eq('user_id', userId)
+            .eq('challenge_slug', challengeSlug)
+
+          if (enrollError) {
+            console.error('Error updating lite enrollment:', enrollError)
+          }
+
+          await supabase
+            .from('profiles')
+            .update({ stripe_customer_id: session.customer as string })
+            .eq('id', userId)
+
+          break
+        }
+
         const subscriptionId = session.subscription as string
         const customerId = session.customer as string
 

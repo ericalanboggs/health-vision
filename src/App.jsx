@@ -27,6 +27,9 @@ import SmsConsent from './pages/SmsConsent'
 import ChallengesLanding from './pages/ChallengesLanding'
 import ChallengeDetail from './pages/ChallengeDetail'
 import ChallengeAddHabit from './pages/ChallengeAddHabit'
+import TechNeckLanding from './pages/TechNeckLanding'
+import TechNeckSuccess from './pages/TechNeckSuccess'
+import TechNeckStatus from './pages/TechNeckStatus'
 import Dashboard from './pages/Dashboard'
 import DashboardSummit from './pages/DashboardSummit'
 import Admin from './pages/Admin'
@@ -84,6 +87,18 @@ function App() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/test" element={<AuthTest />} />
         <Route path="/auth/debug" element={<AuthDebug />} />
+
+        {/* Lite Tech Neck Challenge */}
+        <Route path="/tech-neck" element={<TechNeckLanding />} />
+        <Route path="/tech-neck/success" element={<TechNeckSuccess />} />
+        <Route
+          path="/tech-neck/status"
+          element={
+            <ProtectedRoute>
+              <TechNeckStatus />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Legal pages - Public */}
         <Route path="/privacy" element={<Privacy />} />

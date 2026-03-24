@@ -13,6 +13,7 @@ const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')
 export interface SMSPayload {
   to: string
   body: string
+  from?: string
 }
 
 export interface SMSLogOptions {
@@ -50,7 +51,7 @@ export async function sendSMS(
           },
           body: new URLSearchParams({
             To: to,
-            From: TWILIO_PHONE_NUMBER!,
+            From: payload.from || TWILIO_PHONE_NUMBER!,
             Body: body,
           }),
         }

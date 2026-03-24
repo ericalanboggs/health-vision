@@ -47,7 +47,7 @@ serve(async (req) => {
       )
     }
 
-    const { priceId } = await req.json()
+    const { priceId, mode, successUrl, cancelUrl, metadata } = await req.json()
     if (!priceId) {
       return new Response(
         JSON.stringify({ error: 'priceId is required' }),
@@ -83,15 +83,22 @@ serve(async (req) => {
     }
 
     // Create Checkout Session
-    const session = await stripe.checkout.sessions.create({
+    const checkoutMode = mode === 'payment' ? 'payment' : 'subscription'
+    const sessionParams: Record<string, unknown> = {
       customer: stripeCustomerId,
-      mode: 'subscription',
+      mode: checkoutMode,
       line_items: [{ price: priceId, quantity: 1 }],
-      allow_promotion_codes: true,
-      success_url: `${FRONTEND_URL}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${FRONTEND_URL}/pricing`,
+      success_url: successUrl ? `${FRONTEND_URL}${successUrl}` : `${FRONTEND_URL}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl ? `${FRONTEND_URL}${cancelUrl}` : `${FRONTEND_URL}/pricing`,
       client_reference_id: user.id,
-    })
+    }
+    if (checkoutMode === 'subscription') {
+      sessionParams.allow_promotion_codes = true
+    }
+    if (metadata) {
+      sessionParams.metadata = metadata
+    }
+    const session = await stripe.checkout.sessions.create(sessionParams as Stripe.Checkout.SessionCreateParams)
 
     return new Response(
       JSON.stringify({ url: session.url }),
