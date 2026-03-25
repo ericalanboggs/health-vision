@@ -139,43 +139,8 @@ export default function TechNeckLanding() {
           </p>
         </div>
 
-        {/* Benefits */}
-        <Card variant="outlined" className="mb-8">
-          <CardHeader>
-            <CardTitle as="h2">What You Get</CardTitle>
-          </CardHeader>
-          <CardContent className="mt-4 space-y-3">
-            {BENEFITS.map(b => (
-              <div key={b} className="flex items-center gap-3">
-                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-summit-mint flex items-center justify-center">
-                  <CheckCircle className="h-4 w-4 text-summit-emerald" />
-                </div>
-                <span className="text-body-sm text-text-secondary">{b}</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Day-by-Day Preview */}
-        <Card variant="outlined" className="mb-8">
-          <CardHeader>
-            <CardTitle as="h2">Your Week at a Glance</CardTitle>
-          </CardHeader>
-          <CardContent className="mt-4 space-y-3">
-            {DAY_PREVIEW.map(({ day, theme, desc }) => (
-              <div key={day} className="flex gap-3 items-start">
-                <div className="flex-shrink-0 w-20 text-body-sm font-semibold text-summit-emerald pt-0.5">{day}</div>
-                <div>
-                  <p className="text-body-sm font-semibold text-summit-forest">{theme}</p>
-                  <p className="text-body-sm text-text-muted">{desc}</p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
         {/* Signup Form */}
-        <Card id="signup" variant="elevated" padding="lg">
+        <Card id="signup" variant="elevated" padding="lg" className="mb-8">
           <CardHeader>
             <CardTitle as="h2" className="text-center text-h2">Join the Challenge</CardTitle>
           </CardHeader>
@@ -262,6 +227,41 @@ export default function TechNeckLanding() {
                 <Link to="/sms-consent" className="underline">SMS Consent</Link>.
               </p>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* Benefits */}
+        <Card variant="outlined" className="mb-8">
+          <CardHeader>
+            <CardTitle as="h2">What You Get</CardTitle>
+          </CardHeader>
+          <CardContent className="mt-4 space-y-3">
+            {BENEFITS.map(b => (
+              <div key={b} className="flex items-center gap-3">
+                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-summit-mint flex items-center justify-center">
+                  <CheckCircle className="h-4 w-4 text-summit-emerald" />
+                </div>
+                <span className="text-body-sm text-text-secondary">{b}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Day-by-Day Preview */}
+        <Card variant="outlined" className="mb-8">
+          <CardHeader>
+            <CardTitle as="h2">Your Week at a Glance</CardTitle>
+          </CardHeader>
+          <CardContent className="mt-4 space-y-3">
+            {DAY_PREVIEW.map(({ day, theme, desc }) => (
+              <div key={day} className="flex gap-3 items-start">
+                <div className="flex-shrink-0 w-20 text-body-sm font-semibold text-summit-emerald pt-0.5">{day}</div>
+                <div>
+                  <p className="text-body-sm font-semibold text-summit-forest">{theme}</p>
+                  <p className="text-body-sm text-text-muted">{desc}</p>
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
 
