@@ -108,26 +108,41 @@ export const getChallengeParticipants = async () => {
       return { success: false, error: 'Unauthorized' }
     }
 
-    const { data: enrollments, error: enrollError } = await supabase
-      .from('lite_challenge_enrollments')
-      .select('*, profiles!inner(first_name, last_name, email, phone, created_at)')
-      .order('created_at', { ascending: false })
+    const [enrollResult, profileResult] = await Promise.all([
+      supabase
+        .from('lite_challenge_enrollments')
+        .select('*')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email, phone, created_at')
+        .eq('challenge_type', 'lite'),
+    ])
 
-    if (enrollError) throw enrollError
+    if (enrollResult.error) throw enrollResult.error
+    if (profileResult.error) throw profileResult.error
 
-    const participants = (enrollments || []).map(e => ({
-      id: e.user_id,
-      enrollmentId: e.id,
-      name: `${e.profiles.first_name || ''} ${e.profiles.last_name || ''}`.trim() || 'N/A',
-      email: e.profiles.email || 'N/A',
-      phone: e.profiles.phone || 'N/A',
-      registeredAt: e.created_at,
-      status: e.status,
-      deliveryTrack: e.delivery_track,
-      challengeSlug: e.challenge_slug,
-      cohortStartDate: e.cohort_start_date,
-      paidAt: e.paid_at,
-    }))
+    const profileMap = {}
+    for (const p of profileResult.data || []) {
+      profileMap[p.id] = p
+    }
+
+    const participants = (enrollResult.data || []).map(e => {
+      const p = profileMap[e.user_id] || {}
+      return {
+        id: e.user_id,
+        enrollmentId: e.id,
+        name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'N/A',
+        email: p.email || 'N/A',
+        phone: p.phone || 'N/A',
+        registeredAt: e.created_at,
+        status: e.status,
+        deliveryTrack: e.delivery_track,
+        challengeSlug: e.challenge_slug,
+        cohortStartDate: e.cohort_start_date,
+        paidAt: e.paid_at,
+      }
+    })
 
     return { success: true, data: participants }
   } catch (error) {
