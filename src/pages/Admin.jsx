@@ -49,9 +49,12 @@ export default function Admin() {
 
   const loadChallengeParticipants = async () => {
     setChallengeLoading(true)
-    const { success, data } = await getChallengeParticipants()
-    if (success) {
-      setChallengeParticipants(data)
+    const result = await getChallengeParticipants()
+    console.log('Challenge participants result:', result)
+    if (result.success) {
+      setChallengeParticipants(result.data)
+    } else {
+      console.error('Failed to load challenge participants:', result.error)
     }
     setChallengeLoading(false)
   }

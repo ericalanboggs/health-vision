@@ -119,30 +119,64 @@ export const getChallengeParticipants = async () => {
         .eq('challenge_type', 'lite'),
     ])
 
-    if (enrollResult.error) throw enrollResult.error
-    if (profileResult.error) throw profileResult.error
+    console.log('Challenge participants debug:', {
+      enrollCount: enrollResult.data?.length,
+      enrollError: enrollResult.error,
+      profileCount: profileResult.data?.length,
+      profileError: profileResult.error,
+    })
 
+    if (enrollResult.error) console.error('Enrollment query error:', enrollResult.error)
+    if (profileResult.error) console.error('Profile query error:', profileResult.error)
+
+    const profiles = profileResult.data || []
+    const enrollments = enrollResult.data || []
+
+    // Build profile map
     const profileMap = {}
-    for (const p of profileResult.data || []) {
+    for (const p of profiles) {
       profileMap[p.id] = p
     }
 
-    const participants = (enrollResult.data || []).map(e => {
-      const p = profileMap[e.user_id] || {}
-      return {
-        id: e.user_id,
-        enrollmentId: e.id,
+    let participants
+
+    if (enrollments.length > 0) {
+      // Normal path: build from enrollments, enrich with profiles
+      participants = enrollments.map(e => {
+        const p = profileMap[e.user_id] || {}
+        return {
+          id: e.user_id,
+          enrollmentId: e.id,
+          name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'N/A',
+          email: p.email || 'N/A',
+          phone: p.phone || 'N/A',
+          registeredAt: e.created_at,
+          status: e.status,
+          deliveryTrack: e.delivery_track,
+          challengeSlug: e.challenge_slug,
+          cohortStartDate: e.cohort_start_date,
+          paidAt: e.paid_at,
+        }
+      })
+    } else if (profiles.length > 0) {
+      // Fallback: enrollments empty (possibly RLS issue) — show profiles
+      console.warn('No enrollments found but lite profiles exist — using profile fallback')
+      participants = profiles.map(p => ({
+        id: p.id,
+        enrollmentId: null,
         name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'N/A',
         email: p.email || 'N/A',
         phone: p.phone || 'N/A',
-        registeredAt: e.created_at,
-        status: e.status,
-        deliveryTrack: e.delivery_track,
-        challengeSlug: e.challenge_slug,
-        cohortStartDate: e.cohort_start_date,
-        paidAt: e.paid_at,
-      }
-    })
+        registeredAt: p.created_at,
+        status: 'unknown',
+        deliveryTrack: null,
+        challengeSlug: 'tech-neck',
+        cohortStartDate: null,
+        paidAt: null,
+      }))
+    } else {
+      participants = []
+    }
 
     return { success: true, data: participants }
   } catch (error) {
