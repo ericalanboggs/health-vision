@@ -139,17 +139,21 @@ serve(async (req) => {
     // Initialize Supabase client with service role
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 
-    // Look up user by phone number
-    const { data: profile, error: profileError } = await supabase
+    // Look up user by phone number (prefer non-lite user if multiple profiles share a phone)
+    const { data: profiles, error: profileError } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name')
+      .select('id, first_name, last_name, challenge_type')
       .eq('phone', fromPhone)
       .is('deleted_at', null)
-      .maybeSingle()
 
     if (profileError) {
       console.error('Error looking up user by phone:', profileError)
     }
+
+    // If multiple profiles match, prefer the Summit (non-lite) user
+    const profile = profiles && profiles.length > 0
+      ? profiles.find(p => p.challenge_type !== 'lite') || profiles[0]
+      : null
 
     const userId = profile?.id || null
     const userName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : null
