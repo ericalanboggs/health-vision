@@ -673,13 +673,16 @@ serve(async (req) => {
     // Get MessageSid for logging
     const messageSid = formData.get('MessageSid')?.toString() || null
 
-    // Find user by phone number
-    const { data: profile, error: profileError } = await supabase
+    // Find user by phone number (prefer non-lite user if multiple profiles share a phone)
+    const { data: matchedProfiles, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('phone', from)
       .is('deleted_at', null)
-      .maybeSingle()
+
+    const profile = matchedProfiles && matchedProfiles.length > 0
+      ? matchedProfiles.find(p => p.challenge_type !== 'lite') || matchedProfiles[0]
+      : null
 
     if (profileError || !profile) {
       console.log(`❌ No user found for phone ${from}`)
