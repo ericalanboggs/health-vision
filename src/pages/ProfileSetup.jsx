@@ -46,13 +46,15 @@ export default function ProfileSetup() {
     const result = await getCurrentUser()
     console.log('ProfileSetup: getCurrentUser result:', result)
     if (result.success && result.user) {
-      console.log('ProfileSetup: User email:', result.user.email)
+      console.log('ProfileSetup: getCurrentUser result:', result.user)
       setUser(result.user)
+      const meta = result.user.user_metadata || {}
       setFormData(prev => ({
         ...prev,
-        email: result.user.email || result.user.user_metadata?.email || ''
+        email: result.user.email || meta.email || '',
+        firstName: meta.given_name || meta.full_name?.split(' ')[0] || prev.firstName,
+        lastName: meta.family_name || meta.full_name?.split(' ').slice(1).join(' ') || prev.lastName,
       }))
-      console.log('ProfileSetup: User loaded successfully')
     } else {
       console.error('ProfileSetup: Failed to load user, but ProtectedRoute should have caught this')
     }
