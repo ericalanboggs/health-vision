@@ -113,7 +113,7 @@ const SummaryPage = ({ formData, onNavigate }) => {
       formData.whyMatters && formData.whyMatters.trim() !== '' &&
       formData.currentScore !== undefined &&
       formData.readiness !== undefined &&
-      formData.timeCapacity && formData.timeCapacity.trim() !== ''
+      formData.timeCapacity && String(formData.timeCapacity).trim() !== ''
     )
   }
 

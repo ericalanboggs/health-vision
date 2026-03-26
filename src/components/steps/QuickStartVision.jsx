@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowForward, ArrowBack, Check } from '@mui/icons-material'
-import { Button } from '@summit/design-system'
+import { ArrowForward, ArrowBack, Check, ExpandMore, AutoAwesome, Refresh } from '@mui/icons-material'
+import { Button, Card, Checkbox, Input } from '@summit/design-system'
 import { extractVisionAdjectives, consolidateVisionText, enhanceActionPlan } from '../../utils/aiService'
 import { generateActionPlan } from '../../utils/planGenerator'
 
@@ -14,6 +14,9 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
   const [prefetchedHabits, setPrefetchedHabits] = useState(null)
   const [isLoadingHabits, setIsLoadingHabits] = useState(false)
   const [selectedHabitIndices, setSelectedHabitIndices] = useState([])
+  const [expandedHabits, setExpandedHabits] = useState({})
+  const [showCustomHabit, setShowCustomHabit] = useState(false)
+  const [customHabitText, setCustomHabitText] = useState('')
 
   // Question definitions
   const questions = [
@@ -454,9 +457,15 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
 
     if (q.type === 'discrete-slider') {
       const steps = q.steps
-      const value = formData[q.field] || steps[Math.floor(steps.length / 2)]
-      const currentIndex = steps.indexOf(value) !== -1 ? steps.indexOf(value) : Math.floor(steps.length / 2)
+      // Parse numeric value from stored string like "20 minutes/day", or use raw number
+      const rawVal = formData[q.field]
+      const numericValue = typeof rawVal === 'string' ? parseInt(rawVal) : rawVal
+      const value = steps.includes(numericValue) ? numericValue : steps[Math.floor(steps.length / 2)]
+      const currentIndex = steps.indexOf(value)
       const percentage = (currentIndex / (steps.length - 1)) * 100
+
+      // Store as "X minutes/day" string for downstream compatibility
+      const storeValue = (stepVal) => updateFormData(q.field, `${stepVal} minutes/day`)
 
       return (
         <div className="space-y-6">
@@ -478,7 +487,7 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
                 min={0}
                 max={steps.length - 1}
                 value={currentIndex}
-                onChange={(e) => updateFormData(q.field, steps[parseInt(e.target.value)])}
+                onChange={(e) => storeValue(steps[parseInt(e.target.value)])}
                 className="absolute top-0 left-0 w-full h-3 opacity-0 cursor-pointer"
               />
 
@@ -498,7 +507,7 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
               {steps.map((step, idx) => (
                 <button
                   key={step}
-                  onClick={() => updateFormData(q.field, step)}
+                  onClick={() => storeValue(step)}
                   className={`w-8 h-8 rounded-full text-sm font-medium transition-all ${
                     idx === currentIndex
                       ? 'bg-summit-emerald text-white'
@@ -707,6 +716,25 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
       )
     }
 
+    const toggleHabitExpanded = (index) => {
+      setExpandedHabits(prev => ({ ...prev, [index]: !prev[index] }))
+    }
+
+    const handleAddCustomHabit = () => {
+      if (!customHabitText.trim()) return
+      const customHabit = {
+        action: customHabitText.trim(),
+        why: 'A personal habit you chose for yourself.',
+        tip: 'Start small and build consistency.',
+      }
+      // Add to prefetched list and auto-select
+      prefetchedHabits.push(customHabit)
+      const newIndex = prefetchedHabits.length - 1
+      setSelectedHabitIndices(prev => [...prev, newIndex])
+      setCustomHabitText('')
+      setShowCustomHabit(false)
+    }
+
     const selectedHabitData = selectedHabitIndices.map(i => prefetchedHabits[i])
 
     return (
@@ -742,37 +770,120 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
           </div>
         )}
 
+        {/* Suggestions header */}
+        {habitsReady && (
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <AutoAwesome className="w-5 h-5 text-summit-lime" />
+              <span className="text-body-sm font-semibold text-summit-forest">Personalized Suggestions</span>
+            </div>
+            <button
+              onClick={() => {
+                setPrefetchedHabits(null)
+                setSelectedHabitIndices([])
+                setExpandedHabits({})
+                setIsLoadingHabits(false)
+              }}
+              disabled={isLoadingHabits}
+              className="text-body-sm text-summit-forest hover:text-summit-emerald font-medium flex items-center gap-1 transition-colors disabled:opacity-50"
+            >
+              <Refresh className="w-4 h-4" />
+              Refresh
+            </button>
+          </div>
+        )}
+
         {/* Habit selection cards */}
         {habitsReady && (
           <div className="space-y-3 mb-8">
             {prefetchedHabits.map((habit, index) => {
               const isSelected = selectedHabitIndices.includes(index)
+              const isExpanded = expandedHabits[index]
+
               return (
-                <button
+                <Card
                   key={index}
-                  onClick={() => toggleHabitSelect(index)}
-                  className={`w-full text-left p-4 rounded-xl border transition-all ${
+                  className={`transition-all cursor-pointer ${
                     isSelected
                       ? 'bg-summit-mint border-summit-emerald'
-                      : 'bg-white border-stone-200 hover:border-summit-sage'
+                      : 'hover:border-summit-sage'
                   }`}
+                  onClick={() => toggleHabitSelect(index)}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className={`w-5 h-5 mt-0.5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-                      isSelected
-                        ? 'bg-summit-emerald border-summit-emerald'
-                        : 'border-stone-300'
-                    }`}>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                  <div className="flex items-center gap-3">
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={isSelected}
+                        onChange={() => toggleHabitSelect(index)}
+                      />
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-summit-forest">{habit.action}</p>
-                      <p className="text-sm text-stone-500 mt-1">{habit.why}</p>
-                    </div>
+                    <p className="flex-1 font-medium text-summit-forest">
+                      {habit.action}
+                    </p>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleHabitExpanded(index)
+                      }}
+                      className="p-1 text-gray-400 hover:text-summit-forest transition-colors"
+                    >
+                      <ExpandMore
+                        className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                      />
+                    </button>
                   </div>
-                </button>
+
+                  {isExpanded && (
+                    <div className="mt-3 pt-3 pl-8 border-t border-gray-100">
+                      <p className="text-body-sm text-summit-forest mb-2">
+                        <strong>Why this works:</strong> {habit.why}
+                      </p>
+                      {habit.tip && (
+                        <p className="text-body-sm text-text-secondary">
+                          <strong>Tip:</strong> {habit.tip}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </Card>
               )
             })}
+
+            {/* Add my own */}
+            {!showCustomHabit ? (
+              <Card
+                onClick={() => setShowCustomHabit(true)}
+                className="cursor-pointer hover:border-summit-sage transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <Checkbox disabled />
+                  <span className="text-text-secondary">Add my own...</span>
+                </div>
+              </Card>
+            ) : (
+              <Card className="border-summit-emerald bg-summit-mint">
+                <div className="flex items-center gap-3">
+                  <Checkbox disabled className="mt-0.5" />
+                  <div className="flex-1">
+                    <Input
+                      value={customHabitText}
+                      onChange={(e) => setCustomHabitText(e.target.value)}
+                      placeholder="e.g., Read for 15 minutes before bed"
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddCustomHabit()}
+                      autoFocus
+                    />
+                  </div>
+                  <Button
+                    onClick={handleAddCustomHabit}
+                    size="sm"
+                    disabled={!customHabitText.trim()}
+                    className="bg-summit-emerald text-white"
+                  >
+                    Add
+                  </Button>
+                </div>
+              </Card>
+            )}
           </div>
         )}
 
