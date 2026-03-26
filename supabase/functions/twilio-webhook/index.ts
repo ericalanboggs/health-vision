@@ -239,7 +239,7 @@ serve(async (req) => {
           .eq('id', userId)
         console.log(`Updated user ${userId} sms_opt_in to true`)
         const optInResult = await sendSMS(
-          { to: fromPhone, body: 'Welcome to Summit Health Habit Reminders! You are now subscribed to recurring messages. Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to cancel.' },
+          { to: fromPhone, body: 'Welcome to Summit Health SMS Coaching! You are now subscribed to recurring messages. Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to cancel.' },
           { supabase, logTable: 'sms_messages', extra: { user_id: userId, sent_by_type: 'system' } }
         )
         if (!optInResult.success) {

@@ -137,13 +137,12 @@ serve(async (req) => {
       const isLite = profile.challenge_type === 'lite'
       const confirmBody = isLite
         ? '\u26f0\ufe0f Welcome to the Tech Neck Challenge, brought to you by Summit Health! You\'ll get 5 coaching texts/day starting Monday. Msg & data rates may apply. Reply HELP for help, STOP to cancel.'
-        : 'Welcome to Summit Health Habit Reminders! Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to cancel.'
+        : 'Welcome to Summit Health SMS Coaching! Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to cancel.'
+      const twilioOpts = isLite && TWILIO_PHONE_NUMBER_LITE
+        ? { from: TWILIO_PHONE_NUMBER_LITE, accountSid: TWILIO_ACCOUNT_SID_LITE!, authToken: TWILIO_AUTH_TOKEN_LITE! }
+        : {}
       const confirmResult = await sendSMS(
-        {
-          to: profile.phone,
-          body: confirmBody,
-          ...(isLite && TWILIO_PHONE_NUMBER_LITE ? { from: TWILIO_PHONE_NUMBER_LITE, accountSid: TWILIO_ACCOUNT_SID_LITE!, authToken: TWILIO_AUTH_TOKEN_LITE! } : {}),
-        },
+        { to: profile.phone, body: confirmBody, ...twilioOpts },
         {
           supabase,
           logTable: 'sms_messages',
@@ -152,6 +151,21 @@ serve(async (req) => {
       )
       if (confirmResult.success) {
         console.log(`Opt-in confirmation SMS sent to user ${user.id}`)
+
+        // Follow-up: encourage saving as contact + pinning
+        const followupBody = isLite
+          ? 'Tip: Save this number as "Summit Health" in your contacts and pin this conversation so you never miss a coaching text!'
+          : 'Tip: Save this number as "Summit Health" in your contacts and pin this conversation so you never miss a coaching text! To set our logo as the contact photo, save this image: go.summithealth.app/summit-logo.png'
+        // Brief delay so messages arrive in order
+        await new Promise(resolve => setTimeout(resolve, 3000))
+        await sendSMS(
+          { to: profile.phone, body: followupBody, ...twilioOpts },
+          {
+            supabase,
+            logTable: 'sms_messages',
+            extra: { user_id: user.id, sent_by_type: 'system' },
+          }
+        )
       } else {
         console.error(`Failed to send opt-in confirmation SMS: ${confirmResult.error}`)
       }
