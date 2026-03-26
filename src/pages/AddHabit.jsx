@@ -8,6 +8,7 @@ import { loadJourney } from '../services/journeyService'
 import { enhanceActionPlan } from '../utils/aiService'
 import { generateActionPlan } from '../utils/planGenerator'
 import { Button, Checkbox, Input, Card } from '@summit/design-system'
+import supabase from '../lib/supabase'
 
 export default function AddHabit() {
   const navigate = useNavigate()
@@ -363,6 +364,10 @@ export default function AddHabit() {
             trial_started_at: new Date().toISOString(),
             trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
           })
+          // Fire-and-forget: pre-seed Guides with week 1 digest resources
+          supabase.functions.invoke('generate-weekly-digest', {
+            body: { user_id: user.id, week_number: 1 },
+          }).catch(err => console.error('generate-weekly-digest error:', err))
         }
         navigate('/')
       } else {

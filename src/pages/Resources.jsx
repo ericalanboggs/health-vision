@@ -239,7 +239,7 @@ export default function Resources() {
               <CardHeader>
                 <CardDescription className="text-center py-4">
                   {resources.length === 0
-                    ? 'No resources yet. Resources from your weekly digests will appear here.'
+                    ? 'Your personalized guides are being prepared — check back shortly!'
                     : 'No resources match your filters.'}
                 </CardDescription>
               </CardHeader>
