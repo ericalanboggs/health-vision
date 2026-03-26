@@ -218,7 +218,7 @@ export default function ProfileSetup() {
               <Checkbox
                 checked={formData.smsConsent}
                 onChange={(e) => handleChange('smsConsent', e.target.checked)}
-                label="Enable SMS Habit Reminders (Optional)"
+                label={<span className="font-semibold">Enable Coaching by SMS (Recommended)</span>}
                 description="By checking this box, you consent to receive automated habit reminder and wellness text messages from Summit Health. Msg frequency varies. Msg & data rates may apply. Consent is not a condition of any purchase. Reply STOP to unsubscribe anytime, HELP for help."
                 shape="rounded"
                 align="top"
