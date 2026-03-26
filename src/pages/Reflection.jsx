@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CalendarMonth, Save, Autorenew, CheckCircle, Schedule, Edit, Visibility, ChevronLeft, ChevronRight } from '@mui/icons-material'
 import { saveReflection, getCurrentWeekReflection, getReflectionByWeek, getAllReflections } from '../services/reflectionService'
@@ -23,6 +23,9 @@ export default function Reflection() {
     app_feedback: ''
   })
   const [weekReflections, setWeekReflections] = useState({}) // Store all weeks' reflections
+  const [autoSaveStatus, setAutoSaveStatus] = useState(null) // null | 'saving' | 'saved' | timestamp string
+  const autoSaveTimerRef = useRef(null)
+  const lastSavedRef = useRef(null) // track last saved content to avoid redundant saves
   const [showBanner, setShowBanner] = useState(() => !localStorage.getItem('reflection-banner-dismissed'))
   const [activeEnrollment, setActiveEnrollment] = useState(null)
   const [challengeHabitLog, setChallengeHabitLog] = useState([])
@@ -121,17 +124,54 @@ export default function Reflection() {
     }
   }
 
+  // Auto-save: debounced save 3s after last change
+  const performAutoSave = useCallback(async (reflectionData, week) => {
+    // Skip if nothing meaningful to save
+    const hasContent = reflectionData.went_well.trim() || reflectionData.friction.trim() || reflectionData.adjustment.trim() || reflectionData.app_feedback.trim()
+    if (!hasContent) return
+
+    // Skip if content hasn't changed since last save
+    const contentKey = JSON.stringify(reflectionData)
+    if (lastSavedRef.current === contentKey) return
+
+    setAutoSaveStatus('saving')
+    const { success } = await saveReflection(week, reflectionData)
+    if (success) {
+      lastSavedRef.current = contentKey
+      setWeekReflections(prev => ({
+        ...prev,
+        [week]: { ...reflectionData, created_at: new Date().toISOString() }
+      }))
+      const timeStr = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      setAutoSaveStatus(timeStr)
+    }
+  }, [])
+
   const handleChange = (field, value) => {
-    setReflection(prev => ({
-      ...prev,
-      [field]: value
-    }))
+    const updated = { ...reflection, [field]: value }
+    setReflection(updated)
     setSaved(false)
+
+    // Clear existing timer and set new one
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    autoSaveTimerRef.current = setTimeout(() => {
+      performAutoSave(updated, selectedWeek)
+    }, 3000)
   }
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    }
+  }, [])
 
   const handleSave = async () => {
     // Prevent double-submit
     if (saving) return
+
+    // Cancel any pending auto-save
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
 
     setSaving(true)
 
@@ -147,6 +187,8 @@ export default function Reflection() {
         }
       }))
 
+      lastSavedRef.current = JSON.stringify(reflection)
+      setAutoSaveStatus(null)
       setSaved(true)
 
       // Check for active challenge prompt
@@ -272,6 +314,14 @@ export default function Reflection() {
                 )}
               </div>
               <span className="text-xs text-summit-moss">{weekDateRange}</span>
+              {selectedWeek !== currentWeek && (
+                <button
+                  onClick={() => setSelectedWeek(currentWeek)}
+                  className="mt-1 text-xs font-medium text-summit-emerald hover:text-emerald-700 transition"
+                >
+                  This Week
+                </button>
+              )}
             </div>
             <button
               onClick={() => setSelectedWeek(prev => prev + 1)}
@@ -373,6 +423,16 @@ export default function Reflection() {
           {/* Save Button - Show for editable weeks (current and past) */}
           {isEditable && (
             <div className="mt-8 pt-6 border-t border-gray-100">
+              {/* Auto-save indicator */}
+              {autoSaveStatus && !saved && (
+                <p className="text-xs text-text-muted mb-3 flex items-center gap-1.5">
+                  {autoSaveStatus === 'saving' ? (
+                    <><Autorenew className="w-3 h-3 animate-spin" /> Saving...</>
+                  ) : (
+                    <><CheckCircle className="w-3 h-3 text-summit-emerald" /> Auto-saved at {autoSaveStatus}</>
+                  )}
+                </p>
+              )}
               {saved ? (
                 <div className="bg-summit-mint border-2 border-summit-emerald rounded-lg p-4">
                   <div className="flex items-center gap-3">

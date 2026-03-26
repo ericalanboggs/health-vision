@@ -74,7 +74,7 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
-      {trialDays !== null && trialDays > 0 && (
+      {trialDays !== null && trialDays > 0 && onboardingComplete === true && (
         <div className="bg-summit-sage text-summit-forest text-center py-2 px-4 text-body-sm">
           {trialDays} day{trialDays !== 1 ? 's' : ''} left in your free trial.{' '}
           <button onClick={() => navigate('/pricing')} className="underline font-semibold">

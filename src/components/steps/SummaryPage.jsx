@@ -753,13 +753,30 @@ END:VEVENT
               </>
             )}
 
-            {/* Loading State - Only show during initial enhancement, not refresh */}
+            {/* Loading State - Skeleton cards during initial enhancement */}
             {isEnhancing && !isRefreshing && (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <Autorenew className="w-8 h-8 animate-spin text-purple-600 mx-auto mb-3" />
-                  <p className="text-stone-600">Building your personalized plan...</p>
+              <div className="space-y-3">
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border border-purple-200 mb-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Autorenew className="w-5 h-5 animate-spin text-purple-600" />
+                    <p className="text-sm font-medium text-purple-900">Analyzing your goals and building personalized suggestions...</p>
+                  </div>
                 </div>
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="p-4 rounded-lg border border-stone-200 bg-white animate-pulse">
+                    <div className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded bg-stone-200 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 space-y-3">
+                        <div className="h-4 bg-stone-200 rounded w-3/4" />
+                        <div className="space-y-2">
+                          <div className="h-3 bg-stone-100 rounded w-full" />
+                          <div className="h-3 bg-stone-100 rounded w-5/6" />
+                        </div>
+                        <div className="h-3 bg-stone-100 rounded w-2/3" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 

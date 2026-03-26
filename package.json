@@ -27,6 +27,7 @@
     "@mui/icons-material": "^7.3.7",
     "@mui/material": "^7.3.7",
     "@supabase/supabase-js": "^2.91.1",
+    "canvas-confetti": "^1.9.4",
     "jspdf": "^3.0.4",
     "lucide-react": "^0.294.0",
     "posthog-js": "^1.298.0",

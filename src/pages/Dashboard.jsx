@@ -63,7 +63,6 @@ import {
   Schedule,
   ArrowForward,
   CheckCircle,
-  HelpOutline,
   Forum,
   MenuBook,
 } from '@mui/icons-material'
@@ -613,22 +612,18 @@ export default function Dashboard() {
                         <Forum className="h-5 w-5 text-summit-emerald" />
                       </div>
                       <CardTitle className="text-h3">Coaching</CardTitle>
-                      <div className="relative group/tooltip">
-                        <HelpOutline className="h-5 w-5 text-text-muted hover:text-summit-forest cursor-help transition" />
-                        <div className="absolute left-0 top-8 w-80 bg-summit-forest text-white p-4 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-10">
-                          <p className="font-semibold mb-2">What coaching means in Summit</p>
-                          <p className="text-sm leading-relaxed">This isn't someone telling you how to live your life. Coaching is about being heard, thinking things through together, and recognizing that you already have the answers—you just may need space and support to uncover them.</p>
-                          <div className="absolute -top-2 left-4 w-4 h-4 bg-summit-forest transform rotate-45"></div>
-                        </div>
-                      </div>
                     </div>
+
+                    <CardDescription className="text-body mb-3">
+                      This isn't someone telling you how to live your life. Coaching is about being heard, thinking things through together, and recognizing that you already have the answers—you just may need space and support to uncover them.
+                    </CardDescription>
 
                     {tier === 'core' ? (
                       <>
                         <Tag size="sm" variant="secondary" className="w-fit mb-2">
                           Upgrade to access
                         </Tag>
-                        <CardDescription className="text-body mb-3">
+                        <CardDescription className="text-body-sm text-text-muted mb-3">
                           Upgrade your plan to schedule 1-on-1 coaching sessions with a Summit Health coach.
                         </CardDescription>
                       </>
