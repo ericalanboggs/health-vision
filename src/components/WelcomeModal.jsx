@@ -52,23 +52,23 @@ export default function WelcomeModal({ isOpen, onClose }) {
           {/* Body */}
           <div className="px-6 pb-2 space-y-4">
             <p className="text-stone-700 leading-relaxed">
-              Your dashboard is your home base. From here you can track habits, reflect on your week, and access personalized resources — all designed to meet you where you are.
+              <strong>Your dashboard</strong> is your home base. From here you can track habits, reflect on your week, and access personalized resources — all designed to meet you where you are.
             </p>
 
             <div className="bg-summit-mint rounded-lg p-4 border border-summit-sage">
-              <p className="text-sm font-semibold text-summit-forest mb-2">Here's what happens next:</p>
+              <p className="text-sm font-semibold text-summit-forest mb-2">Here's what to explore:</p>
               <ul className="space-y-1.5 text-sm text-stone-700">
                 <li className="flex items-start gap-2">
                   <span className="text-summit-emerald flex-shrink-0 mt-0.5">&#10003;</span>
-                  <span>We'll send you gentle SMS reminders to help you stay consistent</span>
+                  <span>Turn on <strong>habit tracking</strong> to get more granular check-ins and see your progress over time</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-summit-emerald flex-shrink-0 mt-0.5">&#10003;</span>
-                  <span>Each week, you'll get a quick reflection prompt to check in with yourself</span>
+                  <span>Each week, take a few minutes to <strong>reflect</strong> — a quick prompt to check in with yourself</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-summit-emerald flex-shrink-0 mt-0.5">&#10003;</span>
-                  <span>Personalized resources will show up in your Guides section over time</span>
+                  <span>Browse <strong>Guides</strong> for inspiration and resources that populate over time based on your journey</span>
                 </li>
               </ul>
             </div>

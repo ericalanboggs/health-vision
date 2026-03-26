@@ -75,8 +75,13 @@ export default function VerifyPhone() {
       })
 
       if (fnError) {
-        // Parse error from edge function response
-        const errorMessage = fnError.message || 'Failed to send verification code'
+        let errorMessage = 'Failed to send verification code. Please try again.'
+        try {
+          const body = await fnError.context?.json()
+          if (body?.error) {
+            errorMessage = body.error
+          }
+        } catch { /* use default */ }
         if (errorMessage.includes('Too many')) {
           setError('Too many verification attempts. Please try again in an hour.')
         } else {
@@ -152,7 +157,15 @@ export default function VerifyPhone() {
       })
 
       if (fnError) {
-        const errorMessage = fnError.message || 'Verification failed'
+        // supabase.functions.invoke returns a generic message for non-2xx;
+        // the real error is in fnError.context (the Response object)
+        let errorMessage = 'Verification failed. Please try again.'
+        try {
+          const body = await fnError.context?.json()
+          if (body?.error) {
+            errorMessage = body.error
+          }
+        } catch { /* use default */ }
         setError(errorMessage)
       } else if (data?.error) {
         setError(data.error)

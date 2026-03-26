@@ -152,14 +152,12 @@ serve(async (req) => {
       if (confirmResult.success) {
         console.log(`Opt-in confirmation SMS sent to user ${user.id}`)
 
-        // Follow-up: encourage saving as contact + pinning
-        const followupBody = isLite
-          ? 'Tip: Save this number as "Summit Health" in your contacts and pin this conversation so you never miss a coaching text!'
-          : 'Tip: Save this number as "Summit Health" in your contacts and pin this conversation so you never miss a coaching text! To set our logo as the contact photo, save this image: go.summithealth.app/summit-logo.png'
+        // Follow-up: encourage saving as contact + pinning, attach logo via MMS
+        const followupBody = 'Tip: Save this number as "Summit Health" in your contacts and pin this conversation so you never miss a coaching text! Use the image above as your contact photo.'
         // Brief delay so messages arrive in order
         await new Promise(resolve => setTimeout(resolve, 3000))
         await sendSMS(
-          { to: profile.phone, body: followupBody, ...twilioOpts },
+          { to: profile.phone, body: followupBody, mediaUrl: 'https://go.summithealth.app/summit-logo.png', ...twilioOpts },
           {
             supabase,
             logTable: 'sms_messages',

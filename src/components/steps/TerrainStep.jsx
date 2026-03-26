@@ -73,10 +73,10 @@ const TerrainStep = ({ formData, updateFormData, onNext }) => {
         {/* Q7: Current Score Slider */}
         <div className="bg-white p-6 rounded-xl shadow-md border border-stone-200">
           <label className="block text-lg font-semibold text-summit-forest mb-2">
-            How far up the mountain are you today?
+            Rate your current health
           </label>
           <p className="text-sm text-stone-600 mb-4">
-            Rate your current health on a scale of 1-10, where 10 is your summit.
+            How far are you up the mountain?
           </p>
           <div className="flex items-center gap-4">
             <span className="text-sm text-stone-500 font-medium">1</span>

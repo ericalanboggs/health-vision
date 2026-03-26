@@ -17,6 +17,7 @@ import {
 } from '../utils/weekCalculator'
 import { formatDaysDisplay } from '../utils/formatDays'
 import { extractVisionAdjectives } from '../utils/aiService'
+import supabase from '../lib/supabase'
 
 // Cache keys
 const VISION_ADJECTIVES_CACHE_KEY = 'health_summit_vision_adjectives'
@@ -313,6 +314,10 @@ export default function Dashboard() {
     setShowWelcomeModal(false)
     if (user?.id) {
       upsertProfile(user.id, { has_seen_welcome: true })
+      // Fire-and-forget: send welcome tour SMS
+      supabase.functions.invoke('send-welcome-tour-sms', {
+        body: { userId: user.id },
+      }).catch(err => console.error('send-welcome-tour-sms error:', err))
     }
   }
 

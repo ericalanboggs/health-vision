@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { ArrowForward, ArrowBack, Check } from '@mui/icons-material'
 import { Button } from '@summit/design-system'
 import { extractVisionAdjectives, consolidateVisionText, enhanceActionPlan } from '../../utils/aiService'
 import { generateActionPlan } from '../../utils/planGenerator'
 
 const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBackToIntro }) => {
-  const navigate = useNavigate()
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [otherText, setOtherText] = useState({})
   const [phase, setPhase] = useState('quiz') // 'quiz', 'vision-summary', 'habit-intro'
@@ -15,6 +13,7 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
   const [isLoadingVision, setIsLoadingVision] = useState(false)
   const [prefetchedHabits, setPrefetchedHabits] = useState(null)
   const [isLoadingHabits, setIsLoadingHabits] = useState(false)
+  const [selectedHabitIndices, setSelectedHabitIndices] = useState([])
 
   // Question definitions
   const questions = [
@@ -121,8 +120,8 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
       sectionIndex: 1,
       sectionTotal: 3,
       field: 'currentScore',
-      question: 'How far up the mountain are you today?',
-      subtitle: 'Rate your current health: 1-10',
+      question: 'Rate your current health',
+      subtitle: 'How far are you up the mountain?',
       type: 'slider',
       min: 1,
       max: 10,
@@ -175,15 +174,9 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
       field: 'timeCapacity',
       question: 'How much time can you give to focusing on future you?',
       subtitle: 'Be realistic about your schedule.',
-      type: 'single-select',
-      options: [
-        { emoji: '⚡', label: '5 minutes/day' },
-        { emoji: '🕐', label: '10 minutes/day' },
-        { emoji: '🕑', label: '20 minutes/day' },
-        { emoji: '🕒', label: '30 minutes/day' },
-        { emoji: '🕓', label: '45 minutes/day' },
-        { emoji: '🕔', label: '60 minutes/day' },
-      ],
+      type: 'discrete-slider',
+      steps: [5, 10, 15, 20, 30, 45, 60],
+      unit: 'min/day',
     },
     {
       section: 'Support',
@@ -379,6 +372,7 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
   const hasSelection = () => {
     const q = currentQ
     if (q.type === 'slider') return true // Slider always has a value
+    if (q.type === 'discrete-slider') return true // Discrete slider always has a value
     if (q.type === 'single-select') return !!formData[q.field]
     if (q.type === 'multi-select-text') {
       const clicked = formData[q.clickedField] || []
@@ -453,6 +447,73 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
               ))}
             </div>
 
+          </div>
+        </div>
+      )
+    }
+
+    if (q.type === 'discrete-slider') {
+      const steps = q.steps
+      const value = formData[q.field] || steps[Math.floor(steps.length / 2)]
+      const currentIndex = steps.indexOf(value) !== -1 ? steps.indexOf(value) : Math.floor(steps.length / 2)
+      const percentage = (currentIndex / (steps.length - 1)) * 100
+
+      return (
+        <div className="space-y-6">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-md border border-stone-200">
+            {/* Slider track with gradient fill */}
+            <div className="relative mb-6">
+              {/* Track background */}
+              <div className="relative h-3 bg-stone-200 rounded-full">
+                {/* Filled portion (gradient) */}
+                <div
+                  className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-summit-sage to-summit-emerald transition-all duration-150"
+                  style={{ width: `${percentage}%` }}
+                />
+              </div>
+
+              {/* Invisible range input for interaction */}
+              <input
+                type="range"
+                min={0}
+                max={steps.length - 1}
+                value={currentIndex}
+                onChange={(e) => updateFormData(q.field, steps[parseInt(e.target.value)])}
+                className="absolute top-0 left-0 w-full h-3 opacity-0 cursor-pointer"
+              />
+
+              {/* Custom thumb */}
+              <div
+                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none transition-all duration-150"
+                style={{ left: `${percentage}%` }}
+              >
+                <div className="w-8 h-8 bg-summit-emerald rounded-full border-4 border-white shadow-lg flex items-center justify-center">
+                  <span className="text-xs font-bold text-white">{value}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Step indicators */}
+            <div className="flex justify-between px-1">
+              {steps.map((step, idx) => (
+                <button
+                  key={step}
+                  onClick={() => updateFormData(q.field, step)}
+                  className={`w-8 h-8 rounded-full text-sm font-medium transition-all ${
+                    idx === currentIndex
+                      ? 'bg-summit-emerald text-white'
+                      : idx < currentIndex
+                      ? 'bg-summit-sage text-summit-forest'
+                      : 'bg-stone-100 text-stone-400 hover:bg-stone-200'
+                  }`}
+                >
+                  {step}
+                </button>
+              ))}
+            </div>
+
+            {/* Unit label */}
+            <p className="text-center text-sm text-stone-500 mt-3">{q.unit}</p>
           </div>
         </div>
       )
@@ -581,7 +642,7 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
           </p>
           <h1 className="text-h1 text-summit-forest mb-6">
             {isLoadingVision ? (
-              <span className="animate-pulse">Loading...</span>
+              <div className="h-8 bg-summit-mint rounded-lg w-3/4 mx-auto animate-pulse" />
             ) : (
               visionAdjectives || 'Your Health Vision'
             )}
@@ -590,9 +651,11 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
 
         <div className="bg-white p-6 rounded-2xl shadow-md border border-stone-200 mb-8 text-left">
           {isLoadingVision ? (
-            <p className="text-body text-stone-400 leading-relaxed italic animate-pulse">
-              Crafting your vision...
-            </p>
+            <div className="space-y-3">
+              <div className="h-4 bg-summit-mint rounded-md w-full animate-pulse" />
+              <div className="h-4 bg-summit-mint rounded-md w-5/6 animate-pulse" />
+              <div className="h-4 bg-summit-mint rounded-md w-4/6 animate-pulse" />
+            </div>
           ) : (
             <p className="text-body text-stone-700 leading-relaxed italic">
               "{consolidatedVision}"
@@ -620,13 +683,6 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
 
           <div className="flex items-center gap-3">
             <Button
-              variant="ghost"
-              onClick={() => navigate('/dashboard')}
-            >
-              Skip for now
-            </Button>
-
-            <Button
               onClick={() => setPhase('habit-intro')}
               size="lg"
               disabled={isLoadingVision}
@@ -645,30 +701,80 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
   if (phase === 'habit-intro') {
     const habitsReady = prefetchedHabits && prefetchedHabits.length > 0
 
+    const toggleHabitSelect = (index) => {
+      setSelectedHabitIndices(prev =>
+        prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+      )
+    }
+
+    const selectedHabitData = selectedHabitIndices.map(i => prefetchedHabits[i])
+
     return (
-      <div className="max-w-2xl mx-auto text-center">
-        <div className="mb-8">
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-8">
           <div className="flex justify-center mb-6">
             <span className="text-8xl">🌱</span>
           </div>
-          <h1 className="text-h1 text-summit-forest mb-4">
+          <h1 className="text-h1 text-summit-forest mb-2">
             Build Your Habits
           </h1>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl shadow-md border border-stone-200 mb-8">
-          <p className="text-body text-stone-700 leading-relaxed">
-            Habits are the daily actions that connect you to your future self.
-            Each small step builds momentum toward your summit, making lasting
-            change feel natural and achievable.
+          <p className="text-body text-stone-600">
+            {habitsReady
+              ? 'Pick 1\u20133 habits you want to start building today.'
+              : 'Generating personalized habit ideas...'}
           </p>
         </div>
 
-        <p className="text-body text-stone-600 mb-8">
-          {isLoadingHabits
-            ? 'Generating personalized habit ideas...'
-            : 'Let\'s create a personalized habit plan based on your vision.'}
-        </p>
+        {/* Skeleton cards while loading */}
+        {!habitsReady && (
+          <div className="space-y-3 mb-8">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="bg-white p-4 rounded-xl border border-stone-200 animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded bg-summit-mint flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-summit-mint rounded-md w-3/4" />
+                    <div className="h-3 bg-summit-mint/60 rounded-md w-full" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Habit selection cards */}
+        {habitsReady && (
+          <div className="space-y-3 mb-8">
+            {prefetchedHabits.map((habit, index) => {
+              const isSelected = selectedHabitIndices.includes(index)
+              return (
+                <button
+                  key={index}
+                  onClick={() => toggleHabitSelect(index)}
+                  className={`w-full text-left p-4 rounded-xl border transition-all ${
+                    isSelected
+                      ? 'bg-summit-mint border-summit-emerald'
+                      : 'bg-white border-stone-200 hover:border-summit-sage'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-5 h-5 mt-0.5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
+                      isSelected
+                        ? 'bg-summit-emerald border-summit-emerald'
+                        : 'border-stone-300'
+                    }`}>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-summit-forest">{habit.action}</p>
+                      <p className="text-sm text-stone-500 mt-1">{habit.why}</p>
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
 
         {/* Navigation */}
         <div className="flex justify-between items-center">
@@ -681,13 +787,13 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
           </Button>
 
           <Button
-            onClick={() => onComplete(prefetchedHabits)}
+            onClick={() => onComplete(selectedHabitData)}
             size="lg"
-            disabled={isLoadingHabits}
+            disabled={!habitsReady || selectedHabitIndices.length === 0}
             className="bg-summit-emerald hover:bg-emerald-700 text-white disabled:opacity-50"
             rightIcon={<ArrowForward className="w-5 h-5" />}
           >
-            {isLoadingHabits ? 'Preparing...' : 'Create Habit Plan'}
+            {isLoadingHabits ? 'Preparing...' : 'Continue'}
           </Button>
         </div>
       </div>

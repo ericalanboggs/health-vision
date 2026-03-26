@@ -97,6 +97,9 @@ export default function AddHabit() {
       setSuggestions(prefetchedHabits)
       setShowAiSuggestions(true)
       setAiSuggestionsLoaded(true)
+      // Habits already selected in QuickStartVision — skip to schedule
+      setSelectedHabits(prefetchedHabits.map((_, i) => i))
+      setPhase('schedule')
     }
 
     setLoading(false)
@@ -411,9 +414,11 @@ export default function AddHabit() {
                 className="w-[200px] h-[200px] object-contain"
               />
             </div>
-            <h1 className="text-h1 text-summit-forest mb-3">My Habit Plan</h1>
+            <h1 className="text-h1 text-summit-forest mb-3">{phase === 'schedule' ? 'Schedule Habits' : 'My Habit Plan'}</h1>
             <p className="text-body text-text-secondary">
-              Pick 1–3 habits you want to start building today.
+              {phase === 'schedule'
+                ? "Nice! Now let\u2019s lock in when you\u2019ll practice each habit. Choose days that realistically work for you\u2014people are far more likely to follow through when they decide when they\u2019ll act."
+                : 'Pick 1\u20133 habits you want to start building today.'}
             </p>
           </div>
 
@@ -578,16 +583,6 @@ export default function AddHabit() {
             </>
           ) : (
             <>
-              {/* Schedule Phase */}
-              <div className="mb-6 bg-summit-mint border border-summit-sage rounded-lg p-4">
-                <p className="text-body-sm text-summit-forest">
-                  <strong>Nice!</strong> Let's lock in when you'll try this—take a quick look at your calendar and choose days that realistically work for you.
-                </p>
-                <p className="text-body-sm text-summit-forest mt-2">
-                  People are far more likely to follow through when they decide <em>when</em> they'll act, not just <em>what</em> they'll do.
-                </p>
-              </div>
-
               {/* Scheduling Cards */}
               <div className="space-y-4 mb-4">
                 {selectedHabits.map((suggestionIndex, index) => {

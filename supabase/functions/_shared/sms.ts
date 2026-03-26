@@ -16,6 +16,7 @@ export interface SMSPayload {
   from?: string
   accountSid?: string
   authToken?: string
+  mediaUrl?: string
 }
 
 export interface SMSLogOptions {
@@ -54,11 +55,15 @@ export async function sendSMS(
             'Content-Type': 'application/x-www-form-urlencoded',
             Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
           },
-          body: new URLSearchParams({
-            To: to,
-            From: fromNumber,
-            Body: body,
-          }),
+          body: (() => {
+            const params = new URLSearchParams({
+              To: to,
+              From: fromNumber,
+              Body: body,
+            })
+            if (payload.mediaUrl) params.set('MediaUrl', payload.mediaUrl)
+            return params
+          })(),
         }
       )
 
