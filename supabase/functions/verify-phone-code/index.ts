@@ -157,7 +157,7 @@ serve(async (req) => {
         // Brief delay so messages arrive in order
         await new Promise(resolve => setTimeout(resolve, 3000))
         await sendSMS(
-          { to: profile.phone, body: followupBody, mediaUrl: 'https://go.summithealth.app/summit-logo.png', ...twilioOpts },
+          { to: profile.phone, body: followupBody, mediaUrl: 'https://go.summithealth.app/summit-social.png', ...twilioOpts },
           {
             supabase,
             logTable: 'sms_messages',
