@@ -16,6 +16,7 @@ import {
   MoreVert,
 } from '@mui/icons-material'
 import { getCurrentUser } from '../services/authService'
+import supabase from '../lib/supabase'
 import {
   getUserResources,
   addResource,
@@ -73,6 +74,8 @@ export default function Resources() {
   const [toastMessage, setToastMessage] = useState(null)
   const addFormRef = useRef(null)
 
+  const digestTriggered = useRef(false)
+
   useEffect(() => {
     const loadResources = async () => {
       const userResult = await getCurrentUser()
@@ -89,6 +92,24 @@ export default function Resources() {
           topic: r.topic || categorizeResource([r.title, r.description].filter(Boolean).join(' ')),
         }))
         setResources(categorized)
+
+        // Fallback: if no resources exist, trigger digest generation and retry
+        if (categorized.length === 0 && !digestTriggered.current) {
+          digestTriggered.current = true
+          supabase.functions.invoke('generate-weekly-digest', {
+            body: { user_id: userResult.user.id, week_number: 1 },
+          }).catch(err => console.error('generate-weekly-digest fallback error:', err))
+          // Retry loading after 45 seconds
+          setTimeout(async () => {
+            const retry = await getUserResources(userResult.user.id)
+            if (retry.success && retry.data.length > 0) {
+              setResources(retry.data.map(r => ({
+                ...r,
+                topic: r.topic || categorizeResource([r.title, r.description].filter(Boolean).join(' ')),
+              })))
+            }
+          }, 45000)
+        }
       }
       setLoading(false)
     }
