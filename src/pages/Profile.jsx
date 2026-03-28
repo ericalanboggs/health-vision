@@ -372,7 +372,12 @@ export default function Profile() {
                       End-of-Day Follow-up Time
                     </label>
                     <p className="text-body-sm text-text-muted mb-2">
-                      When should we check in on your habits for the day?
+                      We'll send you an SMS at this time to check in on your habits for the day.
+                      {!formData.smsConsent && (
+                        <span className="block mt-1 text-feedback-warning">
+                          Enable SMS in Personal Information above to receive follow-ups.
+                        </span>
+                      )}
                     </p>
                     <input
                       type="time"
