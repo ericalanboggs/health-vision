@@ -11,6 +11,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [editing, setEditing] = useState(false)
   const [user, setUser] = useState(null)
   const [errors, setErrors] = useState({})
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -127,6 +128,9 @@ export default function Profile() {
 
       if (result.success) {
         setSaved(true)
+        setEditing(false)
+        // Reload profile data so read view reflects changes
+        await loadUserProfile()
         setTimeout(() => {
           setSaved(false)
         }, 3000)
@@ -172,114 +176,183 @@ export default function Profile() {
         </div>
 
         <Card className="p-8">
-          <form onSubmit={handleSave} className="space-y-6">
-            {/* First Name */}
-            <Input
-              label={<>First Name <span className="text-feedback-error">*</span></>}
-              type="text"
-              value={formData.firstName}
-              onChange={(e) => handleChange('firstName', e.target.value)}
-              placeholder="Enter your first name"
-              errorMessage={errors.firstName}
-              size="lg"
-            />
+          {editing ? (
+            <form onSubmit={handleSave} className="space-y-6">
+              <h2 className="text-h3 text-summit-forest mb-4">Personal Information</h2>
 
-            {/* Last Name */}
-            <Input
-              label={<>Last Name <span className="text-feedback-error">*</span></>}
-              type="text"
-              value={formData.lastName}
-              onChange={(e) => handleChange('lastName', e.target.value)}
-              placeholder="Enter your last name"
-              errorMessage={errors.lastName}
-              size="lg"
-            />
-
-            {/* Email (Read-only) */}
-            <Input
-              label="Email"
-              type="email"
-              value={formData.email}
-              readOnly
-              leftIcon={<Email className="w-5 h-5" />}
-              size="lg"
-              helperText="Email cannot be changed"
-              className="bg-gray-50"
-            />
-
-            {/* Mobile Phone */}
-            <Input
-              label={<>Mobile Phone <span className="text-feedback-error">*</span></>}
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => handleChange('phone', e.target.value)}
-              placeholder="(555) 123-4567"
-              leftIcon={<Phone className="w-5 h-5" />}
-              errorMessage={errors.phone}
-              size="lg"
-            />
-
-            {/* SMS Consent */}
-            <div className="bg-summit-mint/30 border border-summit-sage rounded-lg p-4">
-              <Checkbox
-                checked={formData.smsConsent}
-                onChange={(e) => handleChange('smsConsent', e.target.checked)}
-                label="Enable SMS Habit Reminders (Optional)"
-                description="By checking this box, you consent to receive automated habit reminder and wellness text messages from Summit Health. Msg frequency varies. Msg & data rates may apply. Consent is not a condition of any purchase. Reply STOP to unsubscribe anytime, HELP for help."
-                shape="rounded"
-                align="top"
-                size="sm"
+              {/* First Name */}
+              <Input
+                label={<>First Name <span className="text-feedback-error">*</span></>}
+                type="text"
+                value={formData.firstName}
+                onChange={(e) => handleChange('firstName', e.target.value)}
+                placeholder="Enter your first name"
+                errorMessage={errors.firstName}
+                size="lg"
               />
-              <p className="text-xs text-stone-500 mt-2 ml-7">
-                <Link to="/privacy" className="text-summit-emerald hover:underline">Privacy Policy</Link>
-                {' & '}
-                <Link to="/terms" className="text-summit-emerald hover:underline">Terms</Link>
-              </p>
-            </div>
 
-            {/* Pilot Reason */}
-            <Textarea
-              label={<>What drew you to Summit? <span className="text-sm font-normal text-stone-500">(Optional)</span></>}
-              value={formData.pilotReason}
-              onChange={(e) => handleChange('pilotReason', e.target.value)}
-              rows={4}
-              size="lg"
-              placeholder="Tell us what motivated you to join and what you hope to achieve..."
-            />
-
-            {/* Submit Error */}
-            {errors.submit && (
-              <Banner variant="error">{errors.submit}</Banner>
-            )}
-
-            {/* Success Message */}
-            {saved && (
-              <Banner variant="success">Profile updated successfully!</Banner>
-            )}
-
-            {/* Buttons */}
-            <div className="flex gap-4">
-              <Button
-                type="button"
-                variant="secondary"
+              {/* Last Name */}
+              <Input
+                label={<>Last Name <span className="text-feedback-error">*</span></>}
+                type="text"
+                value={formData.lastName}
+                onChange={(e) => handleChange('lastName', e.target.value)}
+                placeholder="Enter your last name"
+                errorMessage={errors.lastName}
                 size="lg"
-                className="flex-1"
-                onClick={() => navigate('/dashboard')}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
+              />
+
+              {/* Email (Read-only) */}
+              <Input
+                label="Email"
+                type="email"
+                value={formData.email}
+                readOnly
+                leftIcon={<Email className="w-5 h-5" />}
                 size="lg"
-                className="flex-1"
-                loading={saving}
-                disabled={saving}
-              >
-                {saving ? 'Saving...' : 'Save'}
-              </Button>
+                helperText="Email cannot be changed"
+                className="bg-gray-50"
+              />
+
+              {/* Mobile Phone */}
+              <Input
+                label={<>Mobile Phone <span className="text-feedback-error">*</span></>}
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleChange('phone', e.target.value)}
+                placeholder="(555) 123-4567"
+                leftIcon={<Phone className="w-5 h-5" />}
+                errorMessage={errors.phone}
+                size="lg"
+              />
+
+              {/* SMS Consent */}
+              <div className="bg-summit-mint/30 border border-summit-sage rounded-lg p-4">
+                <Checkbox
+                  checked={formData.smsConsent}
+                  onChange={(e) => handleChange('smsConsent', e.target.checked)}
+                  label="Enable SMS Habit Reminders (Optional)"
+                  description="By checking this box, you consent to receive automated habit reminder and wellness text messages from Summit Health. Msg frequency varies. Msg & data rates may apply. Consent is not a condition of any purchase. Reply STOP to unsubscribe anytime, HELP for help."
+                  shape="rounded"
+                  align="top"
+                  size="sm"
+                />
+                <p className="text-xs text-stone-500 mt-2 ml-7">
+                  <Link to="/privacy" className="text-summit-emerald hover:underline">Privacy Policy</Link>
+                  {' & '}
+                  <Link to="/terms" className="text-summit-emerald hover:underline">Terms</Link>
+                </p>
+              </div>
+
+              {/* Pilot Reason */}
+              <Textarea
+                label={<>What drew you to Summit? <span className="text-sm font-normal text-stone-500">(Optional)</span></>}
+                value={formData.pilotReason}
+                onChange={(e) => handleChange('pilotReason', e.target.value)}
+                rows={4}
+                size="lg"
+                placeholder="Tell us what motivated you to join and what you hope to achieve..."
+              />
+
+              {/* Submit Error */}
+              {errors.submit && (
+                <Banner variant="error">{errors.submit}</Banner>
+              )}
+
+              {/* Buttons */}
+              <div className="flex gap-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="lg"
+                  className="flex-1"
+                  onClick={() => {
+                    setEditing(false)
+                    setErrors({})
+                    // Reset form to saved profile data
+                    if (profileData) {
+                      setFormData({
+                        firstName: profileData.first_name || '',
+                        lastName: profileData.last_name || '',
+                        email: user?.email || user?.user_metadata?.email || '',
+                        phone: profileData.phone || '',
+                        smsConsent: profileData.sms_opt_in || false,
+                        pilotReason: profileData.pilot_reason || ''
+                      })
+                    }
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="lg"
+                  className="flex-1"
+                  loading={saving}
+                  disabled={saving}
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <div>
+              <h2 className="text-h3 text-summit-forest mb-4">Personal Information</h2>
+
+              {/* Success Message */}
+              {saved && (
+                <div className="mb-4">
+                  <Banner variant="success">Profile updated successfully!</Banner>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-body-sm text-text-muted">Name</p>
+                    <p className="text-body font-medium text-summit-forest">
+                      {formData.firstName} {formData.lastName}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-body-sm text-text-muted">Email</p>
+                  <p className="text-body font-medium text-summit-forest">{formData.email}</p>
+                </div>
+
+                <div>
+                  <p className="text-body-sm text-text-muted">Mobile Phone</p>
+                  <p className="text-body font-medium text-summit-forest">{formData.phone || 'Not set'}</p>
+                </div>
+
+                <div>
+                  <p className="text-body-sm text-text-muted">SMS Reminders</p>
+                  <p className="text-body font-medium text-summit-forest">
+                    {formData.smsConsent ? 'Enabled' : 'Disabled'}
+                  </p>
+                </div>
+
+                {formData.pilotReason && (
+                  <div>
+                    <p className="text-body-sm text-text-muted">What drew you to Summit</p>
+                    <p className="text-body text-summit-forest">{formData.pilotReason}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6">
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={() => setEditing(true)}
+                >
+                  Update
+                </Button>
+              </div>
             </div>
-          </form>
+          )}
         </Card>
 
         {/* Subscription Info */}
