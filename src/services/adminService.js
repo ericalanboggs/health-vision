@@ -311,6 +311,7 @@ export const getUserDetail = async (userId) => {
           subscriptionTier: profile.subscription_tier || null,
           subscriptionStatus: profile.subscription_status || null,
           subscriptionCurrentPeriodEnd: profile.subscription_current_period_end || null,
+          trackingFollowupTime: profile.tracking_followup_time || '17:00:00',
         },
         pilotReadiness: {
           ready: pilotReady,
@@ -754,6 +755,25 @@ export const adminUpdateTrackingConfig = async (userId, habitName, { trackingEna
     return { success: true, data }
   } catch (error) {
     console.error('Error updating tracking config:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export const adminUpdateFollowupTime = async (userId, followupTime) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ tracking_followup_time: followupTime })
+      .eq('id', userId)
+
+    if (error) throw error
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating followup time:', error)
     return { success: false, error: error.message }
   }
 }

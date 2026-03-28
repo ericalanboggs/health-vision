@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit, adminUpdateTrackingConfig } from '../services/adminService'
+import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit, adminUpdateTrackingConfig, adminUpdateFollowupTime } from '../services/adminService'
 import { COACHING_CONFIG, getBillingPeriod } from '../services/subscriptionService'
 import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt, Forum, Edit as EditIcon, Close, Add, PushPin, PushPinOutlined, DeleteOutline, Chat, Email } from '@mui/icons-material'
 import { Tag } from '@summit/design-system'
@@ -83,6 +83,8 @@ export default function AdminUserDetail() {
   const [showAddHabitForm, setShowAddHabitForm] = useState(false)
   const [addHabitForm, setAddHabitForm] = useState({ name: '', days: [], reminderTime: '' })
   const [savingHabit, setSavingHabit] = useState(false)
+  const [editFollowupTime, setEditFollowupTime] = useState('')
+  const [savingFollowup, setSavingFollowup] = useState(false)
 
   useEffect(() => {
     loadUserDetail()
@@ -658,7 +660,7 @@ export default function AdminUserDetail() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-summit-forest">Current Habits</h2>
             <button
-              onClick={() => { setEditingHabits(!editingHabits); setEditingHabitName(null); setShowAddHabitForm(false) }}
+              onClick={() => { setEditingHabits(!editingHabits); setEditingHabitName(null); setShowAddHabitForm(false); setEditFollowupTime(profile.trackingFollowupTime?.substring(0, 5) || '17:00') }}
               className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-500 hover:text-summit-forest transition-colors"
               title={editingHabits ? 'Exit edit mode' : 'Edit habits'}
             >
@@ -831,6 +833,44 @@ export default function AdminUserDetail() {
           ) : (
             <p className="text-stone-500 italic">No active habits</p>
           )}
+
+          {/* Follow-up Time */}
+          <div className="mt-4 pt-4 border-t border-stone-200">
+            <div className="text-sm text-stone-600">
+              <span className="font-medium">End-of-Day SMS Follow-up:</span>{' '}
+              {editingHabits ? (
+                <span className="inline-flex items-center gap-2">
+                  <input
+                    type="time"
+                    value={editFollowupTime}
+                    onChange={(e) => setEditFollowupTime(e.target.value)}
+                    className="border border-stone-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent"
+                  />
+                  <button
+                    onClick={async () => {
+                      setSavingFollowup(true)
+                      const result = await adminUpdateFollowupTime(userId, editFollowupTime + ':00')
+                      if (result.success) {
+                        setData(prev => ({
+                          ...prev,
+                          profile: { ...prev.profile, trackingFollowupTime: editFollowupTime + ':00' }
+                        }))
+                      }
+                      setSavingFollowup(false)
+                    }}
+                    disabled={savingFollowup}
+                    className="px-3 py-1 bg-summit-emerald text-white rounded-lg text-xs font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+                  >
+                    {savingFollowup ? 'Saving...' : 'Save'}
+                  </button>
+                </span>
+              ) : (
+                <span className="font-medium text-summit-forest">
+                  {formatTime(profile.trackingFollowupTime?.substring(0, 5) || '17:00')}
+                </span>
+              )}
+            </div>
+          </div>
 
           {/* Add Habit button */}
           {editingHabits && !showAddHabitForm && (
