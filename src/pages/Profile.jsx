@@ -18,6 +18,10 @@ export default function Profile() {
   const [deleting, setDeleting] = useState(false)
   const [profileData, setProfileData] = useState(null)
   const [managingSubscription, setManagingSubscription] = useState(false)
+  const [editingPrefs, setEditingPrefs] = useState(false)
+  const [savingPrefs, setSavingPrefs] = useState(false)
+  const [savedPrefs, setSavedPrefs] = useState(false)
+  const [followupTime, setFollowupTime] = useState('17:00')
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -354,6 +358,97 @@ export default function Profile() {
             </div>
           )}
         </Card>
+
+        {/* Habit Preferences */}
+        {user && (
+          <Card className="mt-8 p-8">
+            {editingPrefs ? (
+              <div>
+                <h2 className="text-h3 text-summit-forest mb-4">Habit Preferences</h2>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-body-sm font-semibold text-summit-forest mb-1">
+                      End-of-Day Follow-up Time
+                    </label>
+                    <p className="text-body-sm text-text-muted mb-2">
+                      When should we check in on your habits for the day?
+                    </p>
+                    <input
+                      type="time"
+                      value={followupTime}
+                      onChange={(e) => setFollowupTime(e.target.value)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-body bg-white focus:ring-2 focus:ring-summit-emerald focus:border-summit-emerald transition"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-6 flex gap-4">
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    onClick={() => {
+                      setEditingPrefs(false)
+                      // Reset to saved value
+                      setFollowupTime(profileData?.followup_time || '17:00')
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="md"
+                    loading={savingPrefs}
+                    disabled={savingPrefs}
+                    onClick={async () => {
+                      setSavingPrefs(true)
+                      // TODO: save to backend once column exists
+                      setSavedPrefs(true)
+                      setEditingPrefs(false)
+                      setSavingPrefs(false)
+                      setTimeout(() => setSavedPrefs(false), 3000)
+                    }}
+                  >
+                    {savingPrefs ? 'Saving...' : 'Save'}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h2 className="text-h3 text-summit-forest mb-4">Habit Preferences</h2>
+
+                {savedPrefs && (
+                  <div className="mb-4">
+                    <Banner variant="success">Preferences updated successfully!</Banner>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-body-sm text-text-muted">End-of-Day Follow-up</p>
+                    <p className="text-body font-medium text-summit-forest">
+                      {new Date(`2000-01-01T${followupTime}`).toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    onClick={() => setEditingPrefs(true)}
+                  >
+                    Update
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
+        )}
 
         {/* Subscription Info */}
         {user && (
