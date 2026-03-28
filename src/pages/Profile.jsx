@@ -45,6 +45,7 @@ export default function Profile() {
       const profileResult = await getProfile(result.user.id)
       if (profileResult.success && profileResult.data) {
         setProfileData(profileResult.data)
+        setFollowupTime(profileResult.data.tracking_followup_time?.substring(0, 5) || '17:00')
         setFormData({
           firstName: profileResult.data.first_name || '',
           lastName: profileResult.data.last_name || '',
@@ -395,7 +396,7 @@ export default function Profile() {
                     onClick={() => {
                       setEditingPrefs(false)
                       // Reset to saved value
-                      setFollowupTime(profileData?.followup_time || '17:00')
+                      setFollowupTime(profileData?.tracking_followup_time?.substring(0, 5) || '17:00')
                     }}
                   >
                     Cancel
@@ -407,7 +408,9 @@ export default function Profile() {
                     disabled={savingPrefs}
                     onClick={async () => {
                       setSavingPrefs(true)
-                      // TODO: save to backend once column exists
+                      await upsertProfile(user.id, { tracking_followup_time: followupTime + ':00' })
+                      const refreshed = await getProfile(user.id)
+                      if (refreshed.success) setProfileData(refreshed.data)
                       setSavedPrefs(true)
                       setEditingPrefs(false)
                       setSavingPrefs(false)
