@@ -363,12 +363,14 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
       // Quiz complete, move to vision summary
       setPhase('vision-summary')
     }
+    window.scrollTo(0, 0)
   }
 
   const handleBack = () => {
     if (currentQuestion > 0) {
       setCurrentQuestion(currentQuestion - 1)
     }
+    window.scrollTo(0, 0)
   }
 
   // Check if current question has any selection
@@ -684,6 +686,7 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
             onClick={() => {
               setCurrentQuestion(totalQuestions - 1)
               setPhase('quiz')
+              window.scrollTo(0, 0)
             }}
             leftIcon={<ArrowBack className="w-5 h-5" />}
           >
@@ -692,7 +695,7 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
 
           <div className="flex items-center gap-3">
             <Button
-              onClick={() => setPhase('habit-intro')}
+              onClick={() => { setPhase('habit-intro'); window.scrollTo(0, 0) }}
               size="lg"
               disabled={isLoadingVision}
               className="bg-summit-emerald hover:bg-emerald-700 text-white disabled:opacity-50"
@@ -891,7 +894,7 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
         <div className="flex justify-between items-center">
           <Button
             variant="ghost"
-            onClick={() => setPhase('vision-summary')}
+            onClick={() => { setPhase('vision-summary'); window.scrollTo(0, 0) }}
             leftIcon={<ArrowBack className="w-5 h-5" />}
           >
             Back

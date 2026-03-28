@@ -257,6 +257,7 @@ export default function AddHabit() {
 
     // Go directly to scheduling
     setPhase('schedule')
+    window.scrollTo(0, 0)
     fetchUserTimezone()
   }
 
@@ -275,6 +276,7 @@ export default function AddHabit() {
 
     // Switch to schedule phase
     setPhase('schedule')
+    window.scrollTo(0, 0)
 
     // Fetch user timezone
     fetchUserTimezone()
@@ -383,6 +385,7 @@ export default function AddHabit() {
 
   const handleBackFromSchedule = () => {
     setPhase('select')
+    window.scrollTo(0, 0)
   }
 
   const maxHabitsReached = currentHabitsCount >= 5
