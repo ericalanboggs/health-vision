@@ -369,7 +369,7 @@ export default function Profile() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-body-sm font-semibold text-summit-forest mb-1">
-                      End-of-Day Follow-up Time
+                      End-of-Day Follow-up
                     </label>
                     <p className="text-body-sm text-text-muted mb-2">
                       We'll send you an SMS at this time to check in on your habits for the day.
