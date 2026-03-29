@@ -108,29 +108,33 @@ export const getChallengeParticipants = async () => {
       return { success: false, error: 'Unauthorized' }
     }
 
-    const [enrollResult, profileResult] = await Promise.all([
-      supabase
-        .from('lite_challenge_enrollments')
-        .select('*')
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('profiles')
-        .select('id, first_name, last_name, email, phone, created_at')
-        .eq('challenge_type', 'lite'),
-    ])
-
-    console.log('Challenge participants debug:', {
-      enrollCount: enrollResult.data?.length,
-      enrollError: enrollResult.error,
-      profileCount: profileResult.data?.length,
-      profileError: profileResult.error,
-    })
+    // First fetch enrollments, then look up profiles by enrolled user_ids
+    const enrollResult = await supabase
+      .from('lite_challenge_enrollments')
+      .select('*')
+      .order('created_at', { ascending: false })
 
     if (enrollResult.error) console.error('Enrollment query error:', enrollResult.error)
-    if (profileResult.error) console.error('Profile query error:', profileResult.error)
-
-    const profiles = profileResult.data || []
     const enrollments = enrollResult.data || []
+
+    // Fetch profiles for enrolled users (not filtered by challenge_type, so full-account
+    // users enrolled in lite challenges also show up)
+    const enrolledUserIds = enrollments.map(e => e.user_id)
+    let profiles = []
+    if (enrolledUserIds.length > 0) {
+      const profileResult = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email, phone, created_at')
+        .in('id', enrolledUserIds)
+
+      if (profileResult.error) console.error('Profile query error:', profileResult.error)
+      profiles = profileResult.data || []
+    }
+
+    console.log('Challenge participants debug:', {
+      enrollCount: enrollments.length,
+      profileCount: profiles.length,
+    })
 
     // Build profile map
     const profileMap = {}
