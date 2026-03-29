@@ -28,40 +28,43 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 
     const now = new Date()
-    const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000)
-    const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000)
+    const ago24h = new Date(now.getTime() - 24 * 60 * 60 * 1000)
 
     console.log(`Running trial expiry SMS check at ${now.toISOString()}`)
-    console.log(`Looking for trials ending between ${in24h.toISOString()} and ${in48h.toISOString()}`)
+    console.log(`Looking for trials that ended between ${ago24h.toISOString()} and ${now.toISOString()}`)
 
-    // Find users whose trial ends in 24-48 hours, with SMS opt-in, no active subscription
+    // Find users whose trial ended in the last 24 hours, with SMS opt-in, no active subscription
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('id, first_name, phone, trial_ends_at, subscription_status')
       .eq('sms_opt_in', true)
       .is('deleted_at', null)
-      .is('subscription_status', null)
       .not('phone', 'is', null)
       .not('trial_ends_at', 'is', null)
-      .gte('trial_ends_at', in24h.toISOString())
-      .lte('trial_ends_at', in48h.toISOString())
+      .gte('trial_ends_at', ago24h.toISOString())
+      .lte('trial_ends_at', now.toISOString())
 
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError)
       throw profilesError
     }
 
-    console.log(`Found ${profiles?.length || 0} users with trial ending in 24-48h`)
+    // Filter out anyone who already converted to an active subscription
+    const eligible = (profiles || []).filter(p =>
+      !p.subscription_status || p.subscription_status === 'trialing'
+    )
 
-    if (!profiles || profiles.length === 0) {
+    console.log(`Found ${profiles?.length || 0} users with trial ended in last 24h, ${eligible.length} without active subscription`)
+
+    if (eligible.length === 0) {
       return new Response(
-        JSON.stringify({ message: 'No trial expiry reminders to send', count: 0 }),
+        JSON.stringify({ message: 'No trial expiry messages to send', count: 0 }),
         { headers: { 'Content-Type': 'application/json' } }
       )
     }
 
     // Dedup: check which users already received a trial_reminder SMS
-    const userIds = profiles.map(p => p.id)
+    const userIds = eligible.map(p => p.id)
     const { data: existingSms } = await supabase
       .from('sms_messages')
       .select('user_id')
@@ -70,16 +73,16 @@ serve(async (req) => {
       .eq('direction', 'outbound')
 
     const alreadySent = new Set((existingSms || []).map(s => s.user_id))
+    const toSend = eligible.filter(p => !alreadySent.has(p.id))
 
-    const eligible = profiles.filter(p => !alreadySent.has(p.id))
-    console.log(`${eligible.length} eligible after dedup (${alreadySent.size} already sent)`)
+    console.log(`${toSend.length} eligible after dedup (${alreadySent.size} already sent)`)
 
     let sent = 0
     let failed = 0
 
-    for (const profile of eligible) {
+    for (const profile of toSend) {
       const firstName = profile.first_name || 'there'
-      const message = `${firstName}, your Summit trial ends tomorrow. If this has been helpful, pick a plan to keep your habits, reflections, and coaching going: go.summithealth.app/pricing`
+      const message = `Hey ${firstName}, it's been great having you on Summit! Your trial is wrapping up, so this will be the last text from us until you choose a plan. If you'd like to keep going, use code SUMMIT50 at checkout for 50% off your first month: go.summithealth.app\n\nWe're rooting for you either way.`
 
       const result = await sendSMS(
         { to: profile.phone, body: message },
@@ -95,10 +98,10 @@ serve(async (req) => {
       )
 
       if (result.success) {
-        console.log(`✓ Trial expiry SMS sent to ${profile.phone} (${profile.id})`)
+        console.log(`✓ Trial farewell SMS sent to ${profile.phone} (${profile.id})`)
         sent++
       } else {
-        console.error(`✗ Failed to send trial expiry SMS to ${profile.phone}: ${result.error}`)
+        console.error(`✗ Failed to send trial farewell SMS to ${profile.phone}: ${result.error}`)
         failed++
       }
     }
@@ -106,8 +109,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         message: 'Trial expiry SMS check complete',
-        found: profiles.length,
-        eligible: eligible.length,
+        found: profiles?.length || 0,
+        eligible: toSend.length,
         sent,
         failed,
       }),

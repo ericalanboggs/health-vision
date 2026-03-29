@@ -140,6 +140,11 @@ export const doSomething = async (params) => {
 - Supports `accountSid`, `authToken`, `from` overrides for multi-account Twilio
 - Optional logging to `sms_messages` or `sms_reminders` table
 
+**`user_context.ts`** — Shared user context loader for AI calls
+- `loadUserContext(supabase, userId, timezone?)` — parallel-loads profile, vision, habits + completion rates, challenge, reflections, SMS history
+- `formatContextForPrompt(ctx)` — formats as a prompt-ready string for injection into AI system prompts
+- Used by `habit-sms-response` and `sms-reflection-response` to give AI full user background
+
 **`resend.ts`** — Resend email with retry
 - `sendEmail({ to, subject, html })` — single email
 - `sendEmailBatch(emails)` — batch up to 100
@@ -152,6 +157,7 @@ export const doSomething = async (params) => {
 | `twilio-webhook` | Twilio inbound SMS | **YES** | Entry point for all inbound SMS; routes by keyword |
 | `habit-sms-response` | Internal (from twilio-webhook) | **YES** | 3-step AI pipeline: pending clarification → followup context → smart parse |
 | `sms-backup-plan` | Internal (from twilio-webhook) | **YES** | BACKUP keyword state machine for plan adjustment |
+| `sms-reflection-response` | Internal (from twilio-webhook) | **YES** | Multi-turn Sunday reflection conversation (3 exchanges → parse → save) |
 | `habit-sms-followup` | Cron (every 15 min) | **YES** | Sends habit tracking followup SMS (1 habit at a time) |
 | `send-sms-reminders` | Cron | **YES** | Morning habit reminder SMS with vision-aligned messaging |
 | `send-admin-sms` | Frontend POST | **YES** | Admin bulk SMS tool; sets 24h AI hold on recipients |
@@ -160,10 +166,10 @@ export const doSomething = async (params) => {
 | `notify-new-signup` | DB trigger (pg_net) | **YES** | Admin notification email on new signup |
 | `send-onboarding-emails` | Cron | **YES** | Multi-day drip email campaign |
 | `send-trial-drip-emails` | Cron | **YES** | Trial period education emails |
-| `send-trial-expiry-sms` | Cron | **YES** | SMS when trial ends |
+| `send-trial-expiry-sms` | Cron (daily 2PM UTC) | **YES** | Farewell SMS with SUMMIT50 promo code when 7-day trial expires |
 | `send-habit-setup-emails` | Cron | **YES** | Habit setup confirmation emails |
 | `send-habit-tracking-emails` | Cron | **YES** | Daily habit tracking reminder emails |
-| `send-reflection-reminders` | Cron | **YES** | Weekly reflection prompt SMS |
+| `send-reflection-reminders` | Cron (Sunday 6PM UTC) | **YES** | AI-generated week synopsis opener → creates reflection session. Skips users who signed up Fri/Sat/Sun (too new for reflection). |
 | `send-weekly-digest` | Cron | **YES** | Single-user weekly summary email |
 | `send-all-weekly-digests` | Cron | **YES** | Batch runner for weekly digests |
 | `generate-weekly-digest` | Internal | **YES** | Compute weekly digest data |
@@ -194,7 +200,9 @@ Inbound SMS (Twilio)
        ├→ HELP → Info reply
        ├→ START/SUBSCRIBE/YES (not opted in) → Opt-in confirmation
        ├→ BACKUP → sms-backup-plan (state machine)
+       ├→ Active reflection session → sms-reflection-response (AI conversation)
        └→ Everything else → habit-sms-response
+            ├→ Step 0: Safety net check for backup/reflection sessions
             ├→ Step 1: Check sms_pending_clarification (10 min expiry)
             ├→ Step 2: Check sms_followup_log for context (Y/N reply)
             └→ Step 3: OpenAI smart-parse (suppressed during admin hold)
@@ -233,7 +241,7 @@ Inbound SMS (Twilio)
 - UNIQUE(user_id, habit_name, entry_date)
 
 **`weekly_reflections`** — Weekly journal
-- `user_id`, `week_number`, `went_well`, `friction`, `adjustment`, `app_feedback`
+- `user_id`, `week_number`, `went_well`, `friction`, `adjustment`, `app_feedback`, `source` ('web'|'sms')
 - UNIQUE(user_id, week_number)
 
 ### SMS Tables
@@ -251,6 +259,9 @@ Inbound SMS (Twilio)
 
 **`sms_backup_sessions`** — BACKUP flow state (30 min expiry)
 - `user_id`, `step`, `context` (JSONB), `expires_at`
+
+**`sms_reflection_sessions`** — Sunday reflection conversation state (2 hr expiry)
+- `user_id`, `week_number`, `step`, `context` (JSONB: opener, messages[], exchange_count, tracking_data, habit_names), `expires_at`
 
 **`backup_plan_log`** — Audit trail for plan adjustments
 - `user_id`, `habit_name`, `change_type`, `original_value`, `new_value`, `ai_reasoning`
@@ -356,6 +367,11 @@ When multiple profiles share the same phone number (e.g., Summit user + lite cha
    - **Subscription**: Updates profile with `subscription_status`, `subscription_tier`, period end
    - **Lite payment**: Updates `lite_challenge_enrollments` to `status: 'paid'`
 
+### Trial
+- 7-day free trial on all subscription tiers
+- `trial_ends_at` set by `stripe-webhook` when checkout completes
+- `send-trial-expiry-sms` fires daily at 2 PM UTC (8 AM Central) — catches trials that ended in the last 24h, sends farewell SMS with SUMMIT50 promo code
+
 ### Subscription Gate
 
 `Home.jsx` checks `hasActiveSubscription(profile)` which returns true if:
@@ -451,6 +467,7 @@ Rules:
    supabase functions deploy create-lite-enrollment --no-verify-jwt
    supabase functions deploy send-lite-challenge-sms --no-verify-jwt
    supabase functions deploy send-lite-challenge-email --no-verify-jwt
+   supabase functions deploy sms-reflection-response --no-verify-jwt
    ```
 
 2. **Migration file names must have unique YYYYMMDD prefixes.** Duplicate dates cause `duplicate key` errors in `supabase db push`. If two migrations land on the same day, use adjacent dates (e.g., 20260325 and 20260326).

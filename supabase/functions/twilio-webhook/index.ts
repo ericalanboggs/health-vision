@@ -279,6 +279,40 @@ serve(async (req) => {
       )
     }
 
+    // Check for active reflection session — route to sms-reflection-response
+    if (userId) {
+      const { data: reflectionSession } = await supabase
+        .from('sms_reflection_sessions')
+        .select('id')
+        .eq('user_id', userId)
+        .gt('expires_at', new Date().toISOString())
+        .limit(1)
+        .maybeSingle()
+
+      if (reflectionSession) {
+        try {
+          console.log(`Routing to sms-reflection-response for user ${userId} (active session)`)
+          const reflectionUrl = `${SUPABASE_URL}/functions/v1/sms-reflection-response`
+          const reflectionRes = await fetch(reflectionUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            },
+            body: bodyText,
+          })
+          console.log(`sms-reflection-response status: ${reflectionRes.status}`)
+        } catch (reflectionError) {
+          console.error('Error forwarding to sms-reflection-response:', reflectionError)
+        }
+
+        return new Response(
+          '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+          { headers: { 'Content-Type': 'text/xml' } }
+        )
+      }
+    }
+
     // Forward to habit-sms-response for processing (confirmation + chaining)
     if (userId) {
       try {

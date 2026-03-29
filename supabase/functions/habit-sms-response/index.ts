@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendSMS as _sendSMS } from '../_shared/sms.ts'
 import { sendEmail } from '../_shared/resend.ts'
+import { loadUserContext, formatContextForPrompt } from '../_shared/user_context.ts'
 
 const COACH_FLAG_EMAIL = 'eric@summithealth.app'
 
@@ -144,7 +145,8 @@ function parseTrackingResponse(body: string, expectedType: 'boolean' | 'metric')
 async function smartParseMessage(
   messageBody: string,
   firstName: string,
-  trackingConfigs: TrackingConfig[]
+  trackingConfigs: TrackingConfig[],
+  userContextPrompt?: string
 ): Promise<SmartParseResult> {
   if (!OPENAI_API_KEY) {
     console.log('OPENAI_API_KEY not set - smart parsing disabled')
@@ -159,7 +161,11 @@ async function smartParseMessage(
     }
   }).join('\n')
 
-  const systemPrompt = `You are Summit, a friendly health habit tracking assistant. Analyze SMS messages to determine what habit(s) the user is trying to log. Respond with JSON only.`
+  const contextBlock = userContextPrompt
+    ? `\n\nUSER BACKGROUND:\n${userContextPrompt}\n`
+    : ''
+
+  const systemPrompt = `You are Summit, a friendly health habit tracking assistant. Analyze SMS messages to determine what habit(s) the user is trying to log. Use the user's background to better understand their message and provide more personalized confirmations. Respond with JSON only.${contextBlock}`
 
   const userPrompt = `USER'S NAME: ${firstName}
 USER'S TRACKED HABITS:
@@ -298,8 +304,7 @@ async function handleCoachFlag(
 async function generateCoachingResponse(
   messageBody: string,
   firstName: string,
-  supabase: ReturnType<typeof createClient>,
-  userId: string
+  userContextPrompt?: string
 ): Promise<{ response: string; flagForHumanCoach: boolean; flagReason: string | null }> {
   const fallback = {
     response: `Hey ${firstName}, I hear you. I'm here if you want to talk — or just text your habits when you're ready.`,
@@ -310,44 +315,9 @@ async function generateCoachingResponse(
   if (!OPENAI_API_KEY) return fallback
 
   try {
-    // Load user context in parallel
-    const [visionResult, reflectionsResult, smsHistoryResult] = await Promise.all([
-      supabase
-        .from('health_journeys')
-        .select('form_data')
-        .eq('user_id', userId)
-        .maybeSingle(),
-      supabase
-        .from('weekly_reflections')
-        .select('went_well, friction, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(3),
-      supabase
-        .from('sms_messages')
-        .select('direction, body, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(10),
-    ])
+    const contextBlock = userContextPrompt || `USER: ${firstName}`
 
-    const vision = visionResult.data?.form_data || {}
-    const reflections = reflectionsResult.data || []
-    const smsHistory = (smsHistoryResult.data || []).reverse()
-
-    const conversationContext = smsHistory
-      .map((m: { direction: string; body: string }) =>
-        `${m.direction === 'inbound' ? 'User' : 'Summit'}: ${m.body}`
-      )
-      .join('\n')
-
-    const reflectionContext = reflections
-      .map((r: { went_well: string; friction: string }) =>
-        `Went well: ${r.went_well || 'n/a'} | Hard: ${r.friction || 'n/a'}`
-      )
-      .join('\n')
-
-    const systemPrompt = `You are Summit, a warm and grounded health coach. The user sent a message that isn't about habit tracking. Respond with empathy and brevity.
+    const systemPrompt = `You are Summit, a warm and grounded health coach. The user sent a message that isn't about habit tracking. Respond with empathy and brevity. Use their background to make your response personal and relevant — reference their vision, recent patterns, or reflections when it fits naturally. Don't force it.
 
 RULES:
 - If the message is simple/conversational (e.g., "thank you", "that's great", "ok", "cool", "thanks"), reply with a brief warm acknowledgment (under 50 chars). Don't offer suggestions or ask questions — just land the moment.
@@ -364,15 +334,7 @@ Respond with JSON only:
   "flag_reason": "brief reason if flagged, or null"
 }`
 
-    const userPrompt = `USER'S NAME: ${firstName}
-VISION: ${vision.visionStatement || 'Not set'}
-WHY IT MATTERS: ${vision.whyMatters || 'Not set'}
-
-RECENT REFLECTIONS:
-${reflectionContext || 'None'}
-
-RECENT SMS CONVERSATION:
-${conversationContext || 'None'}
+    const userPrompt = `${contextBlock}
 
 NEW MESSAGE FROM USER: "${messageBody}"`
 
@@ -770,6 +732,38 @@ serve(async (req) => {
       )
     }
 
+    // Safety net: Check for active reflection session (primary check is in twilio-webhook)
+    const { data: reflectionSession } = await supabase
+      .from('sms_reflection_sessions')
+      .select('id')
+      .eq('user_id', profile.id)
+      .gt('expires_at', new Date().toISOString())
+      .limit(1)
+      .maybeSingle()
+
+    if (reflectionSession) {
+      console.log(`Routing to sms-reflection-response (active reflection session) for user ${profile.id}`)
+      try {
+        const reflectionUrl = `${SUPABASE_URL}/functions/v1/sms-reflection-response`
+        const reflectionRes = await fetch(reflectionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+          body: new URLSearchParams({ From: from, Body: body }).toString(),
+        })
+        console.log(`sms-reflection-response status: ${reflectionRes.status}`)
+      } catch (reflectionError) {
+        console.error('Error forwarding to sms-reflection-response:', reflectionError)
+      }
+
+      return new Response(
+        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+        { headers: { 'Content-Type': 'text/xml' } }
+      )
+    }
+
     // ============================================
     // STEP 1: Check for pending clarification
     // ============================================
@@ -898,6 +892,10 @@ serve(async (req) => {
 
     console.log('No followup context - attempting smart parse')
 
+    // Load full user context for AI calls
+    const userContext = await loadUserContext(supabase, profile.id, profile.timezone)
+    const userContextPrompt = formatContextForPrompt(userContext)
+
     // Get all enabled tracking configs for this user
     const { data: allConfigs } = await supabase
       .from('habit_tracking_config')
@@ -907,7 +905,7 @@ serve(async (req) => {
 
     if (!allConfigs || allConfigs.length === 0) {
       console.log('No tracking configs - routing to coaching fallback')
-      const coachResult = await generateCoachingResponse(body, firstName, supabase, profile.id)
+      const coachResult = await generateCoachingResponse(body, firstName, userContextPrompt)
       await sendSMSWithLog(from, coachResult.response, supabase, profile.id, userName, 'coach')
 
       if (coachResult.flagForHumanCoach) {
@@ -920,12 +918,12 @@ serve(async (req) => {
       )
     }
 
-    // Use Claude to smart-parse the message
-    const parseResult = await smartParseMessage(body, firstName, allConfigs)
+    // Use OpenAI to smart-parse the message
+    const parseResult = await smartParseMessage(body, firstName, allConfigs, userContextPrompt)
 
     if (!parseResult.understood || parseResult.habits.length === 0) {
       console.log('Smart parse: message not understood as habit logging - routing to coaching')
-      const coachResult = await generateCoachingResponse(body, firstName, supabase, profile.id)
+      const coachResult = await generateCoachingResponse(body, firstName, userContextPrompt)
       await sendSMSWithLog(from, coachResult.response, supabase, profile.id, userName, 'coach')
 
       if (coachResult.flagForHumanCoach) {
