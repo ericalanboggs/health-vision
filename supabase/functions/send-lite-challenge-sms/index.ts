@@ -204,8 +204,8 @@ serve(async (req) => {
         const slotTimeInMinutes = slotHour * 60
         const timeDiff = userTimeInMinutes - slotTimeInMinutes
 
-        // Send if within 0-14 minute window after slot time
-        if (timeDiff < 0 || timeDiff > 14) {
+        // Send if within 0-29 minute window after slot time (two cron cycles)
+        if (timeDiff < 0 || timeDiff > 29) {
           continue
         }
 
