@@ -474,23 +474,25 @@ Rules:
 
 3. **Cron functions must be deployed before scheduling.** If `send-lite-challenge-sms` isn't deployed but the cron is scheduled, you'll get 404 errors every 15 minutes. Deploy first, then schedule.
 
-4. **Vercel caches aggressively.** After pushing frontend changes, users may need Cmd+Shift+R (hard refresh) to see updates. `VITE_*` env vars are baked into the JS bundle at build time — adding a new one requires a Vercel redeploy.
+4. **Cron auth headers: use hardcoded JWT, not vault concatenation.** Building headers with `'{"Authorization": "Bearer ' || (SELECT decrypted_secret FROM vault...) || '"}'::jsonb` breaks with a JSON parse error — the string concatenation produces invalid JSON escaping. Instead, hardcode the service role JWT directly in the header string (same pattern as `habit-sms-followup`). Check `cron.job_run_details` to verify crons are succeeding.
+
+5. **Vercel caches aggressively.** After pushing frontend changes, users may need Cmd+Shift+R (hard refresh) to see updates. `VITE_*` env vars are baked into the JS bundle at build time — adding a new one requires a Vercel redeploy.
 
 ### Auth
 
-5. **PKCE flow breaks server-generated links.** The Supabase client uses `flowType: 'pkce'`, so `generateLink({ type: 'magiclink' })` or `generateLink({ type: 'signup' })` will NOT create valid sessions. The client has no `code_verifier`. Use auto-confirm + `signInWithPassword` instead (as the lite challenge does).
+6. **PKCE flow breaks server-generated links.** The Supabase client uses `flowType: 'pkce'`, so `generateLink({ type: 'magiclink' })` or `generateLink({ type: 'signup' })` will NOT create valid sessions. The client has no `code_verifier`. Use auto-confirm + `signInWithPassword` instead (as the lite challenge does).
 
 ### SMS
 
-6. **Duplicate phone numbers across profiles.** If two profiles share a phone (e.g., Summit user + lite challenge user), `twilio-webhook` and `habit-sms-response` will error on `.maybeSingle()`. Both have been updated to fetch all matches and prefer the non-lite user.
+7. **Duplicate phone numbers across profiles.** If two profiles share a phone (e.g., Summit user + lite challenge user), `twilio-webhook` and `habit-sms-response` will error on `.maybeSingle()`. Both have been updated to fetch all matches and prefer the non-lite user.
 
-7. **Inbound SMS logging: twilio-webhook only.** The `twilio-webhook` function logs all inbound messages to `sms_messages`. Downstream functions (`habit-sms-response`, `sms-backup-plan`) should NOT log the inbound message again.
+8. **Inbound SMS logging: twilio-webhook only.** The `twilio-webhook` function logs all inbound messages to `sms_messages`. Downstream functions (`habit-sms-response`, `sms-backup-plan`) should NOT log the inbound message again.
 
-8. **Admin SMS hold scope.** `admin_sms_hold_until` only suppresses Step 3 (AI coaching). Steps 1-2 (pending clarification replies, Y/N followup responses) still work. Scheduled followups (`habit-sms-followup`) are NOT blocked.
+9. **Admin SMS hold scope.** `admin_sms_hold_until` only suppresses Step 3 (AI coaching). Steps 1-2 (pending clarification replies, Y/N followup responses) still work. Scheduled followups (`habit-sms-followup`) are NOT blocked.
 
 ### Timezone
 
-9. **Never filter timestamps with midnight UTC.** Using `.gte('sent_at', '2026-03-24T00:00:00')` filters at midnight UTC, not the user's local midnight. Compute `todayStartUtc` by converting the user's local midnight to UTC:
+10. **Never filter timestamps with midnight UTC.** Using `.gte('sent_at', '2026-03-24T00:00:00')` filters at midnight UTC, not the user's local midnight. Compute `todayStartUtc` by converting the user's local midnight to UTC:
    ```typescript
    const todayStartLocal = `${dateStr}T00:00:00`
    const todayStartUtc = new Date(
@@ -500,13 +502,13 @@ Rules:
 
 ### OpenAI
 
-10. **All AI calls use gpt-4o-mini.** Responses are parsed as JSON. Some responses arrive wrapped in markdown code blocks (`` ```json ... ``` ``), so the parsing logic strips those before `JSON.parse()`.
+11. **All AI calls use gpt-4o-mini.** Responses are parsed as JSON. Some responses arrive wrapped in markdown code blocks (`` ```json ... ``` ``), so the parsing logic strips those before `JSON.parse()`.
 
 ### Database
 
-11. **RLS admin policies use hardcoded email.** Admin access in RLS is granted via `auth.jwt()->>'email' = 'eric.alan.boggs@gmail.com'`. Adding a new admin requires new migration(s) for each table's policy.
+12. **RLS admin policies use hardcoded email.** Admin access in RLS is granted via `auth.jwt()->>'email' = 'eric.alan.boggs@gmail.com'`. Adding a new admin requires new migration(s) for each table's policy.
 
-12. **PostgREST join limitations.** Tables that both reference `auth.users` (like `lite_challenge_enrollments` and `profiles`) can't be joined with `!inner()` syntax. Query them separately and join in JavaScript.
+13. **PostgREST join limitations.** Tables that both reference `auth.users` (like `lite_challenge_enrollments` and `profiles`) can't be joined with `!inner()` syntax. Query them separately and join in JavaScript.
 
 ---
 
