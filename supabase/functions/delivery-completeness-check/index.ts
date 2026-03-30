@@ -77,7 +77,7 @@ serve(async (req) => {
     if (habitUserIds.length > 0) {
       const { data: profiles, error: profilesErr } = await supabase
         .from('profiles')
-        .select('id, first_name, phone, sms_opt_in, timezone')
+        .select('id, first_name, phone, sms_opt_in, timezone, subscription_status, trial_ends_at, challenge_type')
         .in('id', habitUserIds)
         .eq('sms_opt_in', true)
         .not('phone', 'is', null)
@@ -86,7 +86,15 @@ serve(async (req) => {
       if (profilesErr) {
         console.error('Error querying profiles for SMS check:', profilesErr)
       }
-      smsEligibleProfiles = profiles || []
+
+      // Only include users with active subscription or valid trial (not expired trials)
+      const now2 = new Date()
+      smsEligibleProfiles = (profiles || []).filter(p => {
+        if (p.challenge_type === 'lite') return false
+        if (p.subscription_status === 'active') return true
+        if (p.trial_ends_at && new Date(p.trial_ends_at) > now2) return true
+        return false
+      })
     }
 
     console.log(`SMS eligible users with habits today: ${smsEligibleProfiles.length}`)
