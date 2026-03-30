@@ -474,7 +474,7 @@ Rules:
 
 3. **Cron functions must be deployed before scheduling.** If `send-lite-challenge-sms` isn't deployed but the cron is scheduled, you'll get 404 errors every 15 minutes. Deploy first, then schedule.
 
-4. **Cron auth headers: use hardcoded JWT, not vault concatenation.** Building headers with `'{"Authorization": "Bearer ' || (SELECT decrypted_secret FROM vault...) || '"}'::jsonb` breaks with a JSON parse error — the string concatenation produces invalid JSON escaping. Instead, hardcode the service role JWT directly in the header string (same pattern as `habit-sms-followup`). Check `cron.job_run_details` to verify crons are succeeding.
+4. **Cron auth headers: use `jsonb_build_object`, never raw JSON strings.** Both vault concatenation (`'{"Authorization": "Bearer ' || secret || '"}'::jsonb`) and hardcoded JSON strings break — the SQL editor wraps long lines, injecting `\n` characters that are invalid in JSON. The only reliable approach is `jsonb_build_object('Authorization', 'Bearer <jwt>')` which builds JSON programmatically and is immune to line breaks. Always verify with `SELECT status FROM cron.job_run_details WHERE command LIKE '%function-name%' ORDER BY start_time DESC LIMIT 1;`
 
 5. **Vercel caches aggressively.** After pushing frontend changes, users may need Cmd+Shift+R (hard refresh) to see updates. `VITE_*` env vars are baked into the JS bundle at build time — adding a new one requires a Vercel redeploy.
 
