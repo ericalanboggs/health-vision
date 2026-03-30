@@ -4,6 +4,8 @@ import { sendSMS } from '../_shared/sms.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+const TWILIO_ACCOUNT_SID_LITE = Deno.env.get('TWILIO_ACCOUNT_SID_LITE')
+const TWILIO_AUTH_TOKEN_LITE = Deno.env.get('TWILIO_AUTH_TOKEN_LITE')
 const TWILIO_PHONE_NUMBER_LITE = Deno.env.get('TWILIO_PHONE_NUMBER_LITE')
 
 // Slot schedule: local hour for each slot
@@ -230,7 +232,7 @@ serve(async (req) => {
 
         // Send SMS via second Twilio number
         const smsResult = await sendSMS(
-          { to: profile.phone, body: message, from: TWILIO_PHONE_NUMBER_LITE },
+          { to: profile.phone, body: message, from: TWILIO_PHONE_NUMBER_LITE, accountSid: TWILIO_ACCOUNT_SID_LITE, authToken: TWILIO_AUTH_TOKEN_LITE },
           {
             supabase,
             logTable: 'sms_messages',
