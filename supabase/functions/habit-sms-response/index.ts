@@ -207,6 +207,8 @@ RULES:
 - If user sets or changes a goal/target (e.g., "I want to drink 80 oz"), return it in goal_updates — NOT in habits
 - goal_updates is for changing the target, habits is for logging today's value
 - Unrelated message → understood: false
+- CRITICAL: If the user is ASKING about their habits (e.g., "what are my habits?", "tell me my habits", "which habits do I have?") rather than LOGGING a habit, return understood: false. Questions about habits are not habit entries.
+- Similarly, if the user asks for tips, advice, motivation, or information, return understood: false. Only return understood: true when the user is reporting that they did or didn't do a habit.
 - Keep questions SHORT (SMS)`
 
   try {
@@ -320,16 +322,60 @@ async function generateCoachingResponse(
     const systemPrompt = `You are Summit, a warm and grounded health coach. The user sent a message that isn't about habit tracking. Respond with empathy and brevity. Use their background to make your response personal and relevant — reference their vision, recent patterns, or reflections when it fits naturally. Don't force it.
 
 RULES:
+- CRITICAL: If the user asks a question (e.g., "what are my habits?", "can you give me tips?"), answer it fully in your response. Never give a teaser like "Here are your habits!" without listing them. The user cannot see a follow-up — every SMS must be self-contained.
+- If the user asks about their habits, list them by name from their background context. Include streaks and completion rates when available.
+- If the user asks "how am I doing?" or about progress, reference their completion rates, streaks, and recent reflections from their background context.
+- If the user asks for tips or advice on a specific habit, give 1-2 specific, actionable tips in the response itself.
+- If the user asks a "how do I...?" question about Summit features, answer using the SUMMIT FAQ below.
 - If the message is simple/conversational (e.g., "thank you", "that's great", "ok", "cool", "thanks"), reply with a brief warm acknowledgment (under 50 chars). Don't offer suggestions or ask questions — just land the moment.
 - For substantive messages: validate what they said, offer 1-2 brief concrete options (not commands)
-- Stay under 320 characters total — this is SMS
+- Stay under 480 characters total — this is SMS, but completeness matters more than brevity
 - No emojis, no "great job", no "keep it up"
 - Be warm but real. Don't sound like an app notification.
 - If the user seems distressed, frustrated, or wanting to quit, set flag_for_human_coach to true
 
+HELPING WITH HABITS:
+- When the user asks for help with a habit, help directly first: give 1-2 specific, actionable tips and share a relevant guide link from AVAILABLE GUIDES if one matches the topic.
+- If you can see from RECENT SMS that this is the 3rd+ exchange on the SAME struggle, OR the user signals deeper frustration ("I've tried everything", "I can't seem to", "I don't know what to do"), suggest a coaching session.
+- If SUBSCRIPTION shows coaching sessions remaining: "This sounds like a great topic for a coaching session with Coach Eric. You've got one available — book at go.summithealth.app/coaching"
+- If NO coaching sessions available (core tier or sessions used up): still suggest coaching as a valuable next step, and mention upgrading. Say something like: "A coaching session would be perfect for working through this. Upgrade to Plus for monthly 1-on-1 time with Coach Eric — go.summithealth.app/pricing"
+- Suggest coaching at most once per topic. If they don't take it, respect that and keep helping with tips.
+SMART ROUTING — when you detect intent that matches an existing feature, route the user there instead of trying to handle it yourself:
+- Wants to add a new habit → "Text ADD to set up a new habit right here. Summit will help you define it and get it on your schedule."
+- Feeling overwhelmed, wants to reduce or simplify a habit → "Text BACKUP and Summit will suggest a more manageable plan for any habit."
+- Wants to hide or clean up old challenge habits → "Text ARCHIVE to tidy up habits from a completed challenge."
+- Wants to change their schedule, days, or reminder times → "You can adjust your schedule in the app at go.summithealth.app/habits"
+- Wants to start a challenge → "Check out the challenges at go.summithealth.app/challenges — there are 5 to choose from."
+- Wants to see their progress or weekly summary → "Your weekly digest has all your stats. You can also check go.summithealth.app/guides for your latest one."
+- Wants to cancel or quit a habit → suggest BACKUP first ("Before removing it, text BACKUP — sometimes a smaller version of the habit is all you need"). Only mention go.summithealth.app/habits for full removal.
+- Wants to talk to someone / wants more support → suggest coaching (follow HELPING WITH HABITS rules above)
+
+SUMMIT'S APPROACH TO HABITS (use when the user asks how Summit works, how to build habits, what makes Summit different, or what the philosophy/approach is):
+Summit helps habits stick through 8 principles:
+1. Right-sized to your reality — AI tailors habits to the time you actually have and areas you care about, so you start with something doable.
+2. Anchored to your vision — every habit connects to the health vision you defined, so on hard days you remember what you're building toward.
+3. Prompted at the right moments — reminders and followups arrive when you said you'd be available, not at arbitrary times.
+4. Reflection builds self-awareness — weekly reflections help you notice patterns, catch friction early, and evolve your approach.
+5. Adjusting beats quitting — text BACKUP to downshift a habit instead of abandoning it. Pivoting is the skill that makes habits last.
+6. Coaching tone, not policing — Summit encourages without guilt-tripping. Supportive but accountable.
+7. Knowledge fills the gaps — personalized weekly digests deliver research-backed resources matched to your specific habits.
+8. Human connection when you need it — AI handles daily rhythm, but real coaching sessions with Coach Eric are there for deeper support.
+The bottom line: habits stick when they're small enough to start, meaningful enough to care about, and supported enough to survive real life.
+
+SUMMIT FAQ (use when the user asks about features):
+- Add a habit: Text ADD to create a new habit via SMS, or go to go.summithealth.app/habits in the app. You can have up to 5 personal habits.
+- Challenges: 4-week guided programs with one focus area per week. Start one from the Challenges page. You can only have one active challenge at a time.
+- BACKUP: If you're feeling overwhelmed, text BACKUP to get a suggested reduced plan for any habit. Summit will adjust the frequency or target to something more realistic.
+- Reflections: Every Sunday you'll get a text to reflect on your week. You can also write reflections anytime in the app at go.summithealth.app/reflection.
+- Guides: Your personalized resource library with articles, videos, and tips. New content is added each week from your digest. Visit go.summithealth.app/guides.
+- Coaching: 1-on-1 sessions with Coach Eric are available on Plus and Premium plans. Book at go.summithealth.app/coaching.
+- Follow-up time: You can change when you get your daily check-in texts in your Profile under "Habit Preferences."
+- Cancel/pause: To stop SMS, text STOP anytime. To manage your subscription, go to your Profile and tap "Manage Subscription."
+- ARCHIVE: Text ARCHIVE to hide habits from a completed challenge so they don't clutter your tracking.
+
 Respond with JSON only:
 {
-  "response": "your SMS reply under 320 chars",
+  "response": "your SMS reply under 480 chars",
   "flag_for_human_coach": true/false,
   "flag_reason": "brief reason if flagged, or null"
 }`
@@ -350,7 +396,7 @@ NEW MESSAGE FROM USER: "${messageBody}"`
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        max_tokens: 300,
+        max_tokens: 400,
         temperature: 0.7,
       }),
     })
@@ -372,8 +418,8 @@ NEW MESSAGE FROM USER: "${messageBody}"`
 
     // Enforce character limit
     let coachResponse = parsed.response || fallback.response
-    if (coachResponse.length > 320) {
-      coachResponse = coachResponse.slice(0, 317) + '...'
+    if (coachResponse.length > 480) {
+      coachResponse = coachResponse.slice(0, 477) + '...'
     }
 
     return {
@@ -732,6 +778,43 @@ serve(async (req) => {
       )
     }
 
+    // STEP 0b: Check for active add-habit session
+    const isAddKeyword = upperBody === 'ADD' || upperBody === 'NEW HABIT'
+    let hasActiveAddHabitSession = false
+    if (!isAddKeyword) {
+      const { data: addHabitSession } = await supabase
+        .from('sms_add_habit_sessions')
+        .select('id')
+        .eq('user_id', profile.id)
+        .gt('expires_at', new Date().toISOString())
+        .limit(1)
+        .maybeSingle()
+      hasActiveAddHabitSession = !!addHabitSession
+    }
+
+    if (isAddKeyword || hasActiveAddHabitSession) {
+      console.log(`Routing to sms-add-habit (keyword: ${isAddKeyword}, active session: ${hasActiveAddHabitSession})`)
+      try {
+        const addHabitUrl = `${SUPABASE_URL}/functions/v1/sms-add-habit`
+        const addHabitRes = await fetch(addHabitUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+          body: new URLSearchParams({ From: from, Body: body }).toString(),
+        })
+        console.log(`sms-add-habit status: ${addHabitRes.status}`)
+      } catch (addError) {
+        console.error('Error forwarding to sms-add-habit:', addError)
+      }
+
+      return new Response(
+        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+        { headers: { 'Content-Type': 'text/xml' } }
+      )
+    }
+
     // Safety net: Check for active reflection session (primary check is in twilio-webhook)
     const { data: reflectionSession } = await supabase
       .from('sms_reflection_sessions')
@@ -956,9 +1039,10 @@ serve(async (req) => {
         break // Handle one clarification at a time
       }
 
-      // Log the habit entry
+      // Log the habit entry — skip if value is null (user didn't actually report doing it)
       const config = allConfigs.find(c => c.habit_name === habit.habit_name)
       if (!config) continue
+      if (habit.value === null || habit.value === undefined) continue
 
       const entryData: Record<string, unknown> = {
         user_id: profile.id,
@@ -1021,6 +1105,16 @@ serve(async (req) => {
             ? `Logged ${loggedHabits.length} habits ✓`
             : `Updated goal for ${updatedGoals[0]} ✓`)
       await sendSMSWithLog(from, response, supabase, profile.id, userName)
+    } else {
+      // Smart parse returned habits but none had values (e.g., user asked a question)
+      // Fall through to coaching response
+      console.log('Smart parse matched habits but no values logged - routing to coaching')
+      const coachResult = await generateCoachingResponse(body, firstName, userContextPrompt)
+      await sendSMSWithLog(from, coachResult.response, supabase, profile.id, userName, 'coach')
+
+      if (coachResult.flagForHumanCoach) {
+        await handleCoachFlag(supabase, profile.id, from, userName, body, coachResult.response, coachResult.flagReason)
+      }
     }
 
     return new Response(
