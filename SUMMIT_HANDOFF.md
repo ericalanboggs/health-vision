@@ -1,6 +1,6 @@
 # Summit Health — Developer Handoff Guide
 
-> Living document. Last updated: 2026-03-25.
+> Living document. Last updated: 2026-04-02.
 
 ---
 
@@ -127,10 +127,10 @@ export const doSomething = async (params) => {
 | Service | Purpose |
 |---------|---------|
 | `authService.js` | Auth, profile CRUD, soft delete |
-| `habitService.js` | Habit CRUD (weekly_habits table) |
+| `habitService.js` | Habit CRUD + archive/unarchive (weekly_habits table) |
 | `trackingService.js` | Tracking config + daily entries |
 | `subscriptionService.js` | Stripe checkout, portal, subscription checks |
-| `challengeService.js` | Challenge enrollment, week advancement |
+| `challengeService.js` | Challenge enrollment, week advancement, auto-completion, celebration |
 | `reflectionService.js` | Weekly reflections |
 | `adminService.js` | Admin operations (900+ lines) |
 | `journeyService.js` | Health vision/journey (onboarding) |
@@ -244,6 +244,7 @@ Inbound SMS (Twilio)
 **`weekly_habits`** — Persistent habit schedule
 - `user_id`, `habit_name`, `day_of_week` (0-6), `reminder_time`, `timezone`, `time_of_day`
 - `challenge_slug` (NULL for personal, slug for challenge habits)
+- `archived_at` (NULL = active, timestamp = archived/shelved)
 - UNIQUE(user_id, habit_name, day_of_week)
 
 **`habit_tracking_config`** — Per-habit tracking settings
@@ -264,7 +265,7 @@ Inbound SMS (Twilio)
 
 **`sms_messages`** — Complete 2-way SMS log
 - `direction` ('inbound'|'outbound'), `user_id`, `phone`, `body`
-- `sent_by_type` ('admin'|'system'|'coach'|'synthesis'|'trial_reminder')
+- `sent_by_type` ('admin'|'system'|'coach'|'synthesis'|'trial_reminder'|'trial_drip'|'challenge_completion')
 - `twilio_sid`, `twilio_status`
 
 **`sms_followup_log`** — Followup tracking (dedup)
@@ -286,7 +287,9 @@ Inbound SMS (Twilio)
 
 **`challenge_enrollments`** — Full 4-week challenges
 - `user_id`, `challenge_slug`, `status` (active|completed|abandoned), `current_week` (1-4)
-- `survey_scores` (JSONB)
+- `survey_scores` (JSONB: focus area ratings, `focusAreaOrder`, `week1StartDate`, `final_reflection`)
+- `completion_sms_sent_at` (dedup guard for congratulations SMS)
+- `celebration_seen_at` (one-time in-app celebration modal guard)
 
 **`challenge_habit_log`** — Habits added per challenge week
 - `enrollment_id`, `week_number`, `focus_area_slug`, `habit_name`
@@ -413,6 +416,35 @@ Rules:
 - Challenge habits are separate from the personal habit cap (5)
 - After weekly reflection, modal prompts for next week's habit
 
+### Challenge Completion Flow
+
+Challenges **auto-complete** when the 4-week period ends (28 days from `week1StartDate`). This is handled in `getActiveEnrollment()` in `challengeService.js` — when it detects the period is over, it sets `status: 'completed'` and returns `null`. No manual button is required.
+
+**Completion sequence:**
+1. `getActiveEnrollment()` detects 28+ days elapsed → auto-completes enrollment
+2. Dashboard, Habits, or Challenges page loads → checks for unseen completed enrollments
+3. **Celebration modal** fires (confetti + habit journey summary + social sharing)
+4. User dismisses → `celebration_seen_at` set (one-time only)
+5. Completed challenge detail page shows: survey scores, habit log, final reflection, share buttons
+6. **Monday cron** (`send-challenge-completion-sms`, 2PM UTC): AI congratulations SMS + ARCHIVE prompt
+7. User replies **ARCHIVE** via SMS → `twilio-webhook` archives all challenge habits
+
+**Week 4 reflection prompt:** During week 4, the reflection page shows a modal asking "What did you learn?" and "Which habit will you keep?". This saves optional reflection data to `survey_scores.final_reflection` but is **not required** for completion — the challenge auto-completes regardless.
+
+### Habit Archiving
+
+Habits can be **archived** (shelved) instead of deleted:
+- `archived_at` column on `weekly_habits`: NULL = active, timestamp = archived
+- Archived habits are excluded from SMS reminders, followups, tracking, and AI context
+- Users archive/unarchive from the Habits page (archive button on each card, "View Archive" in overflow menu)
+- **ARCHIVE SMS keyword** archives habits from the most recently completed challenge
+- Service functions: `archiveHabit(name)`, `unarchiveHabit(name)`, `getArchivedHabits()`
+- All edge functions that query `weekly_habits` filter with `.is('archived_at', null)`
+
+### Challenge Config Duplication
+
+The 5 challenges are hardcoded in `src/data/challengeConfig.js` (frontend). The `send-challenge-completion-sms` edge function duplicates the slug/title/focus-area mappings as a Deno const since it can't import the React module. **If challenges are added or renamed, update both locations.**
+
 ### Lite Challenge (Tech Neck, 5-day)
 
 - $1 one-time payment via Stripe
@@ -526,6 +558,12 @@ Rules:
 12. **RLS admin policies use hardcoded email.** Admin access in RLS is granted via `auth.jwt()->>'email' = 'eric.alan.boggs@gmail.com'`. Adding a new admin requires new migration(s) for each table's policy.
 
 13. **PostgREST join limitations.** Tables that both reference `auth.users` (like `lite_challenge_enrollments` and `profiles`) can't be joined with `!inner()` syntax. Query them separately and join in JavaScript.
+
+### Habits
+
+14. **Always filter `archived_at IS NULL` when querying `weekly_habits` for active habits.** Every edge function and frontend service that queries habits for reminders, tracking, followups, or AI context must include `.is('archived_at', null)`. Forgetting this will send reminders for archived habits. The only exceptions are informational queries (e.g., `notify-new-signup` showing admin what habits a user has, or `send-habit-setup-emails` checking if a user has any habits).
+
+15. **Challenge auto-completion is client-triggered.** `getActiveEnrollment()` checks `isChallengeOver()` and auto-completes if 28+ days have passed. This means auto-completion only fires when a page loads that calls `getActiveEnrollment` (Dashboard, Habits, Challenges, Reflection). There is no server-side cron for auto-completion — the `send-challenge-completion-sms` cron only sends SMS for already-completed enrollments.
 
 ---
 
