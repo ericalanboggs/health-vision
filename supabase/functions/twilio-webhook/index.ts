@@ -344,6 +344,30 @@ serve(async (req) => {
       )
     }
 
+    // Handle ADD keyword — route to sms-add-habit for new habit creation
+    if (userId && (upperBody === 'ADD' || upperBody === 'NEW HABIT')) {
+      try {
+        console.log(`Routing ADD request to sms-add-habit for user ${userId}`)
+        const addHabitUrl = `${SUPABASE_URL}/functions/v1/sms-add-habit`
+        const addHabitRes = await fetch(addHabitUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+          body: bodyText,
+        })
+        console.log(`sms-add-habit status: ${addHabitRes.status}`)
+      } catch (addError) {
+        console.error('Error forwarding to sms-add-habit:', addError)
+      }
+
+      return new Response(
+        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+        { headers: { 'Content-Type': 'text/xml' } }
+      )
+    }
+
     // Check for active reflection session — route to sms-reflection-response
     if (userId) {
       const { data: reflectionSession } = await supabase

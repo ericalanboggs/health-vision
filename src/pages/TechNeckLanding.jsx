@@ -122,7 +122,7 @@ export default function TechNeckLanding() {
       {/* Start date banner */}
       <div className="w-full bg-summit-mint py-3 text-center">
         <p className="text-body-sm font-semibold text-summit-forest">
-          🚀 First cohort starts <strong>Monday, March 30, 2026</strong>
+          🚀 Sign up today, start next <strong>Monday</strong> — 5 days of coaching texts
         </p>
       </div>
 

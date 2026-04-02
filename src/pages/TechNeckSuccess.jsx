@@ -9,6 +9,13 @@ export default function TechNeckSuccess() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [deliveryTrack, setDeliveryTrack] = useState('sms')
+  const [startDate, setStartDate] = useState(null)
+
+  const formatStartDate = (dateStr) => {
+    if (!dateStr) return 'next Monday'
+    const date = new Date(dateStr + 'T12:00:00')
+    return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+  }
 
   useEffect(() => {
     const loadEnrollment = async () => {
@@ -26,13 +33,14 @@ export default function TechNeckSuccess() {
       while (attempts < maxAttempts) {
         const { data: enrollment } = await supabase
           .from('lite_challenge_enrollments')
-          .select('status, delivery_track')
+          .select('status, delivery_track, cohort_start_date')
           .eq('user_id', user.id)
           .eq('challenge_slug', 'tech-neck')
           .maybeSingle()
 
         if (enrollment && enrollment.status !== 'pending') {
           setDeliveryTrack(enrollment.delivery_track)
+          setStartDate(enrollment.cohort_start_date)
           setLoading(false)
           return
         }
@@ -71,7 +79,7 @@ export default function TechNeckSuccess() {
               You're In!
             </CardTitle>
             <CardDescription className="text-body mt-2">
-              Challenge starts <strong>Monday, March 30</strong>.
+              Challenge starts <strong>{formatStartDate(startDate)}</strong>.
             </CardDescription>
           </CardHeader>
 

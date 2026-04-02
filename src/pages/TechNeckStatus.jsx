@@ -23,6 +23,12 @@ export default function TechNeckStatus() {
   const [challengeDay, setChallengeDay] = useState(null)
   const [error, setError] = useState(null)
 
+  const formatStartDate = (dateStr) => {
+    if (!dateStr) return 'next Monday'
+    const date = new Date(dateStr + 'T12:00:00')
+    return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+  }
+
   useEffect(() => {
     const load = async () => {
       const { user } = await getCurrentUser()
@@ -123,7 +129,7 @@ export default function TechNeckStatus() {
             {isPreStart && (
               <>
                 <CardTitle as="h1" className="text-h1 text-summit-forest">
-                  Starts Monday, March 30
+                  Starts {formatStartDate(enrollment?.cohort_start_date)}
                 </CardTitle>
                 <CardDescription className="text-body mt-2">
                   You're enrolled and ready to go. We'll start sending {enrollment.delivery_track === 'sms' ? 'texts' : 'emails'} on Monday morning.
@@ -186,7 +192,7 @@ export default function TechNeckStatus() {
                   Pay $1 to Join
                 </Button>
                 <p className="text-xs text-text-muted">
-                  Challenge starts <strong>Monday, March 30</strong>. One-time payment, no subscription.
+                  Challenge starts <strong>{formatStartDate(enrollment?.cohort_start_date)}</strong>. One-time payment, no subscription.
                 </p>
               </>
             )}

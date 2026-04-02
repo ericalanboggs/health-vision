@@ -17,6 +17,10 @@ export interface UserContext {
     scheduled_days: number
     recent_completion_rate: string
     challenge_slug: string | null
+    current_streak: number
+    best_streak: number
+    last_4_weeks_rate: string | null
+    metric_average: number | null
   }>
   challengeContext: { slug: string; week: number } | null
   recentReflections: Array<{
@@ -28,6 +32,8 @@ export interface UserContext {
   recentConversation: string[]
   guides: Array<{ title: string; url: string; topic: string | null }>
   memberSince: string | null
+  subscriptionTier: string | null
+  coachingSessionsRemaining: number
 }
 
 /**
@@ -53,20 +59,27 @@ export async function loadUserContext(
   const mondayStr = monday.toISOString().split('T')[0]
   const sundayStr = sunday.toISOString().split('T')[0]
 
+  // 4 weeks ago for historical stats
+  const fourWeeksAgo = new Date(localDate)
+  fourWeeksAgo.setDate(localDate.getDate() - 28)
+  const fourWeeksAgoStr = fourWeeksAgo.toISOString().split('T')[0]
+
   const [
     profileRes,
     visionRes,
     habitsRes,
     configsRes,
     entriesRes,
+    historicalEntriesRes,
     challengeRes,
     reflectionsRes,
     smsRes,
     resourcesRes,
+    coachingRes,
   ] = await Promise.all([
     supabase
       .from('profiles')
-      .select('first_name, created_at')
+      .select('first_name, created_at, subscription_tier, subscription_current_period_end')
       .eq('id', userId)
       .maybeSingle(),
     supabase
@@ -89,6 +102,13 @@ export async function loadUserContext(
       .eq('user_id', userId)
       .gte('entry_date', mondayStr)
       .lte('entry_date', sundayStr),
+    supabase
+      .from('habit_tracking_entries')
+      .select('habit_name, entry_date, completed, metric_value')
+      .eq('user_id', userId)
+      .gte('entry_date', fourWeeksAgoStr)
+      .lt('entry_date', mondayStr)
+      .order('entry_date', { ascending: true }),
     supabase
       .from('challenge_enrollments')
       .select('challenge_slug, current_week')
@@ -114,6 +134,12 @@ export async function loadUserContext(
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(10),
+    supabase
+      .from('coaching_sessions')
+      .select('id, billing_period_start, billing_period_end')
+      .eq('user_id', userId)
+      .order('session_date', { ascending: false })
+      .limit(10),
   ])
 
   const profile = profileRes.data
@@ -121,10 +147,32 @@ export async function loadUserContext(
   const weeklyHabits = habitsRes.data || []
   const configs = configsRes.data || []
   const entries = entriesRes.data || []
+  const historicalEntries = historicalEntriesRes.data || []
+  const allEntries = [...historicalEntries, ...entries]
   const recentSms = (smsRes.data || []).reverse()
   const resources = resourcesRes.data || []
+  const coachingSessions = coachingRes.data || []
 
-  // Build habit summaries with completion rates
+  // Compute coaching sessions remaining
+  const SESSIONS_PER_TIER: Record<string, number> = { core: 0, plus: 1, premium: 2 }
+  const tier = profile?.subscription_tier || null
+  const sessionsAllowed = tier ? (SESSIONS_PER_TIER[tier] ?? 0) : 0
+
+  // Filter coaching sessions to current billing period
+  let sessionsUsed = 0
+  if (profile?.subscription_current_period_end && coachingSessions.length > 0) {
+    const periodEnd = new Date(profile.subscription_current_period_end)
+    const periodStart = new Date(periodEnd)
+    periodStart.setMonth(periodStart.getMonth() - 1)
+    const startStr = periodStart.toISOString().split('T')[0]
+    const endStr = periodEnd.toISOString().split('T')[0]
+    sessionsUsed = coachingSessions.filter((s: any) =>
+      s.billing_period_start >= startStr && s.billing_period_end <= endStr
+    ).length
+  }
+  const coachingSessionsRemaining = Math.max(0, sessionsAllowed - sessionsUsed)
+
+  // Build habit summaries with completion rates, streaks, and historical data
   const habitMap = new Map<string, { days: Set<number>; config: any }>()
   for (const h of weeklyHabits) {
     if (!habitMap.has(h.habit_name)) {
@@ -143,6 +191,51 @@ export async function loadUserContext(
       ? `${completedDays}/${daysPassedThisWeek}`
       : 'not yet this week'
 
+    // Historical completion rate (last 4 weeks, excluding current week)
+    const historicalCompleted = historicalEntries.filter(e => e.habit_name === name && e.completed).length
+    const historicalTotal = historicalEntries.filter(e => e.habit_name === name).length
+    const last4WeeksRate = historicalTotal > 0
+      ? `${historicalCompleted}/${historicalTotal}`
+      : null
+
+    // Metric average (last 4 weeks + current week)
+    const metricEntries = allEntries.filter(e => e.habit_name === name && e.metric_value !== null)
+    const metricAverage = metricEntries.length > 0
+      ? Math.round((metricEntries.reduce((sum, e) => sum + (e.metric_value || 0), 0) / metricEntries.length) * 10) / 10
+      : null
+
+    // Streak computation: count consecutive completed days backwards from today
+    const habitEntries = allEntries
+      .filter(e => e.habit_name === name && e.completed !== null)
+      .sort((a, b) => b.entry_date.localeCompare(a.entry_date)) // newest first
+
+    let currentStreak = 0
+    let bestStreak = 0
+    let tempStreak = 0
+    let streakBroken = false
+
+    for (const e of habitEntries) {
+      if (!streakBroken) {
+        if (e.completed) {
+          currentStreak++
+        } else {
+          streakBroken = true
+        }
+      }
+      // Best streak (scan all entries oldest to newest)
+    }
+
+    // Compute best streak from oldest to newest
+    const chronological = [...habitEntries].reverse()
+    for (const e of chronological) {
+      if (e.completed) {
+        tempStreak++
+        bestStreak = Math.max(bestStreak, tempStreak)
+      } else {
+        tempStreak = 0
+      }
+    }
+
     return {
       habit_name: name,
       tracking_type: info.config?.tracking_type ?? null,
@@ -151,6 +244,10 @@ export async function loadUserContext(
       scheduled_days: scheduledDays,
       recent_completion_rate: rate,
       challenge_slug: info.config?.challenge_slug ?? null,
+      current_streak: currentStreak,
+      best_streak: bestStreak,
+      last_4_weeks_rate: last4WeeksRate,
+      metric_average: metricAverage,
     }
   })
 
@@ -173,6 +270,8 @@ export async function loadUserContext(
       topic: r.topic || null,
     })),
     memberSince: profile?.created_at || null,
+    subscriptionTier: tier,
+    coachingSessionsRemaining,
   }
 }
 
@@ -199,13 +298,17 @@ export function formatContextForPrompt(ctx: UserContext): string {
   }
 
   if (ctx.habits.length > 0) {
-    lines.push(`\nHABITS THIS WEEK:`)
+    lines.push(`\nHABITS:`)
     for (const h of ctx.habits) {
       const typeStr = h.tracking_type === 'metric' && h.metric_unit
         ? ` (tracks ${h.metric_unit}${h.metric_target ? `, target: ${h.metric_target}` : ''})`
         : h.tracking_type === 'boolean' ? ' (yes/no)' : ''
       const challengeStr = h.challenge_slug ? ` [${h.challenge_slug} challenge]` : ''
-      lines.push(`- ${h.habit_name}${typeStr}: ${h.recent_completion_rate} this week, ${h.scheduled_days}x/wk${challengeStr}`)
+      const streakStr = h.current_streak > 0 ? `, streak: ${h.current_streak} days` : ''
+      const bestStr = h.best_streak > h.current_streak ? ` (best: ${h.best_streak})` : ''
+      const histStr = h.last_4_weeks_rate ? `, last 4 wks: ${h.last_4_weeks_rate}` : ''
+      const avgStr = h.metric_average !== null ? `, avg: ${h.metric_average} ${h.metric_unit || ''}` : ''
+      lines.push(`- ${h.habit_name}${typeStr}: ${h.recent_completion_rate} this week, ${h.scheduled_days}x/wk${streakStr}${bestStr}${histStr}${avgStr}${challengeStr}`)
     }
   }
 
@@ -220,8 +323,17 @@ export function formatContextForPrompt(ctx: UserContext): string {
     }
   }
 
+  if (ctx.subscriptionTier) {
+    const coachStr = ctx.coachingSessionsRemaining > 0
+      ? `${ctx.coachingSessionsRemaining} coaching session(s) remaining this month`
+      : 'No coaching sessions available on current plan'
+    lines.push(`\nSUBSCRIPTION: ${ctx.subscriptionTier} plan. ${coachStr}`)
+  } else {
+    lines.push(`\nSUBSCRIPTION: No active plan`)
+  }
+
   if (ctx.guides.length > 0) {
-    lines.push(`\nAVAILABLE GUIDES (only mention if the user asks for help with a specific topic — do NOT proactively suggest):`)
+    lines.push(`\nAVAILABLE GUIDES (mention when the user is struggling with a topic that matches a guide):`)
     for (const g of ctx.guides) {
       const topicStr = g.topic ? ` [${g.topic}]` : ''
       lines.push(`- ${g.title}${topicStr}: ${g.url}`)

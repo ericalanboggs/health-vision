@@ -203,7 +203,9 @@ export const doSomething = async (params) => {
 | `ai-chat` | Frontend POST | NO | Proxy to OpenAI chat completions |
 | `habit-ai-suggest` | Frontend POST | NO | AI habit suggestions based on vision |
 | `send-invite-email` | Frontend POST | NO | Invitation emails |
+| `sms-add-habit` | Internal (from twilio-webhook) | **YES** | SMS habit creation state machine (ADD keyword) |
 | `cal-webhook` | External webhook | NO | Calendar integration |
+| `send-march-update` | Manual POST | **YES** | One-time March 2026 product update email to all users |
 
 ### SMS Flow
 
@@ -216,12 +218,16 @@ Inbound SMS (Twilio)
        ├→ START/SUBSCRIBE/YES (not opted in) → Opt-in confirmation
        ├→ ARCHIVE → Archives completed challenge habits (inline handler)
        ├→ BACKUP → sms-backup-plan (state machine)
+       ├→ ADD / NEW HABIT → sms-add-habit (state machine)
        ├→ Active reflection session → sms-reflection-response (AI conversation)
        └→ Everything else → habit-sms-response
-            ├→ Step 0: Safety net check for backup/reflection sessions
+            ├→ Step 0: Safety net check for backup/reflection/add-habit sessions
             ├→ Step 1: Check sms_pending_clarification (10 min expiry)
             ├→ Step 2: Check sms_followup_log for context (Y/N reply)
             └→ Step 3: OpenAI smart-parse (suppressed during admin hold)
+                  ├→ If understood as habit log → process entries
+                  ├→ If habits matched but no values → coaching fallback
+                  └→ If not understood → coaching fallback (with smart routing, escalation, FAQ)
 ```
 
 ---
@@ -276,6 +282,9 @@ Inbound SMS (Twilio)
 
 **`sms_backup_sessions`** — BACKUP flow state (30 min expiry)
 - `user_id`, `step`, `context` (JSONB), `expires_at`
+
+**`sms_add_habit_sessions`** — ADD habit flow state (30 min expiry)
+- `user_id`, `step` (describe_habit|smart_refine), `context` (JSONB: proposed_habit_name, proposed_tracking_type, proposed_days, refinement_count, etc.), `expires_at`
 
 **`sms_reflection_sessions`** — Sunday reflection conversation state (2 hr expiry)
 - `user_id`, `week_number`, `step`, `context` (JSONB: opener, messages[], exchange_count, tracking_data, habit_names), `expires_at`
@@ -363,6 +372,69 @@ When multiple profiles share the same phone number (e.g., Summit user + lite cha
 - `twilio-webhook` and `habit-sms-response` fetch ALL matching profiles
 - Prefer the **non-lite** user (`challenge_type !== 'lite'`)
 - Falls back to first result if all are lite
+
+### SMS Habit Creation (ADD Keyword)
+
+`sms-add-habit` is a state machine triggered by texting ADD or NEW HABIT:
+
+```
+ADD keyword → check habit cap (5 max)
+  ↓ (if under cap)
+Step 1: describe_habit
+  Summit: "What habit do you want to build? Describe it in a sentence."
+  User: "I want to start meditating"
+  ↓
+Step 2: smart_refine
+  AI extracts: habit name, tracking type, frequency, target
+  AI pressure-tests unrealistic plans (e.g., "7x/week is ambitious — try 4x?")
+  Summit: "'10-minute morning meditation' 4x/week (Mon/Tue/Thu/Sat)? (Y/N or tell me what to change)"
+  ↓ Y → write to DB    N → one re-refinement, then accept
+  ↓
+Write: Insert habit_tracking_config + weekly_habits rows
+  Summit: "Done! Reminders set for Mon/Tue/Thu/Sat. Adjust in the app anytime."
+```
+
+Key details:
+- Uses `sms_add_habit_sessions` table (30 min expiry)
+- AI applies SMART goal principles (Specific, Measurable, Achievable, Relevant, Time-bound)
+- Default reminder time: user's most common existing habit time, or 08:00
+- Days assigned by AI based on frequency (evenly spread) — user adjusts in app
+- Max 1 re-refinement round to keep exchanges under 4
+- CANCEL/QUIT/EXIT exits at any step
+- Duplicate habit names detected and flagged
+- 5 personal habit cap enforced (challenge habits excluded)
+
+### AI Coaching System
+
+The coaching fallback in `habit-sms-response` → `generateCoachingResponse()` handles all non-tracking messages. It has several layers:
+
+**User Context Bundle** (`_shared/user_context.ts`):
+- Loaded via `loadUserContext()` — 11 parallel DB queries
+- Includes: profile, health vision, all habits (with streaks, completion rates, last 4 weeks history, metric averages), active challenge, last 3 reflections, last 10 SMS messages, guides/resources, subscription tier, coaching sessions remaining
+- Formatted via `formatContextForPrompt()` and injected into AI system prompts
+- Used by `habit-sms-response` and `sms-reflection-response`
+
+**Smart Routing** — AI detects intent and routes to existing features:
+| User Intent | AI Suggests |
+|------------|-------------|
+| Add a new habit | "Text ADD" |
+| Overwhelmed / reduce a habit | "Text BACKUP" |
+| Clean up old challenge habits | "Text ARCHIVE" |
+| Change schedule / times | go.summithealth.app/habits |
+| Start a challenge | go.summithealth.app/challenges |
+| Cancel / quit a habit | BACKUP first, then app for full removal |
+| Needs more support | Coaching escalation (tier-aware) |
+
+**Coaching Escalation** — tier-aware upsell:
+- Helps directly first: 1-2 tips + relevant guide link from user's library
+- After 3+ exchanges on same struggle OR user signals frustration → suggest coaching
+- If user has sessions remaining (Plus/Premium): "Book at go.summithealth.app/coaching"
+- If no sessions available (Core or used up): "Upgrade to Plus for 1-on-1 time — go.summithealth.app/pricing"
+- Suggests coaching at most once per topic
+
+**FAQ Block** — answers "how do I...?" questions about Summit features (ADD, BACKUP, ARCHIVE, challenges, reflections, guides, coaching, follow-up time, cancel/pause)
+
+**Character limit**: 480 chars (3 SMS segments). Completeness over brevity.
 
 ---
 
@@ -516,7 +588,9 @@ The 5 challenges are hardcoded in `src/data/challengeConfig.js` (frontend). The 
    supabase functions deploy send-lite-challenge-sms --no-verify-jwt
    supabase functions deploy send-lite-challenge-email --no-verify-jwt
    supabase functions deploy sms-reflection-response --no-verify-jwt
+   supabase functions deploy sms-add-habit --no-verify-jwt
    supabase functions deploy send-challenge-completion-sms --no-verify-jwt
+   supabase functions deploy send-march-update --no-verify-jwt
    ```
 
 2. **Migration file names must have unique YYYYMMDD prefixes.** Duplicate dates cause `duplicate key` errors in `supabase db push`. If two migrations land on the same day, use adjacent dates (e.g., 20260325 and 20260326).

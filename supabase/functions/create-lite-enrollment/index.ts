@@ -179,13 +179,22 @@ serve(async (req) => {
       throw profileError
     }
 
-    // 3. Create enrollment
+    // 3. Create enrollment — start on next Monday (1-7 day wait)
     const deliveryTrack = smsConsent === false ? 'email_only' : 'sms'
+    const now = new Date()
+    const dayOfWeek = now.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
+    // Sun=0→1, Mon=1→7, Tue=2→6, Wed=3→5, Thu=4→4, Fri=5→3, Sat=6→2
+    const daysUntilMonday = ((8 - dayOfWeek) % 7) || 7
+    const nextMonday = new Date(now)
+    nextMonday.setDate(now.getDate() + daysUntilMonday)
+    const cohortStartDate = nextMonday.toISOString().split('T')[0]
+    console.log(`Cohort start date for new enrollment: ${cohortStartDate}`)
+
     const { error: enrollError } = await supabase.from('lite_challenge_enrollments').insert({
       user_id: userId,
       status: 'pending',
       delivery_track: deliveryTrack,
-      cohort_start_date: '2026-03-30',
+      cohort_start_date: cohortStartDate,
     })
 
     if (enrollError) {
