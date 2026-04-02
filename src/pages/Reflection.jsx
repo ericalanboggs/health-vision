@@ -196,7 +196,7 @@ export default function Reflection() {
         const effectiveWeek = getEffectiveWeek(activeEnrollment)
 
         if (effectiveWeek === 4) {
-          // Final week — show completion modal
+          // Final week — show reflection prompt (challenge auto-completes when 4-week period ends)
           setChallengeModalType('completed')
           setShowChallengeModal(true)
           setSaving(false)
@@ -247,6 +247,7 @@ export default function Reflection() {
   const handleCompleteChallengeReflection = async () => {
     if (!activeEnrollment) return
     setSaving(true)
+    // Save the final reflection to the enrollment (challenge auto-completes when period ends)
     await completeChallenge(activeEnrollment.id, challengeReflection)
     setSaving(false)
     setShowChallengeModal(false)
@@ -577,7 +578,7 @@ export default function Reflection() {
                     disabled={saving || !challengeReflection.learned.trim() || !challengeReflection.keepGoing.trim()}
                     className="w-full bg-summit-emerald hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg transition"
                   >
-                    {saving ? 'Saving...' : 'Complete Challenge'}
+                    {saving ? 'Saving...' : 'Save Reflection'}
                   </button>
                   <button
                     onClick={() => {
@@ -586,7 +587,7 @@ export default function Reflection() {
                     }}
                     className="w-full text-text-secondary hover:text-summit-forest font-medium px-6 py-2 rounded-lg transition"
                   >
-                    Skip for now
+                    I'll reflect later
                   </button>
                 </div>
               </div>

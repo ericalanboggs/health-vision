@@ -12,10 +12,15 @@ import {
   Check,
   MoreVert,
   Autorenew,
+  Archive,
+  Unarchive,
+  Inventory2,
+  Close,
 } from '@mui/icons-material'
-import { getHabits, deleteAllUserHabits, saveHabits } from '../services/habitService'
-import { getActiveEnrollment, getChallengeHabitLog, getEffectiveWeek } from '../services/challengeService'
+import { getHabits, deleteAllUserHabits, saveHabits, archiveHabit, unarchiveHabit, getArchivedHabits } from '../services/habitService'
+import { getActiveEnrollment, getCompletedEnrollments, getChallengeHabitLog, getEffectiveWeek, markCelebrationSeen } from '../services/challengeService'
 import { getChallengeBySlug } from '../data/challengeConfig'
+import ChallengeCelebrationModal from '../components/ChallengeCelebrationModal'
 import { getCurrentWeekNumber } from '../utils/weekCalculator' // Still used for pilot timeline display
 import { formatDaysDisplay, convertShortToFullDays } from '../utils/formatDays'
 import { getCurrentUser, getProfile } from '../services/authService'
@@ -43,6 +48,12 @@ export default function Habits() {
   const [customUnitInputs, setCustomUnitInputs] = useState({}) // Local state for custom unit typing
   const [activeEnrollment, setActiveEnrollment] = useState(null)
   const [challengeHabitLog, setChallengeHabitLog] = useState([])
+  const [archiveModal, setArchiveModal] = useState({ isOpen: false, habitIndex: null, habitName: '' })
+  const [showArchived, setShowArchived] = useState(false)
+  const [archivedHabits, setArchivedHabits] = useState([])
+  const [archivedLoading, setArchivedLoading] = useState(false)
+  const [celebrationEnrollment, setCelebrationEnrollment] = useState(null)
+  const [celebrationHabitLog, setCelebrationHabitLog] = useState([])
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const dayMap = {
@@ -172,6 +183,19 @@ export default function Habits() {
         const logResult = await getChallengeHabitLog(enrollResult.data.id)
         if (logResult.success) {
           setChallengeHabitLog(logResult.data)
+        }
+      }
+
+      // Check for unseen challenge celebration (auto-complete may have just fired)
+      if (!enrollResult.data || !enrollResult.success) {
+        const completedResult = await getCompletedEnrollments(userId)
+        if (completedResult.success && completedResult.data) {
+          const unseen = completedResult.data.find(e => !e.celebration_seen_at)
+          if (unseen) {
+            setCelebrationEnrollment(unseen)
+            const cLogResult = await getChallengeHabitLog(unseen.id)
+            if (cLogResult.success) setCelebrationHabitLog(cLogResult.data)
+          }
         }
       }
 
@@ -391,6 +415,66 @@ export default function Habits() {
     } catch (error) {
       console.error('Error deleting habit:', error)
       alert('Failed to delete habit. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const openArchiveModal = (habitIndex, habitName) => {
+    setArchiveModal({ isOpen: true, habitIndex, habitName })
+  }
+
+  const closeArchiveModal = () => {
+    setArchiveModal({ isOpen: false, habitIndex: null, habitName: '' })
+  }
+
+  const confirmArchiveHabit = async () => {
+    const { habitName } = archiveModal
+    closeArchiveModal()
+    setSaving(true)
+    try {
+      const { success } = await archiveHabit(habitName)
+      if (success) {
+        await loadHabits()
+      } else {
+        alert('Failed to archive habit. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error archiving habit:', error)
+      alert('Failed to archive habit. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const loadArchivedHabits = async () => {
+    setArchivedLoading(true)
+    const { success, data } = await getArchivedHabits(userIdRef.current)
+    if (success) {
+      setArchivedHabits(data || [])
+    }
+    setArchivedLoading(false)
+  }
+
+  const handleShowArchived = async () => {
+    setMenuOpen(false)
+    await loadArchivedHabits()
+    setShowArchived(true)
+  }
+
+  const handleUnarchiveHabit = async (habitName) => {
+    setSaving(true)
+    try {
+      const { success } = await unarchiveHabit(habitName)
+      if (success) {
+        await loadArchivedHabits()
+        await loadHabits()
+      } else {
+        alert('Failed to restore habit. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error unarchiving habit:', error)
+      alert('Failed to restore habit. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -678,6 +762,13 @@ END:VEVENT
                       </>
                     )}
                   </button>
+                  <button
+                    onClick={handleShowArchived}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-left text-summit-forest hover:bg-summit-mint transition"
+                  >
+                    <Inventory2 className="w-4 h-4 text-summit-emerald" />
+                    <span>View Archive</span>
+                  </button>
                 </div>
               </>
             )}
@@ -751,6 +842,14 @@ END:VEVENT
                             title="Edit habit"
                           >
                             <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => openArchiveModal(index, habitName)}
+                            disabled={saving}
+                            className="p-2 text-text-secondary hover:text-summit-emerald hover:bg-summit-mint rounded-lg transition disabled:opacity-50"
+                            title="Archive habit"
+                          >
+                            <Archive className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => openDeleteModal(index, habitName)}
@@ -1088,6 +1187,136 @@ END:VEVENT
             </div>
           </div>
         </div>
+      )}
+
+      {/* Archive Confirmation Modal */}
+      {archiveModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="p-3 bg-summit-sage rounded-full">
+                <Archive className="w-6 h-6 text-summit-emerald" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-h2 text-summit-forest mb-2">
+                  Archive Habit?
+                </h3>
+                <p className="text-body text-text-secondary">
+                  <strong>"{archiveModal.habitName}"</strong> will be paused — no reminders or tracking. You can restore it anytime from the archive.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end mt-6">
+              <button
+                onClick={closeArchiveModal}
+                className="px-5 py-2.5 text-text-secondary hover:text-summit-forest hover:bg-summit-mint font-medium rounded-lg border border-gray-300 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmArchiveHabit}
+                className="px-5 py-2.5 bg-summit-emerald hover:bg-emerald-700 text-white font-medium rounded-lg transition flex items-center gap-2"
+              >
+                <Archive className="w-4 h-4" />
+                Archive Habit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Archived Habits Drawer */}
+      {showArchived && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] flex flex-col animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-200">
+              <h3 className="text-h2 text-summit-forest">Archived Habits</h3>
+              <button
+                onClick={() => setShowArchived(false)}
+                className="p-1 text-text-secondary hover:text-summit-forest hover:bg-summit-mint rounded-lg transition"
+              >
+                <Close className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 pt-4">
+              {archivedLoading ? (
+                <p className="text-text-secondary text-center py-8">Loading...</p>
+              ) : archivedHabits.length === 0 ? (
+                <div className="text-center py-8">
+                  <Inventory2 className="w-12 h-12 text-summit-sage mx-auto mb-3" />
+                  <p className="text-text-secondary">No archived habits yet.</p>
+                  <p className="text-sm text-text-muted mt-1">
+                    Habits you archive will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* Group archived habits by name */}
+                  {Object.entries(
+                    archivedHabits.reduce((groups, habit) => {
+                      if (!groups[habit.habit_name]) groups[habit.habit_name] = []
+                      groups[habit.habit_name].push(habit)
+                      return groups
+                    }, {})
+                  ).map(([habitName, habitList]) => {
+                    const archivedDate = new Date(habitList[0].archived_at).toLocaleDateString('en-US', {
+                      month: 'short', day: 'numeric', year: 'numeric'
+                    })
+                    const scheduledDays = habitList.map(h => {
+                      return Object.keys(dayMap).find(key => dayMap[key] === h.day_of_week)
+                    }).filter(Boolean)
+
+                    return (
+                      <div key={habitName} className="bg-gray-50 rounded-xl p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <p className="font-semibold text-summit-forest">{habitName}</p>
+                            {habitList[0]?.challenge_slug && (() => {
+                              const ch = getChallengeBySlug(habitList[0].challenge_slug)
+                              return ch ? (
+                                <span className="text-xs px-1.5 py-0.5 rounded-full bg-summit-mint text-summit-emerald border border-summit-sage font-medium">
+                                  {ch.icon} {ch.title}
+                                </span>
+                              ) : null
+                            })()}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleUnarchiveHabit(habitName)}
+                              disabled={saving}
+                              className="p-2 text-text-secondary hover:text-summit-emerald hover:bg-summit-mint rounded-lg transition disabled:opacity-50"
+                              title="Restore habit"
+                            >
+                              <Unarchive className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-text-muted">
+                          {scheduledDays.length > 0 ? formatDaysDisplay(convertShortToFullDays(scheduledDays)) : 'No days set'} · Archived {archivedDate}
+                        </p>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {celebrationEnrollment && (
+        <ChallengeCelebrationModal
+          isOpen={!!celebrationEnrollment}
+          onClose={async () => {
+            await markCelebrationSeen(celebrationEnrollment.id)
+            setCelebrationEnrollment(null)
+          }}
+          onViewResults={() => navigate(`/challenges/${celebrationEnrollment.challenge_slug}`)}
+          challenge={getChallengeBySlug(celebrationEnrollment.challenge_slug)}
+          habitLog={celebrationHabitLog}
+        />
       )}
     </main>
   )

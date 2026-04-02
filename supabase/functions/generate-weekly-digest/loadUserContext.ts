@@ -35,11 +35,12 @@ export async function loadUserContext(
 
   const visionData: VisionData | null = journey?.form_data || null
 
-  // Load all active habits (habits now persist across weeks)
+  // Load all active (non-archived) habits
   const { data: habits, error: habitsError } = await supabase
     .from('weekly_habits')
     .select('*')
     .eq('user_id', userId)
+    .is('archived_at', null)
     .order('created_at', { ascending: true })
 
   if (habitsError) {

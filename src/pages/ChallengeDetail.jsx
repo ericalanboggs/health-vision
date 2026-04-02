@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowBack, ExpandMore, DragIndicator } from '@mui/icons-material'
+import { ArrowBack, ExpandMore, DragIndicator, Share, ContentCopy, Check } from '@mui/icons-material'
 import { Button, Tag, Modal, ModalHeader, ModalTitle, ModalDescription, ModalFooter } from '@summit/design-system'
 import { DndContext, closestCenter, PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable'
@@ -13,8 +13,10 @@ import {
   getChallengeHabitLog,
   getEffectiveWeek,
   cancelChallenge,
+  markCelebrationSeen,
 } from '../services/challengeService'
 import { getCurrentUser } from '../services/authService'
+import ChallengeCelebrationModal from '../components/ChallengeCelebrationModal'
 
 function ProgressSteps({ currentWeek, habitLog }) {
   const weeks = [1, 2, 3, 4]
@@ -157,12 +159,16 @@ export default function ChallengeDetail() {
   const [enrollment, setEnrollment] = useState(null)
   const [habitLog, setHabitLog] = useState([])
   const [isCompleted, setIsCompleted] = useState(false)
+  const [completedEnrollment, setCompletedEnrollment] = useState(null)
+  const [completedHabitLog, setCompletedHabitLog] = useState([])
+  const [showCelebration, setShowCelebration] = useState(false)
   const [surveyScores, setSurveyScores] = useState({})
   const [focusAreas, setFocusAreas] = useState(challenge?.focusAreas || [])
   const [expandedAreas, setExpandedAreas] = useState({})
   const [starting, setStarting] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -207,8 +213,36 @@ export default function ChallengeDetail() {
       }
 
       if (completedResult.success && completedResult.data) {
-        const completed = completedResult.data.some(e => e.challenge_slug === slug)
-        setIsCompleted(completed)
+        const matchingCompleted = completedResult.data.find(e => e.challenge_slug === slug)
+        if (matchingCompleted) {
+          setIsCompleted(true)
+          setCompletedEnrollment(matchingCompleted)
+
+          // Load habit log for completed enrollment
+          const completedLogResult = await getChallengeHabitLog(matchingCompleted.id)
+          if (completedLogResult.success) {
+            setCompletedHabitLog(completedLogResult.data)
+          }
+
+          // Show celebration if not seen yet (and not actively enrolled)
+          if (!matchingCompleted.celebration_seen_at && !activeResult.data?.challenge_slug) {
+            setShowCelebration(true)
+          }
+
+          // Restore focus area order from completed enrollment
+          const savedOrder = matchingCompleted.survey_scores?.focusAreaOrder
+          if (savedOrder && !activeResult.data?.challenge_slug) {
+            const ordered = savedOrder
+              .map((faSlug, idx) => {
+                const fa = challenge.focusAreas.find(f => f.slug === faSlug)
+                return fa ? { ...fa, week: idx + 1 } : null
+              })
+              .filter(Boolean)
+            if (ordered.length === challenge.focusAreas.length) {
+              setFocusAreas(ordered)
+            }
+          }
+        }
       }
 
       setLoading(false)
@@ -280,6 +314,189 @@ export default function ChallengeDetail() {
       alert('Failed to cancel challenge. Please try again.')
     }
     setCancelling(false)
+  }
+
+  const handleCelebrationClose = async () => {
+    setShowCelebration(false)
+    if (completedEnrollment) {
+      await markCelebrationSeen(completedEnrollment.id)
+    }
+  }
+
+  const handleShareChallenge = async () => {
+    const shareText = `I just completed the ${challenge.title} challenge on Summit Health! 4 weeks of building better habits.`
+    const shareUrl = `${window.location.origin}/challenges/${slug}`
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `${challenge.title} Complete!`, text: shareText, url: shareUrl })
+      } catch { /* cancelled */ }
+    } else {
+      try {
+        await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch { /* unavailable */ }
+    }
+  }
+
+  // Completed state (not actively enrolled, but completed before)
+  if (isCompleted && !enrollment && completedEnrollment) {
+    const completedDate = completedEnrollment.completed_at
+      ? new Date(completedEnrollment.completed_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      : null
+    const originalScores = completedEnrollment.survey_scores || {}
+    const finalReflection = originalScores.final_reflection
+
+    return (
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <button
+          onClick={() => navigate('/challenges')}
+          className="flex items-center gap-2 text-text-secondary hover:text-summit-forest font-medium transition-colors mb-6"
+        >
+          <ArrowBack className="w-5 h-5" />
+          Back to Challenges
+        </button>
+
+        {/* Header with completed badge */}
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-4xl">{challenge.icon}</span>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-h1 text-summit-forest">{challenge.title}</h1>
+              <Tag variant="success" size="sm">Completed</Tag>
+            </div>
+            <p className="text-body text-text-secondary">{challenge.tagline}</p>
+          </div>
+        </div>
+
+        {completedDate && (
+          <p className="text-sm text-text-muted mb-6">Completed on {completedDate}</p>
+        )}
+
+        {/* Completion summary — habits */}
+        <div className="bg-white rounded-2xl shadow-[0_4px_12px_0_rgba(2,44,35,0.12)] p-6 mb-6">
+          <h2 className="text-lg font-semibold text-summit-forest mb-4">Your 4-Week Journey</h2>
+          <ProgressSteps currentWeek={4} habitLog={completedHabitLog} />
+          <div className="mt-6 space-y-3">
+            {completedHabitLog.map((h, i) => {
+              const fa = focusAreas.find(f => f.slug === h.focus_area_slug)
+              return (
+                <div key={i} className="flex items-start gap-3 text-sm">
+                  <span className="w-6 h-6 rounded-full bg-summit-emerald text-white flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">{'\u2713'}</span>
+                  <div>
+                    <span className="font-medium text-summit-forest">Week {h.week_number}</span>
+                    <span className="text-text-secondary"> ({fa?.title || h.focus_area_slug})</span>
+                    <p className="text-summit-forest">{h.habit_name}</p>
+                  </div>
+                </div>
+              )
+            })}
+            {completedHabitLog.length === 0 && (
+              <p className="text-sm text-text-secondary">4 weeks of consistent effort — well done.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Original survey scores */}
+        <div className="bg-white rounded-2xl shadow-[0_4px_12px_0_rgba(2,44,35,0.12)] p-6 mb-6">
+          <h2 className="text-lg font-semibold text-summit-forest mb-2">Your Starting Point</h2>
+          <p className="text-sm text-text-secondary mb-4">
+            Here's where you rated yourself when you began. Reflect on how things have changed.
+          </p>
+          <div className="space-y-4">
+            {focusAreas.map(fa => {
+              const score = originalScores[fa.slug]
+              if (score === undefined) return null
+              return (
+                <div key={fa.slug}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-summit-forest">{fa.surveyQuestion}</span>
+                    <span className="text-sm font-semibold text-summit-emerald">{score}/10</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-summit-emerald h-2 rounded-full transition-all"
+                      style={{ width: `${(score / 10) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Final reflection (if they wrote one) */}
+        {finalReflection && (
+          <div className="bg-white rounded-2xl shadow-[0_4px_12px_0_rgba(2,44,35,0.12)] p-6 mb-6">
+            <h2 className="text-lg font-semibold text-summit-forest mb-3">Your Reflection</h2>
+            {finalReflection.learned && (
+              <div className="mb-3">
+                <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-1">What I learned</p>
+                <p className="text-sm text-summit-forest">{finalReflection.learned}</p>
+              </div>
+            )}
+            {finalReflection.keepGoing && (
+              <div>
+                <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-1">What I'll keep doing</p>
+                <p className="text-sm text-summit-forest">{finalReflection.keepGoing}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Reflection prompt */}
+        <div className="bg-summit-mint border border-summit-sage rounded-2xl p-6 mb-6">
+          <h3 className="font-semibold text-summit-forest mb-2">How have things changed?</h3>
+          <p className="text-sm text-text-secondary">
+            Look back at your starting scores above. Have your habits shifted how you feel in these areas?
+            Take a moment to notice the progress — even small changes matter.
+          </p>
+        </div>
+
+        {/* Share + restart */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button
+            variant="secondary"
+            size="lg"
+            className="flex-1 flex items-center justify-center gap-2"
+            onClick={handleShareChallenge}
+          >
+            {copied ? (
+              <>
+                <Check className="w-4 h-4" />
+                Copied!
+              </>
+            ) : (
+              <>
+                <Share className="w-4 h-4" />
+                Share
+              </>
+            )}
+          </Button>
+          <Button
+            variant="primary"
+            size="lg"
+            className="flex-1"
+            onClick={() => {
+              // Reset state for re-enrollment
+              setIsCompleted(false)
+              setCompletedEnrollment(null)
+              setCompletedHabitLog([])
+              setSurveyScores({})
+            }}
+          >
+            Start Again
+          </Button>
+        </div>
+
+        <ChallengeCelebrationModal
+          isOpen={showCelebration}
+          onClose={handleCelebrationClose}
+          challenge={challenge}
+          habitLog={completedHabitLog}
+        />
+      </main>
+    )
   }
 
   // Enrolled state

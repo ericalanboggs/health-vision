@@ -49,6 +49,20 @@ health-vision/
 
 ## 2. Frontend Architecture
 
+### Design System (`@summit/design-system`)
+
+**All frontend work must use the design system by default.** The `design-system/` workspace provides shared components (Button, Card, Modal, Input, Toggle, Select, etc.), color tokens, and a Tailwind preset. When building or modifying UI:
+
+1. **Use design system components** before reaching for raw HTML or one-off styled elements.
+2. **Use design system color tokens** (`summit-forest`, `summit-emerald`, `summit-sage`, `summit-mint`, `summit-lime`, `summit-moss`) — never introduce ad-hoc colors (e.g., amber, orange, blue) unless explicitly requested.
+3. **Use design system typography** (`text-h1`, `text-h2`, `text-h3`, `text-body`, `text-bodySmall`, `text-meta`) for consistent sizing and weight.
+4. **If a needed component or token doesn't exist**, propose an addition or improvement to the design system rather than hardcoding a one-off solution.
+
+Key files:
+- `design-system/tokens/tailwind.preset.js` — Tailwind preset with all tokens
+- `design-system/components/` — Shared React components
+- Components are imported via `@summit/design-system` (workspace alias)
+
 ### Route Map (`src/App.jsx`)
 
 **Public:**
@@ -174,6 +188,7 @@ export const doSomething = async (params) => {
 | `send-all-weekly-digests` | Cron | **YES** | Batch runner for weekly digests |
 | `generate-weekly-digest` | Internal | **YES** | Compute weekly digest data |
 | `generate-all-weekly-digests` | Cron | **YES** | Batch digest generator |
+| `send-challenge-completion-sms` | Cron (Monday 2PM UTC) | **YES** | AI congratulations SMS + archive prompt when challenge completed |
 | `send-weekly-synthesis-sms` | Cron | **YES** | SMS weekly summary |
 | `daily-health-report` | Cron | **YES** | Daily summary report |
 | `delivery-completeness-check` | Cron/manual | **YES** | Audit SMS/email delivery |
@@ -199,6 +214,7 @@ Inbound SMS (Twilio)
        ├→ STOP/UNSUBSCRIBE → Update sms_opt_in = false
        ├→ HELP → Info reply
        ├→ START/SUBSCRIBE/YES (not opted in) → Opt-in confirmation
+       ├→ ARCHIVE → Archives completed challenge habits (inline handler)
        ├→ BACKUP → sms-backup-plan (state machine)
        ├→ Active reflection session → sms-reflection-response (AI conversation)
        └→ Everything else → habit-sms-response
@@ -468,6 +484,7 @@ Rules:
    supabase functions deploy send-lite-challenge-sms --no-verify-jwt
    supabase functions deploy send-lite-challenge-email --no-verify-jwt
    supabase functions deploy sms-reflection-response --no-verify-jwt
+   supabase functions deploy send-challenge-completion-sms --no-verify-jwt
    ```
 
 2. **Migration file names must have unique YYYYMMDD prefixes.** Duplicate dates cause `duplicate key` errors in `supabase db push`. If two migrations land on the same day, use adjacent dates (e.g., 20260325 and 20260326).

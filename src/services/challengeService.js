@@ -25,6 +25,23 @@ export const getEffectiveWeek = (enrollment) => {
 }
 
 /**
+ * Check if the 4-week challenge period is over (past day 28 from start).
+ */
+export const isChallengeOver = (enrollment) => {
+  if (!enrollment) return false
+  const startDateStr = enrollment.survey_scores?.week1StartDate
+  if (!startDateStr) return false
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const startDay = new Date(startDateStr)
+  startDay.setHours(0, 0, 0, 0)
+
+  const diffDays = Math.floor((today - startDay) / (1000 * 60 * 60 * 24))
+  return diffDays >= 28
+}
+
+/**
  * Get the next Monday from today. If today is Monday, returns next Monday.
  */
 const getNextMonday = () => {
@@ -50,6 +67,24 @@ export const getActiveEnrollment = async (userId) => {
     if (error) {
       console.error('Error fetching active enrollment:', error)
       return { success: false, error }
+    }
+
+    // Auto-complete if the 4-week period is over
+    if (data && isChallengeOver(data)) {
+      console.log(`Auto-completing challenge ${data.challenge_slug} for user ${userId}`)
+      const { error: completeError } = await supabase
+        .from('challenge_enrollments')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', data.id)
+
+      if (completeError) {
+        console.error('Error auto-completing challenge:', completeError)
+      }
+      // Return null — no active enrollment anymore
+      return { success: true, data: null }
     }
 
     return { success: true, data: data || null }
@@ -285,6 +320,25 @@ export const getChallengeHabitLog = async (enrollmentId) => {
     return { success: true, data: data || [] }
   } catch (error) {
     console.error('Error in getChallengeHabitLog:', error)
+    return { success: false, error }
+  }
+}
+
+export const markCelebrationSeen = async (enrollmentId) => {
+  try {
+    const { error } = await supabase
+      .from('challenge_enrollments')
+      .update({ celebration_seen_at: new Date().toISOString() })
+      .eq('id', enrollmentId)
+
+    if (error) {
+      console.error('Error marking celebration seen:', error)
+      return { success: false, error }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error in markCelebrationSeen:', error)
     return { success: false, error }
   }
 }

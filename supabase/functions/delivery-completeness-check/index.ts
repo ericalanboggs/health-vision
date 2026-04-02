@@ -65,6 +65,7 @@ serve(async (req) => {
       .from('weekly_habits')
       .select('user_id, habit_name, reminder_time, time_of_day, day_of_week')
       .eq('day_of_week', dayOfWeek)
+      .is('archived_at', null)
 
     if (habitsErr) {
       console.error('Error querying weekly_habits:', habitsErr)

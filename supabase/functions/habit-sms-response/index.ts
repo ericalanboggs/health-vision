@@ -1051,12 +1051,13 @@ async function chainToNextHabit(
   try {
     const dayOfWeek = getDayOfWeekInTimezone(userTimezone)
 
-    // Get all habits scheduled for today
+    // Get all active (non-archived) habits scheduled for today
     const { data: todayHabits } = await supabase
       .from('weekly_habits')
       .select('habit_name')
       .eq('user_id', profile.id)
       .eq('day_of_week', dayOfWeek)
+      .is('archived_at', null)
 
     if (!todayHabits || todayHabits.length === 0) return
 

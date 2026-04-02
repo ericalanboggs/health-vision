@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Tag } from '@summit/design-system'
-import { CHALLENGES } from '../data/challengeConfig'
-import { getActiveEnrollment, getCompletedEnrollments, getEffectiveWeek } from '../services/challengeService'
+import { CHALLENGES, getChallengeBySlug } from '../data/challengeConfig'
+import { getActiveEnrollment, getCompletedEnrollments, getChallengeHabitLog, getEffectiveWeek, markCelebrationSeen } from '../services/challengeService'
 import { getCurrentUser } from '../services/authService'
+import ChallengeCelebrationModal from '../components/ChallengeCelebrationModal'
 
 export default function ChallengesLanding() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [activeEnrollment, setActiveEnrollment] = useState(null)
   const [completedSlugs, setCompletedSlugs] = useState(new Set())
+  const [celebrationEnrollment, setCelebrationEnrollment] = useState(null)
+  const [celebrationHabitLog, setCelebrationHabitLog] = useState([])
 
   useEffect(() => {
     const load = async () => {
@@ -30,6 +33,16 @@ export default function ChallengesLanding() {
 
       if (completedResult.success && completedResult.data) {
         setCompletedSlugs(new Set(completedResult.data.map(e => e.challenge_slug)))
+
+        // Check for unseen celebration
+        const unseen = completedResult.data.find(e => !e.celebration_seen_at)
+        if (unseen) {
+          setCelebrationEnrollment(unseen)
+          const logResult = await getChallengeHabitLog(unseen.id)
+          if (logResult.success) {
+            setCelebrationHabitLog(logResult.data)
+          }
+        }
       }
 
       setLoading(false)
@@ -108,6 +121,19 @@ export default function ChallengesLanding() {
           )
         })}
       </div>
+
+      {celebrationEnrollment && (
+        <ChallengeCelebrationModal
+          isOpen={!!celebrationEnrollment}
+          onClose={async () => {
+            await markCelebrationSeen(celebrationEnrollment.id)
+            setCelebrationEnrollment(null)
+          }}
+          onViewResults={() => navigate(`/challenges/${celebrationEnrollment.challenge_slug}`)}
+          challenge={getChallengeBySlug(celebrationEnrollment.challenge_slug)}
+          habitLog={celebrationHabitLog}
+        />
+      )}
     </main>
   )
 }

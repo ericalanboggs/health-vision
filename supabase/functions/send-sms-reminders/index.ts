@@ -261,11 +261,12 @@ serve(async (req) => {
     console.log(`Running reminder check at ${now.toISOString()}`)
     console.log(`Day: ${currentDayOfWeek}, Hour: ${currentHour}, Minute: ${currentMinute}`)
 
-    // Query ALL habits scheduled for today
+    // Query ALL active (non-archived) habits scheduled for today
     const { data: habits, error: habitsError } = await supabase
       .from('weekly_habits')
       .select('*')
       .eq('day_of_week', currentDayOfWeek)
+      .is('archived_at', null)
 
     if (habitsError) {
       console.error('Error fetching habits:', habitsError)

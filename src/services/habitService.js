@@ -95,6 +95,7 @@ export const getHabits = async (userId = null) => {
       .from('weekly_habits')
       .select('*')
       .eq('user_id', uid)
+      .is('archived_at', null)
       .order('created_at', { ascending: true })
 
     if (error) {
@@ -283,6 +284,103 @@ export const getUniqueHabitNames = async () => {
     return { success: true, data: names }
   } catch (error) {
     console.error('Error in getUniqueHabitNames:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Archive (shelve) a habit by name — sets archived_at on all day-of-week rows for this habit
+ * @param {string} habitName - Name of the habit to archive
+ * @returns {Promise<{success: boolean, error?: any}>}
+ */
+export const archiveHabit = async (habitName) => {
+  try {
+    if (!supabase) return { success: false, error: 'Supabase is not configured' }
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'User not authenticated' }
+
+    const { error } = await supabase
+      .from('weekly_habits')
+      .update({ archived_at: new Date().toISOString() })
+      .eq('user_id', user.id)
+      .eq('habit_name', habitName)
+
+    if (error) {
+      console.error('Error archiving habit:', error)
+      return { success: false, error }
+    }
+
+    trackEvent('habit_archived', { habitName })
+    return { success: true }
+  } catch (error) {
+    console.error('Error in archiveHabit:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Unarchive (restore) a habit by name — clears archived_at on all day-of-week rows
+ * @param {string} habitName - Name of the habit to unarchive
+ * @returns {Promise<{success: boolean, error?: any}>}
+ */
+export const unarchiveHabit = async (habitName) => {
+  try {
+    if (!supabase) return { success: false, error: 'Supabase is not configured' }
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'User not authenticated' }
+
+    const { error } = await supabase
+      .from('weekly_habits')
+      .update({ archived_at: null })
+      .eq('user_id', user.id)
+      .eq('habit_name', habitName)
+
+    if (error) {
+      console.error('Error unarchiving habit:', error)
+      return { success: false, error }
+    }
+
+    trackEvent('habit_unarchived', { habitName })
+    return { success: true }
+  } catch (error) {
+    console.error('Error in unarchiveHabit:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Get all archived habits for the current user
+ * @param {string} [userId] - Optional user ID
+ * @returns {Promise<{success: boolean, data?: any, error?: any}>}
+ */
+export const getArchivedHabits = async (userId = null) => {
+  try {
+    if (!supabase) return { success: false, error: 'Supabase is not configured' }
+
+    let uid = userId
+    if (!uid) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return { success: false, error: 'User not authenticated' }
+      uid = user.id
+    }
+
+    const { data, error } = await supabase
+      .from('weekly_habits')
+      .select('*')
+      .eq('user_id', uid)
+      .not('archived_at', 'is', null)
+      .order('archived_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching archived habits:', error)
+      return { success: false, error }
+    }
+
+    return { success: true, data: data || [] }
+  } catch (error) {
+    console.error('Error in getArchivedHabits:', error)
     return { success: false, error }
   }
 }

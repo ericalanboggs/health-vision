@@ -411,11 +411,12 @@ serve(async (req) => {
         .delete()
         .eq('user_id', profile.id)
 
-      // Get user's habits with tracking config and day counts
+      // Get user's active (non-archived) habits with tracking config and day counts
       const { data: habits } = await supabase
         .from('weekly_habits')
         .select('habit_name, day_of_week')
         .eq('user_id', profile.id)
+        .is('archived_at', null)
 
       if (!habits || habits.length === 0) {
         await sendSMS(

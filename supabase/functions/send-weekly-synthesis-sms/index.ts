@@ -242,7 +242,8 @@ serve(async (req) => {
       supabase
         .from('weekly_habits')
         .select('user_id, habit_name, day_of_week')
-        .in('user_id', eligibleIds),
+        .in('user_id', eligibleIds)
+        .is('archived_at', null),
     ])
 
     // Build lookup maps

@@ -77,7 +77,8 @@ export async function loadUserContext(
     supabase
       .from('weekly_habits')
       .select('habit_name, day_of_week, challenge_slug')
-      .eq('user_id', userId),
+      .eq('user_id', userId)
+      .is('archived_at', null),
     supabase
       .from('habit_tracking_config')
       .select('habit_name, tracking_type, metric_unit, metric_target, tracking_enabled, challenge_slug')

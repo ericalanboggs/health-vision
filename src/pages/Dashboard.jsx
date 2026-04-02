@@ -7,8 +7,9 @@ import { getCurrentWeekReflection } from '../services/reflectionService'
 import { loadJourney } from '../services/journeyService'
 import { getStreak, getHabitStats, getAllTrackingConfigs } from '../services/trackingService'
 import { getUserResources, categorizeResource } from '../services/resourceService'
-import { getActiveEnrollment, getEffectiveWeek } from '../services/challengeService'
+import { getActiveEnrollment, getCompletedEnrollments, getChallengeHabitLog, getEffectiveWeek, markCelebrationSeen } from '../services/challengeService'
 import { getChallengeBySlug } from '../data/challengeConfig'
+import ChallengeCelebrationModal from '../components/ChallengeCelebrationModal'
 import {
   getCurrentWeekNumber,
   getCurrentWeekDateRange,
@@ -101,6 +102,8 @@ export default function Dashboard() {
   const [resourceTopics, setResourceTopics] = useState([])
   const [profileData, setProfileData] = useState(null)
   const [coachingSessionsUsed, setCoachingSessionsUsed] = useState(0)
+  const [celebrationEnrollment, setCelebrationEnrollment] = useState(null)
+  const [celebrationHabitLog, setCelebrationHabitLog] = useState([])
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -159,6 +162,19 @@ export default function Dashboard() {
 
       if (enrollResult.success && enrollResult.data) {
         setActiveEnrollment(enrollResult.data)
+      }
+
+      // Check for unseen challenge celebration (auto-complete may have just fired)
+      if (!enrollResult.data || !enrollResult.success) {
+        const completedResult = await getCompletedEnrollments(userId)
+        if (completedResult.success && completedResult.data) {
+          const unseen = completedResult.data.find(e => !e.celebration_seen_at)
+          if (unseen) {
+            setCelebrationEnrollment(unseen)
+            const logResult = await getChallengeHabitLog(unseen.id)
+            if (logResult.success) setCelebrationHabitLog(logResult.data)
+          }
+        }
       }
 
       // Process reflection
@@ -679,6 +695,19 @@ export default function Dashboard() {
             })()}
           </div>
         </div>
+
+        {celebrationEnrollment && (
+          <ChallengeCelebrationModal
+            isOpen={!!celebrationEnrollment}
+            onClose={async () => {
+              await markCelebrationSeen(celebrationEnrollment.id)
+              setCelebrationEnrollment(null)
+            }}
+            onViewResults={() => navigate(`/challenges/${celebrationEnrollment.challenge_slug}`)}
+            challenge={getChallengeBySlug(celebrationEnrollment.challenge_slug)}
+            habitLog={celebrationHabitLog}
+          />
+        )}
       </main>
     </>
   )

@@ -187,12 +187,13 @@ serve(async (req) => {
         continue
       }
 
-      // Get user's habits for today
+      // Get user's active (non-archived) habits for today
       const { data: todayHabits, error: habitsError } = await supabase
         .from('weekly_habits')
         .select('*')
         .eq('user_id', profile.id)
         .eq('day_of_week', userLocalTime.dayOfWeek)
+        .is('archived_at', null)
 
       if (habitsError || !todayHabits || todayHabits.length === 0) {
         console.log(`User ${profile.id}: No habits scheduled for today`)

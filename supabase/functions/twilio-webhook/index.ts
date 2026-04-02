@@ -255,6 +255,71 @@ serve(async (req) => {
       )
     }
 
+    // Handle ARCHIVE keyword — archive challenge habits from most recent completed challenge
+    if (userId && upperBody === 'ARCHIVE') {
+      try {
+        console.log(`Processing ARCHIVE request for user ${userId}`)
+
+        // Find most recently completed challenge
+        const { data: completedEnrollment } = await supabase
+          .from('challenge_enrollments')
+          .select('id, challenge_slug')
+          .eq('user_id', userId)
+          .eq('status', 'completed')
+          .order('completed_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (!completedEnrollment) {
+          await sendSMS(
+            { to: fromPhone, body: 'No recently completed challenge habits to archive. Your habits are still active.' },
+            { supabase, logTable: 'sms_messages', extra: { user_id: userId, sent_by_type: 'system' } }
+          )
+        } else {
+          // Check if there are un-archived habits for this challenge
+          const { data: challengeHabits } = await supabase
+            .from('weekly_habits')
+            .select('id, habit_name')
+            .eq('user_id', userId)
+            .eq('challenge_slug', completedEnrollment.challenge_slug)
+            .is('archived_at', null)
+
+          if (!challengeHabits || challengeHabits.length === 0) {
+            await sendSMS(
+              { to: fromPhone, body: 'Your challenge habits are already archived.' },
+              { supabase, logTable: 'sms_messages', extra: { user_id: userId, sent_by_type: 'system' } }
+            )
+          } else {
+            // Archive all challenge habits
+            const { error: archiveError } = await supabase
+              .from('weekly_habits')
+              .update({ archived_at: new Date().toISOString() })
+              .eq('user_id', userId)
+              .eq('challenge_slug', completedEnrollment.challenge_slug)
+
+            if (archiveError) {
+              console.error('Error archiving challenge habits:', archiveError)
+              await sendSMS({ to: fromPhone, body: 'Something went wrong archiving your habits. Please try again later.' })
+            } else {
+              const habitNames = [...new Set(challengeHabits.map(h => h.habit_name))]
+              console.log(`Archived ${habitNames.length} challenge habits for user ${userId}`)
+              await sendSMS(
+                { to: fromPhone, body: `Done! ${habitNames.length} challenge habit${habitNames.length > 1 ? 's' : ''} archived. You can restore them anytime from the Habits page in the app.` },
+                { supabase, logTable: 'sms_messages', extra: { user_id: userId, sent_by_type: 'system' } }
+              )
+            }
+          }
+        }
+      } catch (archiveError) {
+        console.error('Error processing ARCHIVE:', archiveError)
+      }
+
+      return new Response(
+        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+        { headers: { 'Content-Type': 'text/xml' } }
+      )
+    }
+
     // Handle BACKUP keyword — route to sms-backup-plan for plan adjustment
     if (userId && (upperBody === 'BACKUP' || upperBody.startsWith('BACKUP '))) {
       try {
