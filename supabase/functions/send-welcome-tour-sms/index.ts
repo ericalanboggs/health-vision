@@ -83,6 +83,19 @@ serve(async (req) => {
       console.error('Failed to send welcome tour text 2:', result2.error)
     }
 
+    // Brief delay so messages arrive in order
+    await new Promise(resolve => setTimeout(resolve, 3000))
+
+    // Text 3: Coach Eric intro + booking link
+    const text3 =
+      `By the way \u2014 I'm Eric, the coach behind Summit \u26f0\ufe0f. If you'd like to walk through the app together or talk about your goals, I'd love that. ` +
+      `Book a free 15-min call anytime: https://cal.com/summit-health/15min`
+
+    const result3 = await sendSMS({ to: profile.phone, body: text3 }, logOpts)
+    if (!result3.success) {
+      console.error('Failed to send welcome tour text 3:', result3.error)
+    }
+
     console.log(`Welcome tour SMS sent to user ${userId} (${name})`)
 
     return new Response(JSON.stringify({ success: true }), {

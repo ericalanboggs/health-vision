@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendEmail, sendEmailsInBatches, type EmailPayload } from '../_shared/resend.ts'
+import { sendSMS } from '../_shared/sms.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
@@ -13,6 +14,8 @@ interface Profile {
   id: string
   first_name: string
   email: string
+  phone: string | null
+  sms_opt_in: boolean
   created_at: string
 }
 
@@ -194,8 +197,10 @@ function buildDay4Html(firstName: string): string {
     ]),
     paragraph(`The ability to pivot — not the ability to be perfect — is what separates people who build lasting habits from people who give up.`),
     spacer(10),
-    paragraph(`<em>No action needed today. Just know these options are here for you when you need them.</em>`),
-    spacer(10),
+    divider(),
+    subheading('Meet your coach'),
+    paragraph(`Summit isn't just an app — there's a real person behind it. I'm Eric, and I built Summit because I went through my own health transformation. If you'd like to talk through your plan, get advice on what habits to focus on, or just say hi — I'd love to hear from you.`),
+    ctaButton('Book a Free 15-Min Call', 'https://cal.com/summit-health/15min'),
   ].join('')
 
   return wrapEmail('Plans Change — And That\'s OK', body)
@@ -313,6 +318,53 @@ const ONBOARDING_DAYS: OnboardingDay[] = [
   },
 ]
 
+// ─── Onboarding SMS per day ──────────────────────────────────────────
+
+interface OnboardingSms {
+  day: number
+  smsType: string
+  buildBody: (firstName: string) => string
+}
+
+const ONBOARDING_SMS: OnboardingSms[] = [
+  {
+    day: 2,
+    smsType: 'onboarding_sms_day_2',
+    buildBody: (name) =>
+      `${name}, your health vision is what makes Summit \u26f0\ufe0f personal to you. The clearer it gets, the better we can coach and support you. Take a minute to revisit yours: go.summithealth.app/start`,
+  },
+  {
+    day: 3,
+    smsType: 'onboarding_sms_day_3',
+    buildBody: (_name) =>
+      `Your habits in Summit \u26f0\ufe0f are intentionally focused \u2014 we'd rather you build real momentum with a few than burn out on a long list. Set yours up here: go.summithealth.app/habits \ud83c\udfaf`,
+  },
+  {
+    day: 4,
+    smsType: 'onboarding_sms_day_4',
+    buildBody: (name) =>
+      `Hey ${name} \u2014 did you know Summit \u26f0\ufe0f can see your vision, your habits, and your progress? Text me anything \u2014 questions, goals, what's on your mind \u2014 and I'll work with what I know about you to help. You can also text BACKUP anytime to adjust your plan, or book a call with Coach Eric: cal.com/summit-health/15min \ud83d\udcac`,
+  },
+  {
+    day: 5,
+    smsType: 'onboarding_sms_day_5',
+    buildBody: (_name) =>
+      `End of your week is coming up! Take 2 minutes to reflect \u2014 what worked, what got in the way. You can do it in the app or just wait for Sunday \u2014 I'll text you to walk through it together, nice and easy \ud83c\udf31 go.summithealth.app/reflection`,
+  },
+  {
+    day: 6,
+    smsType: 'onboarding_sms_day_6',
+    buildBody: (_name) =>
+      `Starting Monday, you'll get a personalized Weekly Digest \u2014 coaching, resources, and a 'try this' suggestion built around your journey. Keep an eye out for it \ud83d\udcec`,
+  },
+  {
+    day: 7,
+    smsType: 'onboarding_sms_day_7',
+    buildBody: (_name) =>
+      `One week in \u2014 that's a real milestone \ud83c\udf89 Summit \u26f0\ufe0f is built for real life, not perfection. Adjust anytime, reflect often, keep moving forward. You've got this \ud83d\udcaa`,
+  },
+]
+
 // ─── Day calculation ──────────────────────────────────────────────────
 
 /**
@@ -412,7 +464,7 @@ serve(async (req) => {
 
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, first_name, email, created_at, subscription_status, trial_ends_at')
+      .select('id, first_name, email, phone, sms_opt_in, created_at, subscription_status, trial_ends_at')
       .eq('profile_completed', true)
       .not('email', 'is', null)
       .is('deleted_at', null)
@@ -558,12 +610,62 @@ serve(async (req) => {
       }
     }
 
+    // ─── Send onboarding SMS alongside emails ───────────────────────────
+    let smsSent = 0
+
+    // Check which onboarding SMS have already been sent (dedup via sms_messages)
+    const { data: existingSms } = await supabase
+      .from('sms_messages')
+      .select('user_id, sent_by_type')
+      .in('user_id', allUserIds)
+      .in('sent_by_type', ONBOARDING_SMS.map(s => s.smsType))
+      .eq('direction', 'outbound')
+
+    const smsSentSet = new Set(
+      (existingSms || []).map(e => `${e.user_id}:${e.sent_by_type}`)
+    )
+
+    for (const smsConfig of ONBOARDING_SMS) {
+      const usersForDay = usersByDay[smsConfig.day] || []
+
+      for (const user of usersForDay) {
+        if (!user.phone || !user.sms_opt_in) continue
+
+        const smsKey = `${user.id}:${smsConfig.smsType}`
+        if (smsSentSet.has(smsKey)) {
+          console.log(`Skipping SMS ${smsConfig.smsType} for ${user.id} - already sent`)
+          continue
+        }
+
+        const firstName = user.first_name || 'there'
+        const body = smsConfig.buildBody(firstName)
+
+        const smsResult = await sendSMS(
+          { to: user.phone, body },
+          { supabase, logTable: 'sms_messages', extra: { user_id: user.id, sent_by_type: smsConfig.smsType } }
+        )
+
+        if (smsResult.success) {
+          console.log(`✓ Day ${smsConfig.day} SMS sent to user ${user.id}`)
+          smsSent++
+        } else {
+          console.error(`✗ Failed day ${smsConfig.day} SMS for user ${user.id}:`, smsResult.error)
+        }
+
+        // Small delay between SMS to avoid rate limits
+        await new Promise(resolve => setTimeout(resolve, 300))
+      }
+    }
+
+    console.log(`Onboarding SMS: sent ${smsSent}`)
+
     return new Response(
       JSON.stringify({
-        message: 'Onboarding email check complete',
+        message: 'Onboarding email + SMS check complete',
         usersInWindow: profiles.length,
         emailsSent: results.filter(r => r.status === 'sent').length,
         emailsFailed: results.filter(r => r.status === 'failed').length,
+        smsSent,
         results,
       }),
       { headers: { 'Content-Type': 'application/json' } }
