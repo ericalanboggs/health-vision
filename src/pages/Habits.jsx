@@ -840,6 +840,7 @@ END:VEVENT
                             onClick={() => handleStartEdit(index, habitName)}
                             className="p-2 text-text-secondary hover:text-summit-emerald hover:bg-summit-mint rounded-lg transition"
                             title="Edit habit"
+                            aria-label="Edit habit"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
@@ -848,6 +849,7 @@ END:VEVENT
                             disabled={saving}
                             className="p-2 text-text-secondary hover:text-summit-emerald hover:bg-summit-mint rounded-lg transition disabled:opacity-50"
                             title="Archive habit"
+                            aria-label="Archive habit"
                           >
                             <Archive className="w-4 h-4" />
                           </button>
@@ -856,6 +858,7 @@ END:VEVENT
                             disabled={saving}
                             className="p-2 text-text-secondary hover:text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
                             title="Delete habit"
+                            aria-label="Delete habit"
                           >
                             <Delete className="w-4 h-4" />
                           </button>
@@ -1288,6 +1291,7 @@ END:VEVENT
                               disabled={saving}
                               className="p-2 text-text-secondary hover:text-summit-emerald hover:bg-summit-mint rounded-lg transition disabled:opacity-50"
                               title="Restore habit"
+                              aria-label="Restore habit"
                             >
                               <Unarchive className="w-4 h-4" />
                             </button>

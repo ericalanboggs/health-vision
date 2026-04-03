@@ -225,9 +225,9 @@ export default function ProfileSetup() {
                 size="sm"
               />
               <p className="text-xs text-stone-500 mt-2 ml-7">
-                <Link to="/privacy" className="text-summit-emerald hover:underline">Privacy Policy</Link>
+                <Link to="/privacy" className="text-summit-emerald hover:underline py-2 inline-block">Privacy Policy</Link>
                 {' & '}
-                <Link to="/terms" className="text-summit-emerald hover:underline">Terms</Link>
+                <Link to="/terms" className="text-summit-emerald hover:underline py-2 inline-block">Terms</Link>
               </p>
             </div>
 

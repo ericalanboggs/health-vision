@@ -166,7 +166,7 @@ export default function Login() {
               Don't have an account?{' '}
               <button
                 onClick={() => { setMode('sign-up'); setError(null) }}
-                className="text-summit-emerald hover:text-emerald-700 font-medium transition-colors"
+                className="text-summit-emerald hover:text-emerald-700 font-medium transition-colors py-2 px-1"
               >
                 Sign up
               </button>
@@ -176,7 +176,7 @@ export default function Login() {
               Already have an account?{' '}
               <button
                 onClick={() => { setMode('sign-in'); setError(null) }}
-                className="text-summit-emerald hover:text-emerald-700 font-medium transition-colors"
+                className="text-summit-emerald hover:text-emerald-700 font-medium transition-colors py-2 px-1"
               >
                 Sign in
               </button>
