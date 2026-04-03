@@ -98,13 +98,15 @@ describe('habitService', () => {
   describe('getHabits', () => {
     it('fetches all habits for the current user', async () => {
       const mockOrder = vi.fn().mockResolvedValue({ data: mockHabits, error: null })
-      const mockEq = vi.fn().mockReturnValue({ order: mockOrder })
+      const mockIs = vi.fn().mockReturnValue({ order: mockOrder })
+      const mockEq = vi.fn().mockReturnValue({ is: mockIs })
       const mockSelect = vi.fn().mockReturnValue({ eq: mockEq })
       mockFrom.mockReturnValue({ select: mockSelect })
 
       const result = await getHabits()
 
       expect(mockFrom).toHaveBeenCalledWith('weekly_habits')
+      expect(mockIs).toHaveBeenCalledWith('archived_at', null)
       expect(result.success).toBe(true)
       expect(result.data).toEqual(mockHabits)
     })
@@ -112,7 +114,8 @@ describe('habitService', () => {
     it('accepts optional userId parameter', async () => {
       const customUserId = 'custom-user-456'
       const mockOrder = vi.fn().mockResolvedValue({ data: [], error: null })
-      const mockEq = vi.fn().mockReturnValue({ order: mockOrder })
+      const mockIs = vi.fn().mockReturnValue({ order: mockOrder })
+      const mockEq = vi.fn().mockReturnValue({ is: mockIs })
       const mockSelect = vi.fn().mockReturnValue({ eq: mockEq })
       mockFrom.mockReturnValue({ select: mockSelect })
 
@@ -123,7 +126,8 @@ describe('habitService', () => {
 
     it('returns empty array when no habits found', async () => {
       const mockOrder = vi.fn().mockResolvedValue({ data: null, error: null })
-      const mockEq = vi.fn().mockReturnValue({ order: mockOrder })
+      const mockIs = vi.fn().mockReturnValue({ order: mockOrder })
+      const mockEq = vi.fn().mockReturnValue({ is: mockIs })
       const mockSelect = vi.fn().mockReturnValue({ eq: mockEq })
       mockFrom.mockReturnValue({ select: mockSelect })
 
@@ -169,7 +173,8 @@ describe('habitService', () => {
   describe('hasHabits', () => {
     it('returns true when habits exist', async () => {
       const mockOrder = vi.fn().mockResolvedValue({ data: mockHabits, error: null })
-      const mockEq = vi.fn().mockReturnValue({ order: mockOrder })
+      const mockIs = vi.fn().mockReturnValue({ order: mockOrder })
+      const mockEq = vi.fn().mockReturnValue({ is: mockIs })
       const mockSelect = vi.fn().mockReturnValue({ eq: mockEq })
       mockFrom.mockReturnValue({ select: mockSelect })
 
@@ -180,7 +185,8 @@ describe('habitService', () => {
 
     it('returns false when no habits exist', async () => {
       const mockOrder = vi.fn().mockResolvedValue({ data: [], error: null })
-      const mockEq = vi.fn().mockReturnValue({ order: mockOrder })
+      const mockIs = vi.fn().mockReturnValue({ order: mockOrder })
+      const mockEq = vi.fn().mockReturnValue({ is: mockIs })
       const mockSelect = vi.fn().mockReturnValue({ eq: mockEq })
       mockFrom.mockReturnValue({ select: mockSelect })
 
