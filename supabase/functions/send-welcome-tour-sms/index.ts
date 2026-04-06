@@ -5,6 +5,42 @@ import { sendSMS } from '../_shared/sms.ts'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
+const DAY_NAMES: Record<number, string> = {
+  0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat'
+}
+
+const TIME_LABELS: Record<number, string> = {
+  6: 'Early Morning', 8: 'Mid-Morning', 12: 'Lunch', 13: 'Early Afternoon',
+  15: 'Afternoon', 17: 'After Work', 21: 'Before Bedtime'
+}
+
+function getHabitEmoji(habitName: string): string {
+  const name = habitName.toLowerCase()
+  if (name.includes('meditat') || name.includes('mindful') || name.includes('breath')) return '\u{1F9D8}'
+  if (name.includes('water') || name.includes('hydrat') || name.includes('drink')) return '\u{1F6B0}'
+  if (name.includes('run') || name.includes('jog') || name.includes('cardio')) return '\u{1F3C3}'
+  if (name.includes('walk') || name.includes('step')) return '\u{1F6B6}'
+  if (name.includes('exercis') || name.includes('workout') || name.includes('gym') || name.includes('lift') || name.includes('strength') || name.includes('bodyweight') || name.includes('squat') || name.includes('push')) return '\u{1F4AA}'
+  if (name.includes('yoga') || name.includes('stretch')) return '\u{1F9D8}'
+  if (name.includes('journal') || name.includes('writ') || name.includes('diary') || name.includes('reflect')) return '\u{1F4DD}'
+  if (name.includes('read') || name.includes('book')) return '\u{1F4DA}'
+  if (name.includes('sleep') || name.includes('bed') || name.includes('rest')) return '\u{1F634}'
+  if (name.includes('vitamin') || name.includes('supplement') || name.includes('medic') || name.includes('pill')) return '\u{1F48A}'
+  if (name.includes('eat') || name.includes('food') || name.includes('meal') || name.includes('nutrition') || name.includes('vegetable') || name.includes('fruit')) return '\u{1F957}'
+  if (name.includes('pray') || name.includes('spiritual') || name.includes('gratitude') || name.includes('thank')) return '\u{1F64F}'
+  if (name.includes('danc')) return '\u{1F483}'
+  if (name.includes('bike') || name.includes('cycl')) return '\u{1F6B4}'
+  if (name.includes('swim')) return '\u{1F3CA}'
+  if (name.includes('clean') || name.includes('organiz') || name.includes('tidy')) return '\u{1F9F9}'
+  if (name.includes('learn') || name.includes('study') || name.includes('course')) return '\u{1F393}'
+  if (name.includes('music') || name.includes('piano') || name.includes('guitar') || name.includes('practic')) return '\u{1F3B5}'
+  if (name.includes('cook') || name.includes('recipe')) return '\u{1F468}\u{200D}\u{1F373}'
+  if (name.includes('phone') || name.includes('screen')) return '\u{1F4F1}'
+  if (name.includes('nature') || name.includes('outdoor') || name.includes('hike')) return '\u{1F332}'
+  if (name.includes('hiit') || name.includes('interval')) return '\u{1F525}'
+  return '\u{2728}'
+}
+
 serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -94,6 +130,59 @@ serve(async (req) => {
     const result3 = await sendSMS({ to: profile.phone, body: text3 }, logOpts)
     if (!result3.success) {
       console.error('Failed to send welcome tour text 3:', result3.error)
+    }
+
+    // Brief delay so messages arrive in order
+    await new Promise(resolve => setTimeout(resolve, 3000))
+
+    // Text 4: Habit summary + confidence question
+    // Load user's habits
+    const { data: habits } = await supabase
+      .from('weekly_habits')
+      .select('habit_name, day_of_week, reminder_time')
+      .eq('user_id', userId)
+      .is('archived_at', null)
+      .order('created_at', { ascending: true })
+
+    if (habits && habits.length > 0) {
+      // Group by habit name
+      const habitGroups: Record<string, { days: number[]; time: string }> = {}
+      for (const h of habits) {
+        if (!habitGroups[h.habit_name]) {
+          const hour = h.reminder_time ? parseInt(h.reminder_time.split(':')[0]) : 8
+          habitGroups[h.habit_name] = { days: [], time: TIME_LABELS[hour] || 'Morning' }
+        }
+        habitGroups[h.habit_name].days.push(h.day_of_week)
+      }
+
+      // Format each habit line
+      const habitLines = Object.entries(habitGroups).map(([habitName, info]) => {
+        const emoji = getHabitEmoji(habitName)
+        const dayStr = info.days
+          .sort((a, b) => (a === 0 ? 7 : a) - (b === 0 ? 7 : b))
+          .map(d => DAY_NAMES[d])
+          .join(', ')
+        return `${emoji} ${habitName} \u2014 ${dayStr} \u00B7 ${info.time}`
+      })
+
+      const text4 =
+        `Here's what you're starting with:\n\n` +
+        habitLines.join('\n') +
+        `\n\nHow confident are you in tackling these this week? Reply 1-5 (5 = very confident, 1 = not at all)`
+
+      const result4 = await sendSMS({ to: profile.phone, body: text4 }, logOpts)
+      if (!result4.success) {
+        console.error('Failed to send welcome tour text 4:', result4.error)
+      }
+
+      // Create pending clarification for confidence reply (2 hour expiry)
+      const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+      await supabase.from('sms_pending_clarification').insert({
+        user_id: userId,
+        pending_type: 'confidence_check',
+        context: { habit_count: Object.keys(habitGroups).length },
+        expires_at: expiresAt,
+      })
     }
 
     console.log(`Welcome tour SMS sent to user ${userId} (${name})`)

@@ -642,6 +642,45 @@ async function handleClarificationResponse(
     }
   }
 
+  if (pending.pending_type === 'confidence_check') {
+    const num = parseInt(trimmed)
+
+    if (isNaN(num) || num < 1 || num > 5) {
+      // Re-create the pending clarification so they can try again
+      const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+      await supabase.from('sms_pending_clarification').insert({
+        user_id: profile.id,
+        pending_type: 'confidence_check',
+        context,
+        expires_at: expiresAt,
+      })
+      return {
+        handled: true,
+        response: `Just reply with a number 1-5 (5 = very confident, 1 = not at all).`
+      }
+    }
+
+    if (num === 5) {
+      return {
+        handled: true,
+        response: `Love the confidence, ${firstName}! You've got a solid plan. I'll check in at your scheduled times to help you stay on track \u{1F4AA}`
+      }
+    }
+
+    if (num >= 3) {
+      return {
+        handled: true,
+        response: `That's real \u2014 and honestly, a great place to start. If anything feels off this week, text BACKUP and I'll help you adjust. You can also text me anytime for tips on any habit \u{1F4AC}`
+      }
+    }
+
+    // num is 1 or 2
+    return {
+      handled: true,
+      response: `Totally OK \u2014 the goal isn't perfection, it's finding what fits. Three ways to make this easier:\n\n1. Text BACKUP to simplify any habit\n2. Text me for tips on getting started\n3. Book 15 min with Coach Eric: cal.com/summit-health/15min\n\nYou're not behind \u2014 you're starting \u{1F331}`
+    }
+  }
+
   return { handled: false }
 }
 
