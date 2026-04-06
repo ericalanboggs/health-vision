@@ -188,6 +188,7 @@ export const doSomething = async (params) => {
 | `send-all-weekly-digests` | Cron | **YES** | Batch runner for weekly digests |
 | `generate-weekly-digest` | Internal | **YES** | Compute weekly digest data |
 | `generate-all-weekly-digests` | Cron | **YES** | Batch digest generator |
+| `send-confidence-check` | Cron (Monday mid-morning) | **YES** | Weekly habit summary + confidence question (1-5); skips users < 7 days old |
 | `send-challenge-completion-sms` | Cron (Monday 2PM UTC) | **YES** | AI congratulations SMS + archive prompt when challenge completed |
 | `send-weekly-synthesis-sms` | Cron | **YES** | SMS weekly summary |
 | `daily-health-report` | Cron | **YES** | Daily summary report |
@@ -590,6 +591,7 @@ The 5 challenges are hardcoded in `src/data/challengeConfig.js` (frontend). The 
    supabase functions deploy sms-reflection-response --no-verify-jwt
    supabase functions deploy sms-add-habit --no-verify-jwt
    supabase functions deploy send-challenge-completion-sms --no-verify-jwt
+   supabase functions deploy send-confidence-check --no-verify-jwt
    supabase functions deploy send-march-update --no-verify-jwt
    ```
 
