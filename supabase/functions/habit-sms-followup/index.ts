@@ -175,6 +175,20 @@ serve(async (req) => {
 
       console.log(`User ${profile.id}: Within followup window`)
 
+      // Skip if user has an active reflection session (don't interrupt reflection conversation)
+      const { data: activeReflection } = await supabase
+        .from('sms_reflection_sessions')
+        .select('id')
+        .eq('user_id', profile.id)
+        .gt('expires_at', new Date().toISOString())
+        .limit(1)
+        .maybeSingle()
+
+      if (activeReflection) {
+        console.log(`User ${profile.id}: Active reflection session — skipping followup`)
+        continue
+      }
+
       // Get user's tracking configs that are enabled
       const { data: trackingConfigs, error: configError } = await supabase
         .from('habit_tracking_config')
