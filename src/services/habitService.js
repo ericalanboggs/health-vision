@@ -36,8 +36,8 @@ export const saveHabits = async (habits) => {
       ...(habit.challenge_slug ? { challenge_slug: habit.challenge_slug } : {}),
     }))
 
-    // Delete existing habits for the same user/habit/day combinations first
-    // This avoids unique constraint issues
+    // Delete existing active habits for the same user/habit/day combinations first
+    // This avoids unique constraint issues (preserves archived habits)
     for (const habit of habitsToInsert) {
       await supabase
         .from('weekly_habits')
@@ -45,6 +45,7 @@ export const saveHabits = async (habits) => {
         .eq('user_id', user.id)
         .eq('habit_name', habit.habit_name)
         .eq('day_of_week', habit.day_of_week)
+        .is('archived_at', null)
     }
 
     // Insert new habits
@@ -130,6 +131,7 @@ export const deleteAllUserHabits = async () => {
       .from('weekly_habits')
       .delete()
       .eq('user_id', user.id)
+      .is('archived_at', null)
 
     if (error) {
       console.error('Error deleting all habits:', error)
