@@ -323,7 +323,22 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
             No messages yet
           </div>
         ) : (
-          messages.map((msg) => (
+          messages.map((msg) => {
+            const isInternal = msg.twilio_status === 'internal'
+
+            if (isInternal) {
+              // Internal-only flag — admin visibility only, not sent to user
+              return (
+                <div key={msg.id} className="flex justify-center">
+                  <div className="max-w-[85%] bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    <p className="text-xs font-medium text-amber-700">{msg.body}</p>
+                    <p className="text-[10px] text-amber-500 mt-0.5">{formatTimestamp(msg.created_at)} · Internal</p>
+                  </div>
+                </div>
+              )
+            }
+
+            return (
             <div
               key={msg.id}
               className={`flex ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
@@ -354,7 +369,8 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
                 </div>
               </div>
             </div>
-          ))
+            )
+          })
         )}
         <div ref={messagesEndRef} />
       </div>
