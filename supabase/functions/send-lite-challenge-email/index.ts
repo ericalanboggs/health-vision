@@ -325,6 +325,22 @@ function buildSummaryEmailHtml(firstName: string): string {
               </a>
             </td>
           </tr>
+          <!-- Share the Challenge -->
+          <tr>
+            <td style="padding: 0 40px 24px 40px;">
+              <div style="background-color: #f0fdf4; border-radius: 12px; padding: 24px; text-align: center;">
+                <p style="margin: 0 0 8px 0; font-size: 18px; font-weight: 600; color: #1a1a1a;">
+                  Know someone who needs this?
+                </p>
+                <p style="margin: 0 0 16px 0; font-size: 15px; color: #4a4a4a; line-height: 1.6;">
+                  If you enjoyed the challenge, share it with a friend or coworker. They'll start next Monday &mdash; same 5 days, same $1.
+                </p>
+                <a href="${appUrl}/tech-neck" style="display: inline-block; padding: 14px 28px; background-color: #ffffff; color: #15803d; text-decoration: none; font-size: 15px; font-weight: 600; border-radius: 8px; border: 2px solid #15803d;">
+                  Share the Challenge
+                </a>
+              </div>
+            </td>
+          </tr>
           <!-- CTA: Instagram -->
           <tr>
             <td align="center" style="padding: 0 40px 30px 40px;">

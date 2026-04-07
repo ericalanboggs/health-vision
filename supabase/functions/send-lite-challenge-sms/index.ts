@@ -52,7 +52,7 @@ const TECH_NECK_MESSAGES: Record<number, Record<string, string>> = {
     '10am': `The biggest predictor of whether a habit sticks isn't motivation — it's how easy it is to start. Two minutes, no equipment, can be done at your desk. The only real requirement is a trigger. For most people that's a time (like this text) or a context cue (every time you pour a coffee, every time you open your laptop). Pick yours today.`,
     '12pm': `You've now done versions of all four habits this week. Most people find one that resonates more than the others — a stretch that feels particularly good, a breathing reset that shifts something. That's the one to lead with in your daily routine. Build from your strongest point, not the full sequence.`,
     '3pm': `One more full reset before the end of the week. Run through the 2-minute routine. Think of this less as exercise and more as maintenance — the same logic as brushing your teeth. Tech neck doesn't go away permanently, but it becomes manageable when you have a daily practice that takes less time than your morning coffee.`,
-    '5pm': `You finished. Five days, four habits, one problem you understand a lot better than you did Monday. The routine you built this week works. The only question now is whether it becomes part of the day or fades by next week — and that's entirely a function of how simple you keep it. It doesn't have to be perfect. It just has to happen.`,
+    '5pm': `You finished. Five days, four habits, one problem you understand a lot better than you did Monday. The routine works. It just has to happen.\n\nKnow someone who'd benefit? Share the challenge — they start next Monday: go.summithealth.app/tech-neck`,
   },
 }
 
