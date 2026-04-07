@@ -827,88 +827,122 @@ export default function AdminUserDetail() {
                       </div>
 
                       {/* Tracking entries (last 14 days) */}
-                      {habit.tracking?.enabled && habit.entries.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-stone-200">
-                          <span className="text-xs font-medium text-stone-500 uppercase tracking-wide">Recent Tracking</span>
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {habit.entries.map((entry, ei) => {
-                              const date = new Date(entry.entry_date + 'T00:00:00')
-                              const dayLabel = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                              const isBoolean = habit.tracking.type === 'boolean'
+                      {habit.tracking?.enabled && (() => {
+                        const isBoolean = habit.tracking.type === 'boolean'
+                        const entryMap = {}
+                        habit.entries.forEach(e => { entryMap[e.entry_date] = e })
 
-                              if (editingHabits) {
-                                // Edit mode: clickable entries
+                        // Generate all scheduled days in last 14 days
+                        const scheduledDays = []
+                        const today = new Date()
+                        for (let d = 0; d < 14; d++) {
+                          const date = new Date(today)
+                          date.setDate(today.getDate() - d)
+                          const dow = date.getDay()
+                          if (habit.days.includes(dow)) {
+                            const dateStr = date.toISOString().split('T')[0]
+                            scheduledDays.push({
+                              date: dateStr,
+                              label: date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+                              entry: entryMap[dateStr] || null,
+                            })
+                          }
+                        }
+
+                        if (scheduledDays.length === 0) return null
+
+                        return (
+                          <div className="mt-3 pt-3 border-t border-stone-200">
+                            <span className="text-xs font-medium text-stone-500 uppercase tracking-wide">Recent Tracking</span>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {scheduledDays.map((day) => {
+                                const entry = day.entry
+
+                                if (editingHabits) {
+                                  return (
+                                    <div key={day.date} className="flex items-center gap-1 bg-stone-50 rounded px-2 py-1">
+                                      <span className="text-xs text-stone-500">{day.label}:</span>
+                                      {isBoolean ? (
+                                        <button
+                                          onClick={async () => {
+                                            const newVal = entry?.completed === true ? false : true
+                                            const result = await adminUpsertTrackingEntry(userId, habit.name, day.date, { completed: newVal })
+                                            if (result.success) {
+                                              setData(prev => ({
+                                                ...prev,
+                                                habits: prev.habits.map(h =>
+                                                  h.name === habit.name
+                                                    ? {
+                                                        ...h,
+                                                        entries: entry
+                                                          ? h.entries.map(e => e.entry_date === day.date ? { ...e, completed: newVal } : e)
+                                                          : [...h.entries, { entry_date: day.date, completed: newVal, metric_value: null }]
+                                                      }
+                                                    : h
+                                                )
+                                              }))
+                                            }
+                                          }}
+                                          className={`text-xs font-medium px-1.5 py-0.5 rounded cursor-pointer ${
+                                            entry?.completed === true ? 'bg-summit-sage text-summit-emerald'
+                                              : entry?.completed === false ? 'bg-red-100 text-red-600'
+                                              : 'bg-stone-200 text-stone-400'
+                                          }`}
+                                        >
+                                          {entry?.completed === true ? 'Yes' : entry?.completed === false ? 'No' : '—'}
+                                        </button>
+                                      ) : (
+                                        <>
+                                          <input
+                                            type="number"
+                                            defaultValue={entry?.metric_value ?? ''}
+                                            placeholder="—"
+                                            className="w-16 text-xs border border-stone-300 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-summit-emerald"
+                                            onBlur={async (e) => {
+                                              const newVal = e.target.value ? parseFloat(e.target.value) : null
+                                              if (newVal === (entry?.metric_value ?? null)) return
+                                              if (newVal === null) return
+                                              const result = await adminUpsertTrackingEntry(userId, habit.name, day.date, { metricValue: newVal })
+                                              if (result.success) {
+                                                setData(prev => ({
+                                                  ...prev,
+                                                  habits: prev.habits.map(h =>
+                                                    h.name === habit.name
+                                                      ? {
+                                                          ...h,
+                                                          entries: entry
+                                                            ? h.entries.map(e => e.entry_date === day.date ? { ...e, metric_value: newVal } : e)
+                                                            : [...h.entries, { entry_date: day.date, completed: null, metric_value: newVal }]
+                                                        }
+                                                      : h
+                                                  )
+                                                }))
+                                              }
+                                            }}
+                                          />
+                                          <span className="text-xs text-stone-400">{habit.tracking.unit}</span>
+                                        </>
+                                      )}
+                                    </div>
+                                  )
+                                }
+
+                                // View mode
                                 return (
-                                  <div key={ei} className="flex items-center gap-1 bg-stone-50 rounded px-2 py-1">
-                                    <span className="text-xs text-stone-500">{dayLabel}:</span>
-                                    {isBoolean ? (
-                                      <button
-                                        onClick={async () => {
-                                          const newVal = entry.completed === true ? false : true
-                                          const result = await adminUpsertTrackingEntry(userId, habit.name, entry.entry_date, { completed: newVal })
-                                          if (result.success) {
-                                            setData(prev => ({
-                                              ...prev,
-                                              habits: prev.habits.map(h =>
-                                                h.name === habit.name
-                                                  ? { ...h, entries: h.entries.map(e => e.entry_date === entry.entry_date ? { ...e, completed: newVal } : e) }
-                                                  : h
-                                              )
-                                            }))
-                                          }
-                                        }}
-                                        className={`text-xs font-medium px-1.5 py-0.5 rounded cursor-pointer ${
-                                          entry.completed ? 'bg-summit-sage text-summit-emerald' : 'bg-red-100 text-red-600'
-                                        }`}
-                                      >
-                                        {entry.completed ? 'Yes' : 'No'}
-                                      </button>
-                                    ) : (
-                                      <input
-                                        type="number"
-                                        defaultValue={entry.metric_value ?? ''}
-                                        className="w-16 text-xs border border-stone-300 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-summit-emerald"
-                                        onBlur={async (e) => {
-                                          const newVal = e.target.value ? parseFloat(e.target.value) : null
-                                          if (newVal === entry.metric_value) return
-                                          const result = await adminUpsertTrackingEntry(userId, habit.name, entry.entry_date, { metricValue: newVal })
-                                          if (result.success) {
-                                            setData(prev => ({
-                                              ...prev,
-                                              habits: prev.habits.map(h =>
-                                                h.name === habit.name
-                                                  ? { ...h, entries: h.entries.map(e => e.entry_date === entry.entry_date ? { ...e, metric_value: newVal } : e) }
-                                                  : h
-                                              )
-                                            }))
-                                          }
-                                        }}
-                                      />
-                                    )}
-                                    {!isBoolean && <span className="text-xs text-stone-400">{habit.tracking.unit}</span>}
-                                  </div>
+                                  <span key={day.date} className={`text-xs px-2 py-1 rounded ${
+                                    !entry ? 'bg-stone-50 text-stone-300'
+                                      : isBoolean
+                                        ? entry.completed ? 'bg-summit-sage text-summit-emerald' : 'bg-red-50 text-red-500'
+                                        : 'bg-stone-100 text-stone-700'
+                                  }`}>
+                                    {day.label}: {!entry ? '—' : isBoolean ? (entry.completed ? '✓' : '✗') : `${entry.metric_value ?? '—'} ${habit.tracking.unit || ''}`}
+                                  </span>
                                 )
-                              }
-
-                              // View mode: read-only entries
-                              return (
-                                <span key={ei} className={`text-xs px-2 py-1 rounded ${
-                                  isBoolean
-                                    ? entry.completed ? 'bg-summit-sage text-summit-emerald' : 'bg-red-50 text-red-500'
-                                    : 'bg-stone-100 text-stone-700'
-                                }`}>
-                                  {dayLabel}: {isBoolean ? (entry.completed ? '✓' : '✗') : `${entry.metric_value ?? '—'} ${habit.tracking.unit || ''}`}
-                                </span>
-                              )
-                            })}
+                              })}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {habit.tracking?.enabled && habit.entries.length === 0 && (
-                        <div className="mt-3 pt-3 border-t border-stone-200">
-                          <span className="text-xs text-stone-400 italic">No tracking entries yet</span>
-                        </div>
-                      )}
+                        )
+                      })()}
                     </>
                   )}
                 </div>
