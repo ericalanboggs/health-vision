@@ -258,6 +258,27 @@ export const getUserDetail = async (userId) => {
 
     if (resourcesError) throw resourcesError
 
+    // Get tracking entries (last 14 days)
+    const twoWeeksAgo = new Date()
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
+    const { data: trackingEntries, error: entriesError } = await supabase
+      .from('habit_tracking_entries')
+      .select('habit_name, entry_date, completed, metric_value, entry_source')
+      .eq('user_id', userId)
+      .gte('entry_date', twoWeeksAgo.toISOString().split('T')[0])
+      .order('entry_date', { ascending: false })
+
+    if (entriesError) throw entriesError
+
+    // Group entries by habit name
+    const entriesByHabit = {}
+    trackingEntries?.forEach(entry => {
+      if (!entriesByHabit[entry.habit_name]) {
+        entriesByHabit[entry.habit_name] = []
+      }
+      entriesByHabit[entry.habit_name].push(entry)
+    })
+
     // Calculate pilot readiness
     const hasLoggedIn = profile.profile_completed
     const hasHealthVision = !!(journey?.form_data?.visionStatement)
@@ -297,6 +318,7 @@ export const getUserDetail = async (userId) => {
           unit: tc.metric_unit,
           target: tc.metric_target,
         } : null,
+        entries: entriesByHabit[group.name] || [],
       }
     })
 
@@ -778,6 +800,35 @@ export const adminUpdateFollowupTime = async (userId, followupTime) => {
     return { success: true }
   } catch (error) {
     console.error('Error updating followup time:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Upsert a tracking entry for a user (admin edit)
+ */
+export const adminUpsertTrackingEntry = async (userId, habitName, entryDate, { completed, metricValue }) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { error } = await supabase
+      .from('habit_tracking_entries')
+      .upsert({
+        user_id: userId,
+        habit_name: habitName,
+        entry_date: entryDate,
+        completed: completed ?? null,
+        metric_value: metricValue ?? null,
+        entry_source: 'app',
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,habit_name,entry_date' })
+
+    if (error) throw error
+    return { success: true }
+  } catch (error) {
+    console.error('Error upserting tracking entry:', error)
     return { success: false, error: error.message }
   }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit, adminUpdateTrackingConfig, adminUpdateFollowupTime } from '../services/adminService'
+import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit, adminUpdateTrackingConfig, adminUpdateFollowupTime, adminUpsertTrackingEntry } from '../services/adminService'
 import { COACHING_CONFIG, getBillingPeriod } from '../services/subscriptionService'
 import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt, Forum, Edit as EditIcon, Close, Add, PushPin, PushPinOutlined, DeleteOutline, Chat, Email } from '@mui/icons-material'
 import { Tag } from '@summit/design-system'
@@ -825,6 +825,90 @@ export default function AdminUserDetail() {
                             : 'Off'}
                         </div>
                       </div>
+
+                      {/* Tracking entries (last 14 days) */}
+                      {habit.tracking?.enabled && habit.entries.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-stone-200">
+                          <span className="text-xs font-medium text-stone-500 uppercase tracking-wide">Recent Tracking</span>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {habit.entries.map((entry, ei) => {
+                              const date = new Date(entry.entry_date + 'T00:00:00')
+                              const dayLabel = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                              const isBoolean = habit.tracking.type === 'boolean'
+
+                              if (editingHabits) {
+                                // Edit mode: clickable entries
+                                return (
+                                  <div key={ei} className="flex items-center gap-1 bg-stone-50 rounded px-2 py-1">
+                                    <span className="text-xs text-stone-500">{dayLabel}:</span>
+                                    {isBoolean ? (
+                                      <button
+                                        onClick={async () => {
+                                          const newVal = entry.completed === true ? false : true
+                                          const result = await adminUpsertTrackingEntry(userId, habit.name, entry.entry_date, { completed: newVal })
+                                          if (result.success) {
+                                            setData(prev => ({
+                                              ...prev,
+                                              habits: prev.habits.map(h =>
+                                                h.name === habit.name
+                                                  ? { ...h, entries: h.entries.map(e => e.entry_date === entry.entry_date ? { ...e, completed: newVal } : e) }
+                                                  : h
+                                              )
+                                            }))
+                                          }
+                                        }}
+                                        className={`text-xs font-medium px-1.5 py-0.5 rounded cursor-pointer ${
+                                          entry.completed ? 'bg-summit-sage text-summit-emerald' : 'bg-red-100 text-red-600'
+                                        }`}
+                                      >
+                                        {entry.completed ? 'Yes' : 'No'}
+                                      </button>
+                                    ) : (
+                                      <input
+                                        type="number"
+                                        defaultValue={entry.metric_value ?? ''}
+                                        className="w-16 text-xs border border-stone-300 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-summit-emerald"
+                                        onBlur={async (e) => {
+                                          const newVal = e.target.value ? parseFloat(e.target.value) : null
+                                          if (newVal === entry.metric_value) return
+                                          const result = await adminUpsertTrackingEntry(userId, habit.name, entry.entry_date, { metricValue: newVal })
+                                          if (result.success) {
+                                            setData(prev => ({
+                                              ...prev,
+                                              habits: prev.habits.map(h =>
+                                                h.name === habit.name
+                                                  ? { ...h, entries: h.entries.map(e => e.entry_date === entry.entry_date ? { ...e, metric_value: newVal } : e) }
+                                                  : h
+                                              )
+                                            }))
+                                          }
+                                        }}
+                                      />
+                                    )}
+                                    {!isBoolean && <span className="text-xs text-stone-400">{habit.tracking.unit}</span>}
+                                  </div>
+                                )
+                              }
+
+                              // View mode: read-only entries
+                              return (
+                                <span key={ei} className={`text-xs px-2 py-1 rounded ${
+                                  isBoolean
+                                    ? entry.completed ? 'bg-summit-sage text-summit-emerald' : 'bg-red-50 text-red-500'
+                                    : 'bg-stone-100 text-stone-700'
+                                }`}>
+                                  {dayLabel}: {isBoolean ? (entry.completed ? '✓' : '✗') : `${entry.metric_value ?? '—'} ${habit.tracking.unit || ''}`}
+                                </span>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      {habit.tracking?.enabled && habit.entries.length === 0 && (
+                        <div className="mt-3 pt-3 border-t border-stone-200">
+                          <span className="text-xs text-stone-400 italic">No tracking entries yet</span>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
