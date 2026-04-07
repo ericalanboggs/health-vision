@@ -922,12 +922,14 @@ serve(async (req) => {
 
     // ============================================
     // STEP 2: Check for recent followup context
+    // Look back 24 hours (not just today) so overnight replies still match
     // ============================================
+    const lookbackTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     const { data: recentFollowup } = await supabase
       .from('sms_followup_log')
       .select('*')
       .eq('user_id', profile.id)
-      .gte('sent_at', `${todayStr}T00:00:00`)
+      .gte('sent_at', lookbackTime)
       .order('sent_at', { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -948,11 +950,14 @@ serve(async (req) => {
         const parsed = parseTrackingResponse(body, configType)
 
         if (parsed) {
-          // Save the entry
+          // Log entry for the date the followup was about (not necessarily today)
+          const followupDate = recentFollowup.sent_at
+            ? recentFollowup.sent_at.split('T')[0]
+            : todayStr
           const entryData: Record<string, unknown> = {
             user_id: profile.id,
             habit_name: recentFollowup.habit_name,
-            entry_date: todayStr,
+            entry_date: followupDate,
             entry_source: 'sms',
             updated_at: new Date().toISOString(),
           }
