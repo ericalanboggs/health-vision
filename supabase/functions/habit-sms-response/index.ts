@@ -1208,12 +1208,16 @@ async function chainToNextHabit(
 
     if (!allTrackingConfigs || allTrackingConfigs.length === 0) return
 
-    // Get existing entries for today (only count actually completed/logged entries)
+    // Check entries for BOTH today (user timezone) and the UTC date to handle timezone edge cases
+    const nowUtcDate = new Date().toISOString().split('T')[0]
+    const datesToCheck = [todayStr]
+    if (nowUtcDate !== todayStr) datesToCheck.push(nowUtcDate)
+
     const { data: existingEntries } = await supabase
       .from('habit_tracking_entries')
       .select('habit_name, completed, metric_value')
       .eq('user_id', profile.id)
-      .eq('entry_date', todayStr)
+      .in('entry_date', datesToCheck)
 
     const habitsWithEntries = new Set(
       (existingEntries || [])
@@ -1221,10 +1225,21 @@ async function chainToNextHabit(
         .map(e => e.habit_name)
     )
 
-    // Find habits that need followup
+    // Also check followup log — don't re-ask habits already asked in last 2 hours
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+    const { data: recentFollowups } = await supabase
+      .from('sms_followup_log')
+      .select('habit_name')
+      .eq('user_id', profile.id)
+      .gte('sent_at', twoHoursAgo)
+
+    const habitsAlreadyAsked = new Set((recentFollowups || []).map(f => f.habit_name))
+
+    // Find habits that need followup (no entry AND not already asked recently)
     const habitsNeedingFollowup = todayHabits.filter(habit =>
       allTrackingConfigs.some(config => config.habit_name === habit.habit_name) &&
-      !habitsWithEntries.has(habit.habit_name)
+      !habitsWithEntries.has(habit.habit_name) &&
+      !habitsAlreadyAsked.has(habit.habit_name)
     )
 
     if (habitsNeedingFollowup.length === 0) return
