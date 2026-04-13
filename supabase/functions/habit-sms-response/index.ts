@@ -968,10 +968,22 @@ serve(async (req) => {
         const parsed = parseTrackingResponse(body, configType)
 
         if (parsed) {
-          // Log entry for the date the followup was about (not necessarily today)
-          const followupDate = recentFollowup.sent_at
-            ? recentFollowup.sent_at.split('T')[0]
-            : todayStr
+          // Log entry for the date the followup was about (in user's timezone, not UTC)
+          let followupDate = todayStr
+          if (recentFollowup.sent_at) {
+            try {
+              const sentDate = new Date(recentFollowup.sent_at)
+              const formatter = new Intl.DateTimeFormat('en-CA', {
+                timeZone: userTimezone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+              })
+              followupDate = formatter.format(sentDate)
+            } catch {
+              followupDate = recentFollowup.sent_at.split('T')[0]
+            }
+          }
           const entryData: Record<string, unknown> = {
             user_id: profile.id,
             habit_name: recentFollowup.habit_name,
