@@ -336,42 +336,43 @@ export default function AdminUserDetail() {
   return (
     <div className="min-h-screen bg-white">
       <header className="bg-white shadow-sm border-b border-stone-200">
-        <div className="px-6 py-4">
+        <div className="px-4 sm:px-6 py-3 sm:py-4">
           <button
             onClick={() => navigate('/admin')}
-            className="flex items-center gap-2 text-stone-600 hover:text-summit-forest font-medium transition-colors mb-2"
+            className="flex items-center gap-2 text-stone-600 hover:text-summit-forest font-medium transition-colors mb-2 text-sm sm:text-base"
           >
             <ArrowBack className="w-5 h-5" />
             Back to Admin
           </button>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-summit-forest">{profile.name}</h1>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <h1 className="text-xl sm:text-3xl font-bold text-summit-forest truncate min-w-0 flex-1">{profile.name}</h1>
             <button
               onClick={() => setShowThreadsPanel(true)}
-              className="p-2 text-stone-500 hover:text-summit-emerald hover:bg-stone-100 rounded-lg transition"
+              className="flex-shrink-0 p-2 text-stone-500 hover:text-summit-emerald hover:bg-stone-100 rounded-lg transition"
               title="Messages"
             >
               <Chat className="w-5 h-5" />
             </button>
             <button
               onClick={() => setShowEmailModal(true)}
-              className="p-2 text-stone-500 hover:text-summit-emerald hover:bg-stone-100 rounded-lg transition"
+              className="flex-shrink-0 p-2 text-stone-500 hover:text-summit-emerald hover:bg-stone-100 rounded-lg transition"
               title="Send Email"
             >
               <Email className="w-5 h-5" />
             </button>
           </div>
-          <p className="text-stone-600 mt-1">{profile.email}</p>
+          <p className="text-sm text-stone-600 mt-1 truncate">{profile.email}</p>
         </div>
       </header>
 
-      <main className="px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left column - User details */}
-          <div className="lg:col-span-2 space-y-6">
+      <main className="px-4 sm:px-6 py-4 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          {/* Left column - User details. On mobile this comes after the SMS panel
+              so admins reviewing messages on phone don't have to scroll past every card. */}
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6 order-2 lg:order-1">
         {/* Coach Summary Card */}
         {healthVision && (
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg shadow-sm border border-amber-200 p-6">
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg shadow-sm border border-amber-200 p-4 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <TipsAndUpdates className="w-5 h-5 text-amber-600" />
               <h2 className="text-xl font-bold text-summit-forest">Coach Summary</h2>
@@ -477,9 +478,9 @@ export default function AdminUserDetail() {
         )}
 
         {/* User Snapshot */}
-        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-4 sm:p-6">
           <h2 className="text-xl font-bold text-summit-forest mb-4">User Snapshot</h2>
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4 text-sm">
             <div>
               <span className="text-stone-600">Phone:</span>
               <span className="ml-2 font-medium text-summit-forest">{profile.phone}</span>
@@ -515,7 +516,7 @@ export default function AdminUserDetail() {
           const sessionsUsed = coachingSessions.length
 
           return (
-            <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
+            <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-4 sm:p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Forum className="w-5 h-5 text-summit-emerald" />
                 <h2 className="text-xl font-bold text-summit-forest">Coaching Sessions</h2>
@@ -573,7 +574,7 @@ export default function AdminUserDetail() {
         })()}
 
         {/* Pilot Readiness Checklist */}
-        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-4 sm:p-6">
           <h2 className="text-xl font-bold text-summit-forest mb-4">Pilot Readiness</h2>
           <div className="space-y-3">
             <div className="flex items-center gap-3">
@@ -623,7 +624,7 @@ export default function AdminUserDetail() {
         </div>
 
         {/* Health Vision */}
-        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-4 sm:p-6">
           <h2 className="text-xl font-bold text-summit-forest mb-4">Health Vision</h2>
           {healthVision?.visionStatement ? (
             <div className="space-y-4">
@@ -656,7 +657,7 @@ export default function AdminUserDetail() {
         </div>
 
         {/* Current Habits */}
-        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-summit-forest">Current Habits</h2>
             <button
@@ -683,12 +684,12 @@ export default function AdminUserDetail() {
                       />
                       <div>
                         <span className="text-sm font-medium text-stone-600 mb-1 block">Days</span>
-                        <div className="flex gap-1">
+                        <div className="grid grid-cols-7 gap-1">
                           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label, i) => (
                             <button
                               key={i}
                               onClick={() => toggleDay(editHabitForm.days, (d) => setEditHabitForm(f => ({ ...f, days: d })), i)}
-                              className={`px-2 py-1 text-xs rounded-md font-medium transition-colors ${
+                              className={`py-1.5 text-xs rounded-md font-medium transition-colors ${
                                 editHabitForm.days.includes(i)
                                   ? 'bg-summit-emerald text-white'
                                   : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
@@ -1013,12 +1014,12 @@ export default function AdminUserDetail() {
               />
               <div>
                 <span className="text-sm font-medium text-stone-600 mb-1 block">Days *</span>
-                <div className="flex gap-1">
+                <div className="grid grid-cols-7 gap-1">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label, i) => (
                     <button
                       key={i}
                       onClick={() => toggleDay(addHabitForm.days, (d) => setAddHabitForm(f => ({ ...f, days: d })), i)}
-                      className={`px-2 py-1 text-xs rounded-md font-medium transition-colors ${
+                      className={`py-1.5 text-xs rounded-md font-medium transition-colors ${
                         addHabitForm.days.includes(i)
                           ? 'bg-summit-emerald text-white'
                           : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
@@ -1058,7 +1059,7 @@ export default function AdminUserDetail() {
         </div>
 
         {/* Weekly Reflections */}
-        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-4 sm:p-6">
           <h2 className="text-xl font-bold text-summit-forest mb-4">Weekly Reflections</h2>
           {reflections.length > 0 ? (
             <div className="space-y-4">
@@ -1108,7 +1109,7 @@ export default function AdminUserDetail() {
         </div>
 
         {/* Current Resources */}
-        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-summit-forest">Current Resources</h2>
             <button
@@ -1279,9 +1280,10 @@ export default function AdminUserDetail() {
         </div>
           </div>
 
-          {/* Right column - SMS Conversation (sticky, full viewport height) */}
-          <div className="lg:col-span-1">
-            <div className="lg:sticky lg:top-6 lg:h-[calc(100vh-7rem)] flex flex-col">
+          {/* Right column - SMS Conversation. Sticky on desktop, top of stack on mobile
+              (where reviewing messages is the primary use case). */}
+          <div className="lg:col-span-1 order-1 lg:order-2">
+            <div className="lg:sticky lg:top-6 h-[75vh] lg:h-[calc(100vh-7rem)] flex flex-col">
               <ConversationView
                 userId={profile.id}
                 userName={profile.name}

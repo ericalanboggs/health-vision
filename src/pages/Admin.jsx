@@ -276,66 +276,70 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-white">
       <header className="bg-white shadow-sm border-b border-stone-200">
-        <div className="px-6 py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-summit-forest">Admin Dashboard</h1>
-              <p className="text-stone-600 mt-1">Summit User Management</p>
+        <div className="px-4 sm:px-6 py-4 sm:py-6">
+          <div className="flex items-start justify-between gap-3 sm:items-center">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-summit-forest">Admin Dashboard</h1>
+              <p className="text-sm sm:text-base text-stone-600 mt-1">Summit User Management</p>
             </div>
 
-            {/* Invite User - only show when no selection */}
+            {/* Messages button — always visible so phone admins can jump to threads fast */}
             {selectedUserIds.size === 0 && (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setShowThreadsPanel(true)}
-                    className="p-2 text-stone-500 hover:text-summit-emerald hover:bg-stone-100 rounded-lg transition"
-                    title="Messages"
-                  >
-                    <Chat className="w-5 h-5" />
-                  </button>
-                  <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
-                    <PersonAdd className="w-5 h-5 text-summit-moss" />
-                    <input
-                      type="email"
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleInvite()}
-                      placeholder="Invite user by email"
-                      className="border-none outline-none text-sm w-48 placeholder-stone-400"
-                      disabled={inviting}
-                    />
-                  </div>
-                  <button
-                    onClick={handleInvite}
-                    disabled={inviting || !inviteEmail.trim()}
-                    className="flex items-center gap-2 bg-summit-emerald hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium px-4 py-2 rounded-lg transition text-sm"
-                  >
-                    {inviting ? (
-                      <Autorenew className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4" />
-                    )}
-                    Send
-                  </button>
-                </div>
-                {inviteStatus && (
-                  <p className={`text-xs ${inviteStatus.type === 'success' ? 'text-summit-emerald' : 'text-red-600'}`}>
-                    {inviteStatus.message}
-                  </p>
-                )}
-              </div>
+              <button
+                onClick={() => setShowThreadsPanel(true)}
+                className="flex-shrink-0 p-2 text-stone-500 hover:text-summit-emerald hover:bg-stone-100 rounded-lg transition"
+                title="Messages"
+              >
+                <Chat className="w-6 h-6" />
+              </button>
             )}
           </div>
+
+          {/* Invite User row — hidden on small screens to save space */}
+          {selectedUserIds.size === 0 && (
+            <div className="hidden sm:flex flex-col gap-2 mt-4">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
+                  <PersonAdd className="w-5 h-5 text-summit-moss" />
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleInvite()}
+                    placeholder="Invite user by email"
+                    className="border-none outline-none text-sm w-48 placeholder-stone-400"
+                    disabled={inviting}
+                  />
+                </div>
+                <button
+                  onClick={handleInvite}
+                  disabled={inviting || !inviteEmail.trim()}
+                  className="flex items-center gap-2 bg-summit-emerald hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium px-4 py-2 rounded-lg transition text-sm"
+                >
+                  {inviting ? (
+                    <Autorenew className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  Send
+                </button>
+              </div>
+              {inviteStatus && (
+                <p className={`text-xs ${inviteStatus.type === 'success' ? 'text-summit-emerald' : 'text-red-600'}`}>
+                  {inviteStatus.message}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </header>
 
       {/* Tabs */}
       <div className="border-b border-stone-200 bg-white">
-        <div className="px-6 flex gap-0">
+        <div className="px-4 sm:px-6 flex gap-0 overflow-x-auto">
           <button
             onClick={() => setActiveTab('summit')}
-            className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex-shrink-0 px-4 sm:px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'summit'
                 ? 'border-summit-emerald text-summit-emerald'
                 : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
@@ -345,7 +349,7 @@ export default function Admin() {
           </button>
           <button
             onClick={() => setActiveTab('challenge')}
-            className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex-shrink-0 px-4 sm:px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'challenge'
                 ? 'border-summit-emerald text-summit-emerald'
                 : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
@@ -361,7 +365,7 @@ export default function Admin() {
         </div>
       </div>
 
-      <main className="px-6 py-8">
+      <main className="px-4 sm:px-6 py-4 sm:py-8">
         {activeTab === 'challenge' && (
           <>
             <div className="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden">
@@ -376,54 +380,92 @@ export default function Admin() {
                   <Autorenew className="w-8 h-8 animate-spin text-summit-emerald" />
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-stone-50 border-b border-stone-200">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">First Name</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">Email</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">Phone</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">Registered</th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-stone-600 uppercase tracking-wider">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stone-200">
-                      {challengeParticipants.map(p => (
-                        <tr key={p.enrollmentId} className="hover:bg-stone-50">
-                          <td className="px-4 py-3 text-sm font-medium text-summit-forest">{p.name}</td>
-                          <td className="px-4 py-3 text-sm text-stone-600">{p.email}</td>
-                          <td className="px-4 py-3 text-sm text-stone-600">{p.phone}</td>
-                          <td className="px-4 py-3 text-sm text-stone-600">
-                            {new Date(p.registeredAt).toLocaleDateString()}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            {(() => {
-                              const badgeConfig = {
-                                pending: { label: 'Pending', classes: 'bg-amber-100 text-amber-800' },
-                                paid: { label: 'Paid', classes: 'bg-blue-100 text-blue-700' },
-                                active: { label: 'Active', classes: 'bg-summit-mint text-summit-forest' },
-                                completed: { label: 'Completed', classes: 'bg-stone-100 text-stone-600' },
-                              }
-                              const badge = badgeConfig[p.status] || badgeConfig.pending
-                              return (
-                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badge.classes}`}>
-                                  {badge.label}
-                                </span>
-                              )
-                            })()}
-                          </td>
-                        </tr>
-                      ))}
-                      {challengeParticipants.length === 0 && (
+                <>
+                  {/* Desktop table */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-stone-50 border-b border-stone-200">
                         <tr>
-                          <td colSpan={5} className="px-4 py-8 text-center text-sm text-stone-400">
-                            No challenge participants yet
-                          </td>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">First Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">Email</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">Phone</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">Registered</th>
+                          <th className="px-4 py-3 text-center text-xs font-medium text-stone-600 uppercase tracking-wider">Status</th>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-stone-200">
+                        {challengeParticipants.map(p => (
+                          <tr key={p.enrollmentId} className="hover:bg-stone-50">
+                            <td className="px-4 py-3 text-sm font-medium text-summit-forest">{p.name}</td>
+                            <td className="px-4 py-3 text-sm text-stone-600">{p.email}</td>
+                            <td className="px-4 py-3 text-sm text-stone-600">{p.phone}</td>
+                            <td className="px-4 py-3 text-sm text-stone-600">
+                              {new Date(p.registeredAt).toLocaleDateString()}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              {(() => {
+                                const badgeConfig = {
+                                  pending: { label: 'Pending', classes: 'bg-amber-100 text-amber-800' },
+                                  paid: { label: 'Paid', classes: 'bg-blue-100 text-blue-700' },
+                                  active: { label: 'Active', classes: 'bg-summit-mint text-summit-forest' },
+                                  completed: { label: 'Completed', classes: 'bg-stone-100 text-stone-600' },
+                                }
+                                const badge = badgeConfig[p.status] || badgeConfig.pending
+                                return (
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badge.classes}`}>
+                                    {badge.label}
+                                  </span>
+                                )
+                              })()}
+                            </td>
+                          </tr>
+                        ))}
+                        {challengeParticipants.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="px-4 py-8 text-center text-sm text-stone-400">
+                              No challenge participants yet
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile card list */}
+                  <div className="md:hidden divide-y divide-stone-200">
+                    {challengeParticipants.length === 0 ? (
+                      <div className="px-4 py-8 text-center text-sm text-stone-400">
+                        No challenge participants yet
+                      </div>
+                    ) : (
+                      challengeParticipants.map(p => {
+                        const badgeConfig = {
+                          pending: { label: 'Pending', classes: 'bg-amber-100 text-amber-800' },
+                          paid: { label: 'Paid', classes: 'bg-blue-100 text-blue-700' },
+                          active: { label: 'Active', classes: 'bg-summit-mint text-summit-forest' },
+                          completed: { label: 'Completed', classes: 'bg-stone-100 text-stone-600' },
+                        }
+                        const badge = badgeConfig[p.status] || badgeConfig.pending
+                        return (
+                          <div key={p.enrollmentId} className="px-4 py-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-summit-forest truncate">{p.name}</p>
+                                <p className="text-xs text-stone-500 truncate">{p.email}</p>
+                                <p className="text-xs text-stone-500 mt-0.5">
+                                  {p.phone} · {new Date(p.registeredAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <span className={`flex-shrink-0 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badge.classes}`}>
+                                {badge.label}
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </>
@@ -493,7 +535,8 @@ export default function Admin() {
             </span>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-stone-50 border-b border-stone-200">
                 <tr>
@@ -630,6 +673,75 @@ export default function Admin() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile card list */}
+          <div className="md:hidden divide-y divide-stone-200">
+            {sortedUsers.length === 0 ? (
+              <div className="px-4 py-8 text-center text-sm text-stone-400">
+                No users match the current filters
+              </div>
+            ) : (
+              sortedUsers.map(user => {
+                const status = getEngagementStatus(user)
+                const badgeConfig = {
+                  new: { label: 'New', classes: 'bg-blue-100 text-blue-700' },
+                  active: { label: 'Active', classes: 'bg-summit-mint text-summit-forest' },
+                  inactive: { label: 'Inactive', classes: 'bg-amber-100 text-amber-800' },
+                  no_habits: { label: 'No Habits', classes: 'bg-red-100 text-red-700' },
+                }
+                const badge = badgeConfig[status] || badgeConfig.inactive
+                const isSelected = selectedUserIds.has(user.id)
+                return (
+                  <div
+                    key={user.id}
+                    className={`flex items-start gap-3 px-4 py-3 transition-colors ${
+                      isSelected ? 'bg-summit-mint/30' : 'hover:bg-stone-50'
+                    }`}
+                  >
+                    <div
+                      className="pt-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Checkbox
+                        size="sm"
+                        shape="rounded"
+                        checked={isSelected}
+                        onChange={(e) => handleToggleUser(user.id, e.target.checked)}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/admin/users/${user.id}`)}
+                      className="flex-1 min-w-0 text-left"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-sm font-medium text-summit-forest truncate">
+                          {user.name}
+                        </span>
+                        <span className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${badge.classes}`}>
+                          {badge.label}
+                        </span>
+                      </div>
+                      <p className="text-xs text-stone-500 truncate mt-0.5">{user.email}</p>
+                      <div className="flex items-center gap-2 text-xs text-stone-500 mt-1">
+                        <span title={user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}>
+                          {formatRelativeTime(user.lastLogin)}
+                        </span>
+                        <span className="text-stone-300">·</span>
+                        <span>{user.activeHabitsCount} habit{user.activeHabitsCount === 1 ? '' : 's'}</span>
+                        {user.memberDuration && (
+                          <>
+                            <span className="text-stone-300">·</span>
+                            <span>{user.memberDuration}</span>
+                          </>
+                        )}
+                      </div>
+                    </button>
+                  </div>
+                )
+              })
+            )}
           </div>
         </div>
         </>}

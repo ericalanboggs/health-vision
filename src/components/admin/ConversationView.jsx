@@ -410,7 +410,7 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
             {showEmojiPicker && (
               <div
                 ref={emojiPickerRef}
-                className="absolute bottom-full right-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-xl p-3 z-50 w-64"
+                className="absolute bottom-full right-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-xl p-3 z-50 w-64 max-w-[calc(100vw-2rem)]"
               >
                 <div className="grid grid-cols-8 gap-1">
                   {EMOJI_OPTIONS.map(({ emoji, label }) => (
@@ -451,7 +451,7 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
 
               {/* Add Menu Dropdown */}
               {showAddMenu && (
-                <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-xl py-2 z-50 w-48">
+                <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-xl py-2 z-50 w-48 max-w-[calc(100vw-2rem)]">
                   <button
                     className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-400 cursor-not-allowed"
                     disabled
@@ -490,7 +490,7 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
 
               {/* Templates Dropdown */}
               {showTemplates && (
-                <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-xl py-2 z-50 w-72 max-h-80 overflow-y-auto">
+                <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-xl py-2 z-50 w-72 max-w-[calc(100vw-2rem)] max-h-80 overflow-y-auto">
                   <div className="px-3 py-2 border-b border-stone-100">
                     <span className="text-xs font-medium text-stone-500 uppercase tracking-wide">Quick Replies</span>
                   </div>
