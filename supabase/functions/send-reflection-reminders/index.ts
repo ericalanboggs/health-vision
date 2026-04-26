@@ -62,6 +62,8 @@ interface HabitSummary {
   target: number | null
   unit: string | null
   metric_avg: number | null
+  /** True if habit_tracking_config.tracking_enabled === true. False = scheduled but user opted out of tracking. */
+  tracked: boolean
 }
 
 /**
@@ -141,6 +143,7 @@ async function loadWeekData(
       target: info.config?.metric_target ?? null,
       unit: info.config?.metric_unit ?? null,
       metric_avg: metricAvg,
+      tracked: info.config?.tracking_enabled === true,
     })
   }
 
@@ -152,59 +155,101 @@ async function loadWeekData(
 }
 
 /**
- * Generate AI opener — personalized week synopsis
+ * Generate AI opener — personalized week synopsis.
+ *
+ * Splits habits into TRACKED (have real completion data) and UNTRACKED
+ * (scheduled but user opted out of tracking — we have no completion data
+ * and must NOT assume they failed). The model is told this explicitly.
  */
 async function generateOpener(
   firstName: string,
   habits: HabitSummary[],
-  hasTracking: boolean,
+  _hasTracking: boolean,
   challengeContext: { slug: string; week: number } | null
 ): Promise<string> {
+  const tracked = habits.filter(h => h.tracked)
+  const untracked = habits.filter(h => !h.tracked)
+
+  // ── Fallback (no API key) ────────────────────────────────────
   if (!OPENAI_API_KEY) {
-    // Fallback without AI
-    if (hasTracking && habits.length > 0) {
-      const topHabit = habits.reduce((a, b) =>
-        (b.completed_count / Math.max(b.scheduled_count, 1)) > (a.completed_count / Math.max(a.scheduled_count, 1)) ? b : a
+    if (tracked.length > 0) {
+      const top = tracked.reduce((a, b) =>
+        (b.completed_count / Math.max(b.scheduled_count, 1)) >
+        (a.completed_count / Math.max(a.scheduled_count, 1)) ? b : a
       )
-      return `Hi ${firstName}! Looks like you had a solid week with ${topHabit.habit_name} (${topHabit.completed_count}/${topHabit.scheduled_count} days). How do you feel the week went?`
+      const untrackedNote = untracked.length > 0
+        ? ` ${untracked.map(h => h.habit_name).join(', ')} were on your plate too.`
+        : ''
+      return `Hey ${firstName}! Solid week — ${top.completed_count}/${top.scheduled_count} on ${top.habit_name}.${untrackedNote} How'd the week feel?`
     }
     const habitList = habits.map(h => h.habit_name).join(', ')
-    return `Hi ${firstName}! Nice job staying committed to ${habitList || 'your habits'} this week. How did it go?`
+    return `Hey ${firstName}! Nice job staying with ${habitList || 'your habits'} this week. How did it go?`
   }
 
-  let dataContext: string
-  if (hasTracking && habits.some(h => h.completed_count > 0 || h.scheduled_count > 0)) {
-    const summaryLines = habits.map(h => {
+  // ── Build the data context ───────────────────────────────────
+  let dataContext = ''
+  if (tracked.length > 0) {
+    const lines = tracked.map(h => {
       const rate = h.scheduled_count > 0
         ? `${h.completed_count}/${h.scheduled_count} days`
-        : 'not scheduled this week'
+        : `${h.completed_count} days`
       const metricStr = h.metric_avg !== null && h.unit
         ? ` (avg ${Math.round(h.metric_avg)} ${h.unit})`
         : ''
       return `- ${h.habit_name}: ${rate}${metricStr}`
     })
-    dataContext = `TRACKING DATA (real completion numbers):\n${summaryLines.join('\n')}`
-  } else {
-    const habitList = habits.map(h => h.habit_name).join(', ')
-    dataContext = `NO TRACKING DATA available. User has these habits scheduled: ${habitList || 'none'}`
+    dataContext += `TRACKED HABITS (real completion data — celebrate specifically):\n${lines.join('\n')}\n\n`
+  }
+  if (untracked.length > 0) {
+    const names = untracked.map(h => h.habit_name).join(', ')
+    dataContext += `UNTRACKED HABITS (scheduled but the user is NOT actively tracking — you have NO completion data for these. Acknowledge by name only, neutrally. Do NOT assume they did or didn't happen):\n${names}\n\n`
+  }
+  if (!dataContext) {
+    dataContext = `User had no habits scheduled this week.\n\n`
   }
 
   const challengeNote = challengeContext
-    ? `User is in week ${challengeContext.week} of the "${challengeContext.slug}" challenge.`
+    ? `CHALLENGE: week ${challengeContext.week} of the "${challengeContext.slug}" challenge.`
     : ''
 
-  const systemPrompt = `You are Summit, a warm health habit coach sending a Sunday evening reflection SMS. Write a personalized week synopsis that:
+  // ── System prompt ────────────────────────────────────────────
+  const systemPrompt = `You are Summit, a warm, energetic health coach sending a Sunday evening reflection SMS to kick off a multi-turn conversation.
 
-1. Greets the user by name
-2. ${hasTracking ? 'Highlights what they did well (specific habits + numbers) and gently notes where they fell short' : 'Acknowledges the habits they committed to this week (by name)'}
-3. ${challengeContext ? 'Mentions their challenge progress' : ''}
-4. Ends with an open question like "How do you feel the week went?" or "How did it go?"
+DATA YOU GET:
+- TRACKED habits: real completion numbers (X/Y days). Reference these specifically.
+- UNTRACKED habits: names only. The user has these scheduled but is not actively tracking them. You DO NOT KNOW whether they happened. Acknowledge by name only, neutrally. Do NOT assume they didn't happen, and do NOT use phrases like "haven't started yet" or "room to grow".
+- Challenge context (optional).
 
-Keep it under 320 characters (SMS). Conversational and warm, not clinical. One emoji max if natural. Do NOT make up data — only reference the numbers provided.
+VOICE:
+- Warm, energetic, sincerely encouraging — a friend / coach who's pumped about your win.
+- Celebrate specifically — earn it with the data. "Rocked", "crushed", "nailed" are fine when tied to a real habit + number.
+- Up to THREE exclamation marks total. Don't fake the energy — no exclamations on neutral statements.
+- 1–2 emojis OK if they fit. Don't stack them. Don't lead the message with one.
 
-Respond with ONLY the SMS message text.`
+ENCOURAGED:
+- "rocked", "nailed", "crushed", "way to show up"
+- "love seeing that", "huge", "real win", "solid"
+- "stuck with it", "that counts", "showing up"
+- Specific celebrations tied to the data
 
-  const userPrompt = `User: ${firstName}\n${dataContext}\n${challengeNote}`
+BANNED:
+- "room to grow", "haven't started yet"
+- "Remember, it's all about progress!"
+- "journey", "your path forward", "you got this"
+- Made-up numbers, fake streaks, generic praise without data
+- Assumptions about untracked habits
+
+STRUCTURE:
+1. Greet by first name
+2. If TRACKED data exists: celebrate specifically (habit + numbers)
+3. If UNTRACKED habits exist: name them in a single neutral phrase ("plus stretching, lighter lunches, and power poses were on your plate this week")
+4. Open question — "How did the week feel?" / "What stood out?" / "How'd it go?"
+
+LENGTH: Under 320 characters. 2-3 sentences. Land it and stop.
+
+Respond with ONLY the SMS message text — no quotes, no preamble.`
+
+  const userPrompt = `User: ${firstName}\n\n${dataContext}${challengeNote}`
 
   try {
     const content = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -229,15 +274,14 @@ Respond with ONLY the SMS message text.`
     }
 
     const data = await content.json()
-    const reply = data.choices?.[0]?.message?.content || ''
-    return reply.trim()
+    const reply = (data.choices?.[0]?.message?.content || '').trim().replace(/^["']|["']$/g, '')
+    return reply
   } catch (error) {
     console.error('Error generating opener:', error)
-    // Fallback
-    if (hasTracking && habits.length > 0) {
-      return `Hi ${firstName}! Time for your weekly reflection. How do you feel the week went?`
+    if (tracked.length > 0) {
+      return `Hey ${firstName}! Time for your weekly reflection — how did it go?`
     }
-    return `Hi ${firstName}! Nice job staying committed to your habits this week. How did it go?`
+    return `Hey ${firstName}! Nice job staying with your habits this week. How did it go?`
   }
 }
 
