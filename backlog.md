@@ -309,6 +309,47 @@ Shared experiences, Q&A, success stories.
 
 ---
 
+## 16. Context Import → Custom Habit Plan
+
+**Priority:** High
+**Status:** Idea (added 2026-04-26)
+**Value:** Turns Summit from "habit tracker" into "recovery / care companion." Likely the highest-leverage feature for users with a real diagnosis or program they're following.
+
+### Problem
+Users arrive with rich context — a doctor's care summary, a book they're following (Outlive, Bredesen, Atomic Habits), a coach's program, a wearable's recommendations. Today none of that informs Summit's habit suggestions; users have to translate their plan into habits themselves, and most don't.
+
+### Proposed Approach
+A new `/context-import` flow:
+1. User pastes (or uploads) a written summary of what they're working on — care plan, book pillars, program structure, etc.
+2. AI (gpt-4o-mini) extracts: goals, restrictions, focus areas, timing patterns
+3. AI proposes 3–5 candidate habits with reasoning ("Because your doctor mentioned BP awareness, here's a daily morning BP check…")
+4. User reviews each, accepts/edits/rejects
+5. Accepted habits go through normal habit creation flow (frequency, days, tracking type)
+
+This is a generalization of the **Custom Challenge Builder** concept from the earlier "future of AI" brainstorm — care summary is one input flavor among several.
+
+### MVP path that sidesteps PHI custodianship
+**Don't accept clinical files directly in v1.** Have the user paste their plan **in their own words** ("Here's what my doctor wants me to focus on…"). This is user-generated content, not PHI custodianship — sidesteps HIPAA/BAA overhead while capturing 80% of the value.
+
+If clinical-document support becomes a real ask, it requires:
+- BAA with OpenAI (standard API does NOT include one — Enterprise tier or Azure OpenAI required)
+- BAA with Twilio, Resend
+- Encrypted-at-rest PHI storage with audit logs
+- Compliance review
+
+### Liability framing
+- Frame outputs as "supportive habits inspired by what your care team mentioned" — never "treatment" or "medical advice"
+- Always-visible "talk to your doctor before making changes" disclaimer
+- AI is hard-prohibited from suggesting changes to medications, dosages, or anything clinical
+- Habits only; never timing/dosage tweaks
+
+### Considerations
+- Could replace or complement the 5 hardcoded challenges over time
+- Imported context could also feed into the existing AI coaching (richer system prompt)
+- Re-import flow when the user's plan changes (post-op recovery progresses, doctor adjusts plan)
+
+---
+
 ## Appendix: Acquisition vs. Retention Matrix
 
 | Feature | Helps Acquire New Users | Helps Retain Existing Users |
