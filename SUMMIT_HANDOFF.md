@@ -1,6 +1,6 @@
 # Summit Health — Developer Handoff Guide
 
-> Living document. Last updated: 2026-04-02.
+> Living document. Last updated: 2026-04-26.
 
 ---
 
@@ -207,6 +207,7 @@ export const doSomething = async (params) => {
 | `sms-add-habit` | Internal (from twilio-webhook) | **YES** | SMS habit creation state machine (ADD keyword) |
 | `cal-webhook` | External webhook | NO | Calendar integration |
 | `send-march-update` | Manual POST | **YES** | One-time March 2026 product update email to all users |
+| `generate-weekly-tracker` | Manual POST (cron-ready) | **YES** | Generates a printable one-page weekly habit tracker PDF and emails it as an attachment via Resend. Uses pdf-lib + embedded Inter TTFs (fetched from jsdelivr, module-cached). Accepts `{userId}` or `{email}` and optional `{weekStart}`. |
 
 ### SMS Flow
 
@@ -529,6 +530,44 @@ The 5 challenges are hardcoded in `src/data/challengeConfig.js` (frontend). The 
 
 ---
 
+## 7.5 Weekly Tracker PDF (added 2026-04-26)
+
+Printable one-page weekly habit tracker that gets emailed (PDF attachment) as a paper companion to the digital experience. Designed for users who like to mark a printed sheet and stick it on the fridge.
+
+### Function
+
+`generate-weekly-tracker` — single edge function. Accepts `{userId}` or `{email}` (and optional `{weekStart: YYYY-MM-DD}`). Currently invoked manually; cron-ready (intended Sunday evening per-user) but **not scheduled yet**.
+
+### What it does
+
+1. Loads user profile, vision, active habits (filters `archived_at IS NULL`), tracking config, and active challenge enrollment.
+2. Computes the week's Monday→Sunday in the user's timezone.
+3. Renders a US Letter (612×792pt) PDF via `pdf-lib`:
+   - **Editorial masthead** — `SUMMIT` wordmark + right-aligned letterspaced small-caps `WEEK N OF 4 · CHALLENGE · FOCUS AREA` + date line.
+   - **Pull-quote vision** — large Times Roman Bold `"` glyph + `YOUR NORTH STAR` meta + the user's vision statement.
+   - **7-day matrix grid** — `THE CLIMB` heading + per-habit rows. Booleans get a moss-bordered circle, metrics get a labeled rectangular well (e.g. `oz`, `__:__`), un-scheduled days get a short gray dash. Habit names wrap to 2 lines if needed; row height is dynamic and the name + cells are vertically centered on the row midpoint.
+   - **Two-column reflection** — `WINS THIS WEEK` / `WHAT SURPRISED YOU` with 4 dotted write-in lines each.
+   - **Footer** — short code (deterministic hash of user_id + week_start) + `go.summithealth.app` + tagline.
+4. Sends via Resend with the PDF as a base64 attachment (the shared `_shared/resend.ts` doesn't support attachments, so this function calls Resend directly).
+5. Email template matches the rest of the Summit suite: 600px white card on `#f5f5f5`, Summit logo, H1 + subhead, `Coach Eric / Summit Founder` signoff, "Go to Summit" CTA.
+
+### Fonts
+
+Inter is embedded via `@pdf-lib/fontkit`. TTFs are fetched from `cdn.jsdelivr.net/npm/@expo-google-fonts/inter@0.2.3` (Regular/SemiBold/Bold) and cached at module scope. **Don't switch to `@fontsource/inter` — it ships only WOFF2, which fontkit can't decode without a brotli decoder.** Cold start downloads ~930KB of TTFs once; warm invocations reuse the cache.
+
+### Design source
+
+Source design lives in the Claude Design bundle (`Summit Tracker.html`). The implemented layout is a hybrid of **t01 Classic Grid** (compact 7-day matrix) + **t04 Data Journal** (editorial masthead, pull-quote vision, two-column reflection). Color palette comes from `summit-tracker/project/trackers/styles.css` — note `summit-forest` here is `#022C22` (darker than `#064E3B` used elsewhere in the design system).
+
+### Deliberately not built yet
+
+- **Scan-back** — the short code on the footer is a placeholder for a future "scan/sync your marks" flow. Not implemented.
+- **`tracker_deliveries` table** — no dedup or history table yet; the function will happily re-send for the same week if invoked twice.
+- **Cron schedule** — function exists but no cron entry. Schedule once we know we want it weekly.
+- **Logo PNG** — uses text wordmark (`SUMMIT` in Inter Bold) inside the PDF. The email template fetches `${FRONTEND_URL}/summit-logo.png` via `<img>`, so that's the real logo. Could later embed the logo image into the PDF via `embedPng`.
+
+---
+
 ## 8. Environment Variables
 
 ### Frontend (`VITE_*` — baked into build)
@@ -593,6 +632,7 @@ The 5 challenges are hardcoded in `src/data/challengeConfig.js` (frontend). The 
    supabase functions deploy send-challenge-completion-sms --no-verify-jwt
    supabase functions deploy send-confidence-check --no-verify-jwt
    supabase functions deploy send-march-update --no-verify-jwt
+   supabase functions deploy generate-weekly-tracker --no-verify-jwt
    ```
 
 2. **Migration file names must have unique YYYYMMDD prefixes.** Duplicate dates cause `duplicate key` errors in `supabase db push`. If two migrations land on the same day, use adjacent dates (e.g., 20260325 and 20260326).
