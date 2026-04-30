@@ -125,7 +125,18 @@ serve(async (req: Request) => {
 
   try {
     const body = await req.json().catch(() => ({}))
-    const { userId: inputUserId, email: inputEmail, weekStart: weekStartInput } = body
+    const {
+      userId: inputUserId,
+      email: inputEmail,
+      weekStart: weekStartInput,
+      delivery: inputDelivery,
+    } = body
+
+    // delivery: 'email' (default) | 'download' | 'both'
+    const delivery: 'email' | 'download' | 'both' =
+      inputDelivery === 'download' || inputDelivery === 'both' ? inputDelivery : 'email'
+    const shouldEmail = delivery === 'email' || delivery === 'both'
+    const shouldReturnPdf = delivery === 'download' || delivery === 'both'
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
@@ -141,7 +152,8 @@ serve(async (req: Request) => {
       .select('first_name, email, timezone')
       .eq('id', userId)
       .maybeSingle()
-    if (!profile?.email) throw new Error(`No email for user ${userId}`)
+    if (!profile) throw new Error(`Profile not found for user ${userId}`)
+    if (shouldEmail && !profile.email) throw new Error(`No email for user ${userId}`)
     const tz = profile.timezone || 'America/Chicago'
 
     const weekStart = weekStartInput
@@ -231,25 +243,31 @@ serve(async (req: Request) => {
 
     const weekLabel = formatWeekLabelShort(weekStart, weekEnd)
     const pdfBase64 = bytesToBase64(pdfBytes)
-    const emailResult = await sendEmailWithAttachment({
-      to: profile.email,
-      subject: `Your week ahead — ${weekLabel}`,
-      html: buildEmailHtml(profile.first_name || 'there', weekLabel, shortCode),
-      attachment: {
-        filename: `summit-tracker-${weekStart.toISOString().split('T')[0]}.pdf`,
-        content: pdfBase64,
-      },
-    })
+    const filename = `summit-tracker-${weekStart.toISOString().split('T')[0]}.pdf`
 
-    if (!emailResult.success) throw new Error(`Email failed: ${emailResult.error}`)
+    let emailId: string | undefined
+    if (shouldEmail) {
+      const emailResult = await sendEmailWithAttachment({
+        to: profile.email!,
+        subject: `Your week ahead — ${weekLabel}`,
+        html: buildEmailHtml(profile.first_name || 'there', weekLabel, shortCode),
+        attachment: { filename, content: pdfBase64 },
+      })
+      if (!emailResult.success) throw new Error(`Email failed: ${emailResult.error}`)
+      emailId = emailResult.id
+    }
 
     return json({
       success: true,
-      emailId: emailResult.id,
+      delivery,
+      emailId,
       weekStart: weekStart.toISOString().split('T')[0],
       shortCode,
       habitCount: habitList.length,
       pdfSizeBytes: pdfBytes.byteLength,
+      filename,
+      // Only included when delivery includes 'download' — keeps email-only responses small
+      pdfBase64: shouldReturnPdf ? pdfBase64 : undefined,
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)

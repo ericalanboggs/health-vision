@@ -499,11 +499,16 @@ export const sendAdminSMS = async (recipients, message) => {
 }
 
 /**
- * Generate and email a weekly tracker PDF for a user.
+ * Generate a weekly tracker PDF for a user.
  * Triggers the generate-weekly-tracker edge function.
+ *
  * @param {string} userId
+ * @param {{ delivery?: 'email' | 'download' | 'both' }} [opts]
+ *   - 'email' (default): emails the PDF to the user
+ *   - 'download': returns the PDF for the admin to download — no email sent
+ *   - 'both': emails AND returns the PDF
  */
-export const generateWeeklyTracker = async (userId) => {
+export const generateWeeklyTracker = async (userId, { delivery = 'email' } = {}) => {
   try {
     if (!await isAdmin()) {
       return { success: false, error: 'Unauthorized' }
@@ -520,7 +525,7 @@ export const generateWeeklyTracker = async (userId) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ userId }),
+      body: JSON.stringify({ userId, delivery }),
     })
 
     const result = await response.json()
@@ -529,11 +534,36 @@ export const generateWeeklyTracker = async (userId) => {
       return { success: false, error: result.error || `Failed (${response.status})` }
     }
 
+    // If a PDF came back, trigger browser download
+    if (result.pdfBase64) {
+      triggerBrowserDownload(result.pdfBase64, result.filename || 'summit-tracker.pdf')
+    }
+
     return { success: true, data: result }
   } catch (error) {
     console.error('Error generating weekly tracker:', error)
     return { success: false, error: error.message }
   }
+}
+
+/**
+ * Decode a base64 PDF and trigger a browser download.
+ */
+function triggerBrowserDownload(pdfBase64, filename) {
+  const byteString = atob(pdfBase64)
+  const bytes = new Uint8Array(byteString.length)
+  for (let i = 0; i < byteString.length; i++) {
+    bytes[i] = byteString.charCodeAt(i)
+  }
+  const blob = new Blob([bytes], { type: 'application/pdf' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 /**
