@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit, adminUpdateTrackingConfig, adminUpdateFollowupTime, adminUpsertTrackingEntry } from '../services/adminService'
+import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit, adminUpdateTrackingConfig, adminUpdateFollowupTime, adminUpsertTrackingEntry, generateWeeklyTracker } from '../services/adminService'
 import { COACHING_CONFIG, getBillingPeriod } from '../services/subscriptionService'
-import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt, Forum, Edit as EditIcon, Close, Add, PushPin, PushPinOutlined, DeleteOutline, Chat, Email } from '@mui/icons-material'
+import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt, Forum, Edit as EditIcon, Close, Add, PushPin, PushPinOutlined, DeleteOutline, Chat, Email, Checklist } from '@mui/icons-material'
 import { Tag } from '@summit/design-system'
 import ConversationView from '../components/admin/ConversationView'
 import SMSThreadsPanel from '../components/admin/SMSThreadsPanel'
@@ -85,6 +85,24 @@ export default function AdminUserDetail() {
   const [savingHabit, setSavingHabit] = useState(false)
   const [editFollowupTime, setEditFollowupTime] = useState('')
   const [savingFollowup, setSavingFollowup] = useState(false)
+  const [generatingTracker, setGeneratingTracker] = useState(false)
+
+  const handleGenerateTracker = async () => {
+    if (generatingTracker) return
+    const confirmed = window.confirm(
+      `Generate and email this week's tracker PDF to ${data?.profile?.name || 'this user'}?`
+    )
+    if (!confirmed) return
+    setGeneratingTracker(true)
+    const result = await generateWeeklyTracker(userId)
+    setGeneratingTracker(false)
+    if (result.success) {
+      const habitCount = result.data?.habitCount ?? '?'
+      window.alert(`Tracker emailed (${habitCount} habit${habitCount === 1 ? '' : 's'}).`)
+    } else {
+      window.alert(`Failed to send tracker: ${result.error}`)
+    }
+  }
 
   useEffect(() => {
     loadUserDetail()
@@ -359,6 +377,14 @@ export default function AdminUserDetail() {
               title="Send Email"
             >
               <Email className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleGenerateTracker}
+              disabled={generatingTracker}
+              className="flex-shrink-0 p-2 text-stone-500 hover:text-summit-emerald hover:bg-stone-100 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              title={generatingTracker ? 'Generating…' : 'Generate Weekly Tracker'}
+            >
+              <Checklist className="w-5 h-5" />
             </button>
           </div>
           <p className="text-sm text-stone-600 mt-1 truncate">{profile.email}</p>

@@ -499,6 +499,44 @@ export const sendAdminSMS = async (recipients, message) => {
 }
 
 /**
+ * Generate and email a weekly tracker PDF for a user.
+ * Triggers the generate-weekly-tracker edge function.
+ * @param {string} userId
+ */
+export const generateWeeklyTracker = async (userId) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/generate-weekly-tracker`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ userId }),
+    })
+
+    const result = await response.json()
+
+    if (!response.ok || !result.success) {
+      return { success: false, error: result.error || `Failed (${response.status})` }
+    }
+
+    return { success: true, data: result }
+  } catch (error) {
+    console.error('Error generating weekly tracker:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
  * Clear admin SMS hold for a user (resume AI auto-replies)
  * @param {string} userId
  */
