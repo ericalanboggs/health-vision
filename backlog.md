@@ -350,6 +350,58 @@ If clinical-document support becomes a real ask, it requires:
 
 ---
 
+## 17. Wearable Integration (Behavioral Layer + Data Layer)
+
+**Priority:** Medium — defer until post-iOS-native + niche validation
+**Status:** Idea (added 2026-04-30)
+**Value:** Reduces logging friction, improves data quality for AI coaching, opens "interpretation layer" positioning. Not the current bottleneck.
+
+### Thesis
+Summit is the **behavioral layer** (vision, habits, reflection, AI coaching). Wearables provide the **data layer** (sleep, HR, HRV, activity, workouts). Connecting them lets the AI know what users are doing without requiring them to log it manually — and surfaces patterns ("HRV dropped Monday, you skipped meditation Tuesday") that aren't visible in habit logs alone.
+
+### Why not yet
+- Current bottleneck is distribution + niche refinement, not data input friction. Pre-optimization risk.
+- Data ≠ behavior change. Whoop users have data and still don't change. Summit's edge is the coaching loop, not the dashboard — over-pivoting toward "biometric dashboard" makes Summit a reporting tool for wearable companies, not a behavior change platform.
+- Wearable integration pulls toward "needs iPhone + app installed." Risks bifurcating the SMS-first product (which works on a flip phone today).
+- Third-party APIs (Whoop, Garmin, Oura) churn. Maintenance cost compounds.
+- Biometric data has stricter handling requirements than habit logs (BAA review, possible HIPAA).
+
+### Sequenced approach when ready
+
+**Phase 1 — Apple Health (HealthKit), via iOS native app**
+- Single integration covers steps, sleep, HR, HRV, workouts, mindful minutes
+- Apple Health acts as a **hub** — users with Whoop / Oura / Fitbit / Garmin typically also have those connected to Apple Health, so one integration indirectly reaches many wearables
+- Requires the iOS Native Conversion (separate doc) to ship first
+- Cleanest leverage: one integration, broad coverage
+
+**Phase 2 — Strava** (optional smaller proving ground)
+- Public OAuth, well-documented, no app needed
+- Narrow scope (workouts only), but cheapest pattern test: OAuth flow, daily data sync, mapping `activity` → `habit completion`
+- ~2–3 weeks of work; useful to validate the integration pattern before Phase 1 if iOS app is delayed
+
+**Phase 3 — Direct vendor APIs (Whoop, Oura, etc.)**
+- Add only when a specific user/cohort requests it or demand clusters around one platform
+- Demand-driven > spec-driven
+
+### Demand-driven exception
+If a pilot user (Julie, future enterprise pilot, etc.) asks "can Summit talk to my Whoop?" — that's signal worth chasing, and their wearable becomes the proving-ground integration regardless of the staged plan above.
+
+### How wearable data should map to habits
+- "30 min walk" → HealthKit `walkingDistance` / `appleExerciseTime` ≥ threshold → suggest auto-complete, user confirms
+- "8 hrs sleep" → HealthKit `sleepAnalysis` → auto-record metric value
+- "Box breathing" / meditation → HealthKit `mindfulSession` → suggest auto-complete
+- "HIIT workout" → HealthKit `workout` of HIIT-ish type → suggest auto-complete
+- **Always require user confirmation initially** (data ≠ intent — a commute walk isn't an intentional walk). After N confirmations, AI can auto-complete with an undo option.
+
+### Considerations
+- BAA review for biometric data handling (stricter than habit logs)
+- HealthKit entitlement + App Store review process for iOS
+- Privacy disclosure: what we read, what we don't read, never sold/shared
+- Wearable feed eventually enriches AI coaching context (e.g., "your sleep was poor; want to skip morning HIIT today?")
+- Frame the moat: Summit becomes the **interpretation layer** between wearable data and behavior change
+
+---
+
 ## Appendix: Acquisition vs. Retention Matrix
 
 | Feature | Helps Acquire New Users | Helps Retain Existing Users |
