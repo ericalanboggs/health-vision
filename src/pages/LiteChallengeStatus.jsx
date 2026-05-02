@@ -4,19 +4,13 @@ import { Autorenew } from '@mui/icons-material'
 import { getCurrentUser } from '../services/authService'
 import supabase from '../lib/supabase'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Banner } from '@summit/design-system'
+import { getLiteChallenge } from '../data/liteChallengeConfig'
 
 const LITE_PRICE_ID = import.meta.env.VITE_STRIPE_PRICE_LITE_TECH_NECK
 
-const DAY_THEMES = {
-  1: 'Environment',
-  2: 'Release',
-  3: 'Strengthen',
-  4: 'Breathe & Reset',
-  5: 'Your Daily Routine',
-}
-
-export default function TechNeckStatus() {
+export default function LiteChallengeStatus({ slug }) {
   const navigate = useNavigate()
+  const challenge = getLiteChallenge(slug)
   const [loading, setLoading] = useState(true)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [enrollment, setEnrollment] = useState(null)
@@ -31,6 +25,10 @@ export default function TechNeckStatus() {
 
   useEffect(() => {
     const load = async () => {
+      if (!challenge) {
+        navigate('/', { replace: true })
+        return
+      }
       const { user } = await getCurrentUser()
       if (!user) {
         navigate('/login', { replace: true })
@@ -41,11 +39,11 @@ export default function TechNeckStatus() {
         .from('lite_challenge_enrollments')
         .select('*')
         .eq('user_id', user.id)
-        .eq('challenge_slug', 'tech-neck')
+        .eq('challenge_slug', challenge.slug)
         .maybeSingle()
 
       if (!data) {
-        navigate('/tech-neck', { replace: true })
+        navigate(challenge.routePath, { replace: true })
         return
       }
 
@@ -58,7 +56,7 @@ export default function TechNeckStatus() {
       setLoading(false)
     }
     load()
-  }, [navigate])
+  }, [navigate, challenge])
 
   const handlePayment = async () => {
     setError(null)
@@ -69,9 +67,9 @@ export default function TechNeckStatus() {
         body: {
           priceId: LITE_PRICE_ID,
           mode: 'payment',
-          successUrl: '/tech-neck/success?session_id={CHECKOUT_SESSION_ID}',
-          cancelUrl: '/tech-neck/status',
-          metadata: { challenge_type: 'lite', challenge_slug: 'tech-neck' },
+          successUrl: `${challenge.routePath}/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${challenge.routePath}/status`,
+          metadata: { challenge_type: 'lite', challenge_slug: challenge.slug },
         },
       })
 
@@ -89,6 +87,8 @@ export default function TechNeckStatus() {
     }
   }
 
+  if (!challenge) return null
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint flex items-center justify-center">
@@ -105,6 +105,10 @@ export default function TechNeckStatus() {
   const isActive = !isPending && challengeDay >= 1 && challengeDay <= 5 && enrollment.status !== 'completed'
   const isCompleted = enrollment.status === 'completed' || (!isPending && challengeDay > 5)
 
+  const expectations = enrollment.delivery_track === 'sms'
+    ? challenge.expectations.sms
+    : challenge.expectations.emailOnly
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint flex items-center justify-center">
       <main className="max-w-lg mx-auto px-4">
@@ -112,7 +116,7 @@ export default function TechNeckStatus() {
           <CardHeader>
             <img src="/summit-logo.png" alt="Summit" className="w-20 mx-auto mb-4" />
             <p className="text-xs font-semibold tracking-[0.2em] uppercase text-summit-moss mb-3">
-              Tech Neck Challenge
+              {challenge.displayName}
             </p>
 
             {isPending && (
@@ -143,7 +147,7 @@ export default function TechNeckStatus() {
                   Day {challengeDay} of 5
                 </CardTitle>
                 <CardDescription className="text-body mt-2">
-                  Today's focus: <strong>{DAY_THEMES[challengeDay]}</strong>
+                  Today's focus: <strong>{challenge.dayThemes[challengeDay]}</strong>
                 </CardDescription>
               </>
             )}
@@ -151,10 +155,10 @@ export default function TechNeckStatus() {
             {isCompleted && (
               <>
                 <CardTitle as="h1" className="text-h1 text-summit-forest">
-                  Challenge Complete!
+                  {challenge.completedTitle}
                 </CardTitle>
                 <CardDescription className="text-body mt-2">
-                  You made it through all 5 days. Here's what to keep doing.
+                  {challenge.completedDescription}
                 </CardDescription>
               </>
             )}
@@ -169,16 +173,16 @@ export default function TechNeckStatus() {
                 <div className="bg-summit-mint/30 rounded-xl p-4 text-left">
                   <p className="text-body-sm font-semibold text-summit-forest mb-2">What you'll get:</p>
                   <ul className="text-body-sm text-text-secondary space-y-2 list-none">
-                    {enrollment.delivery_track === 'sms' ? (
-                      <>
-                        <li className="flex items-start gap-2"><span className="text-summit-emerald flex-shrink-0">&#10003;</span> 5 coaching texts per day (8am - 5pm)</li>
-                        <li className="flex items-start gap-2"><span className="text-summit-emerald flex-shrink-0">&#10003;</span> A morning email overview each day</li>
-                      </>
-                    ) : (
-                      <li className="flex items-start gap-2"><span className="text-summit-emerald flex-shrink-0">&#10003;</span> A daily email with all 5 coaching cues</li>
+                    {expectations.map(item => (
+                      <li key={item} className="flex items-start gap-2">
+                        <span className="text-summit-emerald flex-shrink-0">&#10003;</span> {item}
+                      </li>
+                    ))}
+                    {challenge.outcomePromise && (
+                      <li className="flex items-start gap-2">
+                        <span className="text-summit-emerald flex-shrink-0">&#10003;</span> {challenge.outcomePromise}
+                      </li>
                     )}
-                    <li className="flex items-start gap-2"><span className="text-summit-emerald flex-shrink-0">&#10003;</span> End-of-challenge summary with your routine</li>
-                    <li className="flex items-start gap-2"><span className="text-summit-emerald flex-shrink-0">&#10003;</span> Better posture, and awareness of your triggers</li>
                   </ul>
                 </div>
                 <Button
@@ -201,16 +205,15 @@ export default function TechNeckStatus() {
               <>
                 <div className="bg-[#f0fdf4] rounded-xl p-5 text-left border-2 border-summit-emerald">
                   <p className="text-body-sm font-bold text-summit-emerald text-center mb-3">
-                    Your 2-Minute Daily Routine
+                    {challenge.routine.title}
                   </p>
                   <ol className="text-body-sm text-summit-forest space-y-2 list-decimal list-inside">
-                    <li>Chin tucks &mdash; 5 reps</li>
-                    <li>Scapular retractions &mdash; 10 reps</li>
-                    <li>Upper trap stretch &mdash; 20 seconds each side</li>
-                    <li>Three slow breaths</li>
+                    {challenge.routine.items.map(item => (
+                      <li key={item}>{item}</li>
+                    ))}
                   </ol>
                   <p className="text-xs text-text-muted text-center mt-3">
-                    Do this once or twice a day. No equipment needed.
+                    {challenge.routine.footer}
                   </p>
                 </div>
 
@@ -248,18 +251,11 @@ export default function TechNeckStatus() {
             {isPreStart && (
               <div className="bg-summit-mint/30 rounded-xl p-4 text-left">
                 <p className="text-body-sm font-semibold text-summit-forest mb-2">What to expect:</p>
-                {enrollment.delivery_track === 'sms' ? (
-                  <ul className="text-body-sm text-text-secondary space-y-1">
-                    <li>5 coaching texts per day (8am - 5pm)</li>
-                    <li>A morning email overview each day</li>
-                    <li>End-of-challenge summary on Friday</li>
-                  </ul>
-                ) : (
-                  <ul className="text-body-sm text-text-secondary space-y-1">
-                    <li>A daily email with all 5 coaching cues</li>
-                    <li>End-of-challenge summary on Friday</li>
-                  </ul>
-                )}
+                <ul className="text-body-sm text-text-secondary space-y-1">
+                  {expectations.map(item => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
               </div>
             )}
           </CardContent>

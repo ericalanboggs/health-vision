@@ -79,7 +79,7 @@ export default function SubscriptionSuccess() {
           <CardContent className="space-y-8">
             {isTrialing && trialEnd && (
               <Banner variant="info">
-                Your 7-day free trial is active through{' '}
+                Your 30-day free trial is active through{' '}
                 {trialEnd.toLocaleDateString('en-US', {
                   month: 'long',
                   day: 'numeric',

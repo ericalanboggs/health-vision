@@ -4,9 +4,11 @@ import { Autorenew } from '@mui/icons-material'
 import { getCurrentUser } from '../services/authService'
 import supabase from '../lib/supabase'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button } from '@summit/design-system'
+import { getLiteChallenge } from '../data/liteChallengeConfig'
 
-export default function TechNeckSuccess() {
+export default function LiteChallengeSuccess({ slug }) {
   const navigate = useNavigate()
+  const challenge = getLiteChallenge(slug)
   const [loading, setLoading] = useState(true)
   const [deliveryTrack, setDeliveryTrack] = useState('sms')
   const [startDate, setStartDate] = useState(null)
@@ -19,6 +21,10 @@ export default function TechNeckSuccess() {
 
   useEffect(() => {
     const loadEnrollment = async () => {
+      if (!challenge) {
+        navigate('/', { replace: true })
+        return
+      }
       const { user } = await getCurrentUser()
       if (!user) {
         navigate('/login', { replace: true })
@@ -35,7 +41,7 @@ export default function TechNeckSuccess() {
           .from('lite_challenge_enrollments')
           .select('status, delivery_track, cohort_start_date')
           .eq('user_id', user.id)
-          .eq('challenge_slug', 'tech-neck')
+          .eq('challenge_slug', challenge.slug)
           .maybeSingle()
 
         if (enrollment && enrollment.status !== 'pending') {
@@ -54,7 +60,9 @@ export default function TechNeckSuccess() {
     }
 
     loadEnrollment()
-  }, [navigate])
+  }, [navigate, challenge])
+
+  if (!challenge) return null
 
   if (loading) {
     return (
@@ -67,13 +75,17 @@ export default function TechNeckSuccess() {
     )
   }
 
+  const expectations = deliveryTrack === 'sms'
+    ? challenge.expectations.sms
+    : challenge.expectations.emailOnly
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint flex items-center justify-center">
       <main className="max-w-lg mx-auto px-4">
         <Card className="text-center">
           <CardHeader>
             <p className="text-xs font-semibold tracking-[0.2em] uppercase text-summit-moss mb-3">
-              Tech Neck Challenge
+              {challenge.displayName}
             </p>
             <CardTitle className="text-h1 text-summit-forest">
               You're In!
@@ -86,18 +98,11 @@ export default function TechNeckSuccess() {
           <CardContent className="space-y-6">
             <div className="bg-summit-mint/30 rounded-xl p-4 text-left">
               <p className="text-body-sm font-semibold text-summit-forest mb-2">What to expect:</p>
-              {deliveryTrack === 'sms' ? (
-                <ul className="text-body-sm text-text-secondary space-y-1">
-                  <li>5 coaching texts per day (8am - 5pm)</li>
-                  <li>A morning email overview each day</li>
-                  <li>End-of-challenge summary with your routine</li>
-                </ul>
-              ) : (
-                <ul className="text-body-sm text-text-secondary space-y-1">
-                  <li>A daily email with all 5 coaching cues</li>
-                  <li>End-of-challenge summary with your routine</li>
-                </ul>
-              )}
+              <ul className="text-body-sm text-text-secondary space-y-1">
+                {expectations.map(item => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
             </div>
 
             <p className="text-body-sm text-text-muted">
@@ -108,7 +113,7 @@ export default function TechNeckSuccess() {
               variant="primary"
               size="lg"
               className="w-full"
-              onClick={() => navigate('/tech-neck/status', { replace: true })}
+              onClick={() => navigate(`${challenge.routePath}/status`, { replace: true })}
             >
               View Challenge Status
             </Button>

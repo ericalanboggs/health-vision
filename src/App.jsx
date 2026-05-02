@@ -33,9 +33,9 @@ import SmsConsent from './pages/SmsConsent'
 import ChallengesLanding from './pages/ChallengesLanding'
 import ChallengeDetail from './pages/ChallengeDetail'
 import ChallengeAddHabit from './pages/ChallengeAddHabit'
-import TechNeckLanding from './pages/TechNeckLanding'
-import TechNeckSuccess from './pages/TechNeckSuccess'
-import TechNeckStatus from './pages/TechNeckStatus'
+import LiteChallengeLanding from './pages/LiteChallengeLanding'
+import LiteChallengeSuccess from './pages/LiteChallengeSuccess'
+import LiteChallengeStatus from './pages/LiteChallengeStatus'
 import Dashboard from './pages/Dashboard'
 import DashboardSummit from './pages/DashboardSummit'
 import Admin from './pages/Admin'
@@ -96,13 +96,25 @@ function App() {
         <Route path="/auth/debug" element={<AuthDebug />} />
 
         {/* Lite Tech Neck Challenge */}
-        <Route path="/tech-neck" element={<TechNeckLanding />} />
-        <Route path="/tech-neck/success" element={<TechNeckSuccess />} />
+        <Route path="/tech-neck" element={<LiteChallengeLanding slug="tech-neck" />} />
+        <Route path="/tech-neck/success" element={<LiteChallengeSuccess slug="tech-neck" />} />
         <Route
           path="/tech-neck/status"
           element={
             <ProtectedRoute>
-              <TechNeckStatus />
+              <LiteChallengeStatus slug="tech-neck" />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Lite Movement Challenge */}
+        <Route path="/movement" element={<LiteChallengeLanding slug="movement" />} />
+        <Route path="/movement/success" element={<LiteChallengeSuccess slug="movement" />} />
+        <Route
+          path="/movement/status"
+          element={
+            <ProtectedRoute>
+              <LiteChallengeStatus slug="movement" />
             </ProtectedRoute>
           }
         />

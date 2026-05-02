@@ -1,6 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendEmail } from '../_shared/resend.ts'
+import {
+  getLiteChallenge,
+  welcomeSubject,
+  type LiteChallenge,
+} from '../_shared/lite_challenges.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -12,12 +17,25 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-function buildTechNeckWelcomeHtml(firstName: string, confirmUrl: string, logoUrl: string, smsOptIn: boolean): string {
+function buildWelcomeHtml(
+  firstName: string,
+  confirmUrl: string,
+  logoUrl: string,
+  smsOptIn: boolean,
+  challenge: LiteChallenge,
+): string {
   const phoneNote = smsOptIn
     ? `<p style="margin: 16px 0 0 0; font-size: 14px; color: #6a6a6a; line-height: 1.6;">
         We'll verify your phone number when you log in so you can receive your daily coaching texts.
       </p>`
     : ''
+
+  const previewRowsHtml = challenge.welcomePreview.map(entry => `
+                <tr>
+                  <td style="padding: 6px 0; font-size: 14px; color: #15803d; font-weight: 600; width: 100px;">${entry.dayLabel}</td>
+                  <td style="padding: 6px 0; font-size: 14px; color: #4a4a4a;">${entry.theme} &mdash; ${entry.description}</td>
+                </tr>
+  `).join('')
 
   return `
 <!DOCTYPE html>
@@ -25,7 +43,7 @@ function buildTechNeckWelcomeHtml(firstName: string, confirmUrl: string, logoUrl
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Welcome to the Tech Neck Challenge</title>
+  <title>Welcome to the ${challenge.displayName}</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5;">
@@ -43,7 +61,7 @@ function buildTechNeckWelcomeHtml(firstName: string, confirmUrl: string, logoUrl
           <tr>
             <td align="center" style="padding: 0 40px 20px 40px;">
               <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #1a1a1a; line-height: 1.3;">
-                Welcome to the Tech Neck Challenge, ${firstName}!
+                Welcome to the ${challenge.displayName}, ${firstName}!
               </h1>
             </td>
           </tr>
@@ -52,10 +70,10 @@ function buildTechNeckWelcomeHtml(firstName: string, confirmUrl: string, logoUrl
           <tr>
             <td style="padding: 0 40px 20px 40px;">
               <p style="margin: 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
-                You're one step away from joining the 5-Day Tech Neck Challenge. Over 5 days, you'll get evidence-based stretches, strengthening exercises, and posture tips — ending with a 2-minute daily routine you can keep forever.
+                ${challenge.welcome.intro}
               </p>
               <p style="margin: 16px 0 0 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
-                You're signed up! Next step: verify your phone and pay $1 to lock in your spot.
+                ${challenge.welcome.nextStep}
               </p>
               ${phoneNote}
             </td>
@@ -77,26 +95,7 @@ function buildTechNeckWelcomeHtml(firstName: string, confirmUrl: string, logoUrl
                 Your week at a glance:
               </p>
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-                <tr>
-                  <td style="padding: 6px 0; font-size: 14px; color: #15803d; font-weight: 600; width: 100px;">Monday</td>
-                  <td style="padding: 6px 0; font-size: 14px; color: #4a4a4a;">Environment — Fix your workspace setup</td>
-                </tr>
-                <tr>
-                  <td style="padding: 6px 0; font-size: 14px; color: #15803d; font-weight: 600;">Tuesday</td>
-                  <td style="padding: 6px 0; font-size: 14px; color: #4a4a4a;">Release — Stretch out neck and shoulder tension</td>
-                </tr>
-                <tr>
-                  <td style="padding: 6px 0; font-size: 14px; color: #15803d; font-weight: 600;">Wednesday</td>
-                  <td style="padding: 6px 0; font-size: 14px; color: #4a4a4a;">Strengthen — Build muscles that prevent tech neck</td>
-                </tr>
-                <tr>
-                  <td style="padding: 6px 0; font-size: 14px; color: #15803d; font-weight: 600;">Thursday</td>
-                  <td style="padding: 6px 0; font-size: 14px; color: #4a4a4a;">Breathe &amp; Reset — Address the tension underneath</td>
-                </tr>
-                <tr>
-                  <td style="padding: 6px 0; font-size: 14px; color: #15803d; font-weight: 600;">Friday</td>
-                  <td style="padding: 6px 0; font-size: 14px; color: #4a4a4a;">Your Routine — Your 2-minute daily practice</td>
-                </tr>
+                ${previewRowsHtml}
               </table>
             </td>
           </tr>
@@ -132,11 +131,21 @@ serve(async (req) => {
   }
 
   try {
-    const { firstName, email, phone, smsConsent, timezone, password } = await req.json()
+    const body = await req.json()
+    const { firstName, email, phone, smsConsent, timezone, password } = body
+    const challengeSlug: string = body.challengeSlug || 'tech-neck'
 
     if (!firstName || !email || !phone || !password) {
       return new Response(
         JSON.stringify({ error: 'firstName, email, phone, and password are required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+      )
+    }
+
+    const challenge = getLiteChallenge(challengeSlug)
+    if (!challenge) {
+      return new Response(
+        JSON.stringify({ error: `Unknown challenge: ${challengeSlug}` }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
       )
     }
@@ -179,7 +188,29 @@ serve(async (req) => {
       throw profileError
     }
 
-    // 3. Create enrollment — start on next Monday (1-7 day wait)
+    // 3. Enforce "one active lite challenge at a time" — reject if any pending/paid/active enrollment exists
+    const { data: existingActive } = await supabase
+      .from('lite_challenge_enrollments')
+      .select('id, challenge_slug, status')
+      .eq('user_id', userId)
+      .in('status', ['pending', 'paid', 'active'])
+      .limit(1)
+
+    if (existingActive && existingActive.length > 0) {
+      const existing = existingActive[0]
+      const existingChallenge = getLiteChallenge(existing.challenge_slug)
+      const existingName = existingChallenge?.displayName ?? existing.challenge_slug
+      return new Response(
+        JSON.stringify({
+          error: `You're already enrolled in the ${existingName}. Finish that one first.`,
+          existingSlug: existing.challenge_slug,
+          existingStatus: existing.status,
+        }),
+        { status: 409, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+      )
+    }
+
+    // 4. Create enrollment — start on next Monday (1-7 day wait)
     const deliveryTrack = smsConsent === false ? 'email_only' : 'sms'
     const now = new Date()
     const dayOfWeek = now.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
@@ -188,10 +219,11 @@ serve(async (req) => {
     const nextMonday = new Date(now)
     nextMonday.setDate(now.getDate() + daysUntilMonday)
     const cohortStartDate = nextMonday.toISOString().split('T')[0]
-    console.log(`Cohort start date for new enrollment: ${cohortStartDate}`)
+    console.log(`Cohort start date for new enrollment (${challengeSlug}): ${cohortStartDate}`)
 
     const { error: enrollError } = await supabase.from('lite_challenge_enrollments').insert({
       user_id: userId,
+      challenge_slug: challengeSlug,
       status: 'pending',
       delivery_track: deliveryTrack,
       cohort_start_date: cohortStartDate,
@@ -202,23 +234,23 @@ serve(async (req) => {
       throw enrollError
     }
 
-    // 4. Send Tech Neck welcome email
+    // 5. Send welcome email
     const logoUrl = `${FRONTEND_URL}/summit-logo.png`
-    const challengeUrl = `${FRONTEND_URL}/tech-neck/status`
-    const welcomeHtml = buildTechNeckWelcomeHtml(firstName, challengeUrl, logoUrl, smsConsent !== false)
+    const challengeUrl = `${FRONTEND_URL}${challenge.routePath}/status`
+    const welcomeHtml = buildWelcomeHtml(firstName, challengeUrl, logoUrl, smsConsent !== false, challenge)
     const emailResult = await sendEmail({
       to: email,
-      subject: `Welcome to the Tech Neck Challenge, ${firstName}!`,
+      subject: welcomeSubject(challenge, firstName),
       html: welcomeHtml,
     })
     if (emailResult.success) {
-      console.log(`Sent Tech Neck welcome email to ${email}`)
+      console.log(`Sent ${challengeSlug} welcome email to ${email}`)
     } else {
-      console.error(`Failed to send Tech Neck welcome email:`, emailResult.error)
+      console.error(`Failed to send ${challengeSlug} welcome email:`, emailResult.error)
     }
 
     return new Response(
-      JSON.stringify({ success: true, userId }),
+      JSON.stringify({ success: true, userId, challengeSlug }),
       { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
     )
 

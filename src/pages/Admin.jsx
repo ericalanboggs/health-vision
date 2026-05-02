@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAllUsers, getChallengeParticipants, inviteUser } from '../services/adminService'
+import { getLiteChallenge } from '../data/liteChallengeConfig'
 import { Autorenew, SwapVert, PersonAdd, Send, NotificationsActive, Chat } from '@mui/icons-material'
 import { Checkbox } from '@summit/design-system'
 import BulkActionToolbar from '../components/admin/BulkActionToolbar'
@@ -389,6 +390,7 @@ export default function Admin() {
                           <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">First Name</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">Email</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">Phone</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">Challenge</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase tracking-wider">Registered</th>
                           <th className="px-4 py-3 text-center text-xs font-medium text-stone-600 uppercase tracking-wider">Status</th>
                         </tr>
@@ -399,6 +401,9 @@ export default function Admin() {
                             <td className="px-4 py-3 text-sm font-medium text-summit-forest">{p.name}</td>
                             <td className="px-4 py-3 text-sm text-stone-600">{p.email}</td>
                             <td className="px-4 py-3 text-sm text-stone-600">{p.phone}</td>
+                            <td className="px-4 py-3 text-sm text-stone-600">
+                              {getLiteChallenge(p.challengeSlug)?.shortName || p.challengeSlug || '—'}
+                            </td>
                             <td className="px-4 py-3 text-sm text-stone-600">
                               {new Date(p.registeredAt).toLocaleDateString()}
                             </td>
@@ -422,7 +427,7 @@ export default function Admin() {
                         ))}
                         {challengeParticipants.length === 0 && (
                           <tr>
-                            <td colSpan={5} className="px-4 py-8 text-center text-sm text-stone-400">
+                            <td colSpan={6} className="px-4 py-8 text-center text-sm text-stone-400">
                               No challenge participants yet
                             </td>
                           </tr>
@@ -454,6 +459,9 @@ export default function Admin() {
                                 <p className="text-xs text-stone-500 truncate">{p.email}</p>
                                 <p className="text-xs text-stone-500 mt-0.5">
                                   {p.phone} · {new Date(p.registeredAt).toLocaleDateString()}
+                                </p>
+                                <p className="text-xs text-summit-emerald font-medium mt-0.5">
+                                  {getLiteChallenge(p.challengeSlug)?.shortName || p.challengeSlug || '—'}
                                 </p>
                               </div>
                               <span className={`flex-shrink-0 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badge.classes}`}>

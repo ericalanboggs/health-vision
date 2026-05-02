@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import supabase from '../lib/supabase'
 import { getProfile } from '../services/authService'
 import { hasActiveSubscription } from '../services/subscriptionService'
+import { getLiteChallenge } from '../data/liteChallengeConfig'
 import { Autorenew } from '@mui/icons-material'
 
 export default function Home() {
@@ -11,7 +12,22 @@ export default function Home() {
   const [redirecting, setRedirecting] = useState(false)
 
   useEffect(() => {
-    const routeUser = (profileResult, userEmail) => {
+    const resolveLiteRoutePath = async (userId) => {
+      // Find the user's most recent non-completed lite enrollment, fall back to most recent overall
+      const { data: enrollments } = await supabase
+        .from('lite_challenge_enrollments')
+        .select('challenge_slug, status, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+
+      if (!enrollments || enrollments.length === 0) return '/tech-neck/status'
+
+      const active = enrollments.find(e => ['pending', 'paid', 'active'].includes(e.status)) || enrollments[0]
+      const challenge = getLiteChallenge(active.challenge_slug)
+      return challenge ? `${challenge.routePath}/status` : '/tech-neck/status'
+    }
+
+    const routeUser = async (profileResult, userEmail, userId) => {
       const profile = profileResult?.data
 
       if (profileResult?.success && profile?.deleted_at) {
@@ -24,8 +40,9 @@ export default function Home() {
         console.log('Home: Phone not verified + SMS opted in, navigating to /verify-phone')
         navigate('/verify-phone', { replace: true })
       } else if (profile.challenge_type === 'lite') {
-        console.log('Home: Lite challenge user, navigating to tech-neck status')
-        navigate('/tech-neck/status', { replace: true })
+        const path = await resolveLiteRoutePath(userId)
+        console.log(`Home: Lite challenge user, navigating to ${path}`)
+        navigate(path, { replace: true })
       } else if (!profile.onboarding_completed) {
         console.log('Home: Onboarding not completed, navigating to /start')
         navigate('/start', { replace: true })
@@ -111,7 +128,7 @@ export default function Home() {
 
           const profileResult = await getProfile(session.user.id)
           console.log('Home: Profile result:', profileResult)
-          routeUser(profileResult, session.user.email)
+          await routeUser(profileResult, session.user.email, session.user.id)
         } else {
           // Auth failed after retries, go to login
           setError('Authentication failed. Please try again.')
@@ -126,7 +143,7 @@ export default function Home() {
         if (data.session) {
           const profileResult = await getProfile(data.session.user.id)
           console.log('Home: Profile result:', profileResult)
-          routeUser(profileResult, data.session.user.email)
+          await routeUser(profileResult, data.session.user.email, data.session.user.id)
         } else {
           // Not authenticated - go to login
           console.log('Home: No session, navigating to login')

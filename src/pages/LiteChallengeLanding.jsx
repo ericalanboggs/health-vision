@@ -3,21 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { CheckCircle } from '@mui/icons-material'
 import { Button, Card, CardHeader, CardTitle, CardContent, Input, Checkbox, Banner } from '@summit/design-system'
 import supabase from '../lib/supabase'
-
-const DAY_PREVIEW = [
-  { day: 'Monday', theme: 'Environment', desc: 'Fix your screen setup and workspace ergonomics' },
-  { day: 'Tuesday', theme: 'Release', desc: 'Stretch and release built-up neck and shoulder tension' },
-  { day: 'Wednesday', theme: 'Strengthen', desc: 'Build the muscles that prevent tech neck from returning' },
-  { day: 'Thursday', theme: 'Breathe & Reset', desc: 'Address the stress and nervous system tension underneath' },
-  { day: 'Friday', theme: 'Your Routine', desc: 'Combine everything into a 2-minute daily practice' },
-]
-
-const BENEFITS = [
-  '25 coaching texts over 5 days (5/day)',
-  'Evidence-based exercises and stretches',
-  'A 2-minute daily routine you can keep forever',
-  'Morning email overview each day',
-]
+import { getLiteChallenge } from '../data/liteChallengeConfig'
 
 // Format digits to (555) 123-4567
 function formatPhone(digits) {
@@ -27,8 +13,9 @@ function formatPhone(digits) {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`
 }
 
-export default function TechNeckLanding() {
+export default function LiteChallengeLanding({ slug }) {
   const navigate = useNavigate()
+  const challenge = getLiteChallenge(slug)
   const [form, setForm] = useState({
     firstName: '',
     email: '',
@@ -37,6 +24,14 @@ export default function TechNeckLanding() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+
+  if (!challenge) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <p className="text-text-secondary">Challenge not found.</p>
+      </div>
+    )
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -83,6 +78,7 @@ export default function TechNeckLanding() {
           password,
           smsConsent: form.smsConsent,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          challengeSlug: challenge.slug,
         }),
       })
 
@@ -108,7 +104,7 @@ export default function TechNeckLanding() {
         throw new Error('Account created but sign-in failed. Please try logging in.')
       }
 
-      // Session created — Home.jsx will route to verify-phone or tech-neck/status
+      // Session created — Home.jsx will route to verify-phone or the challenge status page
       navigate('/', { replace: true })
     } catch (err) {
       console.error('Enrollment error:', err)
@@ -132,10 +128,10 @@ export default function TechNeckLanding() {
         <div className="text-center mb-12">
           <img src="/summit-logo.png" alt="Summit" className="w-28 mx-auto mb-6" />
           <h1 className="text-h1 text-summit-forest mb-4">
-            5-Day Tech Neck Challenge
+            {challenge.hero.title}
           </h1>
           <p className="text-body text-summit-forest/80 max-w-xl mx-auto">
-            Fix your posture in 2 minutes a day. Get 5 daily coaching texts with evidence-based stretches, strengthening exercises, and a routine you can keep.
+            {challenge.hero.description}
           </p>
         </div>
 
@@ -204,8 +200,8 @@ export default function TechNeckLanding() {
                 shape="rounded"
                 checked={form.smsConsent}
                 onChange={(e) => setForm(prev => ({ ...prev, smsConsent: e.target.checked }))}
-                label="Get 5 daily texts with real-time coaching cues"
-                description="Strongly recommended for best results. Standard message rates apply."
+                label={challenge.smsConsentLabel}
+                description={challenge.smsConsentDescription}
                 align="top"
               />
 
@@ -236,7 +232,7 @@ export default function TechNeckLanding() {
             <CardTitle as="h2">What You Get</CardTitle>
           </CardHeader>
           <CardContent className="mt-4 space-y-3">
-            {BENEFITS.map(b => (
+            {challenge.benefits.map(b => (
               <div key={b} className="flex items-center gap-3">
                 <div className="flex-shrink-0 h-6 w-6 rounded-full bg-summit-mint flex items-center justify-center">
                   <CheckCircle className="h-4 w-4 text-summit-emerald" />
@@ -253,12 +249,12 @@ export default function TechNeckLanding() {
             <CardTitle as="h2">Your Week at a Glance</CardTitle>
           </CardHeader>
           <CardContent className="mt-4 space-y-3">
-            {DAY_PREVIEW.map(({ day, theme, desc }) => (
-              <div key={day} className="flex gap-3 items-start">
-                <div className="flex-shrink-0 w-20 text-body-sm font-semibold text-summit-emerald pt-0.5">{day}</div>
+            {challenge.landingPreview.map(({ dayLabel, theme, description }) => (
+              <div key={dayLabel} className="flex gap-3 items-start">
+                <div className="flex-shrink-0 w-20 text-body-sm font-semibold text-summit-emerald pt-0.5">{dayLabel}</div>
                 <div>
                   <p className="text-body-sm font-semibold text-summit-forest">{theme}</p>
-                  <p className="text-body-sm text-text-muted">{desc}</p>
+                  <p className="text-body-sm text-text-muted">{description}</p>
                 </div>
               </div>
             ))}

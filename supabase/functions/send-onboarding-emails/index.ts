@@ -242,7 +242,7 @@ function buildDay6Html(firstName: string): string {
     spacer(10),
     paragraph(`<em>No action needed today. Your first digest is on its way.</em>`),
     spacer(10),
-    paragraph(`<em>P.S. Your trial ends tomorrow — <a href="${APP_URL}/pricing" style="color: #15803d;">pick a plan to keep going</a>.</em>`),
+    paragraph(`<em>P.S. Plenty of time left in your trial — keep exploring.</em>`),
   ].join('')
 
   return wrapEmail('Your Weekly Fuel', body)
@@ -264,10 +264,40 @@ function buildDay7Html(firstName: string): string {
     ]),
     spacer(10),
     ctaButton('Go to Dashboard', `${APP_URL}/dashboard`),
-    paragraph(`<em>P.S. Today is the last day of your free trial. <a href="${APP_URL}/pricing" style="color: #15803d;">Choose a plan</a> to keep everything going.</em>`),
+    paragraph(`<em>P.S. One week in, three more weeks to go — keep at it.</em>`),
   ].join('')
 
   return wrapEmail('Your First Week with Summit', body)
+}
+
+// ─── Day 29: Trial ends tomorrow ─────────────────────────────────────
+
+function buildDay29Html(firstName: string): string {
+  const body = [
+    heading('Your trial ends tomorrow'),
+    paragraph(`Hi ${firstName} — quick heads-up. Your 30-day Summit trial ends tomorrow.`),
+    paragraph(`If Summit's been useful, pick a plan to keep your habits, reminders, weekly digests, and reflections going. If you're not ready, no pressure — your account stays put either way.`),
+    spacer(10),
+    ctaButton('Choose a Plan', `${APP_URL}/pricing`),
+    signoff(),
+  ].join('')
+
+  return wrapEmail('Your trial ends tomorrow', body)
+}
+
+// ─── Day 30: Last day ────────────────────────────────────────────────
+
+function buildDay30Html(firstName: string): string {
+  const body = [
+    heading('Today is your last day'),
+    paragraph(`Hi ${firstName} — today is the final day of your free Summit trial.`),
+    paragraph(`I'm rooting for you either way. If you'd like to keep building, pick a plan now and you won't miss a beat. Otherwise, the door's always open.`),
+    spacer(10),
+    ctaButton('Pick a Plan', `${APP_URL}/pricing`),
+    signoff(),
+  ].join('')
+
+  return wrapEmail('Today is your last day', body)
 }
 
 // ─── Email config per day ─────────────────────────────────────────────
@@ -315,6 +345,18 @@ const ONBOARDING_DAYS: OnboardingDay[] = [
     emailType: 'onboarding_day_7',
     subject: (name) => `${name}, you've made it a week!`,
     buildHtml: buildDay7Html,
+  },
+  {
+    day: 29,
+    emailType: 'onboarding_day_29',
+    subject: (name) => `${name}, your trial ends tomorrow`,
+    buildHtml: buildDay29Html,
+  },
+  {
+    day: 30,
+    emailType: 'onboarding_day_30',
+    subject: (name) => `${name}, today's your last day`,
+    buildHtml: buildDay30Html,
   },
 ]
 
@@ -429,8 +471,9 @@ serve(async (req) => {
     if (testEmail && testDay) {
       const dayConfig = ONBOARDING_DAYS.find(d => d.day === testDay)
       if (!dayConfig) {
+        const validDays = ONBOARDING_DAYS.map(d => d.day).join(', ')
         return new Response(
-          JSON.stringify({ error: `No onboarding email for day ${testDay}. Valid days: 2-7` }),
+          JSON.stringify({ error: `No onboarding email for day ${testDay}. Valid days: ${validDays}` }),
           { status: 400, headers: { 'Content-Type': 'application/json' } }
         )
       }
@@ -458,9 +501,9 @@ serve(async (req) => {
     const now = new Date()
     console.log(`Running onboarding email check at ${now.toISOString()}`)
 
-    // Get users created within the last 7 days with completed profiles
-    const sevenDaysAgo = new Date(now)
-    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7)
+    // Get users created within the last 31 days (covers welcome week + day 29/30 trial-end emails)
+    const windowStart = new Date(now)
+    windowStart.setUTCDate(windowStart.getUTCDate() - 31)
 
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
@@ -468,7 +511,7 @@ serve(async (req) => {
       .eq('profile_completed', true)
       .not('email', 'is', null)
       .is('deleted_at', null)
-      .gte('created_at', sevenDaysAgo.toISOString())
+      .gte('created_at', windowStart.toISOString())
 
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError)
@@ -500,11 +543,12 @@ serve(async (req) => {
       )
     }
 
-    // Group users by their onboarding day
+    // Group users by their onboarding day — include any day that has a configured email
+    const validDays = new Set(ONBOARDING_DAYS.map(d => d.day))
     const usersByDay: Record<number, Profile[]> = {}
     for (const profile of activeProfiles) {
       const day = getOnboardingDay(profile.created_at)
-      if (day >= 2 && day <= 7) {
+      if (validDays.has(day)) {
         if (!usersByDay[day]) usersByDay[day] = []
         usersByDay[day].push(profile)
       }

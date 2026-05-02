@@ -104,7 +104,7 @@ function spacer(px: number = 10): string {
 function buildDrip1Html(firstName: string): string {
   const body = [
     heading('Your trial ended — here\'s what you built'),
-    paragraph(`Hi ${firstName} — your 7-day Summit trial has ended. Before you decide what's next, here's a quick look at what you started:`),
+    paragraph(`Hi ${firstName} — your Summit trial has ended. Before you decide what's next, here's a quick look at what you started:`),
     paragraph(`You defined your health vision, set up habits, and started building a routine. That foundation doesn't disappear — it's waiting for you.`),
     paragraph(`If Summit was helpful, pick a plan to keep your habits, reflections, and weekly digests going. If you're not ready yet, no pressure.`),
     spacer(10),

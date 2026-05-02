@@ -501,7 +501,7 @@ END:VEVENT
           await upsertProfile(user.id, {
             onboarding_completed: true,
             trial_started_at: new Date().toISOString(),
-            trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           })
         }
         setHabitsConfirmed(true)
