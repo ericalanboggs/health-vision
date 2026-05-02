@@ -260,6 +260,112 @@ export const LITE_CHALLENGES: Record<string, LiteChallenge> = {
       sharePromptBody: `If you enjoyed the challenge, share it with a friend or coworker. They'll start next Monday — same 5 days, same $1.`,
     },
   },
+
+  'mindfulness': {
+    slug: 'mindfulness',
+    displayName: 'Mindfulness Challenge',
+    shortName: 'Mindfulness',
+    brandLine: '5-Day Mindfulness Challenge',
+    routePath: '/mindfulness',
+
+    dayThemes: {
+      1: { title: 'Attention', subtitle: 'Breath as anchor' },
+      2: { title: 'Body Awareness', subtitle: 'Notice what\'s there' },
+      3: { title: 'Reset', subtitle: 'Between every task' },
+      4: { title: 'Mindful Action', subtitle: 'One thing at a time' },
+      5: { title: 'Your 2-Minute Anchor', subtitle: 'Two minutes you\'ll actually do' },
+    },
+
+    messages: {
+      1: {
+        '8am': `Morning ☀️ Most people who try mindfulness do it once in the morning, then lose it across 8 hours of meetings and screens. This week is about threading tiny anchors through the day instead. Today's anchor: the breath. First task — one slow breath. In through your nose for 4, out through your mouth for 6. Just one. The whole challenge is built on practices this small.`,
+        '10am': `Stop. Three slow breaths. That's it. 30 seconds. The reason this matters: most of us spend our day in a low-grade fight-or-flight state we don't even notice. Three breaths interrupt that pattern more reliably than coffee or a walk. Try it now and notice if your shoulders drop.`,
+        '12pm': `Lunch break — even if you're eating at your desk. Before the first bite, take three breaths. Eat the first three bites slowly, with attention on the actual food. That's it. This isn't mindfulness theater — it's training your nervous system to drop out of work mode for 60 seconds. Most people feel less drained the rest of the afternoon.`,
+        '3pm': `Afternoon check: notice what's happening in your body right now without changing anything. Jaw clenched? Shoulders by your ears? Holding your breath? You don't have to fix it — just notice. Awareness is the first half of any change. Then take three breaths. Notice what shifts.`,
+        '5pm': `Day one done 👏 The principle going forward: you can't change what you don't notice, and noticing takes seconds, not minutes. Three breaths, anywhere, is your reset button. Tomorrow we get more specific about what to notice — the body usually has the answers before the mind does. See you in the morning.`,
+      },
+      2: {
+        '8am': `Morning ☀️ Yesterday: the breath. Today we add the layer underneath — the body. Stress shows up there first: jaw, shoulders, gut, breath getting shallow. By the time you "feel stressed" mentally, the body has been signaling for an hour. First task: a 30-second scan. Top of head, jaw, shoulders, chest, gut, hands. Just notice. Don't fix anything yet.`,
+        '10am': `Quick check: where's your jaw right now? Most people are clenching without realizing it. Drop your tongue from the roof of your mouth, unclench, exhale. 10 seconds. The jaw is a stress shortcut — it's where tension hides when you're focused. Now you have one more thing to notice during the day.`,
+        '12pm': `Lunch scan, longer version. Sit somewhere quiet for one minute. Close your eyes if you can. Top of head down to your feet — what's tight, what's loose, what feels different than usual? No fixing required. Just collecting data. Most people are surprised by how much they were holding. This is the practice that makes the rest of the week work.`,
+        '3pm': `Combine. One slow breath (Day 1), then a 15-second body scan. 30 seconds total. Notice if anything has changed since this morning. The body doesn't lie about your actual state — it'll tell you you're tired, wired, or running thin before your calendar will. Pair the breath and the scan and you've got a full diagnostic in 30 seconds.`,
+        '5pm': `Day two done 👏 By now you've noticed at least one place tension hides without you realizing — jaw, shoulders, gut, somewhere. That's the win. The next layer: most of us never plan transitions, we just slam from one task to the next. Tomorrow we use the gaps between things as the actual practice. See you in the morning.`,
+      },
+      3: {
+        '8am': `Morning ☀️ Two days in: more attention (Day 1), more body awareness (Day 2). Today is about transitions. The space between meetings, between emails, between work and home — that's where the real reset lives, and most people skip it entirely. Today's task: between every two meetings, take 30 seconds. One breath, one body scan, then go. That's it.`,
+        '10am': `If you just finished a meeting or task, this is the moment. Don't open the next thing yet. Stand up, take three breaths, drop your shoulders. 30 seconds. The reason this matters: transitions are when your nervous system is supposed to reset, but most of us bridge them by checking Slack instead. You can train this back.`,
+        '12pm': `Mid-day reset. Before you eat, do this: stand up, walk away from your desk (even just 10 feet), three breaths, body scan. Then eat. The lunch transition is the most-skipped reset in the modern workday. You'll feel the difference in your afternoon, not just in lunch itself. Ninety seconds total.`,
+        '3pm': `Quick one: the next time you're about to switch tasks, pause first. Don't do anything new for 15 seconds. Just notice you're changing context. This is the foundation of focus — your brain needs the gap to actually let go of what it was doing. Without it, you're carrying every task into the next one.`,
+        '5pm': `Day three done 👏 Transitions are where most professionals leak energy without realizing it — meeting to meeting, screen to screen, no breath in between. Today you started using them. Tomorrow we go even simpler: doing one thing at a time. Sounds basic. It's a lost art. See you in the morning.`,
+      },
+      4: {
+        '8am': `Morning ☀️ Today's frame is simple and surprisingly hard: do one thing at a time. For one task this morning — could be writing an email, drinking your coffee, getting dressed — just do that. No phone, no second tab, no podcast. 5 minutes of single-tasking is more rare than you think, and your nervous system notices.`,
+        '10am': `Try this for the next email you write: turn off everything else. No tabs, no Slack, just write. When you're done, send it. Notice how different it feels from the usual fragmented version. Most knowledge work today is half-done because we never give it our full attention — and we wonder why we're tired.`,
+        '12pm': `Eat lunch without your phone. Just lunch. If you're at your desk, close the laptop too. 10 minutes. I know that sounds extreme — that's the point. Most of us haven't eaten a meal alone with our own thoughts in years. The thoughts that surface when you do this are usually the ones you've been avoiding.`,
+        '3pm': `Walk somewhere — bathroom, kitchen, parking lot. No phone in your hand. Just walk. Maybe take three breaths along the way. The micro-walk-without-input is one of the most rebellious mindfulness practices you can do in a normal workday. Five minutes. The difference in how the rest of your afternoon feels is real, even if it's hard to name.`,
+        '5pm': `Day four done 👏 Today probably felt awkward in a few places — that's normal. Single-tasking is genuinely countercultural at this point. The shift you're aiming for isn't "always be present" — it's "sometimes be fully present, on purpose." Tomorrow we package the whole week into something you'll actually keep. See you in the morning.`,
+      },
+      5: {
+        '8am': `Morning ☀️ Last day. This week you've trained attention, body awareness, transitions, and single-tasking. Today is about distilling that into one daily practice. Here it is, the 2-minute anchor: three slow breaths to start, a 30-second body scan, a 30-second pause where you don't do anything, then one closing breath. Two minutes total. Do it now.`,
+        '10am': `Habits don't stick because you mean to do them — they stick because they're tied to a trigger. Pick yours today. Best triggers are existing routines: every morning coffee, every Zoom call ending, every time you sit down at your desk. Attach the 2-min anchor to one of those, and it's already 90% in place.`,
+        '12pm': `Run the anchor again, right now. Three breaths, body scan, 30-second pause, closing breath. By now you've done in 2 minutes what guided meditation apps stretch to 20. The shorter version is more sustainable across an actual workday — and you don't need a notification to do it.`,
+        '3pm': `One more run-through. Two minutes. You've practiced enough this week that the body knows what to do — you just have to give it the time. The hardest part isn't the practice itself, it's deciding to stop and do it. Make that decision now.`,
+        '5pm': `You finished 👏 Five days of training your attention back from the small fragments work life cuts it into. The 2-min anchor works. Keep it small, anchor it to a real trigger, and you'll have something most people never get — a reset they can actually use, every day. Genuinely glad you did this.\n\nWant to keep this going? Try Summit free — personalized habits, daily SMS check-ins, weekly reflection. Same kind of texts, dialed in for your goals: go.summithealth.app/pricing`,
+      },
+    },
+
+    emailMessageOverrides: {
+      5: {
+        '5pm': `You finished 👏 Five days of training your attention back from the small fragments work life cuts it into. The 2-min anchor works. The only question now is whether it becomes part of your day or fades by Tuesday. Keep it small, anchor it to a real trigger, and you'll have something most people never get — a reset they can actually use, every day. Genuinely glad you did this.`,
+      },
+    },
+
+    landingPreview: [
+      { dayLabel: 'Monday', theme: 'Attention', description: 'Build the breath as your always-available reset' },
+      { dayLabel: 'Tuesday', theme: 'Body Awareness', description: 'Notice where stress hides before it builds' },
+      { dayLabel: 'Wednesday', theme: 'Reset', description: 'Use the gaps between tasks as actual recovery' },
+      { dayLabel: 'Thursday', theme: 'Mindful Action', description: 'Single-tasking as a countercultural practice' },
+      { dayLabel: 'Friday', theme: 'Your Anchor', description: "A 2-minute daily routine you can keep for years" },
+    ],
+
+    welcomePreview: [
+      { dayLabel: 'Monday', theme: 'Attention', description: 'Anchor your day in the breath' },
+      { dayLabel: 'Tuesday', theme: 'Body Awareness', description: 'Notice what stress hides in the body' },
+      { dayLabel: 'Wednesday', theme: 'Reset', description: 'Use transitions instead of skipping them' },
+      { dayLabel: 'Thursday', theme: 'Mindful Action', description: 'Single-tasking on purpose' },
+      { dayLabel: 'Friday', theme: 'Your Anchor', description: 'A 2-minute daily practice that sticks' },
+    ],
+
+    weekRecap: [
+      { dayLabel: 'Monday', theme: 'Attention', description: 'anchored your day in the breath' },
+      { dayLabel: 'Tuesday', theme: 'Body Awareness', description: 'noticed where stress hides' },
+      { dayLabel: 'Wednesday', theme: 'Reset', description: 'used transitions instead of skipping them' },
+      { dayLabel: 'Thursday', theme: 'Mindful Action', description: 'practiced single-tasking on purpose' },
+      { dayLabel: 'Friday', theme: 'Your Anchor', description: 'packaged it into 2 minutes' },
+    ],
+
+    routine: {
+      title: 'Your 2-Minute Anchor Practice',
+      items: [
+        'Three slow breaths',
+        '30-second body scan — jaw, shoulders, breath',
+        '30 seconds of doing nothing',
+        'One closing breath',
+      ],
+      footer: 'Anchor it to an existing trigger — your morning coffee, the end of every Zoom call, sitting down at your desk.',
+    },
+
+    welcome: {
+      intro: `You're one step away from joining the 5-Day Mindfulness Challenge. Over 5 days, you'll get small, science-backed prompts that train attention, body awareness, and transitions — ending with a 2-minute daily anchor practice you can actually keep through a real workday.`,
+      nextStep: `You're signed up! Next step: verify your phone and pay $1 to lock in your spot.`,
+    },
+
+    summary: {
+      whatsNext: `This week was a taste of what consistent SMS coaching looks like. Summit takes it further — personalized habits, daily check-ins, weekly reflection, and a coach who actually knows what you're working on. Try it free.`,
+      sharePromptHeading: `Know someone who needs this?`,
+      sharePromptBody: `If you enjoyed the challenge, share it with a friend or coworker. They'll start next Monday — same 5 days, same $1.`,
+    },
+  },
 }
 
 export function getLiteChallenge(slug: string): LiteChallenge | null {

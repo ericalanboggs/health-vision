@@ -119,6 +119,18 @@ function App() {
           }
         />
 
+        {/* Lite Mindfulness Challenge */}
+        <Route path="/mindfulness" element={<LiteChallengeLanding slug="mindfulness" />} />
+        <Route path="/mindfulness/success" element={<LiteChallengeSuccess slug="mindfulness" />} />
+        <Route
+          path="/mindfulness/status"
+          element={
+            <ProtectedRoute>
+              <LiteChallengeStatus slug="mindfulness" />
+            </ProtectedRoute>
+          }
+        />
+
         {/* Legal pages - Public */}
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />

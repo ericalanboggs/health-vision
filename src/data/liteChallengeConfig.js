@@ -140,6 +140,74 @@ export const LITE_CHALLENGES = {
     completedTitle: 'Challenge Complete!',
     completedDescription: "You made it through all 5 days. Here's the routine to keep doing.",
   },
+
+  'mindfulness': {
+    slug: 'mindfulness',
+    displayName: 'Mindfulness Challenge',
+    shortName: 'Mindfulness',
+    brandLine: '5-Day Mindfulness Challenge',
+    routePath: '/mindfulness',
+
+    hero: {
+      title: '5-Day Mindfulness Challenge',
+      description: "Train your attention back across a real workday. Five days of coaching texts that thread breath, body awareness, and transitions through your day — ending with a 2-minute anchor practice you'll actually keep.",
+      bannerText: 'Sign up today, start next Monday — 5 days of coaching texts',
+    },
+
+    benefits: [
+      '25 coaching texts over 5 days (5/day)',
+      'Evidence-based attention, breath, and reset practices',
+      'A 2-minute daily anchor practice you can keep forever',
+      'Morning email overview each day',
+    ],
+
+    landingPreview: [
+      { dayLabel: 'Monday', theme: 'Attention', description: 'Build the breath as your always-available reset' },
+      { dayLabel: 'Tuesday', theme: 'Body Awareness', description: 'Notice where stress hides before it builds' },
+      { dayLabel: 'Wednesday', theme: 'Reset', description: 'Use the gaps between tasks as actual recovery' },
+      { dayLabel: 'Thursday', theme: 'Mindful Action', description: 'Single-tasking as a countercultural practice' },
+      { dayLabel: 'Friday', theme: 'Your Anchor', description: "A 2-minute daily routine you can keep for years" },
+    ],
+
+    dayThemes: {
+      1: 'Attention',
+      2: 'Body Awareness',
+      3: 'Reset',
+      4: 'Mindful Action',
+      5: 'Your 2-Minute Anchor',
+    },
+
+    routine: {
+      title: 'Your 2-Minute Anchor Practice',
+      items: [
+        'Three slow breaths',
+        '30-second body scan — jaw, shoulders, breath',
+        '30 seconds of doing nothing',
+        'One closing breath',
+      ],
+      footer: 'Anchor it to an existing trigger — your morning coffee, the end of every Zoom call, sitting down at your desk.',
+    },
+
+    expectations: {
+      sms: [
+        '5 coaching texts per day (8am - 5pm)',
+        'A morning email overview each day',
+        'End-of-challenge summary with your routine',
+      ],
+      emailOnly: [
+        'A daily email with all 5 coaching cues',
+        'End-of-challenge summary with your routine',
+      ],
+    },
+
+    outcomePromise: 'Less reactivity, more attention, and a daily reset that actually fits',
+
+    smsConsentLabel: 'Get 5 daily texts with real-time mindfulness cues',
+    smsConsentDescription: 'Strongly recommended for best results. Standard message rates apply.',
+
+    completedTitle: 'Challenge Complete!',
+    completedDescription: "You made it through all 5 days. Here's the practice to keep doing.",
+  },
 }
 
 export function getLiteChallenge(slug) {
