@@ -1,6 +1,9 @@
 # Summit Health — Developer Handoff Guide
 
-> Living document. Last updated: 2026-04-26.
+> Living document. Last updated: 2026-05-03.
+
+**Companion docs:**
+- [`SUMMIT_COACH_VOICE.md`](./SUMMIT_COACH_VOICE.md) — voice and tone guide for all user-facing copy (SMS messages, email content, AI system prompts, challenge content). Read this before writing or editing any user-facing text.
 
 ---
 
