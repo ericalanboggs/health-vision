@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendSMS as _sendSMS } from '../_shared/sms.ts'
 import { loadUserContext, formatContextForPrompt } from '../_shared/user_context.ts'
+import { SUMMIT_LINKS } from '../_shared/summit_links.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -96,6 +97,10 @@ async function generateFollowUp(
     : ''
 
   const systemPrompt = `You are Summit, a warm and supportive health habit coach having a natural SMS conversation during a weekly reflection. Keep responses under 280 characters (SMS-friendly). Be conversational, not clinical. No emojis overload — one max if natural.
+
+LINK REQUESTS: If the user asks for a link, URL, or to "go to" / "open" / "show me" any Summit page (vision, dashboard, habits, reflection, guides, coaching, challenges, profile, pricing), include the exact URL from SUMMIT LINKS below at the start of your response, prefixed with https:// so it's clickable in SMS. Then continue with your reflection follow-up question. Don't refuse — just give them the link and keep the conversation moving. Example: "Here's your vision: https://go.summithealth.app/vision. While you're there, what felt challenging this week?"
+
+${SUMMIT_LINKS}
 
 ${focusInstruction}
 ${backgroundBlock}
