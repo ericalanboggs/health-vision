@@ -62,7 +62,13 @@ interface HabitSummary {
   target: number | null
   unit: string | null
   metric_avg: number | null
-  /** True if habit_tracking_config.tracking_enabled === true. False = scheduled but user opted out of tracking. */
+  /**
+   * True if the habit has real completion data this week — both
+   * tracking_enabled AND at least one tracking entry logged.
+   * False = scheduled but we have no engagement data (either tracking
+   * is off, or it's on but the user didn't log anything this week).
+   * The opener must NOT assume untracked habits failed.
+   */
   tracked: boolean
 }
 
@@ -136,6 +142,11 @@ async function loadWeekData(
       ? metricValues.reduce((a, b) => a + b, 0) / metricValues.length
       : null
 
+    // A habit is "tracked" for opener purposes only if the user actually
+    // engaged with tracking this week. tracking_enabled alone isn't enough —
+    // a habit with the toggle on but zero entries is functionally untracked,
+    // and treating completed_count=0 as a real "0/7 failure" shames users
+    // for not logging when they may have done the habit just fine.
     habits.push({
       habit_name: name,
       scheduled_count: info.scheduledDays.size,
@@ -143,7 +154,7 @@ async function loadWeekData(
       target: info.config?.metric_target ?? null,
       unit: info.config?.metric_unit ?? null,
       metric_avg: metricAvg,
-      tracked: info.config?.tracking_enabled === true,
+      tracked: info.config?.tracking_enabled === true && habitEntries.length > 0,
     })
   }
 
