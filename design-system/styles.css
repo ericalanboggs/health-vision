@@ -24,8 +24,8 @@
     --summit-emerald-600: #059669;
     --summit-emerald-700: #047857;
     --summit-emerald-800: #065F46;
-    --summit-emerald-900: #022C22;
-    --summit-emerald-950: #011713;
+    --summit-emerald-900: #064E3B;
+    --summit-emerald-950: #022C22;
 
     /* Extended Grayscale */
     --gray-50: #F9FAFB;
@@ -45,9 +45,9 @@
     --surface-page: #F0FDFA;
 
     /* Semantic Text Colors */
-    --text-primary: #022C22;
-    --text-secondary: rgba(2, 44, 34, 0.8);
-    --text-muted: rgba(2, 44, 34, 0.5);
+    --text-primary: #064E3B;
+    --text-secondary: rgba(6, 78, 59, 0.8);
+    --text-muted: rgba(6, 78, 59, 0.5);
 
     /* Semantic Border Colors */
     --border-subtle: #D1FAE5;

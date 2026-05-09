@@ -7,7 +7,7 @@ const toggleVariants = cva(
   {
     variants: {
       size: {
-        xs: 'h-[22px] w-[42px]',
+        xs: 'h-4 w-7',
         sm: 'h-5 w-9',
         md: 'h-6 w-11',
         lg: 'h-8 w-14',
@@ -24,7 +24,7 @@ const toggleThumbVariants = cva(
   {
     variants: {
       size: {
-        xs: 'h-[18px] w-[18px]',
+        xs: 'h-3 w-3',
         sm: 'h-4 w-4',
         md: 'h-5 w-5',
         lg: 'h-6 w-6',
@@ -70,7 +70,6 @@ const Toggle = React.forwardRef<HTMLButtonElement, ToggleProps>(
         // OFF state: equidistant from left
         switch (size) {
           case 'xs':
-            return 'translate-x-0.5' // 2px padding
           case 'sm':
           case 'md':
             return 'translate-x-0.5' // 2px padding
@@ -84,8 +83,8 @@ const Toggle = React.forwardRef<HTMLButtonElement, ToggleProps>(
       // ON state: equidistant from right
       switch (size) {
         case 'xs':
-          // Container 42px, thumb 18px, padding 2px → thumb at 22px
-          return 'translate-x-[22px]'
+          // Container 28px, thumb 12px, padding 2px → thumb at 14px
+          return 'translate-x-[14px]'
         case 'sm':
           // Container 36px, thumb 16px, padding 2px → thumb at 18px
           return 'translate-x-[18px]'

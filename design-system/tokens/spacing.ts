@@ -70,23 +70,29 @@ export const spacing = {
 // BORDER RADIUS
 // ============================================
 
+/**
+ * Border radius scale.
+ *
+ * Source of truth = Tailwind preset (what components actually render).
+ * Components use Tailwind classes (rounded-md, rounded-lg, etc.), so these
+ * values must match `tailwind.preset.js`. Updating one without the other
+ * causes Figma ↔ code drift.
+ */
 export const borderRadius = {
   /** 0 */
   none: '0',
-  /** 2px */
-  sm: '0.125rem',
-  /** 4px */
-  DEFAULT: '0.25rem',
   /** 6px - Small inputs */
-  md: '0.375rem',
-  /** 8px - Buttons, tags */
-  lg: '0.5rem',
+  sm: '0.375rem',
+  /** 8px - Buttons, tags (default) */
+  DEFAULT: '0.5rem',
+  /** 8px - Same as DEFAULT */
+  md: '0.5rem',
   /** 12px - Cards */
-  xl: '0.75rem',
+  lg: '0.75rem',
   /** 16px - Large cards, modals */
-  '2xl': '1rem',
+  xl: '1rem',
   /** 24px */
-  '3xl': '1.5rem',
+  '2xl': '1.5rem',
   /** 9999px - Pills, avatars, circular checkboxes */
   full: '9999px',
 } as const

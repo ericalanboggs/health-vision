@@ -43,8 +43,8 @@ export default {
           600: '#059669',
           700: '#047857',
           800: '#065F46',
-          900: '#022C22',
-          950: '#011713',
+          900: '#064E3B',
+          950: '#022C22',
         },
 
         // Extended Grayscale
@@ -68,17 +68,17 @@ export default {
           page: '#F0FDFA',
         },
         text: {
-          primary: '#022C22',
-          secondary: 'rgba(2, 44, 34, 0.8)',
-          muted: 'rgba(2, 44, 34, 0.5)',
-          disabled: 'rgba(2, 44, 34, 0.35)',
+          primary: '#064E3B',
+          secondary: 'rgba(6, 78, 59, 0.8)',
+          muted: 'rgba(6, 78, 59, 0.5)',
+          disabled: 'rgba(6, 78, 59, 0.35)',
           inverse: '#FFFFFF',
         },
         border: {
           subtle: '#D1FAE5',
           DEFAULT: '#E5E7EB',
           focus: '#10B981',
-          strong: '#022C22',
+          strong: '#064E3B',
         },
 
         // Feedback Colors

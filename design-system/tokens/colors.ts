@@ -17,6 +17,8 @@ export const colors = {
     emerald: '#10B981',
     /** Secondary accent - hover states, links */
     moss: '#059669',
+    /** Mid-shade accent between moss and forest */
+    pine: '#065F46',
     /** Primary text - deep, grounded forest (darker than before) */
     forest: '#022C22',
     /** Soft UI - tag backgrounds, subtle alerts */

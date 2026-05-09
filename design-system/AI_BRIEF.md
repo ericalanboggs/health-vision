@@ -84,7 +84,9 @@ Display `1.1` · H1 `1.2` · H2 `1.3` · H3 / meta `1.4` · body `1.6` · prose 
 - **Section gap:** 48–64px between major blocks.
 
 ### Border radius
-none · `sm 2` · `default 4` · `md 6` (inputs) · `lg 8` (buttons, tags) · `xl 12` (cards) · `2xl 16` (large cards, modals) · `full 9999` (pills, circles).
+none · `sm 6` (small inputs) · `default 8` · `md 8` (inputs, buttons) · `lg 12` (cards, default for buttons/inputs lg-size) · `xl 16` (large cards) · `2xl 24` (modals) · `full 9999` (pills, circles).
+
+> Source of truth = `tokens/tailwind.preset.js` (matches what components actually render via Tailwind classes). `tokens/spacing.ts` borderRadius mirrors these. Figma `radius/*` variables match this scale.
 
 ### Shadow
 - `sm` `0 1px 2px 0 rgba(0,0,0,0.05)` — subtle card
