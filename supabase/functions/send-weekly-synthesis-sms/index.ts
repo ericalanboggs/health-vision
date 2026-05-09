@@ -67,7 +67,8 @@ RULES:
 - No numbers, counts, streaks, or fractions
 - No emojis
 - 1-3 sentences max. Land it and stop.
-- Address them by first name`
+- Address them by first name
+- CRITICAL: NEVER end with a question or phrase your message as a question. This is a celebration, not a check-in. Asking "did you get that walk in today?" makes users think it's a tracking prompt and reply to it, which breaks the tracking flow. Statements only.`
 
   const userPrompt = `NAME: ${firstName}
 HABIT TO HIGHLIGHT: ${highlightHabit.name}${highlightHabit.isNew ? ' (just started this week)' : ''}

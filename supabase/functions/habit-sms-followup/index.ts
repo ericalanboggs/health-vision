@@ -250,16 +250,18 @@ serve(async (req) => {
       // Check which habits already have a followup sent today (using timezone-aware UTC midnight)
       const { data: existingFollowups } = await supabase
         .from('sms_followup_log')
-        .select('habit_name')
+        .select('habit_name, sent_at')
         .eq('user_id', profile.id)
         .gte('sent_at', userLocalTime.todayStartUtc)
 
       const habitsWithFollowupSent = new Set(existingFollowups?.map(f => f.habit_name) || [])
 
-      // Check if there's a PENDING followup (sent but not yet answered)
-      // A followup is pending if: it was sent today AND no entry exists for that habit
+      // Check if there's a PENDING followup (sent but not yet answered).
+      // Expire pending followups older than 4 hours so a single overnight
+      // unanswered prompt doesn't block the user for the entire next day.
+      const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
       const pendingFollowups = (existingFollowups || []).filter(
-        f => !existingHabitNames.has(f.habit_name)
+        f => !existingHabitNames.has(f.habit_name) && f.sent_at > fourHoursAgo
       )
 
       if (pendingFollowups.length > 0) {

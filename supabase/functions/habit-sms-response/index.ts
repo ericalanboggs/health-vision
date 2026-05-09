@@ -100,6 +100,83 @@ function getDayOfWeekInTimezone(timezone: string): number {
 }
 
 /**
+ * Fuzzy-match an AI-returned habit_name against the user's actual configs.
+ * The AI sometimes paraphrases (e.g. returns "Strength training or yoga" when
+ * the real name is "Did you strength train or yoga today?"), which would silently
+ * drop the entry under strict equality. This matcher does:
+ *   1. exact match
+ *   2. case/whitespace-insensitive match
+ *   3. token-set Jaccard with stopword removal + light stemming
+ */
+const HABIT_STOPWORDS = new Set([
+  'a', 'an', 'the', 'is', 'are', 'do', 'did', 'does', 'you', 'your', 'i', 'me', 'my',
+  'today', 'for', 'of', 'in', 'on', 'at', 'to', 'and', 'or', 'how', 'much', 'many',
+  'what', 'when', 'with', 'have', 'has', 'be', 'was', 'were', 'min', 'mins',
+  'minute', 'minutes',
+])
+
+function stemHabitToken(word: string): string {
+  if (word.length <= 4) return word
+  // Doubled-consonant -ing: running → run, swimming → swim
+  if (word.length >= 6 && word.endsWith('ing') && word[word.length - 4] === word[word.length - 5]) {
+    return word.slice(0, -4)
+  }
+  if (word.endsWith('ing')) return word.slice(0, -3)
+  if (word.endsWith('s')) return word.slice(0, -1)
+  return word
+}
+
+function tokenizeHabitName(name: string): Set<string> {
+  return new Set(
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]+/g, ' ')
+      .split(/\s+/)
+      .filter(t => t && !HABIT_STOPWORDS.has(t))
+      .map(stemHabitToken)
+  )
+}
+
+function findHabitConfig<T extends { habit_name: string }>(configs: T[], aiName: string): T | undefined {
+  if (!aiName) return undefined
+
+  // 1. Exact
+  let match = configs.find(c => c.habit_name === aiName)
+  if (match) return match
+
+  // 2. Case/whitespace-insensitive
+  const aiLower = aiName.toLowerCase().trim()
+  match = configs.find(c => c.habit_name.toLowerCase().trim() === aiLower)
+  if (match) return match
+
+  // 3. Token-set Jaccard
+  const aiTokens = tokenizeHabitName(aiName)
+  if (aiTokens.size === 0) return undefined
+
+  let best: T | undefined
+  let bestScore = 0
+  for (const c of configs) {
+    const cTokens = tokenizeHabitName(c.habit_name)
+    if (cTokens.size === 0) continue
+    const intersection = [...aiTokens].filter(t => cTokens.has(t)).length
+    const union = new Set([...aiTokens, ...cTokens]).size
+    const jaccard = intersection / union
+    if (jaccard > bestScore) {
+      bestScore = jaccard
+      best = c
+    }
+  }
+
+  if (bestScore >= 0.3) {
+    console.log(`Fuzzy-matched habit "${aiName}" → "${best?.habit_name}" (Jaccard ${bestScore.toFixed(2)})`)
+    return best
+  }
+
+  console.log(`No habit match for "${aiName}" (best Jaccard ${bestScore.toFixed(2)})`)
+  return undefined
+}
+
+/**
  * Parse incoming SMS body for tracking response (simple parsing for followup context)
  */
 function parseTrackingResponse(body: string, expectedType: 'boolean' | 'metric'): { type: 'boolean'; value: boolean } | { type: 'metric'; value: number } | null {
@@ -117,11 +194,18 @@ function parseTrackingResponse(body: string, expectedType: 'boolean' | 'metric')
     }
   }
 
-  // Check for boolean keyword responses
-  if (['y', 'yes', 'yeah', 'yep', 'done', 'true', '✓', '✔️', '👍'].includes(trimmed)) {
+  // Boolean affirmative — match natural replies like "Yes I did", "yeah did it",
+  // not just bare "yes". Word boundary stops false positives like "yesterday".
+  if (/^(✓|✔️|👍|✅|💯)/.test(trimmed)) {
     return { type: 'boolean', value: true }
   }
-  if (['n', 'no', 'nope', 'nah', 'false', 'skip', 'skipped', '👎'].includes(trimmed)) {
+  if (/^(y|yes|yeah|yep|yup|ya|yea|did|done|finished|completed|sure|true|got it|i did|i have|i've)\b/.test(trimmed)) {
+    return { type: 'boolean', value: true }
+  }
+  if (/^(👎|❌)/.test(trimmed)) {
+    return { type: 'boolean', value: false }
+  }
+  if (/^(n|no|nope|nah|skip|skipped|missed|forgot|false|didn't|did not|haven't|i didn't|i haven't|not yet|not today)\b/.test(trimmed)) {
     return { type: 'boolean', value: false }
   }
 
@@ -201,6 +285,7 @@ Analyze and respond with JSON:
 
 RULES:
 - Emojis: 🧘=meditation, 💧/🚰=water, 🏃=running/exercise
+- CRITICAL: habit_name MUST be the EXACT string from USER'S TRACKED HABITS above, character-for-character including punctuation, capitalization, and question marks. Do NOT paraphrase, shorten, or rephrase the habit name. Copy it verbatim.
 - Only match habits from the list above
 - "8 glasses" but tracks "oz" → ask oz per glass
 - Ambiguous match → ask which habit
@@ -323,6 +408,7 @@ async function generateCoachingResponse(
     const systemPrompt = `You are Summit, a warm and grounded health coach. The user sent a message that isn't about habit tracking. Respond with empathy and brevity. Use their background to make your response personal and relevant — reference their vision, recent patterns, or reflections when it fits naturally. Don't force it.
 
 RULES:
+- CRITICAL: You CANNOT log, track, save, or record habits from this response — that pipeline already ran and decided this message wasn't a tracking entry. NEVER use words like "logged", "tracked", "recorded", "saved", "noted", or any phrase implying you wrote their habit to the system (e.g. "got that down", "marked complete"). If they say they did something, acknowledge their effort but DO NOT claim it was tracked. If you think they meant to log a habit, tell them to reply with the habit name + value or text the habit directly.
 - CRITICAL: If the user asks for a link, URL, or to "go to" / "open" / "show me" / "link me to" any page (dashboard, habits, vision, reflection, guides, coaching, challenges, profile, pricing), respond ONLY with a brief one-liner and the exact URL from SUMMIT LINKS below. Do NOT add coaching suggestions, vision references, or other content. ALWAYS prefix URLs with https:// so they are clickable in SMS. Example: "Here's your dashboard: https://go.summithealth.app/dashboard"
 - CRITICAL: If the user asks a question (e.g., "what are my habits?", "can you give me tips?"), answer it fully in your response. Never give a teaser like "Here are your habits!" without listing them. The user cannot see a follow-up — every SMS must be self-contained.
 - If the user asks about their habits, list them by name from their background context. Include streaks and completion rates when available.
@@ -426,6 +512,16 @@ NEW MESSAGE FROM USER: "${messageBody}"`
 
     // Enforce character limit
     let coachResponse = parsed.response || fallback.response
+
+    // Safeguard against phantom logging confirmations. The coaching path cannot
+    // write entries — if the model claims it did, replace with a safe ack so we
+    // don't mislead the user about what's in their data.
+    const PHANTOM_LOG_PATTERN = /\b(logged|tracked|recorded|saved|noted)\b|got (it|that) (down|in)|marked (it )?(complete|done)/i
+    if (PHANTOM_LOG_PATTERN.test(coachResponse)) {
+      console.warn(`Coaching response contained phantom log language, replacing: "${coachResponse}"`)
+      coachResponse = `Hey ${firstName} — I'm here. If you meant to log a habit, reply with the habit name plus how you did (e.g. "walk 30 min" or "yoga done").`
+    }
+
     if (coachResponse.length > 480) {
       coachResponse = coachResponse.slice(0, 477) + '...'
     }
@@ -1043,15 +1139,26 @@ serve(async (req) => {
     const userContext = await loadUserContext(supabase, profile.id, profile.timezone)
     const userContextPrompt = formatContextForPrompt(userContext)
 
-    // Get all enabled tracking configs for this user
-    const { data: allConfigs } = await supabase
-      .from('habit_tracking_config')
-      .select('*')
-      .eq('user_id', profile.id)
-      .eq('tracking_enabled', true)
+    // Get tracking configs for ACTIVE (non-archived) habits only.
+    // Configs for archived habits hang around in the table and would otherwise
+    // pollute the AI's habit menu, leading to misidentified logs.
+    const [configsRes, activeHabitsRes] = await Promise.all([
+      supabase
+        .from('habit_tracking_config')
+        .select('*')
+        .eq('user_id', profile.id)
+        .eq('tracking_enabled', true),
+      supabase
+        .from('weekly_habits')
+        .select('habit_name')
+        .eq('user_id', profile.id)
+        .is('archived_at', null),
+    ])
+    const activeHabitNames = new Set((activeHabitsRes.data || []).map((h: { habit_name: string }) => h.habit_name))
+    const allConfigs = (configsRes.data || []).filter(c => activeHabitNames.has(c.habit_name))
 
-    if (!allConfigs || allConfigs.length === 0) {
-      console.log('No tracking configs - routing to coaching fallback')
+    if (allConfigs.length === 0) {
+      console.log('No active tracking configs - routing to coaching fallback')
       const coachResult = await generateCoachingResponse(body, firstName, userContextPrompt)
       await sendSMSWithLog(from, coachResult.response, supabase, profile.id, userName, 'coach')
 
@@ -1104,24 +1211,37 @@ serve(async (req) => {
       }
 
       // Log the habit entry — skip if value is null (user didn't actually report doing it)
-      const config = allConfigs.find(c => c.habit_name === habit.habit_name)
+      const config = findHabitConfig(allConfigs, habit.habit_name)
       if (!config) continue
       if (habit.value === null || habit.value === undefined) continue
+      // Use the matched config's actual habit_name (AI may have paraphrased)
+      const matchedHabitName = config.habit_name
 
       const entryData: Record<string, unknown> = {
         user_id: profile.id,
-        habit_name: habit.habit_name,
+        habit_name: matchedHabitName,
         entry_date: todayStr,
         entry_source: 'sms',
         updated_at: new Date().toISOString(),
       }
 
-      if (habit.value_type === 'boolean') {
-        entryData.completed = habit.value
+      // Coerce value type to the config's actual tracking_type — the AI sometimes
+      // returns boolean for a metric habit (e.g. "yes I did" without a number).
+      if (config.tracking_type === 'boolean') {
+        entryData.completed = typeof habit.value === 'boolean' ? habit.value : habit.value !== 0
         entryData.metric_value = null
       } else {
-        entryData.completed = null
-        entryData.metric_value = habit.value
+        if (typeof habit.value === 'number') {
+          entryData.completed = null
+          entryData.metric_value = habit.value
+        } else if (habit.value === true) {
+          // User said yes/done for a metric habit — log as completed without a number
+          entryData.completed = true
+          entryData.metric_value = null
+        } else {
+          entryData.completed = false
+          entryData.metric_value = null
+        }
       }
 
       const { error } = await supabase
@@ -1129,7 +1249,9 @@ serve(async (req) => {
         .upsert(entryData, { onConflict: 'user_id,habit_name,entry_date' })
 
       if (!error) {
-        loggedHabits.push(habit.habit_name)
+        loggedHabits.push(matchedHabitName)
+      } else {
+        console.error(`Failed to upsert entry for "${matchedHabitName}":`, error)
       }
     }
 
@@ -1142,17 +1264,21 @@ serve(async (req) => {
         if (update.metric_unit) updateData.metric_unit = update.metric_unit
 
         if (Object.keys(updateData).length > 0) {
+          // Resolve AI-returned name back to a real config (handles paraphrases)
+          const goalConfig = findHabitConfig(allConfigs, update.habit_name)
+          if (!goalConfig) continue
+
           const { error } = await supabase
             .from('habit_tracking_config')
             .update(updateData)
             .eq('user_id', profile.id)
-            .eq('habit_name', update.habit_name)
+            .eq('habit_name', goalConfig.habit_name)
 
           if (!error) {
-            updatedGoals.push(update.habit_name)
-            console.log(`Updated goal for "${update.habit_name}": ${JSON.stringify(updateData)}`)
+            updatedGoals.push(goalConfig.habit_name)
+            console.log(`Updated goal for "${goalConfig.habit_name}": ${JSON.stringify(updateData)}`)
           } else {
-            console.error(`Error updating goal for "${update.habit_name}":`, error)
+            console.error(`Error updating goal for "${goalConfig.habit_name}":`, error)
           }
         }
       }
@@ -1200,13 +1326,41 @@ serve(async (req) => {
  */
 async function chainToNextHabit(
   supabase: ReturnType<typeof createClient>,
-  profile: { id: string; first_name: string; timezone: string },
+  profile: { id: string; first_name: string; timezone: string; tracking_followup_time?: string | null },
   phone: string,
   userName: string | null,
   todayStr: string,
   userTimezone: string
 ) {
   try {
+    // Don't chain followups outside the user's followup window.
+    // A late reply (e.g. midnight reply to an 8pm prompt) shouldn't trigger
+    // new prompts while the user is asleep.
+    const trackingFollowupTime = profile.tracking_followup_time || '17:00:00'
+    const [followupHour, followupMinute] = trackingFollowupTime.split(':').map(Number)
+    const followupMinutes = followupHour * 60 + followupMinute
+
+    const timeFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: userTimezone,
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false,
+    })
+    const parts = timeFormatter.formatToParts(new Date())
+    const currentHour = parseInt(parts.find(p => p.type === 'hour')?.value || '0')
+    const currentMinute = parseInt(parts.find(p => p.type === 'minute')?.value || '0')
+    const currentMinutes = currentHour * 60 + currentMinute
+
+    // Normalize for midnight wrap-around so late-evening followup_times still work
+    let minutesFromFollowup = currentMinutes - followupMinutes
+    if (minutesFromFollowup < -720) minutesFromFollowup += 1440
+    if (minutesFromFollowup > 720) minutesFromFollowup -= 1440
+
+    if (minutesFromFollowup < -15 || minutesFromFollowup > 120) {
+      console.log(`Skipping chain — outside followup window (${minutesFromFollowup} min from ${trackingFollowupTime})`)
+      return
+    }
+
     const dayOfWeek = getDayOfWeekInTimezone(userTimezone)
 
     // Get all active (non-archived) habits scheduled for today
