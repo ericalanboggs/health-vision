@@ -175,12 +175,17 @@ serve(async (req) => {
 
       console.log(`User ${profile.id}: Within followup window`)
 
-      // Skip if user has an active reflection session (don't interrupt reflection conversation)
+      // Skip if user is mid-reflection conversation. Only treat as "active" if
+      // the user actually engaged — once they reply, `step` transitions from
+      // 'awaiting_reply' to 'conversing'. An unanswered opener should NOT block
+      // habit followups; its 18h expiry would otherwise silently kill Sunday
+      // evening followups for any user who didn't reply to the reflection.
       const { data: activeReflection } = await supabase
         .from('sms_reflection_sessions')
-        .select('id')
+        .select('id, step')
         .eq('user_id', profile.id)
         .gt('expires_at', new Date().toISOString())
+        .neq('step', 'awaiting_reply')
         .limit(1)
         .maybeSingle()
 
