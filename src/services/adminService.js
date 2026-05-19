@@ -853,6 +853,57 @@ export const adminUpdateTrackingConfig = async (userId, habitName, { trackingEna
   }
 }
 
+/**
+ * Update (or create) a user's health vision form_data.
+ * Merges patch into existing form_data so partial edits don't clobber other fields.
+ */
+export const adminUpdateHealthVision = async (userId, patch) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { data: existing, error: fetchError } = await supabase
+      .from('health_journeys')
+      .select('id, form_data')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (fetchError) throw fetchError
+
+    const mergedFormData = { ...(existing?.form_data || {}), ...patch }
+    const nowIso = new Date().toISOString()
+
+    if (existing) {
+      const { data, error } = await supabase
+        .from('health_journeys')
+        .update({ form_data: mergedFormData, updated_at: nowIso })
+        .eq('id', existing.id)
+        .select()
+        .single()
+      if (error) throw error
+      return { success: true, data: data.form_data }
+    }
+
+    const { data, error } = await supabase
+      .from('health_journeys')
+      .insert({
+        user_id: userId,
+        session_id: `admin_${userId}_${Date.now()}`,
+        form_data: mergedFormData,
+        current_step: 'summary',
+        completed: false,
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return { success: true, data: data.form_data }
+  } catch (error) {
+    console.error('Error updating health vision:', error)
+    return { success: false, error: error.message }
+  }
+}
+
 export const adminUpdateFollowupTime = async (userId, followupTime) => {
   try {
     if (!await isAdmin()) {

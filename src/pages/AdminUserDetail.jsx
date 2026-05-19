@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit, adminUpdateTrackingConfig, adminUpdateFollowupTime, adminUpsertTrackingEntry, generateWeeklyTracker } from '../services/adminService'
+import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit, adminUpdateTrackingConfig, adminUpdateFollowupTime, adminUpsertTrackingEntry, adminUpdateHealthVision, generateWeeklyTracker } from '../services/adminService'
 import { COACHING_CONFIG, getBillingPeriod } from '../services/subscriptionService'
 import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt, Forum, Edit as EditIcon, Close, Add, PushPin, PushPinOutlined, DeleteOutline, Chat, Email, Checklist, FileDownload } from '@mui/icons-material'
 import { Tag } from '@summit/design-system'
@@ -86,6 +86,67 @@ export default function AdminUserDetail() {
   const [editFollowupTime, setEditFollowupTime] = useState('')
   const [savingFollowup, setSavingFollowup] = useState(false)
   const [generatingTracker, setGeneratingTracker] = useState(null) // null | 'email' | 'download'
+  const [editingVision, setEditingVision] = useState(false)
+  const [savingVision, setSavingVision] = useState(false)
+  const [visionForm, setVisionForm] = useState({
+    visionStatement: '',
+    whyMatters: '',
+    feelingState: '',
+    futureAbilities: '',
+    barriersNotes: '',
+    nonNegotiables: '',
+    energizers: '',
+    strengths: '',
+    motivationDrivers: '',
+    readiness: '',
+  })
+
+  const handleStartEditVision = () => {
+    setVisionForm({
+      visionStatement: healthVision?.visionStatement || '',
+      whyMatters: healthVision?.whyMatters || '',
+      feelingState: healthVision?.feelingState || '',
+      futureAbilities: healthVision?.futureAbilities || '',
+      barriersNotes: healthVision?.barriersNotes || '',
+      nonNegotiables: healthVision?.nonNegotiables || '',
+      energizers: healthVision?.energizers || '',
+      strengths: healthVision?.strengths || '',
+      motivationDrivers: Array.isArray(healthVision?.motivationDrivers)
+        ? healthVision.motivationDrivers.join(', ')
+        : '',
+      readiness: healthVision?.readiness ?? '',
+    })
+    setEditingVision(true)
+  }
+
+  const handleSaveVision = async () => {
+    setSavingVision(true)
+    const motivationDrivers = visionForm.motivationDrivers
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+    const readinessNum = visionForm.readiness === '' ? null : Number(visionForm.readiness)
+    const patch = {
+      visionStatement: visionForm.visionStatement.trim(),
+      whyMatters: visionForm.whyMatters.trim(),
+      feelingState: visionForm.feelingState.trim(),
+      futureAbilities: visionForm.futureAbilities.trim(),
+      barriersNotes: visionForm.barriersNotes.trim(),
+      nonNegotiables: visionForm.nonNegotiables.trim(),
+      energizers: visionForm.energizers.trim(),
+      strengths: visionForm.strengths.trim(),
+      motivationDrivers,
+      readiness: Number.isFinite(readinessNum) ? readinessNum : null,
+    }
+    const result = await adminUpdateHealthVision(userId, patch)
+    if (result.success) {
+      setData(prev => ({ ...prev, healthVision: result.data }))
+      setEditingVision(false)
+    } else {
+      window.alert(`Failed to save vision: ${result.error}`)
+    }
+    setSavingVision(false)
+  }
 
   const handleGenerateTracker = async (delivery) => {
     if (generatingTracker) return
@@ -666,8 +727,129 @@ export default function AdminUserDetail() {
 
         {/* Health Vision */}
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-4 sm:p-6">
-          <h2 className="text-xl font-bold text-summit-forest mb-4">Health Vision</h2>
-          {healthVision?.visionStatement ? (
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-summit-forest">Health Vision</h2>
+            <button
+              onClick={() => editingVision ? setEditingVision(false) : handleStartEditVision()}
+              className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-500 hover:text-summit-forest transition-colors"
+              title={editingVision ? 'Cancel' : 'Edit health vision'}
+            >
+              {editingVision ? <Close className="w-5 h-5" /> : <EditIcon className="w-5 h-5" />}
+            </button>
+          </div>
+          {editingVision ? (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-stone-700 mb-1 block">Vision Statement</label>
+                <textarea
+                  value={visionForm.visionStatement}
+                  onChange={(e) => setVisionForm(f => ({ ...f, visionStatement: e.target.value }))}
+                  rows={3}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent resize-y"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-700 mb-1 block">Why It Matters</label>
+                <textarea
+                  value={visionForm.whyMatters}
+                  onChange={(e) => setVisionForm(f => ({ ...f, whyMatters: e.target.value }))}
+                  rows={2}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent resize-y"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-700 mb-1 block">Feeling State</label>
+                <textarea
+                  value={visionForm.feelingState}
+                  onChange={(e) => setVisionForm(f => ({ ...f, feelingState: e.target.value }))}
+                  rows={2}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent resize-y"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-700 mb-1 block">Future Abilities</label>
+                <textarea
+                  value={visionForm.futureAbilities}
+                  onChange={(e) => setVisionForm(f => ({ ...f, futureAbilities: e.target.value }))}
+                  rows={2}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent resize-y"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-700 mb-1 block">Barriers / Main Blocker</label>
+                <textarea
+                  value={visionForm.barriersNotes}
+                  onChange={(e) => setVisionForm(f => ({ ...f, barriersNotes: e.target.value }))}
+                  rows={2}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent resize-y"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-700 mb-1 block">Non-Negotiables (Don't Touch)</label>
+                <textarea
+                  value={visionForm.nonNegotiables}
+                  onChange={(e) => setVisionForm(f => ({ ...f, nonNegotiables: e.target.value }))}
+                  rows={2}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent resize-y"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-700 mb-1 block">Energizers</label>
+                <textarea
+                  value={visionForm.energizers}
+                  onChange={(e) => setVisionForm(f => ({ ...f, energizers: e.target.value }))}
+                  rows={2}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent resize-y"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-700 mb-1 block">Strengths (What's Working)</label>
+                <textarea
+                  value={visionForm.strengths}
+                  onChange={(e) => setVisionForm(f => ({ ...f, strengths: e.target.value }))}
+                  rows={2}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent resize-y"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-700 mb-1 block">
+                  Motivation Drivers <span className="text-stone-400 font-normal">(comma-separated, e.g. Energy, Longevity, Appearance)</span>
+                </label>
+                <input
+                  type="text"
+                  value={visionForm.motivationDrivers}
+                  onChange={(e) => setVisionForm(f => ({ ...f, motivationDrivers: e.target.value }))}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-700 mb-1 block">Readiness (1–5)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={visionForm.readiness}
+                  onChange={(e) => setVisionForm(f => ({ ...f, readiness: e.target.value }))}
+                  className="w-24 border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald focus:border-transparent"
+                />
+              </div>
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  onClick={handleSaveVision}
+                  disabled={savingVision}
+                  className="px-4 py-2 bg-summit-emerald text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  {savingVision ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={() => setEditingVision(false)}
+                  className="px-4 py-2 text-stone-600 hover:text-stone-800 text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : healthVision?.visionStatement ? (
             <div className="space-y-4">
               <div>
                 <h3 className="text-sm font-medium text-stone-700 mb-2">Vision Statement</h3>
