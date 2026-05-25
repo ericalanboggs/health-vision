@@ -1,6 +1,6 @@
 # Summit Health — Developer Handoff Guide
 
-> Living document. Last updated: 2026-05-03.
+> Living document. Last updated: 2026-05-25.
 
 **Companion docs:**
 - [`SUMMIT_COACH_VOICE.md`](./SUMMIT_COACH_VOICE.md) — voice and tone guide for all user-facing copy (SMS messages, email content, AI system prompts, challenge content). Read this before writing or editing any user-facing text.
@@ -175,8 +175,8 @@ export const doSomething = async (params) => {
 | `habit-sms-response` | Internal (from twilio-webhook) | **YES** | 3-step AI pipeline: pending clarification → followup context → smart parse |
 | `sms-backup-plan` | Internal (from twilio-webhook) | **YES** | BACKUP keyword state machine for plan adjustment |
 | `sms-reflection-response` | Internal (from twilio-webhook) | **YES** | Multi-turn Sunday reflection conversation (3 exchanges → parse → save) |
-| `habit-sms-followup` | Cron (every 15 min) | **YES** | Sends habit tracking followup SMS (1 habit at a time) |
-| `send-sms-reminders` | Cron | **YES** | Morning habit reminder SMS with vision-aligned messaging |
+| `habit-sms-followup` | Cron (every 15 min) | **YES** | Sends habit tracking followup SMS (1 habit at a time). Branches on `profile.sms_conversational` — true → AI-generated Summit Coach voice, false → existing templated copy |
+| `send-sms-reminders` | Cron | **YES** | Morning habit reminder SMS with vision-aligned messaging. Branches on `profile.sms_conversational` — true → terse conversational prompt, false → existing "Hi {name}!" prompt |
 | `send-admin-sms` | Frontend POST | **YES** | Admin bulk SMS tool; sets 24h AI hold on recipients |
 | `send-admin-email` | Frontend POST | **YES** | Admin email tool with `{{name}}` template support |
 | `send-welcome-email` | DB trigger (pg_net) | **YES** | Day-1 founder letter; skips lite users |
@@ -244,7 +244,7 @@ Inbound SMS (Twilio)
 **`profiles`** — User profile (1:1 with auth.users)
 - Identity: `id`, `first_name`, `last_name`, `email`, `phone`, `timezone`
 - State: `profile_completed`, `onboarding_completed`, `has_seen_welcome`, `phone_verified`
-- SMS: `sms_opt_in`, `tracking_followup_time` (default 17:00), `admin_sms_hold_until`
+- SMS: `sms_opt_in`, `tracking_followup_time` (default 17:00), `admin_sms_hold_until`, `sms_conversational` (default false; opt-in to Summit Coach voice prompts)
 - Stripe: `stripe_customer_id`, `stripe_subscription_id`, `subscription_status`, `subscription_tier`, `trial_ends_at`, `subscription_current_period_end`
 - Challenge: `challenge_type` ('lite' or NULL)
 - Soft delete: `deleted_at`
@@ -440,6 +440,18 @@ The coaching fallback in `habit-sms-response` → `generateCoachingResponse()` h
 **FAQ Block** — answers "how do I...?" questions about Summit features (ADD, BACKUP, ARCHIVE, challenges, reflections, guides, coaching, follow-up time, cancel/pause)
 
 **Character limit**: 480 chars (3 SMS segments). Completeness over brevity.
+
+### Conversational SMS Tone (Phase 1, opt-in)
+
+A per-user flag (`profiles.sms_conversational`, boolean, default false) opts users into AI-generated prompts in the [Summit Coach voice](./SUMMIT_COACH_VOICE.md) instead of the existing templated copy. When true:
+- `send-sms-reminders` produces terse direct messages ("Morning. Today's climb — walk after lunch?") instead of "Hi {name}! 🚶 Time for walk at 1pm. You've got this!"
+- `habit-sms-followup` produces warm question prompts ("Walk happen today? Y or N") instead of "Hi {name}! Did you complete '{habit}' today? Reply Y or N"
+
+Both functions fall back to the templated copy if the OpenAI call fails or exceeds the char budget. Cadence, cron schedule, and response handling are identical for both branches — only the prompt copy differs in Phase 1.
+
+**Toggle**: Admin user detail page (`/admin/users/:id`) → User Snapshot card → "Conversational SMS" switch. Or `UPDATE profiles SET sms_conversational = true WHERE email = '…';`.
+
+**Phases 2–5 (per-habit timing, threaded followups, `habit_kind` for daily-total vs avoidance habits, mid-week trend nudges) are planned but not built.** See `memory/conversational_sms.md` for the roadmap and design decisions.
 
 ---
 
