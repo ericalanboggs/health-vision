@@ -86,6 +86,7 @@ export default function AdminUserDetail() {
   const [editFollowupTime, setEditFollowupTime] = useState('')
   const [savingFollowup, setSavingFollowup] = useState(false)
   const [togglingConversational, setTogglingConversational] = useState(false)
+  const [showArchivedHabits, setShowArchivedHabits] = useState(false)
 
   const handleToggleConversational = async () => {
     const next = !data?.profile?.smsConversational
@@ -433,7 +434,7 @@ export default function AdminUserDetail() {
     )
   }
 
-  const { profile, pilotReadiness, healthVision, habits, reflections, resources } = data
+  const { profile, pilotReadiness, healthVision, habits, archivedHabits = [], reflections, resources } = data
 
   return (
     <div className="min-h-screen bg-white">
@@ -1315,6 +1316,72 @@ export default function AdminUserDetail() {
             </div>
           )}
         </div>
+
+        {/* Archived Habits — collapsed by default. Useful coaching context:
+            what did they shelve and when? Read-only here; users
+            archive/unarchive from their own Habits page. */}
+        {archivedHabits.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-4 sm:p-6">
+            <button
+              onClick={() => setShowArchivedHabits(s => !s)}
+              className="flex items-center justify-between w-full text-left"
+            >
+              <h2 className="text-xl font-bold text-stone-500">
+                Archived Habits ({archivedHabits.length})
+              </h2>
+              <span className="text-stone-400 text-sm">
+                {showArchivedHabits ? 'Hide' : 'Show'}
+              </span>
+            </button>
+            {showArchivedHabits && (
+              <div className="mt-4 space-y-3">
+                {archivedHabits.map((habit, index) => (
+                  <div key={index} className="border border-stone-200 rounded-lg p-3 bg-stone-50">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium text-stone-600">{habit.name}</h3>
+                        {habit.challengeSlug && (
+                          <Tag variant="info" size="sm">{habit.challengeSlug}</Tag>
+                        )}
+                      </div>
+                      {habit.archivedAt && (
+                        <span className="text-xs text-stone-400">
+                          archived {formatDate(habit.archivedAt)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-stone-500 space-y-0.5">
+                      <div>
+                        <span className="font-medium">Days:</span> {habit.days.map(d => getDayName(d)).join(', ')}
+                      </div>
+                      {habit.times.length > 0 && (
+                        <div>
+                          <span className="font-medium">Time:</span> {habit.times.map(t => formatTime(t)).join(', ')}
+                        </div>
+                      )}
+                      <div>
+                        <span className="font-medium">Created:</span> {formatDate(habit.createdAt)}
+                      </div>
+                      {habit.tracking?.enabled && (
+                        <div>
+                          <span className="font-medium">Tracking was:</span>{' '}
+                          {habit.tracking.type === 'boolean'
+                            ? 'Yes/No'
+                            : `${habit.tracking.unit || 'metric'}${habit.tracking.target ? ` (target: ${habit.tracking.target})` : ''}`}
+                        </div>
+                      )}
+                      {habit.entries.length > 0 && (
+                        <div>
+                          <span className="font-medium">Logged entries:</span> {habit.entries.length}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Weekly Reflections */}
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-4 sm:p-6">

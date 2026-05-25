@@ -230,6 +230,17 @@ export const getUserDetail = async (userId) => {
 
     if (habitsError) throw habitsError
 
+    // Get archived habits separately so admin can review what the user has
+    // shelved (e.g. coaching context: what did they drop and when?)
+    const { data: archivedHabitRows, error: archivedError } = await supabase
+      .from('weekly_habits')
+      .select('*')
+      .eq('user_id', userId)
+      .not('archived_at', 'is', null)
+      .order('archived_at', { ascending: false })
+
+    if (archivedError) throw archivedError
+
     // Get tracking configs
     const { data: trackingConfigs, error: trackingError } = await supabase
       .from('habit_tracking_config')
@@ -291,41 +302,51 @@ export const getUserDetail = async (userId) => {
     const hasActiveHabits = activeHabitsCount > 0
     const pilotReady = hasLoggedIn && hasHealthVision && hasActiveHabits
 
-    // Group habits by name
-    const habitGroups = {}
-    habits?.forEach(habit => {
-      if (!habitGroups[habit.habit_name]) {
-        habitGroups[habit.habit_name] = {
-          name: habit.habit_name,
-          weekNumber: habit.week_number,
-          days: [],
-          times: new Set(),
-          createdAt: habit.created_at,
-          challengeSlug: habit.challenge_slug || null,
-          timezone: habit.timezone || null
+    // Group day-rows into one entry per habit name. Used for both active and
+    // archived habits — archived rows additionally carry `archivedAt` (the
+    // most recent archive timestamp across the day-rows for that habit).
+    const groupHabitsByName = (rows) => {
+      const groups = {}
+      rows?.forEach(habit => {
+        if (!groups[habit.habit_name]) {
+          groups[habit.habit_name] = {
+            name: habit.habit_name,
+            weekNumber: habit.week_number,
+            days: [],
+            times: new Set(),
+            createdAt: habit.created_at,
+            challengeSlug: habit.challenge_slug || null,
+            timezone: habit.timezone || null,
+            archivedAt: habit.archived_at || null,
+          }
         }
-      }
-      habitGroups[habit.habit_name].days.push(habit.day_of_week)
-      if (habit.time_of_day || habit.reminder_time) {
-        habitGroups[habit.habit_name].times.add(habit.time_of_day || habit.reminder_time)
-      }
-    })
+        groups[habit.habit_name].days.push(habit.day_of_week)
+        if (habit.time_of_day || habit.reminder_time) {
+          groups[habit.habit_name].times.add(habit.time_of_day || habit.reminder_time)
+        }
+        if (habit.archived_at && (!groups[habit.habit_name].archivedAt || habit.archived_at > groups[habit.habit_name].archivedAt)) {
+          groups[habit.habit_name].archivedAt = habit.archived_at
+        }
+      })
+      return Object.values(groups).map(group => {
+        const tc = trackingByHabit[group.name]
+        return {
+          ...group,
+          times: Array.from(group.times),
+          frequency: group.days.length,
+          tracking: tc ? {
+            enabled: tc.tracking_enabled,
+            type: tc.tracking_type,
+            unit: tc.metric_unit,
+            target: tc.metric_target,
+          } : null,
+          entries: entriesByHabit[group.name] || [],
+        }
+      })
+    }
 
-    const groupedHabits = Object.values(habitGroups).map(group => {
-      const tc = trackingByHabit[group.name]
-      return {
-        ...group,
-        times: Array.from(group.times),
-        frequency: group.days.length,
-        tracking: tc ? {
-          enabled: tc.tracking_enabled,
-          type: tc.tracking_type,
-          unit: tc.metric_unit,
-          target: tc.metric_target,
-        } : null,
-        entries: entriesByHabit[group.name] || [],
-      }
-    })
+    const groupedHabits = groupHabitsByName(habits)
+    const groupedArchivedHabits = groupHabitsByName(archivedHabitRows)
 
     return {
       success: true,
@@ -353,6 +374,7 @@ export const getUserDetail = async (userId) => {
         },
         healthVision: journey?.form_data || null,
         habits: groupedHabits,
+        archivedHabits: groupedArchivedHabits,
         reflections: reflections || [],
         resources: resources || []
       }
