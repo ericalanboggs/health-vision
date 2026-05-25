@@ -51,10 +51,12 @@ export const getAllUsers = async () => {
 
     if (journeysError) throw journeysError
 
-    // Get all habits
+    // Get all habits (active only — archived habits shouldn't count toward
+    // the per-user habit count on the admin list)
     const { data: habits, error: habitsError } = await supabase
       .from('weekly_habits')
       .select('user_id, habit_name, week_number')
+      .is('archived_at', null)
 
     if (habitsError) throw habitsError
 
@@ -216,11 +218,14 @@ export const getUserDetail = async (userId) => {
 
     if (journeyError && journeyError.code !== 'PGRST116') throw journeyError
 
-    // Get habits
+    // Get habits (active only — archived habits are excluded from reminders,
+    // followups, and AI context, so they shouldn't surface as "Current Habits"
+    // on the admin page either)
     const { data: habits, error: habitsError } = await supabase
       .from('weekly_habits')
       .select('*')
       .eq('user_id', userId)
+      .is('archived_at', null)
       .order('week_number', { ascending: false })
 
     if (habitsError) throw habitsError
