@@ -50,8 +50,10 @@ describe('habitService', () => {
     it('inserts habits with correct data structure', async () => {
       const mockSelect = vi.fn().mockResolvedValue({ data: mockHabits, error: null })
       const mockInsert = vi.fn().mockReturnValue({ select: mockSelect })
-      // Mock delete chain (called before insert to clear existing habits)
-      const mockDeleteEq3 = vi.fn().mockResolvedValue({ error: null })
+      // Mock delete chain: .delete().eq().eq().eq().is('archived_at', null)
+      // The final .is() filter preserves archived habits during save.
+      const mockDeleteIs = vi.fn().mockResolvedValue({ error: null })
+      const mockDeleteEq3 = vi.fn().mockReturnValue({ is: mockDeleteIs })
       const mockDeleteEq2 = vi.fn().mockReturnValue({ eq: mockDeleteEq3 })
       const mockDeleteEq1 = vi.fn().mockReturnValue({ eq: mockDeleteEq2 })
       const mockDelete = vi.fn().mockReturnValue({ eq: mockDeleteEq1 })
@@ -81,8 +83,9 @@ describe('habitService', () => {
       const mockError = { message: 'Database error' }
       const mockSelect = vi.fn().mockResolvedValue({ data: null, error: mockError })
       const mockInsert = vi.fn().mockReturnValue({ select: mockSelect })
-      // Mock delete chain
-      const mockDeleteEq3 = vi.fn().mockResolvedValue({ error: null })
+      // Mock delete chain: .delete().eq().eq().eq().is('archived_at', null)
+      const mockDeleteIs = vi.fn().mockResolvedValue({ error: null })
+      const mockDeleteEq3 = vi.fn().mockReturnValue({ is: mockDeleteIs })
       const mockDeleteEq2 = vi.fn().mockReturnValue({ eq: mockDeleteEq3 })
       const mockDeleteEq1 = vi.fn().mockReturnValue({ eq: mockDeleteEq2 })
       const mockDelete = vi.fn().mockReturnValue({ eq: mockDeleteEq1 })
