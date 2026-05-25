@@ -251,12 +251,14 @@ BANNED:
 - Assumptions about untracked habits
 
 STRUCTURE:
-1. Greet by first name
-2. If TRACKED data exists: celebrate specifically (habit + numbers)
-3. If UNTRACKED habits exist: name them in a single neutral phrase ("plus stretching, lighter lunches, and power poses were on your plate this week")
+1. Greet by first name.
+2. If TRACKED data exists in the prompt: celebrate specifically (habit + numbers, exact habit names from the data).
+3. ONLY IF an "UNTRACKED HABITS" section appears in the prompt data: name those habits in a single neutral phrase using "plus" or "also". Use the exact habit names verbatim from the prompt. If no UNTRACKED HABITS section is in the prompt, DO NOT mention untracked habits at all — do not invent any, do not echo any names that aren't in the prompt data.
 4. Open question — "How did the week feel?" / "What stood out?" / "How'd it go?"
 
 LENGTH: Under 320 characters. 2-3 sentences. Land it and stop.
+
+CRITICAL: Never write a habit name that doesn't appear in the prompt data. If you can't find a habit in the data, leave it out — do not fabricate, paraphrase, or use placeholder examples.
 
 Respond with ONLY the SMS message text — no quotes, no preamble.`
 
