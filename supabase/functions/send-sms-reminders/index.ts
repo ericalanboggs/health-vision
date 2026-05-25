@@ -22,6 +22,7 @@ interface Profile {
   phone: string
   sms_opt_in: boolean
   timezone: string
+  sms_conversational?: boolean
 }
 
 interface VisionData {
@@ -128,6 +129,97 @@ function getHabitEmoji(habitName: string): string {
 
   // Default fallback
   return '✨'
+}
+
+/**
+ * Generate a CONVERSATIONAL reminder — Summit Coach voice.
+ * Terse, direct, no "Hi {name}!" opener, sparse emoji.
+ * Examples from voice guide:
+ *   "Morning. Today's climb — walk after lunch?"
+ *   "Heads up — lights down by 10:30 tonight."
+ */
+async function generateConversationalReminder(
+  firstName: string,
+  habits: { name: string; time: string }[],
+  visionData: VisionData
+): Promise<string> {
+  const habitCount = habits.length
+  const habitNames = habits.map(h => h.name).join(', ')
+  const firstHabitTime = formatTime12Hour(habits[0].time)
+
+  const fallback = () => {
+    if (habitCount === 1) {
+      return `Morning. Today: ${habits[0].name.toLowerCase()} at ${firstHabitTime}.`
+    }
+    const list = habits.slice(0, 3).map(h => h.name.toLowerCase()).join(', ')
+    return `Morning. On the docket: ${list}. First up at ${firstHabitTime}.`
+  }
+
+  if (!OPENAI_API_KEY) return fallback()
+
+  try {
+    const prompt = `Write a brief SMS reminder in the Summit Coach voice for ${firstName}.
+
+VOICE:
+- Direct. Get to the point in the first sentence. No "Hi ${firstName}!", no "you've got this!"
+- Short sentences. Active voice. Concrete nouns.
+- Light emoji use — maybe one, for emphasis, never decoration. Often zero.
+- Plain English. No "journey" or "summit" metaphors unless earned.
+- Tone benchmark: a sharp friend with a clinical background texting between meetings.
+
+CONTEXT:
+- Habit(s) today: ${habitNames}
+- First habit time: ${firstHabitTime}
+- Their vision: ${visionData.visionStatement || '(none on file)'}
+- Why it matters to them: ${visionData.whyMatters || '(none on file)'}
+
+REQUIREMENTS:
+- Under 140 characters total
+- Open with "Morning." or "Heads up —" or just dive in with the habit
+- Reference 1-2 habits by name, not a count
+- If multiple habits, pick the most notable one for the lead, mention others as a list
+- No first-name opener. No exclamation points unless something earns it. No "you've got this".
+
+EXAMPLES OF VOICE:
+- "Morning. Today's climb — walk after lunch?"
+- "Heads up — lights down by 10:30 tonight. Aim for 7+ hours."
+- "Morning. Two today: 10-min meditate at 7, walk after lunch."
+
+Write the SMS now (under 140 chars, no quotes):`
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'You write SMS coaching nudges in the Summit Coach voice: direct, warm, terse, no fluff.' },
+          { role: 'user', content: prompt },
+        ],
+        max_tokens: 80,
+        temperature: 0.7,
+      }),
+    })
+
+    if (!response.ok) throw new Error(`OpenAI API error: ${response.status}`)
+
+    const data = await response.json()
+    let message = data.choices[0]?.message?.content?.trim()
+    if (!message) throw new Error('No message generated')
+    message = message.replace(/^["']|["']$/g, '')
+    if (message.length > 150) {
+      console.log('Conversational reminder too long, using fallback')
+      return fallback()
+    }
+    console.log(`✨ Conversational reminder (${message.length} chars): ${message}`)
+    return message
+  } catch (error) {
+    console.error('Error generating conversational reminder:', error)
+    return fallback()
+  }
 }
 
 /**
@@ -442,8 +534,11 @@ serve(async (req) => {
         time: getEffectiveTime(h)
       }))
 
-      // Generate personalized message with emojis for all habits
-      const personalizedMessage = await generatePersonalizedMessage(firstName, habitsForMessage, visionData)
+      // Branch on per-user conversational flag (Phase 1 dogfood)
+      const isConversational = profile.sms_conversational === true
+      const personalizedMessage = isConversational
+        ? await generateConversationalReminder(firstName, habitsForMessage, visionData)
+        : await generatePersonalizedMessage(firstName, habitsForMessage, visionData)
 
       // Add opt-out footer
       const message = `${personalizedMessage} Reply STOP to opt out.`

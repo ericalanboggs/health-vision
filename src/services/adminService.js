@@ -338,6 +338,7 @@ export const getUserDetail = async (userId) => {
           subscriptionStatus: profile.subscription_status || null,
           subscriptionCurrentPeriodEnd: profile.subscription_current_period_end || null,
           trackingFollowupTime: profile.tracking_followup_time || '17:00:00',
+          smsConversational: profile.sms_conversational === true,
         },
         pilotReadiness: {
           ready: pilotReady,
@@ -900,6 +901,26 @@ export const adminUpdateHealthVision = async (userId, patch) => {
     return { success: true, data: data.form_data }
   } catch (error) {
     console.error('Error updating health vision:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Toggle the per-user conversational SMS flag.
+ */
+export const adminSetSmsConversational = async (userId, enabled) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+    const { error } = await supabase
+      .from('profiles')
+      .update({ sms_conversational: enabled })
+      .eq('id', userId)
+    if (error) throw error
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating sms_conversational:', error)
     return { success: false, error: error.message }
   }
 }

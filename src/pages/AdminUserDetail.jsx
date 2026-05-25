@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit, adminUpdateTrackingConfig, adminUpdateFollowupTime, adminUpsertTrackingEntry, adminUpdateHealthVision, generateWeeklyTracker } from '../services/adminService'
+import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit, adminUpdateTrackingConfig, adminUpdateFollowupTime, adminUpsertTrackingEntry, adminUpdateHealthVision, adminSetSmsConversational, generateWeeklyTracker } from '../services/adminService'
 import { COACHING_CONFIG, getBillingPeriod } from '../services/subscriptionService'
 import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt, Forum, Edit as EditIcon, Close, Add, PushPin, PushPinOutlined, DeleteOutline, Chat, Email, Checklist, FileDownload } from '@mui/icons-material'
 import { Tag } from '@summit/design-system'
@@ -85,6 +85,22 @@ export default function AdminUserDetail() {
   const [savingHabit, setSavingHabit] = useState(false)
   const [editFollowupTime, setEditFollowupTime] = useState('')
   const [savingFollowup, setSavingFollowup] = useState(false)
+  const [togglingConversational, setTogglingConversational] = useState(false)
+
+  const handleToggleConversational = async () => {
+    const next = !data?.profile?.smsConversational
+    setTogglingConversational(true)
+    const result = await adminSetSmsConversational(userId, next)
+    if (result.success) {
+      setData(prev => ({
+        ...prev,
+        profile: { ...prev.profile, smsConversational: next }
+      }))
+    } else {
+      window.alert(`Failed: ${result.error}`)
+    }
+    setTogglingConversational(false)
+  }
   const [generatingTracker, setGeneratingTracker] = useState(null) // null | 'email' | 'download'
   const [editingVision, setEditingVision] = useState(false)
   const [savingVision, setSavingVision] = useState(false)
@@ -605,6 +621,25 @@ export default function AdminUserDetail() {
               <span className="text-stone-600">Timezone:</span>
               <span className="ml-2 font-medium text-summit-forest">{profile.timezone || 'N/A'}</span>
             </div>
+          </div>
+          <div className="mt-4 pt-4 border-t border-stone-200 flex items-center gap-3">
+            <span className="text-sm text-stone-600">Conversational SMS:</span>
+            <button
+              type="button"
+              onClick={handleToggleConversational}
+              disabled={togglingConversational}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors disabled:opacity-50 ${
+                profile.smsConversational ? 'bg-summit-emerald' : 'bg-stone-300'
+              }`}
+              title="Opt this user into the conversational SMS tone (Phase 1 dogfood)"
+            >
+              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
+                profile.smsConversational ? 'translate-x-4' : 'translate-x-0.5'
+              }`} />
+            </button>
+            <span className="text-xs text-stone-500">
+              {profile.smsConversational ? 'On — uses new conversational prompts' : 'Off — standard prompts'}
+            </span>
           </div>
         </div>
 

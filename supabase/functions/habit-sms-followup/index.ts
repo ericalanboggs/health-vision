@@ -5,6 +5,8 @@ import { sendSMS } from '../_shared/sms.ts'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
+
 interface Profile {
   id: string
   first_name: string
@@ -12,6 +14,7 @@ interface Profile {
   sms_opt_in: boolean
   timezone: string
   tracking_followup_time: string
+  sms_conversational?: boolean
 }
 
 interface TrackingConfig {
@@ -97,6 +100,89 @@ function getCurrentTimeInTimezone(timezone: string): { hours: number; minutes: n
       dateStr: now.toISOString().split('T')[0],
       todayStartUtc: `${now.toISOString().split('T')[0]}T00:00:00Z`,
     }
+  }
+}
+
+/**
+ * Generate a CONVERSATIONAL habit follow-up in the Summit Coach voice.
+ * Falls back to the templated message if OpenAI fails.
+ *
+ * Examples from voice guide:
+ *   "Walk happen today?"
+ *   "How'd the afternoon walk land?"
+ *   "Where'd water land today?"
+ */
+async function generateConversationalFollowup(
+  firstName: string,
+  habitName: string,
+  trackingType: string,
+  metricUnit: string | null,
+  fallback: string,
+): Promise<string> {
+  if (!OPENAI_API_KEY) return fallback
+
+  try {
+    const replyHint = trackingType === 'boolean'
+      ? 'Tell them they can reply Y or N (do not say "Yes or No", say "Y or N").'
+      : `Tell them to reply with a number${metricUnit ? ` (${metricUnit})` : ''}.`
+
+    const prompt = `Write an end-of-day SMS check-in in the Summit Coach voice.
+
+VOICE:
+- Direct. No "Hi ${firstName}!" opener. No "you've got this".
+- Short. Concrete nouns. Active voice.
+- One small question, warm but matter-of-fact.
+- Light emoji use — usually none. Maybe one if it earns its place.
+
+HABIT TO CHECK: "${habitName}"
+TRACKING TYPE: ${trackingType}${metricUnit ? ` (${metricUnit})` : ''}
+INSTRUCTION FOR USER: ${replyHint}
+
+REQUIREMENTS:
+- Under 130 characters total
+- Open with the habit or a casual question — not the user's name
+- Sound like a sharp friend texting between meetings, not a form
+
+EXAMPLES OF VOICE:
+- "Walk happen today? Y or N"
+- "How'd the afternoon walk land? Y or N"
+- "Meditation today? Y or N"
+- "Where'd water land today? Reply with oz."
+- "How many minutes of stretching today? Reply with a number."
+
+Write the SMS now (under 130 chars, no quotes):`
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'You write SMS coaching nudges in the Summit Coach voice: direct, warm, terse, no fluff.' },
+          { role: 'user', content: prompt },
+        ],
+        max_tokens: 60,
+        temperature: 0.7,
+      }),
+    })
+
+    if (!response.ok) throw new Error(`OpenAI API error: ${response.status}`)
+    const data = await response.json()
+    let message = data.choices[0]?.message?.content?.trim()
+    if (!message) throw new Error('No message generated')
+    message = message.replace(/^["']|["']$/g, '')
+    if (message.length > 140) {
+      console.log('Conversational followup too long, using fallback')
+      return fallback
+    }
+    console.log(`✨ Conversational followup (${message.length} chars): ${message}`)
+    return message
+  } catch (error) {
+    console.error('Error generating conversational followup:', error)
+    return fallback
   }
 }
 
@@ -295,11 +381,20 @@ serve(async (req) => {
       const firstName = profile.first_name || 'there'
       let message: string
 
-      if (trackingConfig.tracking_type === 'boolean') {
-        message = `Hi ${firstName}! Did you complete "${trackingConfig.habit_name}" today? Reply Y or N`
+      const templatedMessage = trackingConfig.tracking_type === 'boolean'
+        ? `Hi ${firstName}! Did you complete "${trackingConfig.habit_name}" today? Reply Y or N`
+        : `Hi ${firstName}! How many ${trackingConfig.metric_unit || 'units'} for "${trackingConfig.habit_name}" today? Reply with a number`
+
+      if (profile.sms_conversational === true) {
+        message = await generateConversationalFollowup(
+          firstName,
+          trackingConfig.habit_name,
+          trackingConfig.tracking_type,
+          trackingConfig.metric_unit,
+          templatedMessage,
+        )
       } else {
-        const unit = trackingConfig.metric_unit || 'units'
-        message = `Hi ${firstName}! How many ${unit} for "${trackingConfig.habit_name}" today? Reply with a number`
+        message = templatedMessage
       }
 
       console.log(`Sending followup to ${profile.id}: "${message}"`)
