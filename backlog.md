@@ -402,6 +402,50 @@ If a pilot user (Julie, future enterprise pilot, etc.) asks "can Summit talk to 
 
 ---
 
+## 18. Text-Based SMS Onboarding / Activation Rescue
+
+**Priority:** Low (premature at current scale — see finding)
+**Status:** Deferred — analyzed 2026-05-28, do manually for now
+**Value:** Could recover users who sign up but never add a vision or habits
+
+### Problem
+Some users complete signup but stall before adding a vision or any habits, so they never reach the core product. Two distinct framings got conflated in the original idea:
+
+1. **Acquisition variant** — a brand-new person texts START and completes signup + first habits entirely over SMS, never opening the web app.
+2. **Activation variant** — a user who already signed up on web but stalled gets a conversational SMS nudge that captures vision + first habits.
+
+### Finding that deferred this (2026-05-28)
+Pulled the actual numbers before building:
+
+| Metric | Count |
+|--------|-------|
+| Signed up | 20 |
+| Fully onboarded | 13 |
+| Stalled (no vision OR no habits) | 4 |
+| Stalled AND reachable by SMS | 4 |
+| Stalled but unreachable | 0 |
+
+The entire addressable population is **4 people** out of 20. At this scale the right response is **manual, not software**: text the 4 stalled users by hand via the existing admin SMS tool and learn *why* they stalled (currently unknown — the spec assumes "make it conversational over SMS," but the real reason could be a confusing web vision step, unclear value, or simple distraction). Building the AI parser now means tuning the hardest, most expensive piece against a sample of four. Do-things-that-don't-scale applies: manual beats automated until manual visibly breaks.
+
+### Architecture blockers (acquisition variant only)
+The brand-new-user START flow carries landmines the activation variant avoids:
+- `profiles.id` is a 1:1 FK to `auth.users`, which needs email + password. SMS can't naturally capture a password.
+- The web client uses PKCE, so server-generated magic links don't create valid sessions — an SMS-created user **has no working way to log into the web app** (and Stripe checkout is web-only, so the funnel dead-ends one step before revenue).
+- The load-bearing fix is a secure phone→web auto-login (one-time token link). That primitive is undecided and is the hardest part. It would also unlock the lite-to-full upgrade path, so if/when this is built, build that primitive first.
+- No timezone capture in the SMS flow (reminders/followups are timezone-driven; area code is unreliable).
+- 10DLC compliance: the first reply to an unknown number needs opt-in disclosure (msg frequency, STOP/HELP, rates).
+
+The **activation variant** sidesteps almost all of this: those users already have an account, password, timezone, and SMS opt-in, so account-claiming and timezone gaps vanish. It reuses ~60% of the original spec's machinery (the conversational vision + habit capture + AI parser) without the identity/compliance baggage. If this gets built, build the activation variant, not the acquisition one.
+
+### Revisit trigger
+Build the automated activation rescue when **both** hold:
+1. Stalled-but-reachable users exceed ~30–50/month (personal outreach stops scaling), **and**
+2. Manual outreach has confirmed that a conversational nudge actually converts stalled users (so the AI parser is solving a validated problem, not an assumed one).
+
+Reuse targets when ready: `sms-add-habit` state machine (AI assigns days/times, SMART-goal refinement), `create-lite-enrollment` (account creation pattern, acquisition variant only), `_shared/user_context.ts` (AI context).
+
+---
+
 ## Appendix: Acquisition vs. Retention Matrix
 
 | Feature | Helps Acquire New Users | Helps Retain Existing Users |
@@ -427,4 +471,4 @@ When evaluating features, remember:
 
 ---
 
-*Last updated: January 2026*
+*Last updated: May 2026*
