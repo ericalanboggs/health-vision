@@ -4,6 +4,7 @@ import { sendSMS as _sendSMS } from '../_shared/sms.ts'
 import { sendEmail } from '../_shared/resend.ts'
 import { loadUserContext, formatContextForPrompt } from '../_shared/user_context.ts'
 import { SUMMIT_LINKS } from '../_shared/summit_links.ts'
+import { coachKnowledgeBlock } from '../_shared/coach_knowledge.ts'
 
 const COACH_FLAG_EMAIL = 'eric@summithealth.app'
 
@@ -310,6 +311,9 @@ RULES:
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
+        // Force valid JSON so a non-JSON reply can't break the JSON.parse below.
+        // Requires "JSON" in the prompt (present: "Respond with JSON only").
+        response_format: { type: 'json_object' },
         max_tokens: 500,
         temperature: 0.3,
       }),
@@ -405,7 +409,15 @@ async function generateCoachingResponse(
   try {
     const contextBlock = userContextPrompt || `USER: ${firstName}`
 
+    // Shared coaching brain: voice (from SUMMIT_COACH_VOICE.md) + MI method +
+    // clinical guardrail + any condition slices relevant to this user. We pass
+    // the formatted context as the haystack so topic slices (e.g. hypertension
+    // for a healthy-hearts user) get selected from their vision/habits/challenge.
+    const coachingKnowledge = coachKnowledgeBlock(contextBlock)
+
     const systemPrompt = `You are Summit, a warm and grounded health coach. The user sent a message that isn't about habit tracking. Respond with empathy and brevity. Use their background to make your response personal and relevant — reference their vision, recent patterns, or reflections when it fits naturally. Don't force it.
+
+${coachingKnowledge}
 
 RULES:
 - CRITICAL: You CANNOT log, track, save, or record habits from this response — that pipeline already ran and decided this message wasn't a tracking entry. NEVER use words like "logged", "tracked", "recorded", "saved", "noted", or any phrase implying you wrote their habit to the system (e.g. "got that down", "marked complete"). If they say they did something, acknowledge their effort but DO NOT claim it was tracked. If you think they meant to log a habit, tell them to reply with the habit name + value or text the habit directly.
@@ -418,7 +430,7 @@ RULES:
 - If the message is simple/conversational (e.g., "thank you", "that's great", "ok", "cool", "thanks"), reply with a brief warm acknowledgment (under 50 chars). Don't offer suggestions or ask questions — just land the moment.
 - For substantive messages: validate what they said, offer 1-2 brief concrete options (not commands)
 - Stay under 480 characters total — this is SMS, but completeness matters more than brevity
-- No emojis, no "great job", no "keep it up"
+- No "great job", no "keep it up" (emoji guidance is in the VOICE & METHOD block below)
 - Be warm but real. Don't sound like an app notification.
 - If the user seems distressed, frustrated, or wanting to quit, set flag_for_human_coach to true
 
@@ -490,7 +502,11 @@ NEW MESSAGE FROM USER: "${messageBody}"`
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        max_tokens: 400,
+        // Force valid JSON so a conversational/longer coaching reply can't break
+        // the hand-rolled JSON.parse below and silently drop to the fallback.
+        // Requires the word "JSON" in the prompt (present: "Respond with JSON only").
+        response_format: { type: 'json_object' },
+        max_tokens: 700,
         temperature: 0.7,
       }),
     })
@@ -1038,7 +1054,29 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle()
 
+    // Only treat this inbound as a follow-up answer if the follow-up question is
+    // the MOST RECENT thing Summit said. If we've exchanged messages since (e.g.
+    // a coaching conversation), a bare "no"/"yes"/number belongs to that thread,
+    // not to an hours-old habit prompt — let it fall through to coaching.
+    // (Chains still work: the latest chained follow-up IS the last thing said.)
+    let followupIsLastThingSaid = false
     if (recentFollowup) {
+      const { data: lastOutbound } = await supabase
+        .from('sms_messages')
+        .select('body')
+        .eq('user_id', profile.id)
+        .eq('direction', 'outbound')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      followupIsLastThingSaid =
+        (lastOutbound?.body || '').trim() === (recentFollowup.message_sent || '').trim()
+      if (!followupIsLastThingSaid) {
+        console.log(`Followup for "${recentFollowup.habit_name}" exists but Summit has spoken since — treating "${body.slice(0, 40)}" as conversation, not a habit answer`)
+      }
+    }
+
+    if (recentFollowup && followupIsLastThingSaid) {
       console.log(`Found followup context: ${recentFollowup.habit_name}`)
 
       // Get tracking config for this habit
@@ -1356,8 +1394,17 @@ async function chainToNextHabit(
     if (minutesFromFollowup < -720) minutesFromFollowup += 1440
     if (minutesFromFollowup > 720) minutesFromFollowup -= 1440
 
-    if (minutesFromFollowup < -15 || minutesFromFollowup > 120) {
-      console.log(`Skipping chain — outside followup window (${minutesFromFollowup} min from ${trackingFollowupTime})`)
+    // Lower bound: don't chain before the followup window opens.
+    if (minutesFromFollowup < -15) {
+      console.log(`Skipping chain — before followup window (${minutesFromFollowup} min from ${trackingFollowupTime})`)
+      return
+    }
+    // Upper bound: never send a chained prompt after 11pm local, regardless of
+    // when the user's followup time is. An absolute bedtime ceiling is correct
+    // for any followup_time (a relative offset would let a late followup_time
+    // chain past midnight).
+    if (currentHour >= 23) {
+      console.log(`Skipping chain — past 11pm local (${currentHour}:${currentMinute})`)
       return
     }
 
