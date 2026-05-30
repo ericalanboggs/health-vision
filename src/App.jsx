@@ -30,6 +30,7 @@ import VerifyPhone from './pages/VerifyPhone'
 import WelcomeBack from './pages/WelcomeBack'
 import Coaching from './pages/Coaching'
 import SmsConsent from './pages/SmsConsent'
+import Freebies from './pages/Freebies'
 import ChallengesLanding from './pages/ChallengesLanding'
 import ChallengeDetail from './pages/ChallengeDetail'
 import ChallengeAddHabit from './pages/ChallengeAddHabit'
@@ -135,6 +136,9 @@ function App() {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/sms-consent" element={<SmsConsent />} />
+
+        {/* Freebies - Public */}
+        <Route path="/freebies" element={<Freebies />} />
 
         {/* Welcome back - reactivation flow */}
         <Route
