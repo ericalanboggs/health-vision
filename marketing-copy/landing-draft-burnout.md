@@ -12,7 +12,7 @@
 # Burnout isn't a stamina problem. It's a sign your days stopped matching what matters.
 
 **Subhead:**
-Coaching by text for high-output people who've lost the thread. Not to help you grind better at your job — to help you come back to your vision, protect your time and energy for it, and realign in the small increments you actually have. No apps. No dashboards. A coach in your messages.
+Coaching by text for high-output people running hard but no longer sure toward what. Not to help you grind better at your job — to help you come back to your vision, protect your time and energy for it, and realign in the small increments you actually have. No apps. No dashboards. A coach in your messages.
 
 **CTA:** `Start Free for 30 Days`
 
