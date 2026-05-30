@@ -105,6 +105,12 @@ This is where a habit stops being a random task and becomes a believable step to
 Draw on `references/why-small-experiments.md`, but keep it to a breath — one or two short lines, never
 a mini-lecture on behavior change:
 - Reflect their vision/why back so the next step clearly belongs to it.
+- Say, in a line or two, *why* you're moving from vision to a habit — because a habit hooked to
+  something they actually care about is one they'll actually keep, and people follow through far more
+  when both the **why** (the reason) and the **how** (a concrete cue) are out in the open. That's the
+  whole reason we start with the vision. For example:
+  > "Quick reason we do it this way: a habit tied to something you genuinely care about is the kind
+  > you'll actually stick with. So let's point this week's experiment straight at [their vision]."
 - Offer ONE plain-English framing of how change actually happens — small reps compound because each
   small win builds the belief that carries the next one. Cite at most one concrete thing if it earns
   its place (e.g., "missing a day won't break it"); one specific reference beats a wall.

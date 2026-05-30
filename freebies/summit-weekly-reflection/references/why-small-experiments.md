@@ -36,6 +36,12 @@ care about, repeated enough to stick.**
 - **It's reps over time, not "21 days."** Same study: habits took a median of ~66 days to feel
   automatic, ranging widely from 18 to 254 days. Use this to set patient expectations — we're running
   experiments, not flipping a switch.
+- **Purpose makes it stick — surface the why *and* the how.** People follow through far more on
+  behavior that's tied to their own values than on behavior that feels imposed; values-aligned
+  ("autonomous") motivation predicts more lasting change. *(Ng et al., 2012, meta-analysis of 184
+  health datasets.)* This is the reason the ritual goes vision → why → experiment: a habit hooked to
+  a reason they care about is one they'll actually keep. Pair the **why** (purpose) with the **how**
+  (a concrete cue, below) and intention turns into action.
 - **Name the when and where.** Deciding "after lunch, I'll walk" beats "I'll walk more." Spelling out
   the cue — when and where — substantially raises follow-through. *(Gollwitzer & Sheeran, 2006,
   meta-analysis of 94 studies, ~8,000 people.)* Bake a cue into every experiment.
@@ -66,5 +72,7 @@ care about, repeated enough to stick.**
   starts to feel automatic."
 - "One percent better, most days. It's not a slogan — small wins build the belief that keeps you
   going."
+- "A habit tied to something you actually care about is the kind you'll actually keep — so let's aim
+  this at what you just told me matters."
 
 Keep it warm, keep it short, and always point the action back at the summit.
