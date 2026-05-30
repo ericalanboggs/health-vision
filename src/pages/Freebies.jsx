@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
 import { CheckCircle } from '@mui/icons-material'
 import { Button, Card, CardHeader, CardTitle, CardContent, Input, Banner, buttonVariants } from '@summit/design-system'
 import { trackEvent } from '../lib/posthog'
@@ -269,9 +268,9 @@ export default function Freebies() {
             Want the full experience? Summit brings this same coaching to daily text check-ins that
             hold the thread when life gets loud, plus challenges and reminders that actually sound
             human.{' '}
-            <Link to="/pricing" className="text-summit-pine underline font-semibold">
+            <a href="https://summithealth.app" className="text-summit-pine underline font-semibold">
               See Summit
-            </Link>
+            </a>
           </p>
         </div>
 

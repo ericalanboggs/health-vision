@@ -199,6 +199,7 @@ export const doSomething = async (params) => {
 | `send-phone-verification` | Frontend POST | NO | Sends OTP for phone verification |
 | `verify-phone-code` | Frontend POST | NO | Verifies OTP, sends opt-in confirmation |
 | `create-lite-enrollment` | Frontend POST | **YES** | Lite challenge signup (creates user + profile + enrollment) |
+| `capture-freebie-lead` | Frontend POST | **YES** | /freebies email capture — stores lead + emails the download link |
 | `send-lite-challenge-sms` | Cron (every 15 min) | **YES** | 5x/day SMS for lite challenge |
 | `send-lite-challenge-email` | Cron (daily) | **YES** | Daily email + end-of-challenge summary |
 | `stripe-webhook` | Stripe webhook | **YES** | Handles checkout, subscription updates/deletes |
@@ -643,6 +644,7 @@ Source design lives in the Claude Design bundle (`Summit Tracker.html`). The imp
    supabase functions deploy send-welcome-email --no-verify-jwt
    supabase functions deploy stripe-webhook --no-verify-jwt
    supabase functions deploy create-lite-enrollment --no-verify-jwt
+   supabase functions deploy capture-freebie-lead --no-verify-jwt
    supabase functions deploy send-lite-challenge-sms --no-verify-jwt
    supabase functions deploy send-lite-challenge-email --no-verify-jwt
    supabase functions deploy sms-reflection-response --no-verify-jwt

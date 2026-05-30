@@ -92,7 +92,7 @@ function buildDownloadHtml(downloadUrl: string, logoUrl: string, freebieName: st
               <p style="margin: 0 0 8px 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
                 Want this same coach over daily text check-ins, challenges, and reminders that
                 actually sound human? That's the full Summit experience —
-                <a href="${FRONTEND_URL}/pricing" style="color: #15803d; font-weight: 600;">take a look</a>.
+                <a href="https://summithealth.app" style="color: #15803d; font-weight: 600;">take a look</a>.
               </p>
               <p style="margin: 12px 0 0 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
                 Best,<br>
