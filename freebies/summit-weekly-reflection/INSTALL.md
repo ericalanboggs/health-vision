@@ -6,7 +6,7 @@ All three take about two minutes.
 > **One thing to know first:** the coach is `SKILL.md`. It relies on the two files in `references/`
 > for its full voice and its medical-safety boundary. On platforms that load a whole folder (like
 > Claude Code), that happens automatically. On platforms where you paste instructions (like ChatGPT
-> or a Claude Project), **paste the two reference files first, then `SKILL.md`** — instructions for
+> or a Claude Project), **paste the reference files first, then `SKILL.md`** — instructions for
 > that are below.
 
 ---
@@ -29,7 +29,8 @@ All three take about two minutes.
 3. Paste the contents of these files **in this order**, separated by a blank line:
    1. `references/coach-voice.md`
    2. `references/clinical-guardrail.md`
-   3. `SKILL.md`
+   3. `references/why-small-experiments.md`
+   4. `SKILL.md`
 4. Start a chat in that project and say **"start my weekly reflection."**
 5. Each week, paste your **Summit Card** back into a new chat in the same project to continue.
 
@@ -37,11 +38,11 @@ All three take about two minutes.
 
 **Custom GPT (recommended):**
 1. Create a new GPT (ChatGPT → Explore GPTs → Create).
-2. In **Instructions**, paste the three files in this order: `coach-voice.md`, then
-   `clinical-guardrail.md`, then `SKILL.md`.
+2. In **Instructions**, paste the files in this order: `coach-voice.md`, then
+   `clinical-guardrail.md`, then `why-small-experiments.md`, then `SKILL.md`.
 3. Name it "Summit Weekly Reflection," save, and start chatting.
 
-**Or in a single conversation:** paste the same three files (in that order) as your first message,
+**Or in a single conversation:** paste those same files (in that order) as your first message,
 then say "start my weekly reflection." Keep your Summit Card to paste back next week.
 
 ---

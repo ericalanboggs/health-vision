@@ -23,7 +23,8 @@ summit-weekly-reflection/
 ├── INSTALL.md                     # how to install on Claude Code, Claude Projects, or ChatGPT
 └── references/
     ├── coach-voice.md             # how it talks and coaches
-    └── clinical-guardrail.md      # the wellness/medical boundary + condition-specific coaching
+    ├── clinical-guardrail.md      # the wellness/medical boundary + condition-specific coaching
+    └── why-small-experiments.md   # bridging vision to action + the evidence behind small habits
 ```
 
 ## A few ground rules it follows

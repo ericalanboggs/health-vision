@@ -75,7 +75,7 @@ function buildDownloadHtml(downloadUrl: string, logoUrl: string, freebieName: st
                 </tr>
                 <tr>
                   <td style="padding: 6px 0; font-size: 14px; color: #15803d; font-weight: 600;">Claude.ai Project</td>
-                  <td style="padding: 6px 0; font-size: 14px; color: #4a4a4a;">Paste the two reference files, then SKILL.md, into your Project instructions.</td>
+                  <td style="padding: 6px 0; font-size: 14px; color: #4a4a4a;">Paste the reference files, then SKILL.md, into your Project instructions.</td>
                 </tr>
                 <tr>
                   <td style="padding: 6px 0; font-size: 14px; color: #15803d; font-weight: 600;">ChatGPT</td>

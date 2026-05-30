@@ -14,7 +14,7 @@ const WHAT_IT_DOES = [
   },
   {
     title: 'Run weekly experiments',
-    body: "Not goals. Not commitments. A few small things you're trying this week. The framing is the point.",
+    body: 'Not goals. Not commitments. Pick 1–3 small things, sized to the week you actually have. The framing is the point.',
   },
   {
     title: 'Reflect every Sunday',
@@ -38,11 +38,11 @@ const INSTALL_STEPS = [
   },
   {
     platform: 'Claude.ai Project',
-    step: 'Paste the two reference files, then SKILL.md, into your Project instructions.',
+    step: 'Paste the reference files, then SKILL.md, into your Project instructions.',
   },
   {
     platform: 'ChatGPT',
-    step: 'Build a Custom GPT and paste the same three files as its instructions.',
+    step: 'Build a Custom GPT and paste the reference files + SKILL.md as its instructions.',
   },
 ]
 
@@ -113,9 +113,10 @@ export default function Freebies() {
           <h1 className="text-h1 text-summit-forest mb-4">
             A pocket-sized version of Summit's coach. Free.
           </h1>
-          <p className="text-body text-summit-forest/80 max-w-xl mx-auto">
-            A short weekly ritual — capture a vision, run a few small experiments, reflect every
-            Sunday. It coaches in a real voice, and it runs entirely on your AI of choice.
+          <p className="text-body text-summit-forest max-w-xl mx-auto">
+            A short weekly ritual that fits the ten minutes you actually have. Capture a vision, pick
+            1–3 small experiments sized to your week, and reflect every Sunday — coached in a real
+            voice, on whatever AI you already use.
           </p>
           <div className="mt-8">
             <a
@@ -126,7 +127,7 @@ export default function Freebies() {
             >
               Download the skill
             </a>
-            <p className="text-xs text-text-muted mt-3">Free · No account · ~2-minute setup</p>
+            <p className="text-xs text-text-secondary mt-3">Free · No account · ~2-minute setup</p>
           </div>
 
           {/* Optional soft email capture — download above never depends on this */}
@@ -161,7 +162,7 @@ export default function Freebies() {
               </form>
             )}
             {status !== 'sent' && (
-              <p className="text-xs text-text-muted mt-2 text-center sm:text-left">
+              <p className="text-xs text-text-secondary mt-2 text-center sm:text-left">
                 Optional — get the link in your inbox plus occasional tips and new freebies.
               </p>
             )}
@@ -179,12 +180,12 @@ export default function Freebies() {
           <CardContent className="mt-4 space-y-5">
             {WHAT_IT_DOES.map(({ title, body }, i) => (
               <div key={title} className="flex gap-4 items-start">
-                <div className="flex-shrink-0 h-8 w-8 rounded-full bg-summit-mint flex items-center justify-center text-body-sm font-bold text-summit-emerald">
+                <div className="flex-shrink-0 h-8 w-8 rounded-full bg-summit-mint flex items-center justify-center text-body-sm font-bold text-summit-forest">
                   {i + 1}
                 </div>
                 <div>
                   <p className="text-body font-semibold text-summit-forest">{title}</p>
-                  <p className="text-body-sm text-text-muted">{body}</p>
+                  <p className="text-body-sm text-text-secondary">{body}</p>
                 </div>
               </div>
             ))}
@@ -202,7 +203,7 @@ export default function Freebies() {
                 <div
                   className={
                     who === 'you'
-                      ? 'max-w-[80%] rounded-2xl rounded-br-sm bg-summit-emerald px-4 py-2.5 text-body-sm text-white'
+                      ? 'max-w-[80%] rounded-2xl rounded-br-sm bg-summit-pine px-4 py-2.5 text-body-sm text-white'
                       : 'max-w-[80%] rounded-2xl rounded-bl-sm bg-summit-sage px-4 py-2.5 text-body-sm text-summit-forest'
                   }
                 >
@@ -242,13 +243,13 @@ export default function Freebies() {
           <CardContent className="mt-4 space-y-4">
             {INSTALL_STEPS.map(({ platform, step }) => (
               <div key={platform} className="flex gap-3 items-start">
-                <div className="flex-shrink-0 w-32 text-body-sm font-semibold text-summit-emerald pt-0.5">
+                <div className="flex-shrink-0 w-32 text-body-sm font-semibold text-summit-forest pt-0.5">
                   {platform}
                 </div>
-                <p className="text-body-sm text-text-muted">{step}</p>
+                <p className="text-body-sm text-text-secondary">{step}</p>
               </div>
             ))}
-            <p className="text-body-sm text-text-muted pt-2">
+            <p className="text-body-sm text-text-secondary pt-2">
               The download includes step-by-step <code>INSTALL.md</code> for each platform.
             </p>
           </CardContent>
@@ -264,10 +265,11 @@ export default function Freebies() {
           >
             Download the skill
           </a>
-          <p className="text-body-sm text-text-muted mt-6">
-            Want the full experience? Summit brings this same coach to daily text check-ins,
-            challenges, and reminders that actually sound human.{' '}
-            <Link to="/pricing" className="text-summit-emerald underline font-medium">
+          <p className="text-body-sm text-text-secondary mt-6">
+            Want the full experience? Summit brings this same coaching to daily text check-ins that
+            hold the thread when life gets loud, plus challenges and reminders that actually sound
+            human.{' '}
+            <Link to="/pricing" className="text-summit-pine underline font-semibold">
               See Summit
             </Link>
           </p>
