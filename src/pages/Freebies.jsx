@@ -30,19 +30,10 @@ const TRANSCRIPT = [
   { who: 'coach', text: 'Love it. A 10-minute walk after dinner. Which days do you want to try it? 💪' },
 ]
 
-const INSTALL_STEPS = [
-  {
-    platform: 'Claude Code',
-    step: 'Unzip into ~/.claude/skills/ and say "start my weekly reflection."',
-  },
-  {
-    platform: 'Claude.ai Project',
-    step: 'Paste the reference files, then SKILL.md, into your Project instructions.',
-  },
-  {
-    platform: 'ChatGPT',
-    step: 'Build a Custom GPT and paste the reference files + SKILL.md as its instructions.',
-  },
+const HOW_TO_USE = [
+  'Download the zip and unzip it.',
+  'Drag the files into your AI of choice — Claude or ChatGPT.',
+  'Say "start my weekly reflection." It takes it from there.',
 ]
 
 export default function Freebies() {
@@ -234,22 +225,40 @@ export default function Freebies() {
           </CardContent>
         </Card>
 
-        {/* Install quickstart */}
+        {/* What's a skill? — approachable orientation */}
         <Card variant="outlined" className="mb-8">
           <CardHeader>
-            <CardTitle as="h2">Install in about two minutes</CardTitle>
+            <CardTitle as="h2">New here? What's a "skill"?</CardTitle>
           </CardHeader>
-          <CardContent className="mt-4 space-y-4">
-            {INSTALL_STEPS.map(({ platform, step }) => (
-              <div key={platform} className="flex gap-3 items-start">
-                <div className="flex-shrink-0 w-32 text-body-sm font-semibold text-summit-forest pt-0.5">
-                  {platform}
+          <CardContent className="mt-3 space-y-3">
+            <p className="text-body text-text-secondary">
+              A skill is just a set of instructions you hand your AI — it teaches Claude or ChatGPT to
+              do one thing really well. This one turns your AI into a weekly reflection coach.
+            </p>
+            <p className="text-body-sm text-text-secondary">
+              No coding, no account, nothing to configure. You drop in the file, and the AI does the
+              rest.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* How to use it — simplified */}
+        <Card variant="outlined" className="mb-8">
+          <CardHeader>
+            <CardTitle as="h2">Use it in about two minutes</CardTitle>
+          </CardHeader>
+          <CardContent className="mt-4 space-y-5">
+            {HOW_TO_USE.map((step, i) => (
+              <div key={i} className="flex gap-4 items-start">
+                <div className="flex-shrink-0 h-8 w-8 rounded-full bg-summit-mint flex items-center justify-center text-body-sm font-bold text-summit-forest">
+                  {i + 1}
                 </div>
-                <p className="text-body-sm text-text-secondary">{step}</p>
+                <p className="text-body text-text-secondary pt-1">{step}</p>
               </div>
             ))}
-            <p className="text-body-sm text-text-secondary pt-2">
-              The download includes step-by-step <code>INSTALL.md</code> for each platform.
+            <p className="text-body-sm text-text-secondary pt-1">
+              Want exact steps for Claude Code, Claude Projects, or a Custom GPT? They're in the{' '}
+              <code>INSTALL.md</code> inside the download.
             </p>
           </CardContent>
         </Card>
