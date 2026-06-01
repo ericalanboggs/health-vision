@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { captureAcquisitionFromUrl } from './lib/acquisition'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  return null
+}
+
+// Capture acquisition source (?source= / utm_*) from inbound Framer links as
+// early as possible — before any Supabase auth redirect drops the query string.
+function AcquisitionCapture() {
+  const { search } = useLocation()
+  useEffect(() => { captureAcquisitionFromUrl(search) }, [search])
   return null
 }
 import LandingPage from './components/LandingPage'
@@ -75,6 +84,7 @@ function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <AcquisitionCapture />
       <Routes>
         {/* Legacy health journey route */}
         <Route path="/journey" element={<HealthJourney />} />

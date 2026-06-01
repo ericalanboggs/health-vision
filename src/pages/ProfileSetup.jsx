@@ -4,6 +4,7 @@ import { Person, Phone, Email, Autorenew } from '@mui/icons-material'
 import { getCurrentUser } from '../services/authService'
 import { upsertProfile } from '../services/authService'
 import { trackEvent } from '../lib/posthog'
+import { getAcquisitionSource, clearAcquisition } from '../lib/acquisition'
 import supabase from '../lib/supabase'
 import { formatPhoneToE164, isValidUSPhoneNumber, formatPhoneAsYouType } from '../utils/phoneFormatter'
 import { Button, Input, Checkbox, Card } from '@summit/design-system'
@@ -103,6 +104,9 @@ export default function ProfileSetup() {
 
     try {
       const formattedPhone = formatPhoneToE164(formData.phone.trim())
+      // Which Framer landing page they came in from (set null-safe — only writes
+      // when a tag was captured), used to tailor onboarding.
+      const acquisitionSource = getAcquisitionSource()
       const result = await upsertProfile(user.id, {
         first_name: formData.firstName.trim(),
         last_name: formData.lastName.trim(),
@@ -112,12 +116,15 @@ export default function ProfileSetup() {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         trial_started_at: new Date().toISOString(),
         trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        ...(acquisitionSource ? { acquisition_source: acquisitionSource } : {}),
       })
 
       if (result.success) {
+        clearAcquisition()
         trackEvent('profile_completed', {
           has_phone: !!formData.phone,
-          sms_consent: formData.smsConsent
+          sms_consent: formData.smsConsent,
+          acquisition_source: acquisitionSource || null,
         })
 
         // Send welcome email + notify admin (fire-and-forget)
