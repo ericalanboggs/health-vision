@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendSMS as _sendSMS } from '../_shared/sms.ts'
 import { loadUserContext, formatContextForPrompt } from '../_shared/user_context.ts'
 import { SUMMIT_LINKS } from '../_shared/summit_links.ts'
+import { coachKnowledgeBlock } from '../_shared/coach_knowledge.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -87,16 +88,20 @@ async function generateFollowUp(
 
   let focusInstruction: string
   if (exchangeCount === 0) {
-    focusInstruction = `The user just shared how their week went. Acknowledge what they said warmly, then ask about what was challenging or didn't go as planned this week. Be specific — reference their vision, habits, or past reflections when relevant.`
+    focusInstruction = `The user just shared how their week went. React to the substance of what they actually said — don't recap or restate it back to them (they can see it right above). Then ask about what was challenging or didn't go as planned this week. Be specific — reference their vision, habits, or past reflections when relevant.`
   } else {
-    focusInstruction = `The user just shared what was challenging. Acknowledge it empathetically, then ask what they want to adjust or try differently next week. Mention that their weekly guides will connect to what they share here. Reference their past adjustments or patterns if relevant.`
+    focusInstruction = `The user just shared what was challenging. Respond to it like a person, not by repeating it back. Then ask what they want to adjust or try differently next week. Mention that their weekly guides will connect to what they share here. Reference their past adjustments or patterns if relevant.`
   }
 
   const backgroundBlock = userContextPrompt
     ? `\nUSER BACKGROUND:\n${userContextPrompt}\n`
     : ''
 
-  const systemPrompt = `You are Summit, a warm and supportive health habit coach having a natural SMS conversation during a weekly reflection. Keep responses under 280 characters (SMS-friendly). Be conversational, not clinical. No emojis overload — one max if natural.
+  const coachingKnowledge = coachKnowledgeBlock(userContextPrompt || '')
+
+  const systemPrompt = `You are Summit, a warm and supportive health habit coach having a natural SMS conversation during a weekly reflection. Keep responses under 280 characters (SMS-friendly). Be conversational, not clinical.
+
+${coachingKnowledge}
 
 LINK REQUESTS: If the user asks for a link, URL, or to "go to" / "open" / "show me" any Summit page (vision, dashboard, habits, reflection, guides, coaching, challenges, profile, pricing), include the exact URL from SUMMIT LINKS below at the start of your response, prefixed with https:// so it's clickable in SMS. Then continue with your reflection follow-up question. Don't refuse — just give them the link and keep the conversation moving. Example: "Here's your vision: https://go.summithealth.app/vision. While you're there, what felt challenging this week?"
 
