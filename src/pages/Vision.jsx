@@ -440,7 +440,7 @@ const IntroPage = ({ onSelectPath }) => {
 
         <div className="space-y-4 text-body text-stone-600 leading-relaxed mb-6">
           <p>
-            Research shows that connecting daily actions to a meaningful future vision is associated with{' '}
+            A clear vision makes habits easier to keep—especially when they're hard—because it gives you something to return to when motivation fades. Research backs this up: connecting daily actions to a meaningful future is associated with{' '}
             <a
               href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8669210/"
               target="_blank"
@@ -450,9 +450,6 @@ const IntroPage = ({ onSelectPath }) => {
               lower disease risk
             </a>{' '}
             and reduced mortality.
-          </p>
-          <p>
-            A clear vision makes habit formation easier—even when it's hard—because it gives you something to return to when motivation fades.
           </p>
         </div>
       </Card>
