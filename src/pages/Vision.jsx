@@ -420,11 +420,13 @@ const IntroPage = ({ onSelectPath }) => {
     <div className="max-w-3xl mx-auto">
       <div className="text-center mb-8">
         <div className="flex justify-center mb-6">
-          <img
-            src="/summit-illustration.png"
-            alt="Summit"
-            className="w-[120px] h-[120px]"
-          />
+          <div className="w-32 h-32 rounded-full bg-white shadow-elevated flex items-center justify-center">
+            <img
+              src="/summit-illustration.png"
+              alt="Summit"
+              className="w-[96px] h-[96px]"
+            />
+          </div>
         </div>
         <h1 className="text-h1 text-summit-forest mb-4">
           Create Your Health Vision
@@ -460,11 +462,13 @@ const IntroPage = ({ onSelectPath }) => {
         {/* Quick Start Card */}
         <button
           onClick={() => onSelectPath('quickstart')}
-          className="w-full text-left bg-white p-6 rounded-xl border-2 border-summit-sage hover:border-summit-emerald transition-all shadow-sm hover:shadow-md group"
+          className="w-full text-left bg-white p-6 rounded-xl border-2 border-summit-sage hover:border-summit-emerald transition-all duration-200 ease-out shadow-sm hover:shadow-md hover:-translate-y-1 group"
         >
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
-              <MaterialSymbol name="bolt" className="text-3xl text-summit-emerald" />
+              <div className="flex-shrink-0 w-12 h-12 bg-summit-sage rounded-lg flex items-center justify-center transition-all duration-200 ease-out group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-md">
+                <MaterialSymbol name="bolt" className="text-[28px] text-summit-pine" />
+              </div>
               <div>
                 <h3 className="text-lg font-semibold text-summit-forest mb-1">Quick Start</h3>
                 <p className="text-body-sm text-stone-600 mb-2">
@@ -482,11 +486,13 @@ const IntroPage = ({ onSelectPath }) => {
         {/* Detailed Vision Card */}
         <button
           onClick={() => onSelectPath('detailed')}
-          className="w-full text-left bg-white p-6 rounded-xl border-2 border-summit-sage hover:border-summit-emerald transition-all shadow-sm hover:shadow-md group"
+          className="w-full text-left bg-white p-6 rounded-xl border-2 border-summit-sage hover:border-summit-emerald transition-all duration-200 ease-out shadow-sm hover:shadow-md hover:-translate-y-1 group"
         >
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
-              <TelescopeIcon className="w-8 h-8 text-summit-emerald" />
+              <div className="flex-shrink-0 w-12 h-12 bg-summit-sage rounded-lg flex items-center justify-center transition-all duration-200 ease-out group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-md">
+                <TelescopeIcon className="w-7 h-7 text-summit-pine" />
+              </div>
               <div>
                 <h3 className="text-lg font-semibold text-summit-forest mb-1">Detailed Vision</h3>
                 <p className="text-body-sm text-stone-600 mb-2">
