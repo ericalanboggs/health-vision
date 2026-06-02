@@ -441,7 +441,7 @@ const IntroPage = ({ onSelectPath }) => {
         >
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
-              <span className="text-3xl">⚡</span>
+              <MaterialSymbol name="bolt" className="text-3xl text-summit-emerald" />
               <div>
                 <h3 className="text-lg font-semibold text-summit-forest mb-1">Quick Start</h3>
                 <p className="text-body-sm text-stone-600 mb-2">
@@ -463,7 +463,7 @@ const IntroPage = ({ onSelectPath }) => {
         >
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
-              <span className="text-3xl">🏔️</span>
+              <MaterialSymbol name="telescope" className="text-3xl text-summit-emerald" />
               <div>
                 <h3 className="text-lg font-semibold text-summit-forest mb-1">Detailed Vision</h3>
                 <p className="text-body-sm text-stone-600 mb-2">

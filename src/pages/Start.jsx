@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Terrain, Science, Chat } from '@mui/icons-material'
+import { Terrain, DirectionsWalk, EventAvailable } from '@mui/icons-material'
 import { Button, Card } from '@summit/design-system'
 
 export default function Start() {
@@ -42,7 +42,7 @@ export default function Start() {
                   Create Your Vision
                 </h3>
                 <p className="text-text-secondary">
-                  Start by defining a clear vision—your "why." This becomes your reference point and guides everything you build from here.
+                  Start by defining a clear vision—your "why." This becomes your summit, and guides everything you build from here.
                 </p>
               </div>
             </div>
@@ -50,7 +50,7 @@ export default function Start() {
             <div className="flex gap-4">
               <div className="flex-shrink-0">
                 <div className="w-12 h-12 bg-summit-sage rounded-lg flex items-center justify-center">
-                  <Science className="w-6 h-6 text-summit-emerald" />
+                  <DirectionsWalk className="w-6 h-6 text-summit-emerald" />
                 </div>
               </div>
               <div>
@@ -66,7 +66,7 @@ export default function Start() {
             <div className="flex gap-4">
               <div className="flex-shrink-0">
                 <div className="w-12 h-12 bg-summit-sage rounded-lg flex items-center justify-center">
-                  <Chat className="w-6 h-6 text-summit-emerald" />
+                  <EventAvailable className="w-6 h-6 text-summit-emerald" />
                 </div>
               </div>
               <div>
