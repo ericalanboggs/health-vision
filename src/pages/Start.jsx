@@ -1,6 +1,11 @@
 import { useNavigate } from 'react-router-dom'
-import { Terrain, DirectionsWalk, EventAvailable } from '@mui/icons-material'
+import { Terrain, EventAvailable } from '@mui/icons-material'
 import { Button, Card } from '@summit/design-system'
+
+// Material Symbol component for icons not in @mui/icons-material (e.g. footprint)
+const MaterialSymbol = ({ name, className }) => (
+  <span className={`material-symbols-outlined ${className || ''}`}>{name}</span>
+)
 
 export default function Start() {
   const navigate = useNavigate()
@@ -31,10 +36,10 @@ export default function Start() {
         <Card className="p-8 sm:p-10 mb-8">
           {/* Features */}
           <div className="space-y-6 mb-10">
-            <div className="flex gap-4">
+            <div className="flex gap-4 group">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-summit-sage rounded-lg flex items-center justify-center">
-                  <Terrain className="w-6 h-6 text-summit-emerald" />
+                <div className="w-12 h-12 bg-summit-sage rounded-lg flex items-center justify-center transition-all duration-200 ease-out group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-md">
+                  <Terrain className="w-6 h-6 text-summit-pine" />
                 </div>
               </div>
               <div>
@@ -47,10 +52,10 @@ export default function Start() {
               </div>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex gap-4 group">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-summit-sage rounded-lg flex items-center justify-center">
-                  <DirectionsWalk className="w-6 h-6 text-summit-emerald" />
+                <div className="w-12 h-12 bg-summit-sage rounded-lg flex items-center justify-center transition-all duration-200 ease-out group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-md">
+                  <MaterialSymbol name="footprint" className="text-[24px] text-summit-pine" />
                 </div>
               </div>
               <div>
@@ -63,10 +68,10 @@ export default function Start() {
               </div>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex gap-4 group">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-summit-sage rounded-lg flex items-center justify-center">
-                  <EventAvailable className="w-6 h-6 text-summit-emerald" />
+                <div className="w-12 h-12 bg-summit-sage rounded-lg flex items-center justify-center transition-all duration-200 ease-out group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-md">
+                  <EventAvailable className="w-6 h-6 text-summit-pine" />
                 </div>
               </div>
               <div>
