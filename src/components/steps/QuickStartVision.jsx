@@ -4,6 +4,58 @@ import { Button, Card, Checkbox, Input } from '@summit/design-system'
 import { extractVisionAdjectives, consolidateVisionText, enhanceActionPlan } from '../../utils/aiService'
 import { generateActionPlan } from '../../utils/planGenerator'
 
+// Material Symbol component for icons not in @mui/icons-material
+const MaterialSymbol = ({ name, className }) => (
+  <span className={`material-symbols-outlined ${className || ''}`}>{name}</span>
+)
+
+// Selectable option card. New chip style when option.icon is set (white card +
+// green stroke + green chip with white icon + checkmark when selected, with a
+// playful hover pop); falls back to the legacy emoji style otherwise.
+const OptionButton = ({ option, isSelected, onClick }) => {
+  if (option.icon) {
+    return (
+      <button
+        onClick={onClick}
+        className={`group flex items-center gap-3 p-4 rounded-xl text-left bg-white border-2 transition-all duration-200 ease-out hover:-translate-y-0.5 ${
+          isSelected
+            ? 'border-summit-emerald shadow-md'
+            : 'border-transparent shadow-sm hover:shadow-md'
+        }`}
+      >
+        <div
+          className={`flex-shrink-0 w-11 h-11 rounded-lg flex items-center justify-center transition-all duration-200 ease-out group-hover:scale-110 group-hover:rotate-6 ${
+            isSelected ? 'bg-summit-emerald' : 'bg-summit-sage'
+          }`}
+        >
+          <MaterialSymbol
+            name={option.icon}
+            className={`text-[22px] ${isSelected ? 'text-white' : 'text-summit-pine'}`}
+          />
+        </div>
+        <span className="font-medium flex-1 text-summit-forest">{option.label}</span>
+        {isSelected && <Check className="w-5 h-5 text-summit-emerald flex-shrink-0" />}
+      </button>
+    )
+  }
+
+  // Legacy emoji style (questions not yet migrated)
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-3 p-4 rounded-xl text-left transition-all ${
+        isSelected
+          ? 'bg-summit-emerald text-white shadow-lg'
+          : 'bg-white text-summit-forest border border-summit-sage hover:bg-summit-mint'
+      }`}
+    >
+      <span className="text-2xl">{option.emoji}</span>
+      <span className="font-medium flex-1">{option.label}</span>
+      {isSelected && <Check className="w-5 h-5" />}
+    </button>
+  )
+}
+
 const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBackToIntro }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [otherText, setOtherText] = useState({})
@@ -31,12 +83,12 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
       subtitle: 'Imagine yourself 1-2 years from now.',
       type: 'multi-select-text',
       options: [
-        { emoji: '⚡', label: 'More energy', text: 'I wake up feeling energized and ready for the day. ' },
-        { emoji: '😴', label: 'Better sleep', text: 'I sleep deeply and wake refreshed. ' },
-        { emoji: '💪', label: 'Stronger body', text: 'My body is strong and moves with ease. ' },
-        { emoji: '🙌', label: 'Pain-free', text: "I'm free from chronic pain and discomfort. " },
-        { emoji: '🧠', label: 'Mental clarity', text: 'I have mental clarity and focus. ' },
-        { emoji: '⚖️', label: 'Healthy weight', text: "I've reached a healthy weight that feels sustainable. " },
+        { emoji: '⚡', icon: 'bolt', label: 'More energy', text: 'I wake up feeling energized and ready for the day. ' },
+        { emoji: '😴', icon: 'bedtime', label: 'Better sleep', text: 'I sleep deeply and wake refreshed. ' },
+        { emoji: '💪', icon: 'fitness_center', label: 'Stronger body', text: 'My body is strong and moves with ease. ' },
+        { emoji: '🙌', icon: 'self_improvement', label: 'Pain-free', text: "I'm free from chronic pain and discomfort. " },
+        { emoji: '🧠', icon: 'psychology', label: 'Mental clarity', text: 'I have mental clarity and focus. ' },
+        { emoji: '⚖️', icon: 'monitor_weight', label: 'Healthy weight', text: "I've reached a healthy weight that feels sustainable. " },
       ],
       hasOther: true,
     },
@@ -562,19 +614,12 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
             {q.options.map((option) => {
               const isSelected = isTextOptionSelected(option.label, q.clickedField)
               return (
-                <button
+                <OptionButton
                   key={option.label}
+                  option={option}
+                  isSelected={isSelected}
                   onClick={() => toggleTextOption(option, q.field, q.clickedField)}
-                  className={`flex items-center gap-3 p-4 rounded-xl text-left transition-all ${
-                    isSelected
-                      ? 'bg-summit-emerald text-white shadow-lg'
-                      : 'bg-white text-summit-forest border border-summit-sage hover:bg-summit-mint'
-                  }`}
-                >
-                  <span className="text-2xl">{option.emoji}</span>
-                  <span className="font-medium flex-1">{option.label}</span>
-                  {isSelected && <Check className="w-5 h-5" />}
-                </button>
+                />
               )
             })}
           </div>
