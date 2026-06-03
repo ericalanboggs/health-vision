@@ -575,6 +575,64 @@ export const generateWeeklyTracker = async (userId, { delivery = 'email' } = {})
 }
 
 /**
+ * Generate an AI coaching brief (Markdown) for a user and download it.
+ * Triggers the export-coaching-brief edge function, which summarizes the
+ * user's vision, reflections, habits, and SMS conversation into a
+ * session-ready brief, then downloads the result as a .md file.
+ *
+ * @param {string} userId
+ */
+export const exportCoachingBrief = async (userId) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/export-coaching-brief`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ userId }),
+    })
+
+    const result = await response.json()
+
+    if (!response.ok || !result.success) {
+      return { success: false, error: result.error || `Failed (${response.status})` }
+    }
+
+    triggerTextDownload(result.markdown, result.filename || 'coaching-brief.md', 'text/markdown')
+
+    return { success: true, data: result }
+  } catch (error) {
+    console.error('Error exporting coaching brief:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Trigger a browser download for a text/markdown string.
+ */
+function triggerTextDownload(text, filename, mimeType = 'text/plain') {
+  const blob = new Blob([text], { type: `${mimeType};charset=utf-8` })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+/**
  * Decode a base64 PDF and trigger a browser download.
  */
 function triggerBrowserDownload(pdfBase64, filename) {
