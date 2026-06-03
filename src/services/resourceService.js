@@ -36,6 +36,37 @@ export const getUserResources = async (userId = null) => {
   }
 }
 
+// Pre-seed guard: how long after kicking off generation we treat the Guides
+// area as "already seeding" and skip a duplicate run. If resources are still
+// empty after this (generation failed), a later visit is allowed to retry.
+const DIGEST_SEED_PREFIX = 'summit_digest_seeded_'
+const DIGEST_SEED_TTL_MS = 10 * 60 * 1000 // 10 minutes
+
+/**
+ * Kick off week-1 digest generation to pre-seed a new user's Guides/Resources
+ * area. Fire-and-forget. Called proactively when onboarding completes and lazily
+ * from the Resources page when it's empty — a localStorage marker ensures those
+ * two paths don't double-generate. Returns true if a run was started, false if
+ * skipped (a recent run is presumed in flight).
+ */
+export const seedFirstDigest = (userId) => {
+  if (!supabase || !userId) return false
+
+  try {
+    const key = `${DIGEST_SEED_PREFIX}${userId}`
+    const last = Number(localStorage.getItem(key) || 0)
+    if (last && Date.now() - last < DIGEST_SEED_TTL_MS) return false
+    localStorage.setItem(key, String(Date.now()))
+  } catch {
+    // localStorage unavailable (private mode) — proceed without the guard.
+  }
+
+  supabase.functions
+    .invoke('generate-weekly-digest', { body: { user_id: userId, week_number: 1 } })
+    .catch(err => console.error('seedFirstDigest error:', err))
+  return true
+}
+
 /**
  * Add a new resource
  */

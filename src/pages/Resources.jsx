@@ -16,13 +16,13 @@ import {
   MoreVert,
 } from '@mui/icons-material'
 import { getCurrentUser } from '../services/authService'
-import supabase from '../lib/supabase'
 import {
   getUserResources,
   addResource,
   deleteResource,
   togglePinResource,
   categorizeResource,
+  seedFirstDigest,
 } from '../services/resourceService'
 import {
   Card,
@@ -93,12 +93,12 @@ export default function Resources() {
         }))
         setResources(categorized)
 
-        // Fallback: if no resources exist, trigger digest generation and retry
+        // Fallback: if no resources exist, ensure generation is running and retry.
+        // seedFirstDigest is a no-op if it was already kicked off at onboarding
+        // (guarded), but we still retry-load in case it's in flight.
         if (categorized.length === 0 && !digestTriggered.current) {
           digestTriggered.current = true
-          supabase.functions.invoke('generate-weekly-digest', {
-            body: { user_id: userResult.user.id, week_number: 1 },
-          }).catch(err => console.error('generate-weekly-digest fallback error:', err))
+          seedFirstDigest(userResult.user.id)
           // Retry loading after 45 seconds
           setTimeout(async () => {
             const retry = await getUserResources(userResult.user.id)

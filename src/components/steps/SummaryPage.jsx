@@ -6,6 +6,7 @@ import { generateActionPlan, generateMotivationalMessage } from '../../utils/pla
 import { enhanceActionPlan } from '../../utils/aiService'
 import { saveHabits } from '../../services/habitService'
 import { getCurrentUser, upsertProfile } from '../../services/authService'
+import { seedFirstDigest } from '../../services/resourceService'
 import jsPDF from 'jspdf'
 
 // Cache key for AI suggestions
@@ -503,6 +504,8 @@ END:VEVENT
             trial_started_at: new Date().toISOString(),
             trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           })
+          // Pre-seed the Guides area so it's ready by the time they visit.
+          seedFirstDigest(user.id)
         }
         setHabitsConfirmed(true)
         // Redirect via Home router after brief delay
