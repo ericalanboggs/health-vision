@@ -1,8 +1,8 @@
 import React from 'react'
-import { Backpack, ArrowForward, Check } from '@mui/icons-material'
+import { Backpack, ArrowForward, ArrowBack, Check } from '@mui/icons-material'
 import { Button } from '@summit/design-system'
 
-const CardinalDirectionsStep = ({ formData, updateFormData, onNext }) => {
+const CardinalDirectionsStep = ({ formData, updateFormData, onNext, onBack }) => {
   // Suggestion chips for base camp questions
   const nonNegotiablesSuggestions = [
     { label: "7+ hours sleep", text: "7+ hours of sleep nightly. " },
@@ -245,7 +245,14 @@ const CardinalDirectionsStep = ({ formData, updateFormData, onNext }) => {
         </div>
       </div>
 
-      <div className="mt-8 flex justify-end">
+      <div className="mt-8 flex justify-between items-center">
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          leftIcon={<ArrowBack className="w-5 h-5" />}
+        >
+          Back
+        </Button>
         <Button
           onClick={onNext}
           size="lg"

@@ -262,13 +262,13 @@ export default function Vision() {
       case 'quickstart':
         return <QuickStartVision formData={formData} updateFormData={updateFormData} onComplete={handleQuickStartComplete} onBack={() => setCurrentStep(0)} />
       case 'vision':
-        return <NorthStarStep formData={formData} updateFormData={updateFormData} onNext={handleNext} />
+        return <NorthStarStep formData={formData} updateFormData={updateFormData} onNext={handleNext} onBack={handleBack} />
       case 'basecamp':
-        return <CardinalDirectionsStep formData={formData} updateFormData={updateFormData} onNext={handleNext} />
+        return <CardinalDirectionsStep formData={formData} updateFormData={updateFormData} onNext={handleNext} onBack={handleBack} />
       case 'current':
-        return <TerrainStep formData={formData} updateFormData={updateFormData} onNext={handleNext} />
+        return <TerrainStep formData={formData} updateFormData={updateFormData} onNext={handleNext} onBack={handleBack} />
       case 'capacity':
-        return <RouteStep formData={formData} updateFormData={updateFormData} onNext={handleNext} />
+        return <RouteStep formData={formData} updateFormData={updateFormData} onNext={handleNext} onBack={handleBack} />
       case 'summary':
         return <SummaryPage formData={formData} onNavigate={(stepId) => {
           const index = steps.findIndex(s => s.id === stepId)

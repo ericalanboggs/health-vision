@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowForward, Check } from '@mui/icons-material'
+import { ArrowForward, ArrowBack, Check } from '@mui/icons-material'
 import { Button, RadioSelect } from '@summit/design-system'
 
 // Material Symbol component for icons not in @mui/icons-material
@@ -7,7 +7,7 @@ const MaterialSymbol = ({ name, className }) => (
   <span className={`material-symbols-outlined ${className || ''}`}>{name}</span>
 )
 
-const RouteStep = ({ formData, updateFormData, onNext }) => {
+const RouteStep = ({ formData, updateFormData, onNext, onBack }) => {
   const timeOptions = [
     { value: '5 minutes/day', label: '5 minutes/day' },
     { value: '10 minutes/day', label: '10 minutes/day' },
@@ -240,7 +240,14 @@ const RouteStep = ({ formData, updateFormData, onNext }) => {
         </div>
       </div>
 
-      <div className="mt-8 flex justify-end">
+      <div className="mt-8 flex justify-between items-center">
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          leftIcon={<ArrowBack className="w-5 h-5" />}
+        >
+          Back
+        </Button>
         <Button
           onClick={onNext}
           size="lg"

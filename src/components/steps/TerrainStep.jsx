@@ -1,8 +1,8 @@
 import React from 'react'
-import { TrendingUp, ArrowForward } from '@mui/icons-material'
+import { TrendingUp, ArrowForward, ArrowBack } from '@mui/icons-material'
 import { Button } from '@summit/design-system'
 
-const TerrainStep = ({ formData, updateFormData, onNext }) => {
+const TerrainStep = ({ formData, updateFormData, onNext, onBack }) => {
   const barrierOptions = [
     'Time',
     'Energy',
@@ -153,7 +153,14 @@ const TerrainStep = ({ formData, updateFormData, onNext }) => {
         </div>
       </div>
 
-      <div className="mt-8 flex justify-end">
+      <div className="mt-8 flex justify-between items-center">
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          leftIcon={<ArrowBack className="w-5 h-5" />}
+        >
+          Back
+        </Button>
         <Button
           onClick={onNext}
           size="lg"
