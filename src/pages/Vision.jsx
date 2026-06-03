@@ -38,6 +38,7 @@ const TelescopeIcon = ({ className }) => (
   </svg>
 )
 import { trackEvent } from '../lib/posthog'
+import { EMPTY_VISION_FORM } from '../data/visionFormDefaults'
 import { saveJourney, loadJourney } from '../services/journeyService'
 import { getCurrentUser } from '../services/authService'
 import NorthStarStep from '../components/steps/NorthStarStep'
@@ -54,28 +55,7 @@ export default function Vision() {
   const [searchParams] = useSearchParams()
   const viewMode = searchParams.get('view')
   const [currentStep, setCurrentStep] = useState(0)
-  const [formData, setFormData] = useState({
-    visionStatement: '',
-    feelingState: '',
-    appearanceConfidence: '',
-    futureAbilities: '',
-    whyMatters: '',
-    motivationDrivers: [],
-    stakes: '',
-    benefits: '',
-    meaningfulMoment: '',
-    currentScore: 5,
-    currentPositives: '',
-    barriers: [],
-    barriersNotes: '',
-    habitsToImprove: [],
-    focusAreas: [],
-    timeCapacity: '',
-    preferredTimes: '',
-    sustainableNotes: '',
-    readiness: 5,
-    supportNeeds: [],
-  })
+  const [formData, setFormData] = useState({ ...EMPTY_VISION_FORM })
   const [headerVisible, setHeaderVisible] = useState(true)
   const lastScrollY = useRef(0)
 
@@ -151,7 +131,9 @@ export default function Vision() {
 
       const result = await loadJourney(userId)
       if (result.success && result.data) {
-        setFormData(result.data.form_data)
+        // Merge over defaults so a partial row (e.g. one seeded by the /welcome
+        // screen) keeps every key — prevents undefined controlled inputs.
+        setFormData({ ...EMPTY_VISION_FORM, ...result.data.form_data })
 
         // If in display mode, don't change the step
         if (viewMode === 'display') {
@@ -330,69 +312,14 @@ export default function Vision() {
       {showStepper && (
       <div className={`bg-transparent sticky top-0 z-10 transition-transform duration-300 ${headerVisible ? 'translate-y-0' : '-translate-y-full'}`}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          {/* Desktop Stepper */}
-          <div className="hidden md:flex items-center justify-between">
-            {visibleSteps.map((step, index) => {
-              const Icon = step.icon
-              const stepIndex = steps.findIndex(s => s.id === step.id)
-              const isActive = stepIndex === currentStep
-              const isCompleted = stepIndex < currentStep
-              const isAccessible = stepIndex <= currentStep
-
-              return (
-                <div key={step.id} className="flex items-center flex-1">
-                  <button
-                    onClick={() => isAccessible && setCurrentStep(stepIndex)}
-                    disabled={!isAccessible}
-                    className={`flex items-center gap-3 transition-all ${
-                      isAccessible ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
-                    }`}
-                  >
-                    <div
-                      className={`w-10 h-10 min-w-[40px] min-h-[40px] flex-shrink-0 rounded-full flex items-center justify-center transition-all ${
-                        isActive
-                          ? 'bg-summit-emerald text-white ring-4 ring-summit-sage'
-                          : isCompleted
-                          ? 'bg-summit-sage text-summit-emerald'
-                          : 'bg-stone-200 text-stone-400'
-                      }`}
-                    >
-                      {isCompleted ? (
-                        <Check className="w-5 h-5" />
-                      ) : (
-                        <Icon className="w-5 h-5" />
-                      )}
-                    </div>
-                    <div className="text-left">
-                      <div
-                        className={`text-sm font-semibold ${
-                          isActive ? 'text-summit-emerald' : isCompleted ? 'text-summit-forest' : 'text-text-muted'
-                        }`}
-                      >
-                        {step.label}
-                      </div>
-                    </div>
-                  </button>
-                  {index < visibleSteps.length - 1 && (
-                    <div
-                      className={`flex-1 h-0.5 mx-4 transition-all ${
-                        isCompleted ? 'bg-summit-emerald' : 'bg-stone-200'
-                      }`}
-                    />
-                  )}
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Mobile Stepper */}
-          <div className="md:hidden">
+          {/* Progress bar — step name on the left, Step X/N on the right */}
+          <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-body-sm text-text-secondary">
-                Step {currentVisibleIndex + 1} of {visibleSteps.length}
-              </span>
               <span className="text-body-sm font-semibold text-summit-emerald">
                 {steps[currentStep].label}
+              </span>
+              <span className="text-body-sm text-text-secondary">
+                Step {currentVisibleIndex + 1}/{visibleSteps.length}
               </span>
             </div>
             <div className="w-full bg-summit-sage rounded-full h-2">
