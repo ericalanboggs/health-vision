@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit, adminUpdateTrackingConfig, adminUpdateFollowupTime, adminUpsertTrackingEntry, adminUpdateHealthVision, adminSetSmsConversational, generateWeeklyTracker } from '../services/adminService'
+import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit, adminUpdateTrackingConfig, adminUpdateFollowupTime, adminUpsertTrackingEntry, adminUpdateHealthVision, adminSetSmsConversational, generateWeeklyTracker, exportCoachingBrief } from '../services/adminService'
 import { COACHING_CONFIG, getBillingPeriod } from '../services/subscriptionService'
-import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt, Forum, Edit as EditIcon, Close, Add, PushPin, PushPinOutlined, DeleteOutline, Chat, Email, Checklist, FileDownload } from '@mui/icons-material'
+import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt, Forum, Edit as EditIcon, Close, Add, PushPin, PushPinOutlined, DeleteOutline, Chat, Email, Checklist, FileDownload, Summarize } from '@mui/icons-material'
 import { Tag } from '@summit/design-system'
 import ConversationView from '../components/admin/ConversationView'
 import SMSThreadsPanel from '../components/admin/SMSThreadsPanel'
@@ -103,6 +103,7 @@ export default function AdminUserDetail() {
     setTogglingConversational(false)
   }
   const [generatingTracker, setGeneratingTracker] = useState(null) // null | 'email' | 'download'
+  const [exportingBrief, setExportingBrief] = useState(false)
   const [editingVision, setEditingVision] = useState(false)
   const [savingVision, setSavingVision] = useState(false)
   const [visionForm, setVisionForm] = useState({
@@ -186,6 +187,16 @@ export default function AdminUserDetail() {
       window.alert(msg)
     } else {
       window.alert(`Failed: ${result.error}`)
+    }
+  }
+
+  const handleExportBrief = async () => {
+    if (exportingBrief) return
+    setExportingBrief(true)
+    const result = await exportCoachingBrief(userId)
+    setExportingBrief(false)
+    if (!result.success) {
+      window.alert(`Failed to export coaching brief: ${result.error}`)
     }
   }
 
@@ -478,6 +489,16 @@ export default function AdminUserDetail() {
               title={generatingTracker === 'download' ? 'Generating…' : 'Download Weekly Tracker (for printing)'}
             >
               <FileDownload className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleExportBrief}
+              disabled={exportingBrief}
+              className="flex-shrink-0 p-2 text-stone-500 hover:text-summit-emerald hover:bg-stone-100 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              title={exportingBrief ? 'Generating brief…' : 'Export AI Coaching Brief (Markdown)'}
+            >
+              {exportingBrief
+                ? <Autorenew className="w-5 h-5 animate-spin" />
+                : <Summarize className="w-5 h-5" />}
             </button>
           </div>
           <p className="text-sm text-stone-600 mt-1 truncate">{profile.email}</p>
