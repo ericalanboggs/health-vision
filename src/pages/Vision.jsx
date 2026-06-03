@@ -288,7 +288,9 @@ export default function Vision() {
   const visibleSteps = steps.filter(s => !s.hidden)
   const currentStepId = steps[currentStep].id
   const showStepper = !['intro', 'quickstart'].includes(currentStepId)
-  const showBackButton = currentStep > 0 && !['summary', 'quickstart'].includes(currentStepId)
+  // Show Back on every step except the quickstart flow (which has its own internal back).
+  // Summary/Plan included so it's never a dead end now that the clickable stepper is gone.
+  const showBackButton = currentStep > 0 && currentStepId !== 'quickstart'
 
   // Find current visible step index for stepper display
   const currentVisibleIndex = visibleSteps.findIndex(s => s.id === currentStepId)
