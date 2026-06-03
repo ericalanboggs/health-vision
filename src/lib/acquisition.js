@@ -8,7 +8,8 @@
 //
 // Framer CTAs link in with a tag, e.g.:
 //   https://go.summithealth.app/login?source=burnout
-//   ?source=postpartum  ·  ?source=mens-health
+//   ?source=postpartum  ·  ?source=lifestyle-changes
+// The tag drives segment-tailored onboarding — see src/data/onboardingSegments.js.
 // Standard UTM params also work: ?utm_campaign=burnout (used as a fallback).
 
 const STORAGE_KEY = 'summit_acquisition'

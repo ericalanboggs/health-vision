@@ -24,6 +24,7 @@ import SubscriptionSuccess from './pages/SubscriptionSuccess'
 import ProfileSetup from './pages/ProfileSetup'
 import Profile from './pages/Profile'
 import Start from './pages/Start'
+import SegmentWelcome from './pages/SegmentWelcome'
 import Vision from './pages/Vision'
 import Habits from './pages/Habits'
 import AddHabit from './pages/AddHabit'
@@ -183,7 +184,16 @@ function App() {
             <ProtectedRoute>
               <Start />
             </ProtectedRoute>
-          } 
+          }
+        />
+        {/* Segment-tailored welcome (marketing-acquired users) */}
+        <Route
+          path="/welcome"
+          element={
+            <ProtectedRoute>
+              <SegmentWelcome />
+            </ProtectedRoute>
+          }
         />
         {/* Main app pages — shared navbar via AppLayout */}
         <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>

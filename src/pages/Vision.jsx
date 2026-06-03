@@ -40,7 +40,8 @@ const TelescopeIcon = ({ className }) => (
 import { trackEvent } from '../lib/posthog'
 import { EMPTY_VISION_FORM } from '../data/visionFormDefaults'
 import { saveJourney, loadJourney } from '../services/journeyService'
-import { getCurrentUser } from '../services/authService'
+import { getCurrentUser, getProfile } from '../services/authService'
+import { getSegment } from '../data/onboardingSegments'
 import NorthStarStep from '../components/steps/NorthStarStep'
 import CardinalDirectionsStep from '../components/steps/CardinalDirectionsStep'
 import TerrainStep from '../components/steps/TerrainStep'
@@ -56,6 +57,10 @@ export default function Vision() {
   const viewMode = searchParams.get('view')
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState({ ...EMPTY_VISION_FORM })
+  // Set only for marketing-segment users (came in via a tailored ?source= tag).
+  // Drives the "back to welcome" link and the personalized "Why Vision Matters"
+  // copy on the intro. Null for organic users.
+  const [segment, setSegment] = useState(null)
   const [headerVisible, setHeaderVisible] = useState(true)
   const lastScrollY = useRef(0)
 
@@ -128,6 +133,12 @@ export default function Vision() {
       // Get user first for optimized loading
       const { user } = await getCurrentUser()
       const userId = user?.id
+
+      // Marketing-segment users get tailored intro copy + a "back to welcome" link.
+      if (userId) {
+        const profileResult = await getProfile(userId)
+        setSegment(getSegment(profileResult?.data?.acquisition_source))
+      }
 
       const result = await loadJourney(userId)
       if (result.success && result.data) {
@@ -258,7 +269,7 @@ export default function Vision() {
 
     switch (stepId) {
       case 'intro':
-        return <IntroPage onSelectPath={handleSelectPath} />
+        return <IntroPage onSelectPath={handleSelectPath} segment={segment} onBackToWelcome={() => navigate('/welcome?edit=1')} />
       case 'quickstart':
         return <QuickStartVision formData={formData} updateFormData={updateFormData} onComplete={handleQuickStartComplete} onBack={() => setCurrentStep(0)} />
       case 'vision':
@@ -275,7 +286,7 @@ export default function Vision() {
           if (index !== -1) setCurrentStep(index)
         }} />
       default:
-        return <IntroPage onSelectPath={handleSelectPath} />
+        return <IntroPage onSelectPath={handleSelectPath} segment={segment} onBackToWelcome={() => navigate('/welcome?edit=1')} />
     }
   }
 
@@ -344,7 +355,24 @@ export default function Vision() {
 }
 
 // Introduction Page Component
-const IntroPage = ({ onSelectPath }) => {
+const IntroPage = ({ onSelectPath, segment, onBackToWelcome }) => {
+  const visionIntro = segment?.visionIntro
+  // Evidence sentence is shown for everyone; only the heading/lead are tailored.
+  const evidence = (
+    <p>
+      Research backs this up: connecting daily actions to a meaningful future is associated with{' '}
+      <a
+        href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8669210/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline text-summit-emerald hover:text-summit-forest"
+      >
+        lower disease risk
+      </a>{' '}
+      and reduced mortality.
+    </p>
+  )
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="text-center mb-8">
@@ -363,24 +391,42 @@ const IntroPage = ({ onSelectPath }) => {
       </div>
 
       <Card className="mb-6 border border-summit-sage">
-        <h2 className="text-h2 text-summit-forest mb-4">
-          Why Vision Matters
-        </h2>
-
-        <div className="space-y-4 text-body text-stone-600 leading-relaxed mb-6">
-          <p>
-            A clear vision makes habits easier to keep—especially when they're hard—because it gives you something to return to when motivation fades. Research backs this up: connecting daily actions to a meaningful future is associated with{' '}
-            <a
-              href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8669210/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline text-summit-emerald hover:text-summit-forest"
-            >
-              lower disease risk
-            </a>{' '}
-            and reduced mortality.
-          </p>
-        </div>
+        {visionIntro ? (
+          <>
+            {visionIntro.ack && (
+              <p className="text-body-sm font-semibold text-summit-emerald mb-3">
+                {visionIntro.ack}
+              </p>
+            )}
+            <h2 className="text-h2 text-summit-forest mb-4">
+              {visionIntro.heading}
+            </h2>
+            <div className="space-y-4 text-body text-stone-600 leading-relaxed mb-6">
+              <p>{visionIntro.lead}</p>
+              {evidence}
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="text-h2 text-summit-forest mb-4">
+              Why Vision Matters
+            </h2>
+            <div className="space-y-4 text-body text-stone-600 leading-relaxed mb-6">
+              <p>
+                A clear vision makes habits easier to keep—especially when they're hard—because it gives you something to return to when motivation fades. Research backs this up: connecting daily actions to a meaningful future is associated with{' '}
+                <a
+                  href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8669210/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-summit-emerald hover:text-summit-forest"
+                >
+                  lower disease risk
+                </a>{' '}
+                and reduced mortality.
+              </p>
+            </div>
+          </>
+        )}
       </Card>
 
       {/* Path Selection Cards */}
@@ -432,6 +478,18 @@ const IntroPage = ({ onSelectPath }) => {
             <ArrowForward className="w-5 h-5 text-stone-400 group-hover:text-summit-emerald transition-colors" />
           </div>
         </button>
+
+        {/* Marketing-segment users only: jump back to edit their welcome answers */}
+        {segment && (
+          <button
+            type="button"
+            onClick={onBackToWelcome}
+            className="flex items-center gap-1.5 mx-auto text-body-sm text-stone-500 hover:text-summit-emerald py-2 transition-colors"
+          >
+            <ArrowBack className="w-4 h-4" />
+            Back to edit your answers
+          </button>
+        )}
       </div>
 
       <div className="text-center text-body-sm text-summit-moss">

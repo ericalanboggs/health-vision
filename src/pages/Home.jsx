@@ -4,6 +4,7 @@ import supabase from '../lib/supabase'
 import { getProfile } from '../services/authService'
 import { hasActiveSubscription } from '../services/subscriptionService'
 import { getLiteChallenge } from '../data/liteChallengeConfig'
+import { getSegment } from '../data/onboardingSegments'
 import { Autorenew } from '@mui/icons-material'
 
 export default function Home() {
@@ -44,8 +45,11 @@ export default function Home() {
         console.log(`Home: Lite challenge user, navigating to ${path}`)
         navigate(path, { replace: true })
       } else if (!profile.onboarding_completed) {
-        console.log('Home: Onboarding not completed, navigating to /start')
-        navigate('/start', { replace: true })
+        // Tailored marketing segments get a per-segment welcome first; everyone
+        // else sees the generic "How Summit Works" intro.
+        const dest = getSegment(profile.acquisition_source) ? '/welcome' : '/start'
+        console.log(`Home: Onboarding not completed, navigating to ${dest}`)
+        navigate(dest, { replace: true })
       } else if (!hasActiveSubscription(profile, userEmail)) {
         console.log('Home: No active subscription, navigating to pricing')
         navigate('/pricing', { replace: true })

@@ -48,6 +48,8 @@ ${previousSuggestions.map((s, i) => `${i + 1}. ${s.action}`).join('\n')}`
     const prompt = `You are a health coach helping someone personalize their health action plan. Based on their context, make the generic actions more specific, actionable, and tailored to their situation.
 
 USER CONTEXT:
+Primary goal / change they want: ${formData.segmentReason || 'Not specified'}
+Why now: ${formData.segmentWhy || formData.whyMatters || 'Not specified'}
 Vision: ${formData.visionStatement || 'Not specified'}
 How they want to feel: ${formData.feelingState || 'Not specified'}
 Why it matters: ${formData.whyMatters || 'Not specified'}
@@ -64,13 +66,14 @@ ${actionPlan.weeklyActions.map(item => `${item.area}:\n${item.actions.map(a => `
 
 TASK:
 Provide 4-6 highly specific, personalized action steps for THIS WEEK that:
-1. Are COMPLETELY DIFFERENT from any already-suggested actions above
-2. Fit their exact time capacity and schedule
-3. Address their specific barriers
-4. Align with their vision and why it matters
-5. Feel achievable given their readiness level
-6. Are concrete and actionable (not vague advice)
-7. Explore different health areas (movement, nutrition, sleep, stress, social connection, etc.)
+1. When a "Primary goal / change they want" is given, PRIORITIZE concrete lifestyle habits that directly serve that goal (e.g. goal "lower my cholesterol" → swap red meat for fish or beans at a meal, add a high-fiber breakfast like oats, take a brisk walk). Keep these as everyday habits, never medical or medication advice.
+2. Are COMPLETELY DIFFERENT from any already-suggested actions above
+3. Fit their exact time capacity and schedule
+4. Address their specific barriers
+5. Align with their vision and why it matters
+6. Feel achievable given their readiness level
+7. Are concrete and actionable (not vague advice)
+8. Explore different health areas (movement, nutrition, sleep, stress, social connection, etc.)
 
 IMPORTANT FORMATTING RULES:
 - Do NOT include specific days of the week (like "Monday, Wednesday, Friday" or "on Sundays")
@@ -96,7 +99,7 @@ Keep actions brief, specific, and encouraging. Focus on small wins that build mo
       [
         {
           role: 'system',
-          content: 'You are an empathetic health coach who specializes in creating personalized, achievable action plans. You focus on small wins and meeting people where they are.'
+          content: 'You are an empathetic health coach who specializes in creating personalized, achievable action plans. You focus on small wins and meeting people where they are. Stay strictly in the lifestyle-habit lane — diet, movement, sleep, stress, connection. Never give medical advice, diagnoses, medication or supplement dosing; for health goals like cholesterol or blood pressure, suggest everyday lifestyle habits only and never imply they replace a clinician\'s care.'
         },
         { role: 'user', content: prompt }
       ],
