@@ -102,12 +102,12 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
       subtitle: 'Choose what feels most right.',
       type: 'multi-select-text',
       options: [
-        { emoji: '⚡', label: 'Energized', text: 'I feel energized throughout the day. ' },
-        { emoji: '🧘', label: 'Calm & centered', text: 'I feel calm, centered, and resilient. ' },
-        { emoji: '💪', label: 'Confident', text: "I'm confident in my body and abilities. " },
-        { emoji: '🏋️', label: 'Strong', text: 'I feel physically strong and capable. ' },
-        { emoji: '⚖️', label: 'Balanced', text: 'My mood is stable and balanced. ' },
-        { emoji: '😌', label: 'Rested', text: 'I feel well-rested and recovered. ' },
+        { emoji: '⚡', icon: 'bolt', label: 'Energized', text: 'I feel energized throughout the day. ' },
+        { emoji: '🧘', icon: 'self_improvement', label: 'Calm & centered', text: 'I feel calm, centered, and resilient. ' },
+        { emoji: '💪', icon: 'mood', label: 'Confident', text: "I'm confident in my body and abilities. " },
+        { emoji: '🏋️', icon: 'fitness_center', label: 'Strong', text: 'I feel physically strong and capable. ' },
+        { emoji: '⚖️', icon: 'balance', label: 'Balanced', text: 'My mood is stable and balanced. ' },
+        { emoji: '😌', icon: 'spa', label: 'Rested', text: 'I feel well-rested and recovered. ' },
       ],
       hasOther: true,
     },
@@ -121,12 +121,12 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
       subtitle: 'Connect to your personal reasons and values.',
       type: 'multi-select-text',
       options: [
-        { emoji: '👨‍👩‍👧', label: 'Be present for family', text: 'I want to be fully present and energized for my family. ' },
-        { emoji: '🕰️', label: 'Live longer', text: 'I want to live a long, healthy life. ' },
-        { emoji: '🪞', label: 'Feel like myself', text: 'I want to feel like myself again. ' },
-        { emoji: '🌟', label: 'Set an example', text: 'I want to set a positive example for others. ' },
-        { emoji: '🎯', label: 'Pursue passions', text: 'I want the energy to pursue my passions and goals. ' },
-        { emoji: '🔓', label: 'Break free', text: 'I want to break free from limitations holding me back. ' },
+        { emoji: '👨‍👩‍👧', icon: 'groups', label: 'Be present for family', text: 'I want to be fully present and energized for my family. ' },
+        { emoji: '🕰️', icon: 'elderly', label: 'Live longer', text: 'I want to live a long, healthy life. ' },
+        { emoji: '🪞', icon: 'face', label: 'Feel like myself', text: 'I want to feel like myself again. ' },
+        { emoji: '🌟', icon: 'star', label: 'Set an example', text: 'I want to set a positive example for others. ' },
+        { emoji: '🎯', icon: 'rocket_launch', label: 'Pursue passions', text: 'I want the energy to pursue my passions and goals. ' },
+        { emoji: '🔓', icon: 'lock_open', label: 'Break free', text: 'I want to break free from limitations holding me back. ' },
       ],
       hasOther: true,
     },
@@ -141,12 +141,12 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
       subtitle: "What's already working for you?",
       type: 'multi-select-text',
       options: [
-        { emoji: '🌅', label: 'Morning routine', text: 'Consistent morning routine. ' },
-        { emoji: '👥', label: 'Supportive people', text: 'Supportive partner/friends/family. ' },
-        { emoji: '🏋️', label: 'Access to facilities', text: 'Access to gym/trails/equipment. ' },
-        { emoji: '✅', label: 'Good habits', text: 'Already have some healthy habits in place. ' },
-        { emoji: '🔥', label: 'Motivation', text: 'Strong motivation and clear reasons why. ' },
-        { emoji: '🏆', label: 'Past success', text: 'History of achieving health goals. ' },
+        { emoji: '🌅', icon: 'wb_twilight', label: 'Morning routine', text: 'Consistent morning routine. ' },
+        { emoji: '👥', icon: 'groups', label: 'Supportive people', text: 'Supportive partner/friends/family. ' },
+        { emoji: '🏋️', icon: 'fitness_center', label: 'Access to facilities', text: 'Access to gym/trails/equipment. ' },
+        { emoji: '✅', icon: 'check_circle', label: 'Good habits', text: 'Already have some healthy habits in place. ' },
+        { emoji: '🔥', icon: 'local_fire_department', label: 'Motivation', text: 'Strong motivation and clear reasons why. ' },
+        { emoji: '🏆', icon: 'emoji_events', label: 'Past success', text: 'History of achieving health goals. ' },
       ],
       hasOther: true,
     },
@@ -160,12 +160,12 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
       subtitle: 'Choose the 3 most relevant right now.',
       type: 'multi-select-text',
       options: [
-        { emoji: '📚', label: 'Learn techniques', text: 'Learn proper form/techniques. ' },
-        { emoji: '🤝', label: 'Find accountability', text: 'Find accountability partner or coach. ' },
-        { emoji: '🥗', label: 'Meal prep skills', text: 'Develop meal prep routine. ' },
-        { emoji: '😴', label: 'Address sleep', text: 'Address sleep issues. ' },
-        { emoji: '🧘', label: 'Stress management', text: 'Better stress management tools. ' },
-        { emoji: '⏰', label: 'Time management', text: 'Improve time management. ' },
+        { emoji: '📚', icon: 'menu_book', label: 'Learn techniques', text: 'Learn proper form/techniques. ' },
+        { emoji: '🤝', icon: 'handshake', label: 'Find accountability', text: 'Find accountability partner or coach. ' },
+        { emoji: '🥗', icon: 'restaurant', label: 'Meal prep skills', text: 'Develop meal prep routine. ' },
+        { emoji: '😴', icon: 'bedtime', label: 'Address sleep', text: 'Address sleep issues. ' },
+        { emoji: '🧘', icon: 'self_improvement', label: 'Stress management', text: 'Better stress management tools. ' },
+        { emoji: '⏰', icon: 'schedule', label: 'Time management', text: 'Improve time management. ' },
       ],
       hasOther: true,
     },
@@ -190,14 +190,14 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
       subtitle: 'Select all that apply.',
       type: 'multi-select-array',
       options: [
-        { emoji: '⏰', label: 'Time' },
-        { emoji: '🔋', label: 'Energy' },
-        { emoji: '😰', label: 'Stress' },
-        { emoji: '🎯', label: 'Motivation' },
-        { emoji: '🤔', label: 'Clarity' },
-        { emoji: '🏠', label: 'Environment' },
-        { emoji: '👥', label: 'Support' },
-        { emoji: '📚', label: 'Knowledge' },
+        { emoji: '⏰', icon: 'schedule', label: 'Time' },
+        { emoji: '🔋', icon: 'bolt', label: 'Energy' },
+        { emoji: '😰', icon: 'waves', label: 'Stress' },
+        { emoji: '🎯', icon: 'local_fire_department', label: 'Motivation' },
+        { emoji: '🤔', icon: 'lightbulb', label: 'Clarity' },
+        { emoji: '🏠', icon: 'home', label: 'Environment' },
+        { emoji: '👥', icon: 'groups', label: 'Support' },
+        { emoji: '📚', icon: 'school', label: 'Knowledge' },
       ],
       hasOther: true,
     },
@@ -210,14 +210,14 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
       subtitle: 'Select all that apply.',
       type: 'multi-select-array',
       options: [
-        { emoji: '🏃', label: 'Movement/Exercise' },
-        { emoji: '🥗', label: 'Nutrition' },
-        { emoji: '😴', label: 'Sleep' },
-        { emoji: '🧘', label: 'Stress Management' },
-        { emoji: '🍷', label: 'Alcohol/Substance Moderation' },
-        { emoji: '📋', label: 'Planning/Organization' },
-        { emoji: '📱', label: 'Tech Boundaries' },
-        { emoji: '👥', label: 'Social Connection' },
+        { emoji: '🏃', icon: 'directions_run', label: 'Movement/Exercise' },
+        { emoji: '🥗', icon: 'restaurant', label: 'Nutrition' },
+        { emoji: '😴', icon: 'bedtime', label: 'Sleep' },
+        { emoji: '🧘', icon: 'self_improvement', label: 'Stress Management' },
+        { emoji: '🍷', icon: 'no_drinks', label: 'Alcohol/Substance Moderation' },
+        { emoji: '📋', icon: 'checklist', label: 'Planning/Organization' },
+        { emoji: '📱', icon: 'smartphone', label: 'Tech Boundaries' },
+        { emoji: '👥', icon: 'groups', label: 'Social Connection' },
       ],
       hasOther: true,
     },
@@ -242,12 +242,12 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
       subtitle: 'Select all that apply.',
       type: 'multi-select-array',
       options: [
-        { emoji: '🤝', label: 'Accountability partner' },
-        { emoji: '🔔', label: 'Reminders & check-ins' },
-        { emoji: '📊', label: 'Weekly progress review' },
-        { emoji: '📝', label: 'Step-by-step plan' },
-        { emoji: '👥', label: 'Community support' },
-        { emoji: '📚', label: 'Education & resources' },
+        { emoji: '🤝', icon: 'handshake', label: 'Accountability partner' },
+        { emoji: '🔔', icon: 'notifications', label: 'Reminders & check-ins' },
+        { emoji: '📊', icon: 'insights', label: 'Weekly progress review' },
+        { emoji: '📝', icon: 'format_list_numbered', label: 'Step-by-step plan' },
+        { emoji: '👥', icon: 'groups', label: 'Community support' },
+        { emoji: '📚', icon: 'school', label: 'Education & resources' },
       ],
       hasOther: true,
     },
@@ -646,19 +646,12 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
             {q.options.map((option) => {
               const isSelected = isArrayOptionSelected(option.label, q.field)
               return (
-                <button
+                <OptionButton
                   key={option.label}
+                  option={option}
+                  isSelected={isSelected}
                   onClick={() => toggleArrayOption(option.label, q.field)}
-                  className={`flex items-center gap-3 p-4 rounded-xl text-left transition-all ${
-                    isSelected
-                      ? 'bg-summit-emerald text-white shadow-lg'
-                      : 'bg-white text-summit-forest border border-summit-sage hover:bg-summit-mint'
-                  }`}
-                >
-                  <span className="text-2xl">{option.emoji}</span>
-                  <span className="font-medium flex-1">{option.label}</span>
-                  {isSelected && <Check className="w-5 h-5" />}
-                </button>
+                />
               )
             })}
           </div>
