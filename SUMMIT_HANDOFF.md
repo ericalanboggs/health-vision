@@ -1,6 +1,6 @@
 # Summit Health — Developer Handoff Guide
 
-> Living document. Last updated: 2026-05-25.
+> Living document. Last updated: 2026-06-05.
 
 **Companion docs:**
 - [`SUMMIT_COACH_VOICE.md`](./SUMMIT_COACH_VOICE.md) — voice and tone guide for all user-facing copy (SMS messages, email content, AI system prompts, challenge content). Read this before writing or editing any user-facing text.
@@ -248,6 +248,7 @@ Inbound SMS (Twilio)
 - SMS: `sms_opt_in`, `tracking_followup_time` (default 17:00), `admin_sms_hold_until`, `sms_conversational` (default false; opt-in to Summit Coach voice prompts)
 - Stripe: `stripe_customer_id`, `stripe_subscription_id`, `subscription_status`, `subscription_tier`, `trial_ends_at`, `subscription_current_period_end`
 - Challenge: `challenge_type` ('lite' or NULL)
+- Acquisition: `acquisition_source` (marketing landing segment the user came in from — e.g. 'burnout', 'postpartum', 'lifestyle-changes'; NULL for organic). Captured from the Framer `?source=` tag via `src/lib/acquisition.js` (localStorage, survives the OAuth redirect) and written in `ProfileSetup.jsx` at profile creation. Used to tailor onboarding. Migration `20260531`.
 - Soft delete: `deleted_at`
 
 **`health_journeys`** — Onboarding vision data
@@ -272,6 +273,12 @@ Inbound SMS (Twilio)
 **`weekly_reflections`** — Weekly journal
 - `user_id`, `week_number`, `went_well`, `friction`, `adjustment`, `app_feedback`, `source` ('web'|'sms')
 - UNIQUE(user_id, week_number)
+
+### Marketing Tables
+
+**`freebie_leads`** — Email leads from the public `/freebies` giveaway page (the shareable AI skill)
+- `email`, `freebie_slug` (default 'summit-weekly-reflection'), `wants_tips`, `source`, `email_sent`
+- UNIQUE(email, freebie_slug). Written by the `capture-freebie-lead` edge function; service-role-only RLS (no public/browser access). Migration `20260530`.
 
 ### SMS Tables
 
@@ -656,6 +663,13 @@ Source design lives in the Claude Design bundle (`Summit Tracker.html`). The imp
    supabase functions deploy generate-weekly-tracker --no-verify-jwt
    ```
 
+   **Why even browser-called functions need this:** the project's anon key is the new
+   `sb_publishable_…` format, which is **not a JWT**. Any function invoked from the browser with just
+   the anon key returns `401 UNAUTHORIZED_INVALID_JWT_FORMAT` unless deployed `--no-verify-jwt`. That's
+   why `create-lite-enrollment`, `capture-freebie-lead`, and the `send-admin-*` functions all need the
+   flag — not only the Twilio/cron ones. (Caught us on `capture-freebie-lead`'s first deploy: the
+   gateway 401'd every browser call until it was redeployed with the flag.)
+
 2. **Migration file names must have unique YYYYMMDD prefixes.** Duplicate dates cause `duplicate key` errors in `supabase db push`. If two migrations land on the same day, use adjacent dates (e.g., 20260325 and 20260326).
 
 3. **Cron functions must be deployed before scheduling.** If `send-lite-challenge-sms` isn't deployed but the cron is scheduled, you'll get 404 errors every 15 minutes. Deploy first, then schedule.
@@ -701,6 +715,10 @@ Source design lives in the Claude Design bundle (`Summit Tracker.html`). The imp
 14. **Always filter `archived_at IS NULL` when querying `weekly_habits` for active habits.** Every edge function and frontend service that queries habits for reminders, tracking, followups, or AI context must include `.is('archived_at', null)`. Forgetting this will send reminders for archived habits. The only exceptions are informational queries (e.g., `notify-new-signup` showing admin what habits a user has, or `send-habit-setup-emails` checking if a user has any habits).
 
 15. **Challenge auto-completion is client-triggered.** `getActiveEnrollment()` checks `isChallengeOver()` and auto-completes if 28+ days have passed. This means auto-completion only fires when a page loads that calls `getActiveEnrollment` (Dashboard, Habits, Challenges, Reflection). There is no server-side cron for auto-completion — the `send-challenge-completion-sms` cron only sends SMS for already-completed enrollments.
+
+### Frontend / UI
+
+16. **Material Symbols glyph names render as literal text when invalid.** The `MaterialSymbol` helper (the `material-symbols-outlined` web font, used in `Vision.jsx`/`QuickStartVision.jsx`) prints the raw name if the glyph isn't in the font — e.g. `<MaterialSymbol name="telescope" />` rendered the word "TELESCOPE" in production. Verify names against the Material Symbols set, or use an inline SVG (see `TelescopeIcon` in `Vision.jsx`). Prefer build-checked `@mui/icons-material` imports when the icon exists there — a bad import fails the build instead of shipping silently.
 
 ---
 
