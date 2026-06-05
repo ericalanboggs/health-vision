@@ -183,7 +183,7 @@ export const doSomething = async (params) => {
 | `notify-new-signup` | DB trigger (pg_net) | **YES** | Admin notification email on new signup |
 | `send-onboarding-emails` | Cron | **YES** | Multi-day drip email campaign |
 | `send-trial-drip-emails` | Cron | **YES** | Trial period education emails |
-| `send-trial-expiry-sms` | Cron (daily 2PM UTC) | **YES** | Farewell SMS with SUMMIT50 promo code when 30-day trial expires |
+| `send-trial-expiry-sms` | Cron (daily 2PM UTC) | **YES** | Farewell SMS with SUMMIT50 promo code when the trial expires (fires off `trial_ends_at`, currently 14 days) |
 | `send-habit-setup-emails` | Cron | **YES** | Habit setup confirmation emails |
 | `send-habit-tracking-emails` | Cron | **YES** | Daily habit tracking reminder emails |
 | `send-reflection-reminders` | Cron (Sunday 6PM UTC) | **YES** | AI-generated week synopsis opener → creates reflection session. Skips users who signed up Fri/Sat/Sun (too new for reflection). |
@@ -477,8 +477,9 @@ Both functions fall back to the templated copy if the OpenAI call fails or excee
    - **Lite payment**: Updates `lite_challenge_enrollments` to `status: 'paid'`
 
 ### Trial
-- 30-day free trial on all subscription tiers (set via `subscription_data.trial_period_days` in `create-checkout-session`, overrides any price-level trial config in Stripe Dashboard)
-- Frontend signup paths (`ProfileSetup.jsx`, `SummaryPage.jsx`, `AddHabit.jsx`) also write `trial_ends_at = NOW + 30 days` directly on the profile so users get free access before any Stripe checkout
+- 14-day free trial on all subscription tiers (set via `subscription_data.trial_period_days` in `create-checkout-session`, overrides any price-level trial config in Stripe Dashboard)
+- Frontend signup paths (`ProfileSetup.jsx`, `SummaryPage.jsx`, `AddHabit.jsx`) also write `trial_ends_at = NOW + 14 days` directly on the profile so users get free access before any Stripe checkout
+- Onboarding drip (`send-onboarding-emails`) has trial-ending emails at day 13 ("ends tomorrow") and day 14 ("last day") — keep these aligned with the trial length above
 - `trial_ends_at` set by `stripe-webhook` when checkout completes (overwrites profile-side value with Stripe's `subscription.trial_end`)
 - `send-onboarding-emails` runs days 2–7 (welcome series) plus days 29 and 30 (trial-end nudges)
 - `send-trial-expiry-sms` fires daily at 2 PM UTC (8 AM Central) — catches trials that ended in the last 24h, sends farewell SMS with SUMMIT50 promo code

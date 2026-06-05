@@ -221,7 +221,7 @@ function buildDay5Html(firstName: string): string {
     paragraph(`Reflections are due each week by the end of the week. If you miss one, no worries — you can always pick it up the following week.`),
     spacer(10),
     ctaButton('Start My Weekly Reflection', `${APP_URL}/reflection`),
-    paragraph(`<em>P.S. You have a few days left in your free trial.</em>`),
+    paragraph(`<em>P.S. You've still got time left in your free trial.</em>`),
   ].join('')
 
   return wrapEmail('The Power of Weekly Reflection', body)
@@ -270,12 +270,12 @@ function buildDay7Html(firstName: string): string {
   return wrapEmail('Your First Week with Summit', body)
 }
 
-// ─── Day 29: Trial ends tomorrow ─────────────────────────────────────
+// ─── Day 13: Trial ends tomorrow ─────────────────────────────────────
 
-function buildDay29Html(firstName: string): string {
+function buildTrialEndsTomorrowHtml(firstName: string): string {
   const body = [
     heading('Your trial ends tomorrow'),
-    paragraph(`Hi ${firstName} — quick heads-up. Your 30-day Summit trial ends tomorrow.`),
+    paragraph(`Hi ${firstName} — quick heads-up. Your Summit trial ends tomorrow.`),
     paragraph(`If Summit's been useful, pick a plan to keep your habits, reminders, weekly digests, and reflections going. If you're not ready, no pressure — your account stays put either way.`),
     spacer(10),
     ctaButton('Choose a Plan', `${APP_URL}/pricing`),
@@ -285,9 +285,9 @@ function buildDay29Html(firstName: string): string {
   return wrapEmail('Your trial ends tomorrow', body)
 }
 
-// ─── Day 30: Last day ────────────────────────────────────────────────
+// ─── Day 14: Last day ────────────────────────────────────────────────
 
-function buildDay30Html(firstName: string): string {
+function buildLastDayHtml(firstName: string): string {
   const body = [
     heading('Today is your last day'),
     paragraph(`Hi ${firstName} — today is the final day of your free Summit trial.`),
@@ -347,16 +347,16 @@ const ONBOARDING_DAYS: OnboardingDay[] = [
     buildHtml: buildDay7Html,
   },
   {
-    day: 29,
-    emailType: 'onboarding_day_29',
+    day: 13,
+    emailType: 'onboarding_day_13',
     subject: (name) => `${name}, your trial ends tomorrow`,
-    buildHtml: buildDay29Html,
+    buildHtml: buildTrialEndsTomorrowHtml,
   },
   {
-    day: 30,
-    emailType: 'onboarding_day_30',
+    day: 14,
+    emailType: 'onboarding_day_14',
     subject: (name) => `${name}, today's your last day`,
-    buildHtml: buildDay30Html,
+    buildHtml: buildLastDayHtml,
   },
 ]
 

@@ -14,7 +14,7 @@
 **Subhead:**
 Coaching by text for high-output people running hard but no longer sure toward what. Not to help you grind better at your job — to help you come back to your vision, protect your time and energy for it, and realign in the small increments you actually have. No apps. No dashboards. A coach in your messages.
 
-**CTA:** `Start Free for 30 Days`
+**CTA:** `Start Free for 14 Days`
 
 ---
 
@@ -164,7 +164,7 @@ What it's *not*:
 - Second 30-min monthly call
 - Concierge texting during business hours
 
-**All plans include a 30-day free trial. No credit card required. Cancel anytime.**
+**All plans include a 14-day free trial. No credit card required. Cancel anytime.**
 
 The math: you spend more on coffee, supplements, or one quarter of Whoop than the Core tier costs.
 
@@ -182,7 +182,7 @@ You've tried the dashboards, the trackers, the optimization stack. None of them 
 
 Set a vision. Pick a few habits. Start coming back to yourself.
 
-`Start Free for 30 Days`
+`Start Free for 14 Days`
 
 ---
 
@@ -190,6 +190,6 @@ Set a vision. Pick a few habits. Start coming back to yourself.
 
 **Title:** Burnout Coaching by Text | Summit Health for Knowledge Workers
 
-**Description:** High-output professionals running on fumes. A coach in your texts who helps you recover, protect your time, and realign to what matters — not just grind better. No app to babysit. 30 days free.
+**Description:** High-output professionals running on fumes. A coach in your texts who helps you recover, protect your time, and realign to what matters — not just grind better. No app to babysit. 14 days free.
 
 **Target keywords:** burnout recovery, knowledge worker burnout, executive burnout coach, stress coaching by text, sleep coach for professionals, alternative to Headspace, values-aligned coaching, setting boundaries at work

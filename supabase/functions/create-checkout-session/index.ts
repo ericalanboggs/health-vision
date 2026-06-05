@@ -94,7 +94,7 @@ serve(async (req) => {
     }
     if (checkoutMode === 'subscription') {
       sessionParams.allow_promotion_codes = true
-      sessionParams.subscription_data = { trial_period_days: 30 }
+      sessionParams.subscription_data = { trial_period_days: 14 }
     }
     if (metadata) {
       sessionParams.metadata = metadata

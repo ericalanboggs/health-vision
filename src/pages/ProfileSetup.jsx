@@ -115,7 +115,7 @@ export default function ProfileSetup() {
         profile_completed: true,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         trial_started_at: new Date().toISOString(),
-        trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
         ...(acquisitionSource ? { acquisition_source: acquisitionSource } : {}),
       })
 

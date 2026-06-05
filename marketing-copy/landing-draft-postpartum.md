@@ -15,7 +15,7 @@
 **Subhead:**
 The version of you with energy and a routine and a sense of herself is still in there. Summit is a coach in your text messages who helps you come back to yourself — without another app, another hour, or another guilt trip.
 
-**CTA:** `Start Free for 30 Days`
+**CTA:** `Start Free for 14 Days`
 
 ---
 
@@ -140,7 +140,7 @@ You don't need a better dashboard. You need a coach who keeps the thread going o
 - Second 30-min monthly call
 - Concierge texting during business hours
 
-**All plans include a 30-day free trial. No credit card required. Cancel anytime.**
+**All plans include a 14-day free trial. No credit card required. Cancel anytime.**
 
 `Start Free Trial`
 
@@ -154,7 +154,7 @@ You've been showing up for everyone else. This is the part where someone shows u
 
 **Set a vision. Pick a few habits. Let a coach hold the rhythm.**
 
-`Start Free for 30 Days`
+`Start Free for 14 Days`
 
 ---
 
@@ -162,6 +162,6 @@ You've been showing up for everyone else. This is the part where someone shows u
 
 **Title:** Health Coaching for Postpartum Moms | Summit
 
-**Description:** Rebuilding strength, energy, and a sense of self after baby. A coach in your texts — no app, no "bounce back," no guilt. 30 days free.
+**Description:** Rebuilding strength, energy, and a sense of self after baby. A coach in your texts — no app, no "bounce back," no guilt. 14 days free.
 
 **Target keywords:** postpartum energy, postpartum strength rebuilding, postpartum wellness coaching, health coaching for moms, postpartum self-care, finding yourself after baby

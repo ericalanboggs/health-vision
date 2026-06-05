@@ -14,7 +14,7 @@
 **Subhead:**
 Coaching by text for men who can't wait until the next physical to be different. Set a vision. Pick 1–3 small habits. Get a coach in your messages who actually moves the numbers.
 
-**CTA:** `Start Free for 30 Days`
+**CTA:** `Start Free for 14 Days`
 
 ---
 
@@ -154,7 +154,7 @@ If you sign up, you'll hear from me — not a chatbot pretending to be me.
 - Second 30-min monthly call
 - Concierge texting during business hours
 
-**All plans include a 30-day free trial. No credit card required. Cancel anytime.**
+**All plans include a 14-day free trial. No credit card required. Cancel anytime.**
 
 `Start Free Trial`
 
@@ -168,7 +168,7 @@ The doctor told you what. Summit handles how.
 
 **Set a vision. Pick a few habits. Get a coach in your texts.**
 
-`Start Free for 30 Days`
+`Start Free for 14 Days`
 
 ---
 
@@ -176,6 +176,6 @@ The doctor told you what. Summit handles how.
 
 **Title:** "Lifestyle Changes" Without the Guesswork | Summit Health for Men 40+
 
-**Description:** Doctor told you to make lifestyle changes? Summit is the coach in your texts that actually moves cholesterol, BP, weight, and energy. 30 days free.
+**Description:** Doctor told you to make lifestyle changes? Summit is the coach in your texts that actually moves cholesterol, BP, weight, and energy. 14 days free.
 
 **Target keywords:** lifestyle changes for high cholesterol, men's health coaching, lower blood pressure habits, men 40 health coach, how to lower cholesterol naturally

@@ -364,7 +364,7 @@ export default function AddHabit() {
           await upsertProfile(user.id, {
             onboarding_completed: true,
             trial_started_at: new Date().toISOString(),
-            trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
           })
           // Fire-and-forget: pre-seed Guides with week 1 digest resources
           seedFirstDigest(user.id)

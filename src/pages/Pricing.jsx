@@ -36,7 +36,7 @@ const PREMIUM_COACHING = [
 const FAQS = [
   {
     q: 'Is there a free trial?',
-    a: 'Yes! New users get 30 days of free access to habits, reminders, reflections, and digests — no credit card required. Coaching is available once you subscribe to a Plus or Premium plan.',
+    a: 'Yes! New users get 14 days of free access to habits, reminders, reflections, and digests — no credit card required. Coaching is available once you subscribe to a Plus or Premium plan.',
   },
   {
     q: 'Are the coaches real humans?',
