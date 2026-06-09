@@ -5,6 +5,10 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!
 
+const ADMIN_EMAILS = (Deno.env.get('ADMIN_EMAILS') || 'eric.alan.boggs@gmail.com,eric@summithealth.app')
+  .split(',')
+  .map((e) => e.trim().toLowerCase())
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -37,11 +41,24 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
 
   try {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+    // Deployed with --no-verify-jwt (browser-called → gateway would block the
+    // CORS preflight otherwise), so verify the admin's JWT internally. This
+    // endpoint returns sensitive data (full SMS transcript, vision), so it must
+    // not be left open.
+    const authHeader = req.headers.get('Authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    if (!token) return json({ success: false, error: 'Missing authorization header' }, 401)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) return json({ success: false, error: 'Invalid authorization token' }, 401)
+    if (!ADMIN_EMAILS.includes(user.email?.toLowerCase() || '')) {
+      return json({ success: false, error: 'Unauthorized — admin access required' }, 403)
+    }
+
     const body = await req.json().catch(() => ({}))
     const userId: string | undefined = body.userId
     if (!userId) throw new Error('userId required')
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
     // --- Profile ---
     const { data: profile } = await supabase

@@ -212,6 +212,7 @@ export const doSomething = async (params) => {
 | `cal-webhook` | External webhook | NO | Calendar integration |
 | `send-march-update` | Manual POST | **YES** | One-time March 2026 product update email to all users |
 | `generate-weekly-tracker` | Manual POST (cron-ready) | **YES** | Generates a printable one-page weekly habit tracker PDF and emails it as an attachment via Resend. Uses pdf-lib + embedded Inter TTFs (fetched from jsdelivr, module-cached). Accepts `{userId}` or `{email}` and optional `{weekStart}`. |
+| `export-coaching-brief` | Frontend POST (admin) | **YES** | Generates a session-ready coaching brief (Markdown) for a user. Gathers profile, vision, reflections, active habits, and merged SMS conversation; uses gpt-4o-mini to synthesize the brief + appends the full SMS transcript. Verifies admin JWT internally (returns sensitive data). Accepts `{userId}`, returns `{markdown, filename}`. Surfaced via the Summarize icon on the admin user detail page. |
 
 ### SMS Flow
 
@@ -661,7 +662,10 @@ Source design lives in the Claude Design bundle (`Summit Tracker.html`). The imp
    supabase functions deploy send-confidence-check --no-verify-jwt
    supabase functions deploy send-march-update --no-verify-jwt
    supabase functions deploy generate-weekly-tracker --no-verify-jwt
+   supabase functions deploy export-coaching-brief --no-verify-jwt
    ```
+
+   Browser-called functions (`send-admin-sms`, `send-admin-email`, `export-coaching-brief`, …) need `--no-verify-jwt` because the gateway rejects the CORS preflight OPTIONS (no auth header). They must verify the caller's JWT + admin email *inside* the function — `--no-verify-jwt` removes gateway auth, so anything returning user data is otherwise wide open.
 
    **Why even browser-called functions need this:** the project's anon key is the new
    `sb_publishable_…` format, which is **not a JWT**. Any function invoked from the browser with just
@@ -735,6 +739,7 @@ Source design lives in the Claude Design bundle (`Summit Tracker.html`). The imp
 - **Bulk Delete**: Select users → cascading delete across all related tables
 - **SMS Thread Viewer**: Side panel showing recent conversations per user
 - **User Detail Page** (`/admin/users/:id`): Profile info, health vision, habits (with tracking config), reflections, resources, full SMS conversation, coaching session log
+- **Export Coaching Brief**: Summarize icon in the user detail header → `export-coaching-brief` → AI-generated session-ready coaching brief (Markdown) downloaded to the admin's machine. Sibling to the Weekly Tracker PDF buttons
 - **Engagement Filters**: All / New / Active / Inactive / No Habits + tier filter + SMS opt-out filter
 - **Quiet Users Alert**: Yellow banner showing users with no login in 5+ days
 
