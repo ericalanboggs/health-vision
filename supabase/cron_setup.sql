@@ -95,6 +95,10 @@ SELECT cron.schedule('send-trial-expiry-sms', '0 14 * * *', $$SELECT call_edge_f
 -- Post-trial drip emails (Days 1, 3, 5 after expiry) - Daily 2PM UTC (8AM CST)
 SELECT cron.schedule('send-trial-drip-emails', '0 14 * * *', $$SELECT call_edge_function('send-trial-drip-emails')$$);
 
+-- Freebie nurture drip (Days 2,4,7,10,13,17 after capture) - Daily 4PM UTC (10AM CST)
+-- Educates freebie leads, then pitches the 14-day trial. Skips leads who already signed up.
+SELECT cron.schedule('send-freebie-drip-emails', '0 16 * * *', $$SELECT call_edge_function('send-freebie-drip-emails')$$);
+
 -- =====================================================
 -- Useful commands
 -- =====================================================

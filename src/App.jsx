@@ -41,6 +41,7 @@ import WelcomeBack from './pages/WelcomeBack'
 import Coaching from './pages/Coaching'
 import SmsConsent from './pages/SmsConsent'
 import Freebies from './pages/Freebies'
+import LifestyleGuide from './pages/LifestyleGuide'
 import ChallengesLanding from './pages/ChallengesLanding'
 import ChallengeDetail from './pages/ChallengeDetail'
 import ChallengeAddHabit from './pages/ChallengeAddHabit'
@@ -150,6 +151,7 @@ function App() {
 
         {/* Freebies - Public */}
         <Route path="/freebies" element={<Freebies />} />
+        <Route path="/lifestyle-changes" element={<LifestyleGuide />} />
 
         {/* Welcome back - reactivation flow */}
         <Route

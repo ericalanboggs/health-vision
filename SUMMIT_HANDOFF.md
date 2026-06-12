@@ -199,7 +199,9 @@ export const doSomething = async (params) => {
 | `send-phone-verification` | Frontend POST | NO | Sends OTP for phone verification |
 | `verify-phone-code` | Frontend POST | NO | Verifies OTP, sends opt-in confirmation |
 | `create-lite-enrollment` | Frontend POST | **YES** | Lite challenge signup (creates user + profile + enrollment) |
-| `capture-freebie-lead` | Frontend POST | **YES** | /freebies email capture — stores lead + emails the download link |
+| `capture-freebie-lead` | Frontend POST | **YES** | Freebie email capture — stores lead + emails the download link. Multi-freebie via `FREEBIES` config: `summit-weekly-reflection` (skill .zip, /freebies) and `lifestyle-changes-guide` (PDF guide, /lifestyle-changes). |
+| `send-freebie-drip-emails` | Cron (daily 4PM UTC) | **YES** | Nurture drip for freebie leads (days 2,4,7,10,13,17): why lifestyle change works → how → Summit system → founder video → 14-day trial CTA → last note. Dedups via `freebie_lead_emails`; skips leads who already signed up. Respects `freebie_leads.wants_tips`. |
+| `freebie-unsubscribe` | Email link (GET) | **YES** | One-click unsubscribe from the freebie drip; sets `wants_tips=false`. Public — auth via link possession. |
 | `send-lite-challenge-sms` | Cron (every 15 min) | **YES** | 5x/day SMS for lite challenge |
 | `send-lite-challenge-email` | Cron (daily) | **YES** | Daily email + end-of-challenge summary |
 | `stripe-webhook` | Stripe webhook | **YES** | Handles checkout, subscription updates/deletes |
@@ -641,6 +643,20 @@ Source design lives in the Claude Design bundle (`Summit Tracker.html`). The imp
 
 ### Deployment
 
+**Frontend (the React app) deploys automatically — there is no manual deploy step.** Vercel is wired to the GitHub repo and builds + ships on every push to `main`. To deploy frontend changes (new pages, routes, copy, public assets like the freebie PDFs in `public/`):
+
+```bash
+git add -A
+git commit -m "your message"
+git push            # → Vercel auto-builds and deploys main to production
+```
+
+That's the whole flow — commit, push, done. New routes (e.g. `/lifestyle-changes`) and anything under `public/` (e.g. `public/freebies/*.pdf`) go live with the push. After it lands, hard-refresh (Cmd+Shift+R) to bust Vercel's cache. Adding a new `VITE_*` env var requires setting it in Vercel first, then a redeploy (see item 5).
+
+**Workflow preference: ship finished work to `main`.** Vercel only auto-deploys `main`, so finished changes should be committed and merged to `main` — don't leave shippable work stranded on a feature branch. When work is ready, the default is: commit it, merge the branch to `main`, and push `main`. (If asked to "deploy" or "ship" the frontend, that means: get it onto `main`.)
+
+**Backend (Supabase edge functions + migrations) is the part you deploy manually** — it does *not* ride along with the GitHub push. Use the `supabase` CLI:
+
 1. **`--no-verify-jwt` resets on EVERY redeploy.** Any redeploy — CLI, dashboard, or auto-deploy — strips this flag. Always include it:
    ```bash
    supabase functions deploy twilio-webhook --no-verify-jwt
@@ -654,6 +670,8 @@ Source design lives in the Claude Design bundle (`Summit Tracker.html`). The imp
    supabase functions deploy stripe-webhook --no-verify-jwt
    supabase functions deploy create-lite-enrollment --no-verify-jwt
    supabase functions deploy capture-freebie-lead --no-verify-jwt
+   supabase functions deploy send-freebie-drip-emails --no-verify-jwt
+   supabase functions deploy freebie-unsubscribe --no-verify-jwt
    supabase functions deploy send-lite-challenge-sms --no-verify-jwt
    supabase functions deploy send-lite-challenge-email --no-verify-jwt
    supabase functions deploy sms-reflection-response --no-verify-jwt
