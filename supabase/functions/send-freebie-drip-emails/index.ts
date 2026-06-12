@@ -14,9 +14,10 @@ const LOGO_URL = 'https://go.summithealth.app/summit-logo.png'
 // here get the tailored /welcome onboarding. UTMs here attribute the drip.
 const TRIAL_URL = 'https://summithealth.app/use-cases/lifestyle-changes?utm_source=freebie_drip&utm_medium=email'
 
-// 90-second direct-to-camera founder video (ad creative does double duty here).
-// TODO(eric): replace with the real hosted video URL once filmed.
-const FOUNDER_VIDEO_URL = 'https://summithealth.app?utm_source=freebie_drip&utm_medium=email&utm_content=video'
+// 90-second direct-to-camera founder video (Vimeo). Email clients can't embed,
+// so this links to the Vimeo watch page. Requires the video be Unlisted/public
+// (anyone-with-link can view) — verify Vimeo privacy if recipients hit a wall.
+const FOUNDER_VIDEO_URL = 'https://vimeo.com/1200892364'
 
 // Clean-start floor: don't retro-enroll leads captured before the drip went live —
 // they opted in for a free download, not a nurture sequence. Only leads from this

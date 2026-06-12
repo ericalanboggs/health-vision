@@ -11,6 +11,7 @@ import { trackEvent } from '../lib/posthog'
 const FREEBIE_SLUG = 'lifestyle-changes-guide'
 const PDF_PATH = `/freebies/${FREEBIE_SLUG}.pdf`
 const TRIAL_URL = 'https://summithealth.app/use-cases/lifestyle-changes'
+const FOUNDER_VIDEO_EMBED = 'https://player.vimeo.com/video/1200892364'
 
 const STEPS = [
   {
@@ -178,6 +179,25 @@ export default function LifestyleGuide() {
             <CaptureBlock location="hero" />
           </div>
         </div>
+
+        {/* Founder video */}
+        <Card variant="elevated" padding="lg" className="mb-8">
+          <CardHeader>
+            <CardTitle as="h2">90 seconds on why I built this</CardTitle>
+          </CardHeader>
+          <CardContent className="mt-4">
+            <div className="relative w-full overflow-hidden rounded-lg" style={{ paddingTop: '56.25%' }}>
+              <iframe
+                src={FOUNDER_VIDEO_EMBED}
+                title="Why I built Summit"
+                className="absolute inset-0 h-full w-full"
+                frameBorder="0"
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* The method */}
         <Card variant="outlined" className="mb-8">
