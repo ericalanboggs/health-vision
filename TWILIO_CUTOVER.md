@@ -97,10 +97,9 @@ After Step 3, `TWILIO_AUTH_TOKEN` = the 617 token. Any user who replies to an **
 that came from the toll-free** will hit `twilio-webhook` signed by the toll-free account's
 token → **403, silently dropped**.
 
-**Chosen handling (no code change):**
-- [ ] Right after cutover, send the small set of active users a heads-up from 617 (e.g. via
-      admin SMS): *"Heads up — Summit now texts you from (617) 655-7921. Save it 👍"*
-- [ ] This rolls every active thread onto 617. Users reply to the latest message, so they're
+**Chosen handling (no code change):** — ✅ DONE (2026-06-12)
+- [x] Sent the heads-up from 617 to both main active users — threads rolled onto 617.
+- [x] This rolls every active thread onto 617. Users reply to the latest message, so they're
       on the new number immediately.
 
 ### Step 6 — Keep toll-free parked as backup
