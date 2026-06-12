@@ -448,7 +448,7 @@ export default function Reflection() {
                 <button
                   onClick={handleSave}
                   disabled={saving || !isComplete}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 bg-summit-emerald hover:bg-emerald-700 disabled:bg-stone-300 disabled:cursor-not-allowed text-white font-semibold px-8 py-3 rounded-lg shadow-md hover:shadow-lg transition-all"
+                  className="w-full sm:w-auto sm:mx-auto flex items-center justify-center gap-2 bg-summit-emerald hover:bg-emerald-700 disabled:bg-stone-300 disabled:cursor-not-allowed text-white font-semibold px-8 py-3 rounded-lg shadow-md hover:shadow-lg transition-all"
                 >
                   {saving ? (
                     <>

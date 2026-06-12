@@ -153,7 +153,7 @@ const RouteStep = ({ formData, updateFormData, onNext, onBack }) => {
             What feels sustainable for the next 2–4 weeks? <span className="text-sm font-normal text-stone-500">(Optional)</span>
           </label>
           <p className="text-sm text-stone-600 mb-4">
-            Not forever—just what you can commit to right now.
+            Think about the pace and habits you can realistically keep up—not forever, just for the next few weeks. For example: "10-minute walks on weekdays" or "meal prep on Sundays."
           </p>
           <textarea
             value={formData.sustainableNotes || ''}

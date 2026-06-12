@@ -13,6 +13,9 @@ const NAV_LINKS = [
   { label: 'Coaching', path: '/coaching' },
 ]
 
+// Cal.com scheduling link for trial consultations.
+const CONSULTATION_URL = 'https://cal.com/summit-health/15min'
+
 export default function AppLayout() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -80,6 +83,15 @@ export default function AppLayout() {
           <button onClick={() => navigate('/pricing')} className="underline font-semibold">
             Choose a plan
           </button>
+          {' '}or{' '}
+          <a
+            href={CONSULTATION_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline font-semibold"
+          >
+            book a consultation
+          </a>
         </div>
       )}
       {showNav ? (
@@ -99,7 +111,15 @@ export default function AppLayout() {
                 className="flex items-center justify-center w-9 h-9 rounded-full text-summit-moss hover:text-summit-forest hover:bg-summit-sage transition"
                 aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               >
-                {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {menuOpen ? (
+                  <X className="w-5 h-5" />
+                ) : (
+                  <>
+                    {/* Mobile: hamburger (holds nav links + account). Desktop: profile icon (account only). */}
+                    <Menu className="w-5 h-5 md:hidden" />
+                    <User className="w-5 h-5 hidden md:block" />
+                  </>
+                )}
               </button>
 
               {menuOpen && (
