@@ -14,10 +14,13 @@ const LOGO_URL = 'https://go.summithealth.app/summit-logo.png'
 // here get the tailored /welcome onboarding. UTMs here attribute the drip.
 const TRIAL_URL = 'https://summithealth.app/use-cases/lifestyle-changes?utm_source=freebie_drip&utm_medium=email'
 
-// 90-second direct-to-camera founder video (Vimeo). Email clients can't embed,
-// so this links to the Vimeo watch page. Requires the video be Unlisted/public
-// (anyone-with-link can view) — verify Vimeo privacy if recipients hit a wall.
-const FOUNDER_VIDEO_URL = 'https://vimeo.com/1200892364'
+// Drip-specific founder video (Vimeo watch URL). DIFFERENT from the landing-page
+// video (vimeo.com/1200892364) — that one is top-of-funnel and ends with "go grab
+// the guide," which is wrong here: drip recipients already downloaded it. This
+// video should be a post-download "why I care / why try Summit" message.
+// Empty until filmed — when empty, the day-10 email renders text-only (no card).
+// TODO(eric): set to the drip-version Vimeo URL once recorded.
+const FOUNDER_VIDEO_URL = ''
 
 // Clean-start floor: don't retro-enroll leads captured before the drip went live —
 // they opted in for a free download, not a nurture sequence. Only leads from this
@@ -228,10 +231,16 @@ function buildSystemHtml(unsubUrl: string): string {
 
 // Day 10 — Why me / why I care (VIDEO)
 function buildWhyMeHtml(unsubUrl: string): string {
+  // Only show the video when a drip-specific URL is set (see FOUNDER_VIDEO_URL).
+  const videoIntro = FOUNDER_VIDEO_URL
+    ? [
+        paragraph(`Quick one — I wanted you to actually see who's behind these emails.`),
+        videoBlock(FOUNDER_VIDEO_URL),
+      ]
+    : []
   const body = [
     heading('Why I built this'),
-    paragraph(`Quick one — I wanted you to actually see who's behind these emails.`),
-    videoBlock(FOUNDER_VIDEO_URL),
+    ...videoIntro,
     paragraph(`Short version: I hit my 40s and watched the all-or-nothing approach burn out everyone I knew, including me. The plans weren't the problem. The plans were fine. What was missing was someone in your corner on the ordinary days — the ones with no motivation and a packed calendar.`),
     paragraph(`So I built the coach I wanted. Direct, in your corner, no shame, no fluff. Knows the research, won't lecture you with it. Meets you on the week you actually have, not the one a brochure imagines.`),
     paragraph(`That's the whole reason Summit exists. If that's the kind of thing you've been looking for, I'd genuinely love to have you give it a shot.`),
