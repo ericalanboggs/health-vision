@@ -6,12 +6,32 @@
 
 ---
 
+## Status / history
+
+- **v1** — functional first draft (plain stacked cards).
+- **v2 (shipped this session)** — visual pass: dark hero, lime accent, the method as a
+  visual icon-sequence, founder quote band, icon cards, sticky mobile CTA. Better, but per
+  Eric still reads **copy-heavy**.
+
+## ⭐ #1 priority: cut the copy density
+
+The biggest remaining problem is **too many words on screen**. v2 improved the *layout* but
+kept the full copy. This pass should make the page feel lighter and more scannable:
+
+- **Trim body copy hard.** One or two lines per step/item, max. Let the headline + icon
+  carry the idea; move the supporting detail into the PDF (that's what the download is for).
+- **Lead with bold key phrases**, hide the rest. e.g. the 4-step method can be 4 short
+  punch-lines on the page, not 4 paragraphs.
+- **Progressive disclosure** where it helps — accordions / "read more" for the method
+  detail, so the page scans short but the depth is there for who wants it.
+- **More whitespace, fewer sentences.** When in doubt, cut a sentence rather than restyle it.
+- Voice stays `ERIC_VOICE.md` — this is about *less* copy, not different copy.
+
 ## The ask
 
-The page works and the message lands — but it's **copy-heavy and visually flat**:
-it's a vertical stack of near-identical `Card`s with numbered circles. The job is to
-**up-level it into a polished, modern landing page** that holds attention and converts,
-without changing the message or breaking the funnel.
+Take the v2 page and **up-level it into a polished, modern landing page** that holds
+attention and converts — with the copy-density fix above as the primary goal — without
+changing the message or breaking the funnel.
 
 Think: the page a skeptical 40-something man lands on from a Meta ad and immediately
 trusts. Most of that traffic is **mobile**, so design mobile-first.
