@@ -224,18 +224,21 @@ export default function LifestyleGuide() {
         <section>
           <SectionEyebrow>From the founder</SectionEyebrow>
           <h2 className="mb-5 text-2xl font-bold text-summit-forest">90 seconds on why I built this</h2>
-          <div
-            className="relative w-full overflow-hidden rounded-2xl shadow-lg ring-1 ring-black/5"
-            style={{ paddingTop: '56.25%' }}
-          >
-            <iframe
-              src={FOUNDER_VIDEO_EMBED}
-              title="Why I built Summit"
-              className="absolute inset-0 h-full w-full"
-              frameBorder="0"
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
-            />
+          {/* Portrait clip (9:16, 240x426): fill the card width on mobile, cap + center on desktop */}
+          <div className="mx-auto w-full sm:max-w-[380px]">
+            <div
+              className="relative w-full overflow-hidden rounded-2xl shadow-lg ring-1 ring-black/5"
+              style={{ paddingTop: '177.5%' }}
+            >
+              <iframe
+                src={FOUNDER_VIDEO_EMBED}
+                title="Why I built Summit"
+                className="absolute inset-0 h-full w-full"
+                frameBorder="0"
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
           </div>
         </section>
 
