@@ -166,6 +166,7 @@ serve(async (req) => {
       .select('id, first_name, phone, sms_opt_in, timezone, subscription_status, trial_ends_at')
       .in('id', uniqueUserIds)
       .eq('sms_opt_in', true)
+      .eq('motivation_mode', false) // Motivation Mode users are off the action-stage track
       .is('deleted_at', null)
       .not('phone', 'is', null)
 

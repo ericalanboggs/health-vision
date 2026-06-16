@@ -7,6 +7,7 @@ import { Tag } from '@summit/design-system'
 import ConversationView from '../components/admin/ConversationView'
 import SMSThreadsPanel from '../components/admin/SMSThreadsPanel'
 import SendEmailModal from '../components/admin/SendEmailModal'
+import MotivationModePanel from '../components/admin/MotivationModePanel'
 
 /**
  * Derive coaching archetype from form data
@@ -1453,6 +1454,9 @@ export default function AdminUserDetail() {
             <p className="text-stone-500 italic">No reflections submitted yet</p>
           )}
         </div>
+
+        {/* Motivation Mode */}
+        <MotivationModePanel userId={userId} />
 
         {/* Current Resources */}
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-4 sm:p-6">

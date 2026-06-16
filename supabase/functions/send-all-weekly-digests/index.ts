@@ -262,6 +262,7 @@ serve(async (req) => {
       .from('profiles')
       .select('id, first_name, email, subscription_status, trial_ends_at')
       .eq('profile_completed', true)
+      .eq('motivation_mode', false) // Motivation Mode users are off the action-stage track
       .not('email', 'is', null)
       .is('deleted_at', null)
 

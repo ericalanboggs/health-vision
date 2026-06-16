@@ -208,6 +208,7 @@ serve(async (req) => {
       .from('profiles')
       .select('*')
       .eq('sms_opt_in', true)
+      .eq('motivation_mode', false) // Motivation Mode users are off the action-stage track
       .not('phone', 'is', null)
       .not('tracking_followup_time', 'is', null)
       .is('deleted_at', null)

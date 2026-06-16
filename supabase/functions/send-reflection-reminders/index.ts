@@ -330,6 +330,7 @@ serve(async (req) => {
       .from('profiles')
       .select('id, first_name, last_name, phone, sms_opt_in, subscription_status, trial_ends_at, timezone, challenge_type, created_at')
       .eq('sms_opt_in', true)
+      .eq('motivation_mode', false) // Motivation Mode users are off the action-stage track
       .is('deleted_at', null)
 
     if (profilesError) {

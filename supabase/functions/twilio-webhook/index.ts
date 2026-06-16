@@ -402,6 +402,52 @@ serve(async (req) => {
       }
     }
 
+    // Check for Motivation Mode: active check-in session OR a motivation_mode user.
+    // These users are off the habit-tracking track, so their replies must NOT fall through
+    // to habit-sms-response (it would misparse them as habit-tracking answers).
+    if (userId) {
+      const { data: motivationSession } = await supabase
+        .from('sms_motivation_checkin_sessions')
+        .select('id')
+        .eq('user_id', userId)
+        .gt('expires_at', new Date().toISOString())
+        .limit(1)
+        .maybeSingle()
+
+      let routeMotivation = !!motivationSession
+      if (!routeMotivation) {
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('motivation_mode')
+          .eq('id', userId)
+          .maybeSingle()
+        routeMotivation = !!prof?.motivation_mode
+      }
+
+      if (routeMotivation) {
+        try {
+          console.log(`Routing to sms-motivation-checkin for user ${userId}`)
+          const motUrl = `${SUPABASE_URL}/functions/v1/sms-motivation-checkin`
+          const motRes = await fetch(motUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            },
+            body: bodyText,
+          })
+          console.log(`sms-motivation-checkin status: ${motRes.status}`)
+        } catch (motError) {
+          console.error('Error forwarding to sms-motivation-checkin:', motError)
+        }
+
+        return new Response(
+          '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+          { headers: { 'Content-Type': 'text/xml' } }
+        )
+      }
+    }
+
     // Forward to habit-sms-response for processing (confirmation + chaining)
     if (userId) {
       try {

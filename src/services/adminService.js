@@ -1289,3 +1289,191 @@ export const deleteUsers = async (userIds) => {
     return { success: false, error: error.message }
   }
 }
+
+// ============================================================================
+// Motivation Mode (admin)
+// ============================================================================
+
+/** Toggle a user into/out of Motivation Mode (pre-action-stage track). */
+export const adminSetMotivationMode = async (userId, enabled) => {
+  try {
+    if (!await isAdmin()) return { success: false, error: 'Unauthorized' }
+    const { error } = await supabase
+      .from('profiles')
+      .update({ motivation_mode: enabled })
+      .eq('id', userId)
+    if (error) throw error
+    return { success: true }
+  } catch (error) {
+    console.error('Error setting motivation_mode:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/** Update the coach steering prompt + cadence + check-in day. */
+export const adminUpdateMotivationSettings = async (userId, { prompt, cadence, checkinDay }) => {
+  try {
+    if (!await isAdmin()) return { success: false, error: 'Unauthorized' }
+    const patch = {}
+    if (prompt !== undefined) patch.motivation_prompt = prompt
+    if (cadence !== undefined) patch.motivation_cadence = cadence
+    if (checkinDay !== undefined) patch.motivation_checkin_day = checkinDay
+    const { error } = await supabase.from('profiles').update(patch).eq('id', userId)
+    if (error) throw error
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating motivation settings:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/** Fetch a user's Motivation Mode settings (flag + steering prompt + cadence + check-in day). */
+export const getMotivationSettings = async (userId) => {
+  try {
+    if (!await isAdmin()) return { success: false, error: 'Unauthorized' }
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('motivation_mode, motivation_prompt, motivation_cadence, motivation_checkin_day')
+      .eq('id', userId)
+      .single()
+    if (error) throw error
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error fetching motivation settings:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/** Fetch a user's content queue (most recent first). */
+export const getMotivationQueue = async (userId) => {
+  try {
+    if (!await isAdmin()) return { success: false, error: 'Unauthorized' }
+    const { data, error } = await supabase
+      .from('motivation_content_queue')
+      .select('*')
+      .eq('user_id', userId)
+      .order('week_batch', { ascending: false })
+      .order('scheduled_date', { ascending: true })
+    if (error) throw error
+    return { success: true, data: data || [] }
+  } catch (error) {
+    console.error('Error fetching motivation queue:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/** Fetch a user's readiness check-in history. */
+export const getMotivationCheckins = async (userId) => {
+  try {
+    if (!await isAdmin()) return { success: false, error: 'Unauthorized' }
+    const { data, error } = await supabase
+      .from('motivation_checkins')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return { success: true, data: data || [] }
+  } catch (error) {
+    console.error('Error fetching motivation checkins:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/** Trigger the AI batch generator for one user. */
+export const adminGenerateMotivationBatch = async (userId, { regenerate = false } = {}) => {
+  try {
+    if (!await isAdmin()) return { success: false, error: 'Unauthorized' }
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) return { success: false, error: 'Not authenticated' }
+    const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/generate-motivation-batch`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ userId, regenerate }),
+    })
+    const result = await response.json()
+    if (!response.ok) return { success: false, error: result.error || 'Failed to generate batch' }
+    return { success: true, data: result }
+  } catch (error) {
+    console.error('Error generating motivation batch:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/** Edit a queued item (coach_framing, url, body, title, status, scheduled_date). */
+export const adminUpdateMotivationItem = async (itemId, patch) => {
+  try {
+    if (!await isAdmin()) return { success: false, error: 'Unauthorized' }
+    const { error } = await supabase
+      .from('motivation_content_queue')
+      .update(patch)
+      .eq('id', itemId)
+    if (error) throw error
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating motivation item:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/** Add a manual content item (coach-curated, skips link verification). */
+export const adminAddMotivationItem = async (userId, { content_type, title, url, body, coach_framing, week_batch, scheduled_date }) => {
+  try {
+    if (!await isAdmin()) return { success: false, error: 'Unauthorized' }
+    const { data, error } = await supabase
+      .from('motivation_content_queue')
+      .insert({
+        user_id: userId,
+        content_type: content_type || 'article',
+        title: title || null,
+        url: url || null,
+        body: body || null,
+        coach_framing: coach_framing || null,
+        week_batch: week_batch || 1,
+        scheduled_date: scheduled_date || null,
+        status: 'approved', // coach-added items are pre-approved
+        source: 'manual',
+      })
+      .select()
+      .single()
+    if (error) throw error
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error adding motivation item:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/** Delete a queued item. */
+export const adminDeleteMotivationItem = async (itemId) => {
+  try {
+    if (!await isAdmin()) return { success: false, error: 'Unauthorized' }
+    const { error } = await supabase.from('motivation_content_queue').delete().eq('id', itemId)
+    if (error) throw error
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting motivation item:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/** Approve all pending_review items in a batch (or all pending for the user). */
+export const adminApproveMotivationBatch = async (userId, weekBatch) => {
+  try {
+    if (!await isAdmin()) return { success: false, error: 'Unauthorized' }
+    let query = supabase
+      .from('motivation_content_queue')
+      .update({ status: 'approved' })
+      .eq('user_id', userId)
+      .eq('status', 'pending_review')
+    if (weekBatch !== undefined && weekBatch !== null) query = query.eq('week_batch', weekBatch)
+    const { error } = await query
+    if (error) throw error
+    return { success: true }
+  } catch (error) {
+    console.error('Error approving motivation batch:', error)
+    return { success: false, error: error.message }
+  }
+}

@@ -99,6 +99,10 @@ SELECT cron.schedule('send-trial-drip-emails', '0 14 * * *', $$SELECT call_edge_
 -- Educates freebie leads, then pitches the 14-day trial. Skips leads who already signed up.
 SELECT cron.schedule('send-freebie-drip-emails', '0 16 * * *', $$SELECT call_edge_function('send-freebie-drip-emails')$$);
 
+-- Motivation Mode daily send - every 30 min; the function sends at ~9:30am in each
+-- user's LOCAL timezone (with a once-per-day guard), and the readiness ruler on their check-in day.
+SELECT cron.schedule('send-daily-motivation', '*/30 * * * *', $$SELECT call_edge_function('send-daily-motivation')$$);
+
 -- =====================================================
 -- Useful commands
 -- =====================================================

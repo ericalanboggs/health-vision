@@ -67,7 +67,7 @@ serve(async (req) => {
     // Look up user profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('first_name, phone, sms_opt_in')
+      .select('first_name, phone, sms_opt_in, motivation_mode')
       .eq('id', userId)
       .single()
 
@@ -79,9 +79,10 @@ serve(async (req) => {
       })
     }
 
-    // Only send if user has opted in to SMS and has a phone
-    if (!profile.sms_opt_in || !profile.phone) {
-      console.log(`Skipping welcome tour SMS for user ${userId}: sms_opt_in=${profile.sms_opt_in}, phone=${!!profile.phone}`)
+    // Only send if user has opted in to SMS and has a phone, and is not in Motivation Mode
+    // (Motivation Mode users are off the action-stage track)
+    if (!profile.sms_opt_in || !profile.phone || profile.motivation_mode) {
+      console.log(`Skipping welcome tour SMS for user ${userId}: sms_opt_in=${profile.sms_opt_in}, phone=${!!profile.phone}, motivation_mode=${profile.motivation_mode}`)
       return new Response(JSON.stringify({ success: true, skipped: true }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       })

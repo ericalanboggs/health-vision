@@ -200,6 +200,86 @@ export class YouTubeAPI {
   }
 
   /**
+   * Search for SHORT videos (Reels / Shorts / short clips) for Motivation Mode.
+   *
+   * Unlike searchWorkoutVideos(), which REJECTS anything under 3 minutes (built for
+   * workout content), this targets videoDuration=short (<4 min) and KEEPS Shorts.
+   * Returns [] on any failure so the caller can fall back to a quote for that slot
+   * (we never want to persist a null/broken URL).
+   */
+  async searchShortVideos(query: string, maxResults: number = 3): Promise<YouTubeVideo[]> {
+    console.log(`🔍 [short] Searching YouTube shorts for: "${query}"`)
+
+    try {
+      // videoDuration=short → < 4 min. Over-fetch then quality-filter.
+      const searchUrl = `${this.baseUrl}/search?part=snippet&q=${encodeURIComponent(query)}&type=video&videoDuration=short&maxResults=${Math.min(maxResults * 3, 25)}&order=relevance&safeSearch=strict&key=${this.apiKey}`
+
+      const searchResponse = await fetch(searchUrl)
+      if (!searchResponse.ok) {
+        console.error('[short] YouTube search failed:', searchResponse.status, await searchResponse.text())
+        return []
+      }
+
+      const searchData = await searchResponse.json()
+      if (searchData.error || !searchData.items || searchData.items.length === 0) {
+        if (searchData.error) console.error('[short] YouTube API error:', searchData.error)
+        return []
+      }
+
+      const videoIds = searchData.items
+        .map((item: any) => item.id?.videoId)
+        .filter((id: string) => id)
+      if (videoIds.length === 0) return []
+
+      const videosUrl = `${this.baseUrl}/videos?part=snippet,contentDetails,statistics&id=${videoIds.join(',')}&key=${this.apiKey}`
+      const videosResponse = await fetch(videosUrl)
+      if (!videosResponse.ok) {
+        console.error('[short] YouTube videos API failed:', videosResponse.statusText)
+        return []
+      }
+
+      const videosData = await videosResponse.json()
+      if (videosData.error) {
+        console.error('[short] YouTube videos API error:', videosData.error)
+        return []
+      }
+
+      const videos = this.transformVideoResults(videosData.items)
+      return this.filterShortForQuality(videos, maxResults)
+
+    } catch (error) {
+      console.error('❌ [short] Error searching short videos:', error)
+      return []
+    }
+  }
+
+  /**
+   * Quality filter tuned for short content: allows Reels/Shorts (no 3-min floor),
+   * still strips obvious junk, ranks by view count. Unlike filterForQuality, it does
+   * NOT exclude '#shorts' (we want them here) and has no minimum view threshold.
+   */
+  private filterShortForQuality(videos: YouTubeVideo[], maxResults: number): YouTubeVideo[] {
+    return videos
+      .filter(video => {
+        const minutes = this.parseDurationToMinutes(video.duration)
+        if (minutes > 5) return false // safety cap; videoDuration=short already bounds this
+        const junkKeywords = ['tiktok', 'compilation', 'reaction', 'exposed', 'drama', 'beef', 'prank']
+        const titleLower = video.title.toLowerCase()
+        if (junkKeywords.some(kw => titleLower.includes(kw))) return false
+        return true
+      })
+      .sort((a, b) => Math.log10(b.viewCount + 1) - Math.log10(a.viewCount + 1))
+      .slice(0, maxResults)
+  }
+
+  /**
+   * Canonical watch URL for a video id (used when persisting Motivation Mode content).
+   */
+  static watchUrl(videoId: string): string {
+    return `https://www.youtube.com/watch?v=${videoId}`
+  }
+
+  /**
    * Get curated channel IDs for a category
    */
   getCuratedChannels(category: string): { id: string; name: string }[] {

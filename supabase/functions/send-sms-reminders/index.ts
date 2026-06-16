@@ -394,6 +394,7 @@ serve(async (req) => {
       .select('*')
       .in('id', userIds)
       .eq('sms_opt_in', true)
+      .eq('motivation_mode', false) // Motivation Mode users are off the action-stage track
       .is('deleted_at', null)
 
     console.log('Profiles query result:', profiles)
