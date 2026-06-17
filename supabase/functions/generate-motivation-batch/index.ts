@@ -45,6 +45,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Shared voice directive for all generated SMS framing — keeps the planner and the
+// video-framer consistent, and warmer than a plain "be warm" instruction.
+const FRAMING_VOICE =
+  'VOICE: warm, genuinely encouraging, and human — like a coach who is glad to see them. A little positivity ' +
+  'goes a long way; celebrate the small stuff. Use 1–2 tasteful emoji that fit the moment (e.g. 🌿 ⛰️ ☀️ 💚 😌 🙌) ' +
+  '— never more, never forced. Lead with a touch of warmth, close on the tiny action.'
+
 interface PlannedItem {
   type: 'video' | 'quote'
   theme: string
@@ -133,8 +140,9 @@ async function pickAndFrameVideo(
     'PERMISSION genre only ("do less, on purpose"). REJECT hustle / grind / discipline / "no excuses" / pump-up /',
     'motivational-speech content — it repels this audience. The video CONTENT must genuinely match the message you write;',
     'do not describe a calm video if the clip is a hype speech.',
-    'Write coach_framing: a warm, SMS-length note in the Summit coach voice that reflects what THIS specific video',
+    'Write coach_framing: an SMS-length note in the Summit coach voice that reflects what THIS specific video',
     'actually is, ties to their goals, and ENDS with one absurdly small, optional action tied to their goals.',
+    FRAMING_VOICE,
     'If NONE of the candidates fit the permission genre AND the theme, return {"fit":false}.',
     'Respond as JSON: {"fit":true|false,"index":<number>,"coach_framing":"..."}',
   ].join('\n')
@@ -240,6 +248,7 @@ async function buildBatchForUser(
     'results", "you can\'t pour from an empty cup") — they are filler.',
     'For EVERY item: write coach_framing — a warm, SMS-length note in the Summit coach voice that introduces the',
     'piece, ties it to their goals, and ENDS with the one tiny action. Do not number them or say "today\'s".',
+    FRAMING_VOICE,
     '',
     'Respond as JSON: {"items":[{"type":"video|quote","theme":"...","search_query":"...","quote_text":"...","quote_author":"...","coach_framing":"..."}]}',
   ].join('\n')

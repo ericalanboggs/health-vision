@@ -25,8 +25,51 @@ import { sendSMS as _sendSMS } from '../_shared/sms.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!
 
 const READY_THRESHOLD = 7
+
+async function callOpenAI(system: string, userPrompt: string, temperature: number, maxTokens: number): Promise<string> {
+  const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'system', content: system }, { role: 'user', content: userPrompt }],
+      max_tokens: maxTokens, temperature,
+    }),
+  })
+  if (!r.ok) throw new Error(`OpenAI ${r.status}`)
+  const d = await r.json()
+  return d.choices?.[0]?.message?.content || ''
+}
+
+/**
+ * A short, warm, VARIED reply to a casual or feedback text (replaces the old single
+ * canned ack that repeated verbatim). Falls back to a small varied pool on any error.
+ */
+async function generateAck(userMessage: string, firstName: string, lastTitle: string | null): Promise<string> {
+  const fallbacks = [
+    `You got it, ${firstName} 🙌`,
+    `Anytime — more good stuff on the way 🌿`,
+    `Glad that one landed ☀️`,
+    `💚 Be good to yourself today, ${firstName}.`,
+  ]
+  try {
+    const system = [
+      'You are Summit, a warm habit coach, replying to a user in "Motivation Mode" (they get a daily piece of',
+      'inspiration, never pressure). Write ONE short SMS reply (max ~160 chars), warm and human, matching their',
+      'energy. At most 1 tasteful emoji. If they just said thanks / nice, keep it light and VARIED (e.g.',
+      '"You got it 🙌"). If they shared real feedback, warmly acknowledge you\'ll fold it in. NEVER use a stock',
+      '"noted, keep an eye out" phrase. Vary your wording every time.',
+    ].join('\n')
+    const userPrompt = `User (${firstName}) texted: "${userMessage}".` + (lastTitle ? ` Last thing we sent them: "${lastTitle}".` : '')
+    const out = (await callOpenAI(system, userPrompt, 0.85, 80)).trim()
+    return out || fallbacks[Math.floor(Math.random() * fallbacks.length)]
+  } catch (_e) {
+    return fallbacks[Math.floor(Math.random() * fallbacks.length)]
+  }
+}
 
 function parseRuler(body: string): number | null {
   const m = body.match(/\b(10|[1-9])\b/)
@@ -108,16 +151,19 @@ serve(async (req) => {
       // Treat as lightweight feedback on the most recent sent item.
       const { data: lastSent } = await supabase
         .from('motivation_content_queue')
-        .select('id')
+        .select('id, title')
         .eq('user_id', userId)
         .eq('status', 'sent')
         .order('sent_at', { ascending: false })
         .limit(1)
         .maybeSingle()
-      if (lastSent?.id) {
+      // Only store as feedback if it's more than a quick pleasantry (keeps the feedback field useful).
+      const isPleasantry = body.length <= 20 && /\b(thanks|thank you|thx|ty|awesome|nice|cool|great|love it|👍|🙏|❤️|🙌)\b/i.test(body)
+      if (lastSent?.id && !isPleasantry) {
         await supabase.from('motivation_content_queue').update({ feedback: body }).eq('id', lastSent.id)
       }
-      await send(`Thanks for that, ${firstName} — noted. Keep an eye out for the next one. 🌿`)
+      const ack = await generateAck(body, firstName, lastSent?.title || null)
+      await send(ack)
       return emptyTwiml()
     }
 
