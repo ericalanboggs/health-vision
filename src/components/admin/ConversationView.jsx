@@ -158,6 +158,21 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
           })
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'sms_messages',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload) => {
+          // Live delivery-status changes (queued → sent → delivered → failed)
+          setMessages((prev) =>
+            prev.map((m) => (m.id === payload.new.id ? { ...m, ...payload.new } : m))
+          )
+        }
+      )
       .subscribe()
 
     return () => {
