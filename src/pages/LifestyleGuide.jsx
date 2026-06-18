@@ -101,6 +101,8 @@ export default function LifestyleGuide() {
       if (!res.ok || data?.error) throw new Error(data?.error || `Request failed: ${res.status}`)
 
       trackEvent('freebie_lead_captured', { freebie_slug: FREEBIE_SLUG, source })
+      // Meta Pixel: standard Lead event so ad delivery optimizes toward opt-ins.
+      if (window.fbq) window.fbq('track', 'Lead', { content_name: FREEBIE_SLUG, source })
       setStatus('sent')
     } catch (err) {
       console.error('Lifestyle guide lead capture failed:', err)
