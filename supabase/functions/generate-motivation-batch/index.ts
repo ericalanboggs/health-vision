@@ -4,10 +4,12 @@
  * Builds a week of Motivation Mode content for a contemplation-stage user.
  *
  * For each motivation_mode user:
- *   1. Load Vision/why (loadUserContext) + the coach-authored steering prompt.
+ *   1. Load the coach-authored steering prompt (+ first name for the greeting). The
+ *      steering prompt is the SOLE topic source — we deliberately do NOT feed the user's
+ *      Vision/why from their profile, which is often stale or off-thesis.
  *   2. Load prior queue history so the content "builds on itself" (and to de-dup).
  *   3. gpt-4o-mini plans a coherent arc of N items (videos + quotes) from the steering
- *      prompt + vision + history. Each item ships a coach-voice framing line, and every
+ *      prompt + history. Each item ships a coach-voice framing line, and every
  *      video item ALSO ships a fallback quote.
  *   4. Resolve each video via youtube.searchShortVideos() (Reels/Shorts). If a video
  *      slot yields nothing (or fails link-verify), it degrades to its fallback quote —
@@ -15,7 +17,7 @@
  *   5. Rows are written status='pending_review', source='ai'. Nothing sends until a
  *      human approves them (see send-daily-motivation).
  *
- *   ┌── steering prompt + vision + history ──► gpt-4o-mini ──► arc plan (JSON)
+ *   ┌── steering prompt + history ──► gpt-4o-mini ──► arc plan (JSON)
  *   │                                                            │
  *   │   video slot ─► searchShortVideos ─► verifyUrl ─┬─ ok ──► video row
  *   │                                                 └─ fail ─► fallback quote row
@@ -128,7 +130,6 @@ function isHustle(title = ''): boolean {
 async function pickAndFrameVideo(
   item: PlannedItem,
   candidates: { videoId: string; title: string; description: string }[],
-  ctx: { visionStatement: string | null; firstName: string },
   steeringPrompt: string,
   knowledgeHaystack: string,
 ): Promise<{ fit: boolean; index?: number; coach_framing?: string }> {
@@ -141,19 +142,18 @@ async function pickAndFrameVideo(
     'motivational-speech content — it repels this audience. The video CONTENT must genuinely match the message you write;',
     'do not describe a calm video if the clip is a hype speech.',
     'Write coach_framing: an SMS-length note in the Summit coach voice that reflects what THIS specific video',
-    'actually is, ties to their goals, and ENDS with one absurdly small, optional action tied to their goals.',
+    'actually is, ties to the coach steering prompt, and ENDS with one absurdly small, optional action tied to it.',
     FRAMING_VOICE,
     'If NONE of the candidates fit the permission genre AND the theme, return {"fit":false}.',
     'Respond as JSON: {"fit":true|false,"index":<number>,"coach_framing":"..."}',
   ].join('\n')
   const user = [
     `THEME: ${item.theme}`,
-    ctx.visionStatement ? `USER GOALS: ${ctx.visionStatement}` : '',
-    `COACH STEERING: ${steeringPrompt}`,
+    `COACH STEERING (the sole thesis — frame everything around this): ${steeringPrompt}`,
     '',
     'CANDIDATE VIDEOS:',
     list,
-  ].filter(Boolean).join('\n')
+  ].join('\n')
   const raw = await callOpenAI(system, user, 0.6, 400)
   return parseJSON(raw)
 }
@@ -216,9 +216,10 @@ async function buildBatchForUser(
   const stepDays = cadence === 'daily' ? 1 : 2
 
   // ── Plan the arc ──────────────────────────────────────────────────────────
-  // Feed vision + steering prompt as the haystack so coach_knowledge surfaces the
-  // relevant condition slices (e.g. burnout) for this user.
-  const knowledgeHaystack = [ctx.visionStatement, ctx.whyMatters, profile.motivation_prompt].filter(Boolean).join(' ')
+  // Drive the haystack off the steering prompt ALONE so coach_knowledge surfaces
+  // condition slices relevant to what the user actually asked for — not stale
+  // themes from their profile Vision/why.
+  const knowledgeHaystack = profile.motivation_prompt
   const systemPrompt = [
     coachKnowledgeBlock(knowledgeHaystack),
     '',
@@ -231,12 +232,14 @@ async function buildBatchForUser(
     'enough this week, movement counts even as a 5-minute walk. The message is "do less, on purpose" — never "be more".',
     '',
     'MICRO-ACTION (critical): every single piece must END with ONE absurdly small, near-zero-effort action tied',
-    'to their actual goals, framed as a gentle invitation they can take or leave — NOT an assignment. So small it',
+    'to the steering prompt, framed as a gentle invitation they can take or leave — NOT an assignment. So small it',
     'is almost impossible to refuse (e.g. "decline one meeting this week", "lights out 10 minutes earlier tonight",',
     '"one 5-minute walk, that is it"). The content is the hook; this tiny action is the point.',
     '',
     `Plan exactly ${itemCount} items forming a COHERENT ARC that builds on what they have already seen (below),`,
-    'pointed at their stated goals and the coach steering prompt. Favor short videos (Reels/Shorts, under ~5 min)',
+    'pointed squarely at the COACH STEERING PROMPT below — that prompt is the SOLE thesis for what this content is',
+    'about. Do NOT introduce themes from anywhere else; if a topic is not in the steering prompt, it does not belong.',
+    'Favor short videos (Reels/Shorts, under ~5 min)',
     'with some quotes mixed in.',
     'For each VIDEO item: give a SPECIFIC, calming search_query (e.g. "gentle restorative yoga 5 minutes",',
     '"box breathing for stress relief", "short body scan for sleep"). AVOID the words "motivation",',
@@ -247,7 +250,7 @@ async function buildBatchForUser(
     'one-line reframe in the coach voice and leave quote_author empty. Ban platitudes ("small changes lead to big',
     'results", "you can\'t pour from an empty cup") — they are filler.',
     'For EVERY item: write coach_framing — a warm, SMS-length note in the Summit coach voice that introduces the',
-    'piece, ties it to their goals, and ENDS with the one tiny action. Do not number them or say "today\'s".',
+    'piece, ties it to the steering prompt, and ENDS with the one tiny action. Do not number them or say "today\'s".',
     FRAMING_VOICE,
     '',
     'Respond as JSON: {"items":[{"type":"video|quote","theme":"...","search_query":"...","quote_text":"...","quote_author":"...","coach_framing":"..."}]}',
@@ -255,10 +258,9 @@ async function buildBatchForUser(
 
   const userPrompt = [
     `USER: ${ctx.firstName}`,
-    ctx.visionStatement ? `HEALTH VISION: ${ctx.visionStatement}` : '',
-    ctx.whyMatters ? `WHY IT MATTERS: ${ctx.whyMatters}` : '',
     '',
-    `COACH STEERING PROMPT (the thesis for what motivation this user wants):`,
+    `COACH STEERING PROMPT — the SOLE source of truth for what this content is about.`,
+    `Build every item from this and nothing else; do not infer topics from elsewhere:`,
     profile.motivation_prompt,
     '',
     `ALREADY SENT/QUEUED (do not repeat these; build forward from them):`,
@@ -295,7 +297,7 @@ async function buildBatchForUser(
       if (candidates.length > 0) {
         try {
           // Pass 2: model picks the best-fitting real clip + writes framing grounded in it (or rejects all).
-          const pick = await pickAndFrameVideo(item, candidates, ctx, profile.motivation_prompt || '', knowledgeHaystack)
+          const pick = await pickAndFrameVideo(item, candidates, profile.motivation_prompt || '', knowledgeHaystack)
           const chosen = pick?.fit && pick.index != null ? candidates[pick.index] : null
           if (chosen) {
             const url = YouTubeAPI.watchUrl(chosen.videoId)
