@@ -65,10 +65,15 @@ export default function LifestyleGuide() {
   const [errorMsg, setErrorMsg] = useState(null)
 
   // Source/campaign attribution from the ad URL; falls back to the page name.
+  // Fold utm_content (the per-ad variant) into source so the 3-way ad test is
+  // distinguishable in freebie_leads — e.g. "mens-health-40/founder".
   const [source] = useState(() => {
     try {
       const p = new URLSearchParams(window.location.search)
-      return p.get('utm_campaign') || p.get('source') || 'lifestyle_guide_page'
+      const campaign = p.get('utm_campaign')
+      const content = p.get('utm_content')
+      if (campaign) return content ? `${campaign}/${content}` : campaign
+      return p.get('source') || 'lifestyle_guide_page'
     } catch {
       return 'lifestyle_guide_page'
     }
