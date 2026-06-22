@@ -60,11 +60,15 @@ serve(async (_req: Request) => {
 
     console.log(`Running Monday confidence check for week of ${mondayStr}`)
 
-    // Get all active users with SMS opt-in, phone, not deleted
+    // Get all active users with SMS opt-in, phone, not deleted.
+    // Exclude Motivation Mode users — they're pre-action-stage and get the
+    // weekly readiness ruler from send-daily-motivation instead, not the
+    // habit-summary confidence check.
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('id, first_name, phone, sms_opt_in, created_at, subscription_status, trial_ends_at, deleted_at')
       .eq('sms_opt_in', true)
+      .eq('motivation_mode', false)
       .not('phone', 'is', null)
       .is('deleted_at', null)
 
