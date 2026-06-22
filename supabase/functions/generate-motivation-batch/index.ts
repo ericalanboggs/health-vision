@@ -8,12 +8,13 @@
  *      steering prompt is the SOLE topic source — we deliberately do NOT feed the user's
  *      Vision/why from their profile, which is often stale or off-thesis.
  *   2. Load prior queue history so the content "builds on itself" (and to de-dup).
- *   3. gpt-4o-mini plans a coherent arc of N items (videos + quotes) from the steering
- *      prompt + history. Each item ships a coach-voice framing line, and every
- *      video item ALSO ships a fallback quote.
- *   4. Resolve each video via youtube.searchShortVideos() (Reels/Shorts). If a video
- *      slot yields nothing (or fails link-verify), it degrades to its fallback quote —
- *      we NEVER persist a null/broken URL.
+ *   3. gpt-4o-mini plans a coherent arc of N items (videos + articles + quotes) from the
+ *      steering prompt + history. Each item ships a coach-voice framing line, and every
+ *      video/article item ALSO ships a fallback quote.
+ *   4. Resolve videos via youtube.searchShortVideos() (Reels/Shorts) and articles via
+ *      tavily.searchArticles() (real, ranked web results — never an LLM-invented URL). If a
+ *      video/article slot yields nothing (or fails link-verify), it degrades to its fallback
+ *      quote — we NEVER persist a null/broken URL.
  *   5. Rows are written status='pending_review', source='ai'. Nothing sends until a
  *      human approves them (see send-daily-motivation).
  *
@@ -33,11 +34,13 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { loadUserContext } from '../_shared/user_context.ts'
 import { coachKnowledgeBlock } from '../_shared/coach_knowledge.ts'
 import { YouTubeAPI } from '../generate-weekly-digest/youtubeApi.ts'
+import { TavilyAPI } from './tavilyApi.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!
 const YOUTUBE_API_KEY = Deno.env.get('YOUTUBE_API_KEY')!
+const TAVILY_API_KEY = Deno.env.get('TAVILY_API_KEY') || ''
 // Same fallback as send-admin-sms so admin auth works even without the secret set.
 const ADMIN_EMAILS = (Deno.env.get('ADMIN_EMAILS') || 'eric.alan.boggs@gmail.com,eric@summithealth.app')
   .split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
@@ -55,7 +58,7 @@ const FRAMING_VOICE =
   '— never more, never forced. Lead with a touch of warmth, close on the tiny action.'
 
 interface PlannedItem {
-  type: 'video' | 'quote'
+  type: 'video' | 'article' | 'quote'
   theme: string
   search_query?: string
   quote_text?: string
@@ -121,27 +124,58 @@ function isHustle(title = ''): boolean {
   return HUSTLE_RE.test(title)
 }
 
+// Drop non-article results (video/social/shopping/files) before they reach the LLM.
+const JUNK_DOMAIN_RE = /(youtube\.com|youtu\.be|tiktok\.com|instagram\.com|facebook\.com|twitter\.com|x\.com|pinterest\.|reddit\.com|amazon\.|\.pdf(?:$|\?))/i
+function isJunkArticle(url = ''): boolean {
+  return JUNK_DOMAIN_RE.test(url)
+}
+
 /**
- * Second pass: given the REAL candidate videos (title + description), let the model pick the
- * one that genuinely fits the permission genre + theme AND write the framing grounded in that
- * actual clip. Returns { fit:false } if none fit (caller falls back to a quote). This is what
- * keeps the SMS text connected to the video the user actually receives.
+ * Lenient link check for articles. Tavily only returns live, indexed URLs, so
+ * the real risk isn't a hallucinated link — it's that a reputable publisher
+ * (HBS, NYT, etc.) blocks our bot with a 401/403/405 even though the page is
+ * fine. So we GET with a browser-ish UA and reject only clear dead ends.
  */
-async function pickAndFrameVideo(
+async function verifyArticleUrl(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SummitHealthBot/1.0)' },
+    })
+    return res.status !== 404 && res.status !== 410
+  } catch (_e) {
+    return false
+  }
+}
+
+/**
+ * Second pass: given the REAL candidates (title + description/snippet) returned by a search
+ * API, let the model pick the ONE that genuinely fits the permission genre + theme AND write
+ * the framing grounded in that actual piece. Returns { fit:false } if none fit (caller falls
+ * back to a quote). This is what keeps the SMS text connected to the video/article the user
+ * actually receives. `kind` only tunes the wording — the logic is identical for both.
+ */
+async function pickAndFrameContent(
+  kind: 'video' | 'article',
   item: PlannedItem,
-  candidates: { videoId: string; title: string; description: string }[],
+  candidates: { title: string; description: string }[],
   steeringPrompt: string,
   knowledgeHaystack: string,
 ): Promise<{ fit: boolean; index?: number; coach_framing?: string }> {
-  const list = candidates.map((v, i) => `${i}. "${v.title}" — ${(v.description || '').slice(0, 160)}`).join('\n')
+  const noun = kind === 'video' ? 'short video' : 'article'
+  const contentWord = kind === 'video' ? 'video CONTENT' : 'article'
+  const list = candidates.map((c, i) => `${i}. "${c.title}" — ${(c.description || '').slice(0, 200)}`).join('\n')
   const system = [
     coachKnowledgeBlock(knowledgeHaystack),
     '',
-    'You are choosing ONE short video for a burned-out, contemplation-stage user, and writing the SMS that ships with it.',
+    `You are choosing ONE ${noun} for a burned-out, contemplation-stage user, and writing the SMS that ships with it.`,
     'PERMISSION genre only ("do less, on purpose"). REJECT hustle / grind / discipline / "no excuses" / pump-up /',
-    'motivational-speech content — it repels this audience. The video CONTENT must genuinely match the message you write;',
-    'do not describe a calm video if the clip is a hype speech.',
-    'Write coach_framing: an SMS-length note in the Summit coach voice that reflects what THIS specific video',
+    `motivational-speech content — it repels this audience. The ${contentWord} must genuinely match the message you write;`,
+    kind === 'video'
+      ? 'do not describe a calm video if the clip is a hype speech.'
+      : 'do not describe a thoughtful read if the piece is clickbait or a thinly-veiled ad.',
+    `Write coach_framing: an SMS-length note in the Summit coach voice that reflects what THIS specific ${noun}`,
     'actually is, ties to the coach steering prompt, and ENDS with one absurdly small, optional action tied to it.',
     FRAMING_VOICE,
     'If NONE of the candidates fit the permission genre AND the theme, return {"fit":false}.',
@@ -151,7 +185,7 @@ async function pickAndFrameVideo(
     `THEME: ${item.theme}`,
     `COACH STEERING (the sole thesis — frame everything around this): ${steeringPrompt}`,
     '',
-    'CANDIDATE VIDEOS:',
+    `CANDIDATE ${kind === 'video' ? 'VIDEOS' : 'ARTICLES'}:`,
     list,
   ].join('\n')
   const raw = await callOpenAI(system, user, 0.6, 400)
@@ -164,6 +198,7 @@ async function pickAndFrameVideo(
 async function buildBatchForUser(
   supabase: ReturnType<typeof createClient>,
   youtube: YouTubeAPI,
+  tavily: TavilyAPI,
   profile: { id: string; motivation_prompt: string | null; motivation_cadence: string | null; timezone: string | null },
   regenerate: boolean,
 ): Promise<{ userId: string; status: string; inserted?: number; detail?: string }> {
@@ -239,12 +274,17 @@ async function buildBatchForUser(
     `Plan exactly ${itemCount} items forming a COHERENT ARC that builds on what they have already seen (below),`,
     'pointed squarely at the COACH STEERING PROMPT below — that prompt is the SOLE thesis for what this content is',
     'about. Do NOT introduce themes from anywhere else; if a topic is not in the steering prompt, it does not belong.',
-    'Favor short videos (Reels/Shorts, under ~5 min)',
-    'with some quotes mixed in.',
+    'Blend three content types across the week — short videos (Reels/Shorts, under ~5 min), short articles',
+    '(a quick, reputable read), and quotes — choosing whatever best serves the steering prompt for each slot.',
     'For each VIDEO item: give a SPECIFIC, calming search_query (e.g. "gentle restorative yoga 5 minutes",',
     '"box breathing for stress relief", "short body scan for sleep"). AVOID the words "motivation",',
     '"motivational speech", "no excuses", "hustle", "discipline" — those surface grind content that repels',
     'this user. Also give a fallback quote_text/quote_author (used only if no good video is found).',
+    'For each ARTICLE item: give a search_query written exactly like a thoughtful Google search for the BEST',
+    'existing resources on the steering-prompt topic (e.g. "best articles on rediscovering purpose after burnout",',
+    '"leaving a corporate career to follow your passion", "how to explore what to do next in your career"). Aim',
+    'for reputable, reflective reads — not listicles or ads. Also give a fallback quote_text/quote_author (used',
+    'only if no good article is found).',
     'For each QUOTE item: prefer a REAL, attributable quote that names a mechanism or lands a counterintuitive',
     'reframe. Do NOT use "Unknown" / "Anonymous" — if you cannot attribute it confidently, write an original',
     'one-line reframe in the coach voice and leave quote_author empty. Ban platitudes ("small changes lead to big',
@@ -253,7 +293,7 @@ async function buildBatchForUser(
     'piece, ties it to the steering prompt, and ENDS with the one tiny action. Do not number them or say "today\'s".',
     FRAMING_VOICE,
     '',
-    'Respond as JSON: {"items":[{"type":"video|quote","theme":"...","search_query":"...","quote_text":"...","quote_author":"...","coach_framing":"..."}]}',
+    'Respond as JSON: {"items":[{"type":"video|article|quote","theme":"...","search_query":"...","quote_text":"...","quote_author":"...","coach_framing":"..."}]}',
   ].join('\n')
 
   const userPrompt = [
@@ -297,7 +337,7 @@ async function buildBatchForUser(
       if (candidates.length > 0) {
         try {
           // Pass 2: model picks the best-fitting real clip + writes framing grounded in it (or rejects all).
-          const pick = await pickAndFrameVideo(item, candidates, profile.motivation_prompt || '', knowledgeHaystack)
+          const pick = await pickAndFrameContent('video', item, candidates, profile.motivation_prompt || '', knowledgeHaystack)
           const chosen = pick?.fit && pick.index != null ? candidates[pick.index] : null
           if (chosen) {
             const url = YouTubeAPI.watchUrl(chosen.videoId)
@@ -318,7 +358,38 @@ async function buildBatchForUser(
       }
     }
 
-    // Quote, or video-slot fallback to its quote (used when no video fit the permission genre)
+    if (!resolved && item.type === 'article' && item.search_query) {
+      // Real, ranked web results from Tavily — never an LLM-invented URL.
+      const candidates = (await tavily.searchArticles(item.search_query, 6))
+        .filter(a => !seenUrls.has(a.url) && !isJunkArticle(a.url) && !isHustle(a.title))
+      if (candidates.length > 0) {
+        try {
+          // Same two-pass pick+frame as video, grounded in the real article snippets.
+          const pick = await pickAndFrameContent(
+            'article',
+            item,
+            candidates.map(a => ({ title: a.title, description: a.content })),
+            profile.motivation_prompt || '',
+            knowledgeHaystack,
+          )
+          const chosen = pick?.fit && pick.index != null ? candidates[pick.index] : null
+          if (chosen && await verifyArticleUrl(chosen.url)) {
+            seenUrls.add(chosen.url)
+            resolved = {
+              content_type: 'article',
+              title: chosen.title,
+              url: chosen.url,
+              body: item.theme || (chosen.content || '').slice(0, 280),
+              coach_framing: pick.coach_framing || item.coach_framing,
+            }
+          }
+        } catch (e) {
+          console.error(`[${userId}] article pick/frame failed:`, e)
+        }
+      }
+    }
+
+    // Quote, or video/article-slot fallback to its quote (used when no link fit the permission genre)
     if (!resolved) {
       const qText = item.quote_text
       if (qText) {
@@ -348,7 +419,7 @@ async function buildBatchForUser(
   }
 
   if (rows.length === 0) {
-    return { userId, status: 'error', detail: 'no items resolved (video + quote both failed)' }
+    return { userId, status: 'error', detail: 'no items resolved (link + quote fallback both failed)' }
   }
 
   const { error: insertError } = await supabase.from('motivation_content_queue').insert(rows)
@@ -365,6 +436,7 @@ serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
   const youtube = new YouTubeAPI(YOUTUBE_API_KEY)
+  const tavily = new TavilyAPI(TAVILY_API_KEY)
 
   // ── Auth: allow cron (service-role bearer) OR an admin JWT ────────────────
   const token = (req.headers.get('Authorization') || '').replace('Bearer ', '').trim()
@@ -401,7 +473,7 @@ serve(async (req) => {
   const results = []
   for (const profile of users || []) {
     try {
-      results.push(await buildBatchForUser(supabase, youtube, profile as any, !!body.regenerate))
+      results.push(await buildBatchForUser(supabase, youtube, tavily, profile as any, !!body.regenerate))
     } catch (e) {
       console.error(`[${(profile as any).id}] batch error:`, e)
       results.push({ userId: (profile as any).id, status: 'error', detail: String(e) })
