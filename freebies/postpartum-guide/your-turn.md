@@ -30,14 +30,22 @@ Layout:
 
 ---
 
-Hi — I'm Eric. I'm a Mayo-certified health coach, and I built Summit.
+Hi — I'm Eric, a Mayo-certified health coach. I built Summit.
 
-When we piloted it, I figured the moms would want a plan to "get their body back." That's
-not what landed. What landed was smaller, and better: *anything counts.* Five or ten
-minutes on you — just you — with someone actually in your corner.
+When I piloted it, I didn't know if it would matter to moms. A few happened to be in the
+group. So I watched.
 
-So I put that on paper. No bounce-back. No overhaul. Just a way back to yourself, starting
-from exactly where you are.
+I figured what they wanted was a way out of the burnout — time in the day to put their own
+health somewhere on the list. That part was right. What surprised me was how little it took.
+Five or ten minutes on you. Just you. With someone actually in your corner.
+
+The system puts you first and asks for almost nothing. A few minutes here and there. A nudge
+to show up, a moment to reflect. It works because it's fast, it's easy, and it doesn't live
+in another app you have to open.
+
+That's why I want to get this in front of more moms.
+
+**We say moms are heroes. Let's start treating them like it.**
 
 > "My own health habits are often the first thing to slide when the day gets hectic… There are
 > consistently 1–2 days every week where I know for a fact I would have missed my goals if it weren't

@@ -253,6 +253,30 @@ export default function YourTurn() {
           </ol>
         </section>
 
+        {/* Founder note — why this, for moms (text; no video for now) */}
+        <section>
+          <SectionEyebrow>From the founder</SectionEyebrow>
+          <h2 className="mb-4 text-2xl font-bold text-summit-forest sm:text-3xl">
+            Why I want this in front of more moms
+          </h2>
+          <div className="space-y-3 text-base leading-relaxed text-text-secondary">
+            <p>
+              When I piloted Summit, I didn’t know if it would matter to moms. A few were in the
+              group, so I watched.
+            </p>
+            <p>
+              I figured they wanted a way out of the burnout — time to put their own health somewhere
+              on the list. That part was right. What surprised me was how little it took: five or ten
+              minutes on you, just you, with someone actually in your corner.
+            </p>
+            <p>
+              It puts you first and asks for almost nothing — and it doesn’t live in another app you
+              have to open. That’s why I want it in front of more moms.
+            </p>
+          </div>
+          <p className="mt-4 text-sm font-medium text-summit-moss">— Eric, Summit founder</p>
+        </section>
+
         {/* Proof band — real pilot mom, in her words */}
         <section className="rounded-3xl bg-gradient-to-br from-summit-forest to-summit-pine px-6 py-10 text-center sm:px-10">
           <p className="mx-auto max-w-2xl text-xl font-semibold leading-snug text-white sm:text-2xl">
@@ -310,11 +334,13 @@ export default function YourTurn() {
         {/* Footer CTA → Summit trial (bookends the dark hero) */}
         <section className="rounded-3xl bg-gradient-to-br from-summit-forest to-summit-pine px-6 py-12 text-center sm:px-10">
           <h2 className="mx-auto max-w-xl text-2xl font-bold text-white sm:text-3xl">
-            Want someone in your corner, so it isn’t all on you?
+            We say moms are heroes.
+            <span className="text-summit-lime"> Let’s start treating them like it.</span>
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-white/80">
-            Summit nudges you over text, adjusts when the day gets loud, and keeps your turn-line in
-            front of you. The guide is step one. This is the follow-through.
+            Summit puts you first and asks for almost nothing — a nudge over text on the day it slips,
+            a moment to reflect, and a real coach in your corner. The guide is step one. This is the
+            follow-through.
           </p>
           <a
             href={TRIAL_URL}
