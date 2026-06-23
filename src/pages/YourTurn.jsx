@@ -206,7 +206,7 @@ export default function YourTurn() {
             For moms rebuilding — 6 months to 3 years in
           </Badge>
           <h1 className="mx-auto max-w-2xl text-3xl font-extrabold leading-tight text-white sm:text-5xl">
-            Everyone’s been asking about the baby.
+            Everyone’s been asking you to do things for others.
             <span className="text-summit-lime"> This one’s about you.</span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-base text-white/80 sm:text-lg">
