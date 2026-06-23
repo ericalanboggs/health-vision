@@ -229,9 +229,15 @@ export default function YourTurn() {
         {/* The method — the centerpiece, as a visual sequence */}
         <section>
           <SectionEyebrow>The method</SectionEyebrow>
-          <h2 className="mb-7 text-2xl font-bold text-summit-forest sm:text-3xl">
+          <h2 className="mb-3 text-2xl font-bold text-summit-forest sm:text-3xl">
             Four steps. One small thing at a time.
           </h2>
+          <p className="mb-7 max-w-2xl text-base leading-relaxed text-text-secondary">
+            This isn’t a hunch — it’s how habits actually form: start small, anchor it to something you
+            already do, add one at a time. The experts have said it for years; they just never said it
+            to someone running on no sleep with a kid on her hip. The guide makes it simple — and lets
+            you practice it, not just read about it.
+          </p>
           <ol className="space-y-2">
             {STEPS.map(({ Icon, title, body }, i) => (
               <li key={title} className="flex gap-4 sm:gap-5">

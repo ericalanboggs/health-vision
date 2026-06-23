@@ -81,3 +81,40 @@ No hard CTA — day 13 makes the trial ask. Warmer and lower-key than the ad vid
 - The hinge line: **"knowing what to do was never the hard part. The follow-through is."** Let it land — that's the guide-to-Summit reframe.
 - Lower energy and warmer than the ad video. A guy checking in, not a hook. No CTA urgency.
 - "the week that gets away from you" — busyness, not exhaustion.
+
+---
+
+# Postpartum — "Your Turn" founder video
+
+*For the `/yourturn` landing founder section (adds to the text note) and reusable for the
+day-10 postpartum drip email. Direct to camera, ~50–55s, phone-shot, warm. Voice: `ERIC_VOICE`
+— coach, not peer. Non-clinical. Host on Vimeo (Unlisted + embeddable anywhere), then set the
+embed in `src/pages/YourTurn.jsx`.*
+
+**[0:00 — open warm; name who it's for]**
+> "Hi. If you've had a baby in the last few years, and somewhere in there you lost track of yourself — this is for you. I'm Eric."
+
+**[0:08 — who you are]**
+> "I'm a Mayo-certified health coach. I'm also a designer — I've spent years in tech. I built Summit."
+
+**[0:16 — why you built it]**
+> "I wanted something that takes health and breaks it into pieces small enough to actually fit a busy life — and makes sure a little time goes back to you."
+
+**[0:26 — the surprise / moms]**
+> "When I ran the early pilots, what surprised me was how much it landed with moms. Not a workout plan. Five or ten minutes on you, and someone actually in your corner."
+
+**[0:36 — the science bridge]**
+> "And it's not my hunch. It's how habits really form — start small, attach it to something you already do, one at a time. The experts have said it for years. They just never said it to someone running on no sleep with a kid on her hip."
+
+**[0:48 — the ask]**
+> "So grab the guide. It's free. See what it feels like to put yourself back on the list."
+
+**[0:54 — soft Summit close]**
+> "And if it clicks — I hope you'll try Summit, where a real coach and the tech do the remembering, so you don't have to."
+
+**Delivery notes:**
+- Warm and unhurried — a coach who's glad you're here, not a pitch.
+- Carrying beats: **"lost track of yourself"** (0:00) and **"five or ten minutes on you"** (0:26). Let them land.
+- "kid on her hip" is the line that proves you see the real day — keep it.
+- The science bridge (0:36) is the credibility beat; say it plainly, no lecture.
+- Open is adjustable — if "Hi moms" feels more like you, use it; just keep it warm, not cheery-salesy.

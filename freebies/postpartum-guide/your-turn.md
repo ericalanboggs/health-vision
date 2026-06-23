@@ -63,6 +63,13 @@ It's simpler than that. **It's your turn.** Five minutes that are yours. Then te
 
 You don't earn it by doing everything first. You take it. And small counts — it always counts.
 
+## This is how habits actually work
+
+None of this is my hunch. It's how habits really form — start small, anchor it to something you
+already do, add one at a time. Researchers have said it for years. They just never said it to
+someone running on no sleep with a kid on her hip. This is that, made simple — and a way to
+practice it, not just read about it.
+
 ## The method
 
 **1. Name what you miss — and name your turn.**
