@@ -27,6 +27,15 @@ const FOUNDER_VIDEO_URL = ''
 // date forward enter the drip (set to the day cron was scheduled).
 const DRIP_LAUNCH_FLOOR = '2026-06-12T00:00:00Z'
 
+// Postpartum "Your Turn" cohort overrides. Trial CTA points at the postpartum
+// product page (?source=postpartum → tailored /welcome onboarding fork).
+const POSTPARTUM_TRIAL_URL = 'https://summithealth.app/use-cases/postpartum?source=postpartum&utm_source=freebie_drip&utm_medium=email'
+
+// Postpartum-specific day-10 founder video (Vimeo watch URL). Empty until recorded —
+// when empty, the day-10 email renders text-only. Script: marketing/founder-video-scripts.md.
+// TODO(eric): set once the "Your Turn" founder video is filmed + uploaded.
+const POSTPARTUM_FOUNDER_VIDEO_URL = ''
+
 // ─── Shared email chrome ───────────────────────────────────────────────
 // Same look as the onboarding emails, but with a freebie-appropriate footer:
 // these go to leads who grabbed a free skill, not signed-up members, so the
@@ -305,6 +314,135 @@ const DRIP_STEPS: DripStep[] = [
 
 const MAX_DRIP_DAY = Math.max(...DRIP_STEPS.map(s => s.day))
 
+// ─── Postpartum "Your Turn" drip variants ──────────────────────────────
+// Same day schedule + emailTypes as the default drip; postpartum voice + audience
+// (moms rebuilding ~6mo–3yr postpartum). Non-clinical, refer-out, no bounce-back.
+// Voice: ERIC_VOICE.md (Eric-as-coach). Selected by freebie_slug in the handler.
+
+function buildPpWhyHtml(unsubUrl: string): string {
+  const body = [
+    heading(`It's not a willpower problem`),
+    paragraph(`If your own health is the first thing to slide when the day gets loud — that's not a discipline problem. You're not lazy. You're stretched thin, doing for everyone, running on interrupted sleep. Willpower was never going to win that fight.`),
+    paragraph(`Here's what does: <strong>small and consistent beats big and heroic.</strong> Not because small is impressive — it isn't — but because it survives a bad night. And right now, most nights are the test.`),
+    subheading('What actually holds'),
+    bulletList([
+      `A two-minute thing you'll <em>actually repeat</em> beats a 30-minute plan you abandon by Thursday. Consistency is the whole game.`,
+      `You don't think your way back to yourself. You take five minutes a few times, and it starts to feel normal.`,
+      `Missing a day changes nothing. Not having a tiny version ready for the hard days is what ends it.`,
+    ]),
+    paragraph(`The guide you grabbed runs on exactly this — name your turn, pick one small thing, run it a week, keep what holds, add the next. Over the next couple weeks I'll show you how it works when life refuses to cooperate.`),
+    signoff(),
+  ].join('')
+  return wrapEmail(`It's not a willpower problem`, body, unsubUrl)
+}
+
+function buildPpHowHtml(unsubUrl: string): string {
+  const body = [
+    heading('The five-minute version'),
+    paragraph(`Most advice for moms fails on math. "Meal prep Sundays, work out five times, sleep eight hours" assumes a life you don't have right now. So you do none of it — and feel behind on top of everything else.`),
+    paragraph(`Flip it. Shrink the thing until it's almost too small to count — then decide exactly <em>when</em> it happens:`),
+    bulletList([
+      `<strong>Five minutes of stretching</strong> during the first nap — not a workout.`,
+      `<strong>A glass of water and a real breakfast</strong> before the coffee — not a diet.`,
+      `<strong>Lights out ten minutes earlier</strong> — one cue, not a sleep overhaul.`,
+    ]),
+    paragraph(`Pick the time, not just the thing. "During the first nap" beats "sometime today," every time.`),
+    paragraph(`And on the days it all goes sideways — teething, no sleep, everyone needs you at once — you don't quit. You do the 60-second version. One stretch. One glass of water. Small still counts.`),
+    signoff(),
+  ].join('')
+  return wrapEmail('The five-minute version', body, unsubUrl)
+}
+
+function buildPpSystemHtml(unsubUrl: string): string {
+  const body = [
+    heading('What Summit actually does'),
+    paragraph(`The guide is the pocket version. Summit is the whole thing — a coach that knows your life and checks in over text, so the small stuff actually happens even when you're running on no sleep.`),
+    subheading('How it works'),
+    bulletList([
+      `<strong>It starts with you.</strong> Not a generic goal — your real one. Ten minutes that are yours, energy by 2pm, strong enough for the stairs without losing your breath.`,
+      `<strong>One or two small things, not a checklist.</strong> We keep it tiny on purpose. Momentum from one beats burnout from ten.`,
+      `<strong>Texts that sound like a person.</strong> A nudge, a check-in, and you can text back "rough week, help me shrink it" — and it actually adjusts.`,
+      `<strong>No app to open.</strong> It lives in your messages, where you already are.`,
+    ]),
+    paragraph(`No streak guilt. No "you missed 12 days." Turn it down when the week is heavy, back up when you've got air.`),
+    paragraph(`That's the system. In a few days I'll tell you why I built it — and then, if it sounds like your thing, you can try the whole thing free.`),
+    signoff(),
+  ].join('')
+  return wrapEmail('What Summit actually does', body, unsubUrl)
+}
+
+function buildPpWhyMeHtml(unsubUrl: string): string {
+  const videoIntro = POSTPARTUM_FOUNDER_VIDEO_URL
+    ? [
+        paragraph(`Quick one — I wanted you to actually see who's behind these emails.`),
+        videoBlock(POSTPARTUM_FOUNDER_VIDEO_URL),
+      ]
+    : []
+  const body = [
+    heading('Why I built this'),
+    ...videoIntro,
+    paragraph(`When I piloted Summit, I didn't know if it would matter to moms. A few were in the group, so I watched.`),
+    paragraph(`I figured they wanted a way out of the burnout — time to put their own health somewhere on the list. That part was right. What surprised me was how little it took: five or ten minutes on you, just you, with someone actually in your corner.`),
+    paragraph(`It puts you first and asks for almost nothing — and it doesn't live in another app you have to open. That's why I want it in front of more moms.`),
+    paragraph(`<strong>We say moms are heroes. Let's start treating them like it.</strong>`),
+    signoff(),
+  ].join('')
+  return wrapEmail('Why I built this', body, unsubUrl)
+}
+
+function buildPpTrialHtml(unsubUrl: string): string {
+  const body = [
+    heading('Ready for your turn?'),
+    paragraph(`You've got the guide. You know how Summit works and why it exists. Here's the offer:`),
+    paragraph(`<strong>Try the whole thing free for 14 days.</strong> When you start, you pick how to begin — a little daily encouragement to ease in, or jump straight to one small habit. Either way, a coach over text that adjusts to your actual week. No card-and-forget trap; if it's not helping, you walk and your account stays put.`),
+    subheading('Your first week'),
+    bulletList([
+      `A start built around your life, not a template.`,
+      `Text check-ins that read like a person, not a robot.`,
+      `A two-minute reflection that quietly adds up.`,
+      `Someone in your corner on the days it's all on you.`,
+    ]),
+    spacer(6),
+    ctaButton('Start my 14-day free trial', POSTPARTUM_TRIAL_URL),
+    paragraph(`Two weeks is enough to feel the difference between "another app" and a coach who knows you. Worst case, you keep the guide and we part as friends.`),
+    signoff(),
+  ].join('')
+  return wrapEmail('Ready for your turn?', body, unsubUrl)
+}
+
+function buildPpLastHtml(unsubUrl: string): string {
+  const body = [
+    heading('Last note from me'),
+    paragraph(`I'll stop crowding your inbox after this.`),
+    paragraph(`If now's not the time, that's completely okay — the guide is yours to keep, and it works on its own. Name your turn, pick one small thing, decide when, run it a week. That alone moves things.`),
+    paragraph(`And if you ever want the coach version — the texts, the nudges, someone holding the small stuff with you so it isn't all on you — the door's open whenever you are. No expiration.`),
+    spacer(6),
+    ctaButton('Try Summit free when you\'re ready', POSTPARTUM_TRIAL_URL),
+    paragraph(`Either way, I'm rooting for you. Go take your five minutes today.`),
+    signoff(),
+  ].join('')
+  return wrapEmail('Last note from me', body, unsubUrl)
+}
+
+// Postpartum content keyed by emailType (same days as DRIP_STEPS).
+const POSTPARTUM_CONTENT: Record<string, { subject: string; buildHtml: (u: string) => string }> = {
+  freebie_drip_why:    { subject: `It's not a willpower problem`, buildHtml: buildPpWhyHtml },
+  freebie_drip_how:    { subject: 'The five-minute version',      buildHtml: buildPpHowHtml },
+  freebie_drip_system: { subject: 'What Summit actually does',    buildHtml: buildPpSystemHtml },
+  freebie_drip_why_me: { subject: 'Why I built this',             buildHtml: buildPpWhyMeHtml },
+  freebie_drip_trial:  { subject: 'Ready for your turn?',         buildHtml: buildPpTrialHtml },
+  freebie_drip_last:   { subject: 'Last note from me',            buildHtml: buildPpLastHtml },
+}
+
+// Resolve the right subject + body for a lead's cohort. Postpartum leads get the
+// "Your Turn" variants; everyone else gets the default step content.
+function resolveContent(freebieSlug: string, step: DripStep): { subject: string; buildHtml: (u: string) => string } {
+  if (freebieSlug === 'postpartum-guide' && POSTPARTUM_CONTENT[step.emailType]) {
+    return POSTPARTUM_CONTENT[step.emailType]
+  }
+  return { subject: step.subject, buildHtml: step.buildHtml }
+}
+
 interface FreebieLead {
   email: string
   freebie_slug: string
@@ -340,10 +478,12 @@ serve(async (req) => {
     // Test mode: { testEmail, testDay } sends one step to one address.
     let testEmail: string | null = null
     let testDay: number | null = null
+    let testFreebie = 'summit-weekly-reflection'
     try {
       const body = await req.json()
       testEmail = body.testEmail || null
       testDay = body.testDay || null
+      testFreebie = body.testFreebie || testFreebie // e.g. 'postpartum-guide'
     } catch {
       // No body — normal cron run.
     }
@@ -369,8 +509,9 @@ serve(async (req) => {
           { status: 400, headers: { 'Content-Type': 'application/json' } }
         )
       }
-      const unsubUrl = unsubscribeUrl(testEmail, 'summit-weekly-reflection')
-      const result = await sendEmail({ to: testEmail, subject: step.subject, html: step.buildHtml(unsubUrl) })
+      const content = resolveContent(testFreebie, step)
+      const unsubUrl = unsubscribeUrl(testEmail, testFreebie)
+      const result = await sendEmail({ to: testEmail, subject: content.subject, html: content.buildHtml(unsubUrl) })
       return new Response(
         JSON.stringify(result.success
           ? { message: `Test drip day ${testDay} sent`, email: testEmail, resendId: result.id }
@@ -442,11 +583,12 @@ serve(async (req) => {
       if (convertedEmails.has(lead.email.toLowerCase())) { skippedConverted++; continue }
       const key = `${lead.email}:${lead.freebie_slug}:${step.emailType}`
       if (sentSet.has(key)) continue
+      const content = resolveContent(lead.freebie_slug, step)
       const unsubUrl = unsubscribeUrl(lead.email, lead.freebie_slug)
       payloads.push({
         to: lead.email,
-        subject: step.subject,
-        html: step.buildHtml(unsubUrl),
+        subject: content.subject,
+        html: content.buildHtml(unsubUrl),
         emailType: step.emailType,
         freebieSlug: lead.freebie_slug,
       })
