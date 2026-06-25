@@ -107,15 +107,20 @@ serve(async (_req: Request) => {
       })
     }
 
-    // Dedup: check who already got a confidence check this week
+    // Biweekly cadence: skip anyone who got a confidence check in the last 13 days.
+    // The cron runs every Monday, but this gates each user to once every ~2 weeks.
+    // It's per-user off actual send history (not a global week-parity flag), so it
+    // stays correct even if a weekly run is missed. 13 (not 14) days leaves a buffer
+    // so the exactly-two-weeks-later run still fires.
     const userIds = eligible.map(p => p.id)
+    const biweeklyCutoff = new Date(now.getTime() - 13 * 24 * 60 * 60 * 1000).toISOString()
     const { data: alreadySent } = await supabase
       .from('sms_messages')
       .select('user_id')
       .in('user_id', userIds)
       .eq('sent_by_type', 'confidence_check')
       .eq('direction', 'outbound')
-      .gte('created_at', `${mondayStr}T00:00:00Z`)
+      .gte('created_at', biweeklyCutoff)
 
     const sentSet = new Set((alreadySent || []).map(s => s.user_id))
 
@@ -123,7 +128,7 @@ serve(async (_req: Request) => {
 
     for (const profile of eligible) {
       if (sentSet.has(profile.id)) {
-        console.log(`Skipping ${profile.id}: already sent this week`)
+        console.log(`Skipping ${profile.id}: confidence check sent within the last 2 weeks`)
         continue
       }
 
