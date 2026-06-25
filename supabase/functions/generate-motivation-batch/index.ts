@@ -451,9 +451,15 @@ serve(async (req) => {
   const youtube = new YouTubeAPI(YOUTUBE_API_KEY)
   const tavily = new TavilyAPI(TAVILY_API_KEY)
 
-  // ── Auth: allow cron (service-role bearer) OR an admin JWT ────────────────
+  // ── Auth: allow cron/trigger (service-role bearer) OR an admin JWT ─────────
   const token = (req.headers.get('Authorization') || '').replace('Bearer ', '').trim()
   let authed = token === SUPABASE_SERVICE_ROLE_KEY
+  if (!authed && token) {
+    // DB triggers authenticate with the app_config service_role_key, which can differ
+    // from the injected env key if the key was rotated after app_config was seeded.
+    const { data: cfg } = await supabase.from('app_config').select('value').eq('key', 'service_role_key').maybeSingle()
+    if (cfg?.value && token === cfg.value) authed = true
+  }
   if (!authed && token) {
     try {
       const { data: { user } } = await supabase.auth.getUser(token)
