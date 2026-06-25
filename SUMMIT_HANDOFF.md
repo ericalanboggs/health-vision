@@ -191,7 +191,7 @@ export const doSomething = async (params) => {
 | `send-all-weekly-digests` | Cron | **YES** | Batch runner for weekly digests |
 | `generate-weekly-digest` | Internal | **YES** | Compute weekly digest data |
 | `generate-all-weekly-digests` | Cron | **YES** | Batch digest generator |
-| `send-confidence-check` | Cron (Monday mid-morning) | **YES** | Weekly habit summary + confidence question (1-5); skips users < 7 days old |
+| `send-confidence-check` | Cron (Monday mid-morning) | **YES** | **Biweekly** habit summary + confidence question (1-5). Cron runs weekly but each user is gated to once every ~2 weeks via a 13-day lookback on prior `confidence_check` sends. Skips users < 7 days old and **excludes Motivation Mode users** (`motivation_mode = false`). |
 | `send-challenge-completion-sms` | Cron (Monday 2PM UTC) | **YES** | AI congratulations SMS + archive prompt when challenge completed |
 | `send-weekly-synthesis-sms` | Cron | **YES** | SMS weekly summary |
 | `daily-health-report` | Cron | **YES** | Daily summary report |
@@ -215,6 +215,9 @@ export const doSomething = async (params) => {
 | `send-march-update` | Manual POST | **YES** | One-time March 2026 product update email to all users |
 | `generate-weekly-tracker` | Manual POST (cron-ready) | **YES** | Generates a printable one-page weekly habit tracker PDF and emails it as an attachment via Resend. Uses pdf-lib + embedded Inter TTFs (fetched from jsdelivr, module-cached). Accepts `{userId}` or `{email}` and optional `{weekStart}`. |
 | `export-coaching-brief` | Frontend POST (admin) | **YES** | Generates a session-ready coaching brief (Markdown) for a user. Gathers profile, vision, reflections, active habits, and merged SMS conversation; uses gpt-4o-mini to synthesize the brief + appends the full SMS transcript. Verifies admin JWT internally (returns sensitive data). Accepts `{userId}`, returns `{markdown, filename}`. Surfaced via the Summarize icon on the admin user detail page. |
+| `generate-motivation-batch` | Cron (weekly) + admin POST | **YES** | Builds a week of Motivation Mode content (video/article/quote) per `motivation_mode` user. Two-pass: plan an arc from the steering prompt → resolve real candidates (YouTube + Tavily) → LLM picks + frames the actual piece → link-verify. Inserts `pending_review`. Admin body `{userId, regenerate}`. See §7.6. |
+| `send-daily-motivation` | Cron (every 30 min) | **YES** | Sends the next approved Motivation Mode item at ~9:30am user-local (once/day guard) + the weekly readiness ruler on the user's `motivation_checkin_day`. See §7.6. |
+| `sms-motivation-checkin` | Internal (from twilio-webhook) | **YES** | Multi-turn weekly readiness check-in (1–10 ruler → feedback → handoff). At readiness ≥7 twice (or early hand-raise) clears `motivation_mode` and hands off to `sms-add-habit`. See §7.6. |
 
 ### SMS Flow
 
@@ -598,6 +601,67 @@ Source design lives in the Claude Design bundle (`Summit Tracker.html`). The imp
 
 ---
 
+## 7.6 Motivation Mode (added 2026-06-15)
+
+A **pre-action-stage** track for users who aren't ready for habit tracking yet (TTM: pre-/contemplation — often burned out). Instead of habit reminders, they get a steady drip of curated inspiration (short videos, articles, quotes) plus a weekly **readiness ruler** that detects when they're ready to start a habit and hands them off. The check-in is the "conveyor belt" — without it, the feature is just a parking lot of nice quotes that never changes behavior.
+
+### Flag + columns (`profiles`)
+
+`motivation_mode` BOOLEAN is the master switch. When **true**, the user is in Motivation Mode and is **excluded from all action-stage senders** (habit reminders, followups, reflections, digests, confidence check — they each filter `motivation_mode = false`). Related columns:
+
+- `motivation_prompt` (TEXT) — the **coach steering prompt**: the single source of truth for what this user's content is about. Set/edited by an admin in the composer.
+- `motivation_cadence` (TEXT) — `'daily'` (7 items/week, 1/day) or `'weekly_x3'` (3 items/week, every other day).
+- `motivation_checkin_day` (INTEGER 0–6, Sun..Sat) — the day the weekly readiness ruler is sent.
+
+Migration: `20260615_motivation_mode.sql`.
+
+### Content generation — `generate-motivation-batch`
+
+Builds a week of `pending_review` content per user. **Two-pass, never trusts the LLM for URLs:**
+
+1. **Plan the arc** — gpt-4o-mini plans N items (mix of `video`/`article`/`quote`) forming a coherent arc, pointed **only** at the steering prompt. Genre is "permission" ("do less, on purpose") — hustle/grind content is explicitly banned (it repels burned-out users). Every item ends with one absurdly small, optional micro-action.
+2. **Resolve to real candidates** — videos via `youtube.searchShortVideos()` (Reels/Shorts), articles via `tavily.searchArticles()` (`tavilyApi.ts` — real ranked web results). A second LLM pass (`pickAndFrameContent`) picks the candidate that genuinely fits the genre + theme and writes SMS framing **grounded in that actual piece**, or rejects all. Chosen URLs are link-verified; video/article slots that resolve nothing **fall back to their quote**. We never persist a null/broken URL.
+
+**Key design rules (easy to regress):**
+- **Steering prompt is the ONLY topic source.** We deliberately do **not** feed the user's profile Vision/why (`loadUserContext`) into the prompts — it caused off-thesis drift. Only first name (greeting) and prior queue history (de-dup + arc continuity) are added.
+- **Articles require `TAVILY_API_KEY`.** Without it, `searchArticles` returns `[]` and article slots degrade to quotes — no error.
+- `content_type` already allows `'article'` (no migration needed). The admin UI and `send-daily-motivation` handle all three types generically.
+- Trigger: weekly `pg_cron` (no body, all users) **or** admin POST `{userId, regenerate}`. `regenerate=true` wipes the existing `pending_review` batch first; otherwise it skips users who already have a pending batch.
+
+### Delivery — `send-daily-motivation`
+
+Runs every 30 min; per-user once-a-day guard based on local date. Sends the next **approved** item at ~9:30am user-local. On the user's `motivation_checkin_day`, also sends the weekly readiness ruler. SMS body = `coach_framing` + the URL (quotes prepend the quote text). Nothing sends until a human approves the `pending_review` rows in the admin composer.
+
+### Readiness handoff — `sms-motivation-checkin`
+
+Multi-turn weekly check-in (routed from `twilio-webhook`): asks a 1–10 readiness ruler → reflects back → at **readiness ≥7 on two consecutive check-ins** (or an early hand-raise) it **clears `motivation_mode`** and hands off to `sms-add-habit` to start their first habit. Session state in `sms_motivation_checkin_sessions` (2-hr expiry); scores logged to `motivation_checkins`.
+
+### Admin composer — `MotivationModePanel.jsx`
+
+On the admin user detail page. Edit the steering prompt, cadence, and check-in day; **Generate batch** / **Regenerate (replace pending)** call `generate-motivation-batch`; **+ Add my own** inserts a manual (`source='manual'`) item. Review queue shows each item with type badge + link; **Approve all pending** flips `pending_review → approved`.
+
+### Tables
+
+- `motivation_content_queue` — the content itself. `content_type` ∈ (`video`,`quote`,`article`); `status` ∈ (`pending_review`,`approved`,`sent`,`skipped`); `source` ∈ (`ai`,`manual`); `week_batch`, `scheduled_date`, `coach_framing`, `url`, `body`.
+- `motivation_checkins` — permanent record of weekly readiness scores (1–10).
+- `sms_motivation_checkin_sessions` — transient check-in conversation state (2-hr expiry).
+
+### Deploy
+
+All three functions need `--no-verify-jwt` (cron- and webhook-invoked):
+```
+supabase functions deploy generate-motivation-batch --no-verify-jwt
+supabase functions deploy send-daily-motivation --no-verify-jwt
+supabase functions deploy sms-motivation-checkin --no-verify-jwt
+```
+
+### Deliberately deferred
+
+- **Podcasts** — same link-verification reason articles were originally deferred; not yet wired (would need a podcast search source).
+- No automated tests for the generation pipeline yet.
+
+---
+
 ## 8. Environment Variables
 
 ### Frontend (`VITE_*` — baked into build)
@@ -636,6 +700,8 @@ Source design lives in the Claude Design bundle (`Summit Tracker.html`). The imp
 | `RESEND_FROM_EMAIL` | Sender address (default: Summit <hello@summithealth.app>) |
 | `ADMIN_EMAILS` | Comma-separated admin email list |
 | `FRONTEND_URL` | Frontend domain for email links (https://go.summithealth.app) |
+| `YOUTUBE_API_KEY` | YouTube Data API — short-video search for weekly digest + Motivation Mode |
+| `TAVILY_API_KEY` | Tavily web search — sources real article URLs for Motivation Mode (§7.6). If unset, article slots silently degrade to quotes. |
 
 ---
 
