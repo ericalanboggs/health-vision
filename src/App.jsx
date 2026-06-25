@@ -25,6 +25,7 @@ import ProfileSetup from './pages/ProfileSetup'
 import Profile from './pages/Profile'
 import Start from './pages/Start'
 import SegmentWelcome from './pages/SegmentWelcome'
+import MotivationLanding from './pages/MotivationLanding'
 import Vision from './pages/Vision'
 import Habits from './pages/Habits'
 import AddHabit from './pages/AddHabit'
@@ -196,6 +197,15 @@ function App() {
           element={
             <ProtectedRoute>
               <SegmentWelcome />
+            </ProtectedRoute>
+          }
+        />
+        {/* Post-enroll landing for Motivation Mode users (no habit dashboard) */}
+        <Route
+          path="/motivation"
+          element={
+            <ProtectedRoute>
+              <MotivationLanding />
             </ProtectedRoute>
           }
         />

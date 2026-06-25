@@ -40,7 +40,7 @@ const TelescopeIcon = ({ className }) => (
 import { trackEvent } from '../lib/posthog'
 import { EMPTY_VISION_FORM } from '../data/visionFormDefaults'
 import { saveJourney, loadJourney } from '../services/journeyService'
-import { getCurrentUser, getProfile } from '../services/authService'
+import { getCurrentUser, getProfile, enrollInMotivationMode } from '../services/authService'
 import { getSegment } from '../data/onboardingSegments'
 import NorthStarStep from '../components/steps/NorthStarStep'
 import CardinalDirectionsStep from '../components/steps/CardinalDirectionsStep'
@@ -63,6 +63,11 @@ export default function Vision() {
   const [segment, setSegment] = useState(null)
   const [headerVisible, setHeaderVisible] = useState(true)
   const lastScrollY = useRef(0)
+  // Onboarding fork: null = deciding (show fork), 'habits' = proceed to the Vision
+  // flow below, 'motivation' = show the single steering-prompt screen. Resuming users
+  // (existing journey) are set to 'habits' so they never see the fork again.
+  const [mode, setMode] = useState(null)
+  const [enrolling, setEnrolling] = useState(false)
 
   // Headroom behavior for nav
   useEffect(() => {
@@ -156,7 +161,9 @@ export default function Vision() {
                                     result.data.form_data.visionStatement.trim().length > 0
 
         if (hasCompletedVision) {
-          // If vision exists, go directly to summary page
+          // If vision exists, go directly to summary page (and skip the mode fork —
+          // they already chose the habit path).
+          setMode('habits')
           const summaryIndex = steps.findIndex(s => s.id === 'summary')
           setCurrentStep(summaryIndex)
         } else {
@@ -165,6 +172,7 @@ export default function Vision() {
           const savedStepId = result.data.current_step
           const detailedFlowSteps = ['vision', 'basecamp', 'current', 'capacity']
           if (detailedFlowSteps.includes(savedStepId)) {
+            setMode('habits') // mid-habit-flow — don't re-show the fork
             const savedStepIndex = steps.findIndex(s => s.id === savedStepId)
             if (savedStepIndex !== -1) {
               setCurrentStep(savedStepIndex)
@@ -251,6 +259,42 @@ export default function Vision() {
     }
   }
 
+  // Onboarding fork handlers
+  const handlePickHabits = () => {
+    trackEvent('onboarding_mode_selected', { mode: 'habits' })
+    setMode('habits') // falls through to the existing Vision intro (step 0)
+  }
+
+  const handlePickMotivation = () => {
+    trackEvent('onboarding_mode_selected', { mode: 'motivation' })
+    setMode('motivation')
+  }
+
+  const handleEnrollMotivation = async (promptText) => {
+    const prompt = (promptText || '').trim()
+    if (!prompt || enrolling) return
+    setEnrolling(true)
+    try {
+      const { user } = await getCurrentUser()
+      if (!user?.id) {
+        navigate('/login')
+        return
+      }
+      const result = await enrollInMotivationMode(user.id, { prompt })
+      if (!result.success) {
+        console.error('Motivation enroll failed:', result.error)
+        setEnrolling(false)
+        return
+      }
+      trackEvent('motivation_mode_enrolled')
+      // Flipping motivation_mode fires the welcome SMS + first batch server-side.
+      navigate('/motivation', { replace: true })
+    } catch (e) {
+      console.error('Motivation enroll error:', e)
+      setEnrolling(false)
+    }
+  }
+
   const handleQuickStartComplete = async (prefetchedHabits) => {
     trackEvent('vision_quickstart_completed')
     // Save the journey before navigating
@@ -293,6 +337,30 @@ export default function Vision() {
   // If in display mode, show simplified vision view
   if (viewMode === 'display') {
     return <VisionDisplay formData={formData} />
+  }
+
+  // Onboarding fork — shown before the Vision flow for fresh users.
+  if (mode === null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          <ModeForkScreen onPickMotivation={handlePickMotivation} onPickHabits={handlePickHabits} />
+        </div>
+      </div>
+    )
+  }
+  if (mode === 'motivation') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          <MotivationPromptScreen
+            onSubmit={handleEnrollMotivation}
+            onBack={() => setMode(null)}
+            enrolling={enrolling}
+          />
+        </div>
+      </div>
+    )
   }
 
   // Filter visible steps for stepper (exclude hidden steps like intro/quickstart)
@@ -495,6 +563,111 @@ const IntroPage = ({ onSelectPath, segment, onBackToWelcome }) => {
       <div className="text-center text-body-sm text-summit-moss">
         <p>Progress is automatically saved • You can expand your vision later</p>
       </div>
+    </div>
+  )
+}
+
+// Onboarding fork: Motivation Mode vs Habit Mode. Shown before the Vision flow.
+const ModeForkScreen = ({ onPickMotivation, onPickHabits }) => {
+  const cardClass =
+    'w-full text-left bg-white p-6 rounded-xl border-2 border-summit-sage hover:border-summit-emerald transition-all duration-200 ease-out shadow-sm hover:shadow-md hover:-translate-y-1 group'
+  const tileClass =
+    'flex-shrink-0 w-12 h-12 bg-summit-sage rounded-lg flex items-center justify-center text-2xl transition-all duration-200 ease-out group-hover:scale-110 group-hover:shadow-md'
+
+  return (
+    <div className="max-w-3xl mx-auto">
+      <div className="text-center mb-8">
+        <div className="flex justify-center mb-6">
+          <div className="w-32 h-32 rounded-full bg-white shadow-elevated flex items-center justify-center">
+            <img src="/summit-illustration.png" alt="Summit" className="w-[96px] h-[96px]" />
+          </div>
+        </div>
+        <h1 className="text-h1 text-summit-forest mb-3">How do you want to start?</h1>
+        <p className="text-body text-stone-600">There's no wrong answer — you can switch later.</p>
+      </div>
+
+      <div className="space-y-4">
+        {/* Motivation Mode */}
+        <button onClick={onPickMotivation} className={cardClass}>
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              <div className={tileClass}>🌱</div>
+              <div>
+                <h3 className="text-lg font-semibold text-summit-forest mb-1">Just send me a little inspiration</h3>
+                <p className="text-body-sm text-stone-600 mb-2">
+                  A daily text to keep you moving — no tracking, no pressure.
+                </p>
+                <span className="inline-block text-xs text-stone-500 bg-summit-mint px-2 py-1 rounded-full">
+                  ~30 seconds
+                </span>
+              </div>
+            </div>
+            <ArrowForward className="w-5 h-5 text-stone-400 group-hover:text-summit-emerald transition-colors" />
+          </div>
+        </button>
+
+        {/* Habit Mode */}
+        <button onClick={onPickHabits} className={cardClass}>
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              <div className={tileClass}>🎯</div>
+              <div>
+                <h3 className="text-lg font-semibold text-summit-forest mb-1">Help me build a habit</h3>
+                <p className="text-body-sm text-stone-600 mb-2">
+                  We'll shape a vision and set up a habit or two you can actually keep.
+                </p>
+                <span className="inline-block text-xs text-stone-500 bg-summit-mint px-2 py-1 rounded-full">
+                  ~3–10 minutes
+                </span>
+              </div>
+            </div>
+            <ArrowForward className="w-5 h-5 text-stone-400 group-hover:text-summit-emerald transition-colors" />
+          </div>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Single steering-prompt screen for the Motivation Mode path. The answer becomes
+// the user's motivation_prompt (the sole thesis for their content).
+const MotivationPromptScreen = ({ onSubmit, onBack, enrolling }) => {
+  const [text, setText] = useState('')
+  const canSubmit = text.trim().length > 0 && !enrolling
+
+  return (
+    <div className="max-w-xl mx-auto">
+      <button
+        type="button"
+        onClick={onBack}
+        disabled={enrolling}
+        className="flex items-center gap-1.5 text-body-sm text-stone-500 hover:text-summit-emerald py-2 mb-4 transition-colors disabled:opacity-50"
+      >
+        <ArrowBack className="w-4 h-4" />
+        Back
+      </button>
+
+      <div className="text-center mb-6">
+        <h1 className="text-h1 text-summit-forest mb-3">What would feel most helpful right now?</h1>
+      </div>
+
+      <Card className="border border-summit-sage mb-6">
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={4}
+          autoFocus
+          placeholder="e.g. 'I'm burned out at work and want to feel like myself again' — a sentence or two is plenty."
+          className="w-full border border-stone-300 rounded-lg px-3 py-2 text-body text-stone-700 focus:outline-none focus:border-summit-emerald focus:ring-1 focus:ring-summit-emerald resize-none"
+        />
+        <p className="text-body-sm text-summit-moss mt-3">
+          We'll use this to shape the inspiration we send you — and nothing else.
+        </p>
+      </Card>
+
+      <Button onClick={() => onSubmit(text)} disabled={!canSubmit} fullWidth>
+        {enrolling ? 'Setting you up…' : 'Start'}
+      </Button>
     </div>
   )
 }
