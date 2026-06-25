@@ -670,7 +670,7 @@ const MotivationPromptScreen = ({ onSubmit, onBack, enrolling }) => {
       </Card>
 
       <Button onClick={() => onSubmit(text)} disabled={!canSubmit} fullWidth>
-        {enrolling ? 'Setting you up…' : 'Start'}
+        {enrolling ? 'Setting you up…' : "I'm ready for inspiration"}
       </Button>
     </div>
   )
