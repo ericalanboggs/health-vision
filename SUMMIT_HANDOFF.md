@@ -766,6 +766,21 @@ That's the whole flow — commit, push, done. New routes (e.g. `/lifestyle-chang
 
 5. **Vercel caches aggressively.** After pushing frontend changes, users may need Cmd+Shift+R (hard refresh) to see updates. `VITE_*` env vars are baked into the JS bundle at build time — adding a new one requires a Vercel redeploy.
 
+6. **DB triggers must invoke edge functions via the `app_config` pattern — NOT `current_setting('app.settings.*')`.** Those GUCs (`app.settings.supabase_url`, `app.settings.service_role_key`) are **not set on this project**. Any trigger that resolves its URL/key via `current_setting(...)` throws "unrecognized configuration parameter", the surrounding `EXCEPTION WHEN OTHERS THEN RAISE WARNING` **silently swallows it**, and `net.http_post` never fires — the edge function is never called: no `net._http_response` row, no function log, no DB write, no error surfaced. Several legacy triggers are written this way and are silently dead (`20260123_welcome_email_trigger.sql` → `send-welcome-email`; the original `20260307` notify trigger). The working pattern — used by every cron via `call_edge_function` — reads the key from the **`app_config` table** and hardcodes the project URL:
+   ```sql
+   DECLARE auth_token TEXT;
+   BEGIN
+     SELECT value INTO auth_token FROM app_config WHERE key = 'service_role_key';
+     PERFORM net.http_post(
+       url := 'https://oxszevplpzmzmeibjtdz.supabase.co/functions/v1/<fn-name>',
+       headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer '||auth_token),
+       body := jsonb_build_object('userId', NEW.id)
+     );
+   END;
+   ```
+   **Second gotcha (the 401):** the `app_config` `service_role_key` can DIVERGE from the function's injected `SUPABASE_SERVICE_ROLE_KEY` env (the key was rotated after `app_config` was seeded). Functions that strict-check the bearer (`token === SUPABASE_SERVICE_ROLE_KEY`) then return **401 to every trigger/cron call**, while functions that don't validate the key never notice. Fix: accept a bearer matching **either** the env key **or** the `app_config` key (the function reads `app_config` with its own service client). Reference: `20260627_fix_onboarding_trigger_invocation.sql` + the `isServiceRole()` auth in `send-motivation-welcome` / `generate-motivation-batch`.
+   **Debugging triggers→functions:** `select created, status_code, content::text from net._http_response order by created desc` shows each call's result (`401` = auth mismatch; *no row at all* = the trigger never fired the http_post — i.e. the `current_setting` throw). A direct `select net.http_post(...)` from the SQL editor isolates function-vs-trigger. Edge Function logs live in the **dashboard** (the CLI has no `functions logs` command).
+
 ### Auth
 
 6. **PKCE flow breaks server-generated links.** The Supabase client uses `flowType: 'pkce'`, so `generateLink({ type: 'magiclink' })` or `generateLink({ type: 'signup' })` will NOT create valid sessions. The client has no `code_verifier`. Use auto-confirm + `signInWithPassword` instead (as the lite challenge does).
