@@ -82,14 +82,24 @@ function buildWelcome(focus: string): string {
   )
 }
 
+/** True if the bearer is the env service-role key OR the app_config key DB triggers use. */
+async function isServiceRole(supabase: ReturnType<typeof createClient>, token: string): Promise<boolean> {
+  if (!token) return false
+  if (token === SUPABASE_SERVICE_ROLE_KEY) return true
+  const { data } = await supabase.from('app_config').select('value').eq('key', 'service_role_key').maybeSingle()
+  return !!data?.value && token === data.value
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-  // Auth: service-role bearer only (this is DB-trigger invoked).
+  // Auth: service-role bearer only (this is DB-trigger invoked). Accept the env key
+  // OR the app_config service_role_key the DB triggers use — they can differ if the
+  // key was rotated after app_config was seeded.
   const token = (req.headers.get('Authorization') || '').replace('Bearer ', '').trim()
-  if (token !== SUPABASE_SERVICE_ROLE_KEY) {
+  if (!(await isServiceRole(supabase, token))) {
     return new Response(JSON.stringify({ error: 'unauthorized' }), {
       status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
