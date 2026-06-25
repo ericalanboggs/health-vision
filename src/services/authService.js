@@ -243,6 +243,26 @@ export const upsertProfile = async (userId, profileData) => {
 }
 
 /**
+ * Self-serve enroll into Motivation Mode from the onboarding fork.
+ * Flips the flag (+ saves the steering prompt) and finishes onboarding with the
+ * standard 14-day trial. The frontend only writes these columns — the DB triggers
+ * then fire the welcome SMS + first content batch server-side (generate-motivation-batch
+ * rejects non-admin client calls, so generation can't be triggered from here directly).
+ */
+export const enrollInMotivationMode = async (userId, { prompt }) => {
+  const now = new Date()
+  return upsertProfile(userId, {
+    motivation_mode: true,
+    motivation_prompt: prompt,
+    motivation_cadence: 'daily',
+    motivation_checkin_day: now.getDay(), // weekly readiness ruler lands on their signup weekday
+    onboarding_completed: true,
+    trial_started_at: now.toISOString(),
+    trial_ends_at: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+  })
+}
+
+/**
  * Get user profile
  * @param {string} userId - User ID
  * @returns {Promise<{success: boolean, data?: any, error?: any}>}

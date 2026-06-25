@@ -125,6 +125,11 @@ export default function Dashboard() {
 
       // Check subscription status
       const profileResult = await getProfile(userId)
+      // Motivation Mode users have no habit dashboard — send them to their landing.
+      if (profileResult.success && profileResult.data?.motivation_mode) {
+        navigate('/motivation', { replace: true })
+        return
+      }
       if (profileResult.success && profileResult.data && !hasActiveSubscription(profileResult.data, userResult.user?.email)) {
         navigate('/pricing', { replace: true })
         return

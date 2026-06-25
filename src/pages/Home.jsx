@@ -53,6 +53,10 @@ export default function Home() {
       } else if (!hasActiveSubscription(profile, userEmail)) {
         console.log('Home: No active subscription, navigating to pricing')
         navigate('/pricing', { replace: true })
+      } else if (profile.motivation_mode) {
+        // Motivation Mode users have no habit dashboard — land them on their page.
+        console.log('Home: Motivation Mode user, navigating to /motivation')
+        navigate('/motivation', { replace: true })
       } else {
         console.log('Home: Active subscription, navigating to dashboard')
         navigate('/dashboard', { replace: true })
