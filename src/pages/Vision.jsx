@@ -572,18 +572,18 @@ const ModeForkScreen = ({ onPickMotivation, onPickHabits }) => {
   const cardClass =
     'w-full text-left bg-white p-6 rounded-xl border-2 border-summit-sage hover:border-summit-emerald transition-all duration-200 ease-out shadow-sm hover:shadow-md hover:-translate-y-1 group'
   const tileClass =
-    'flex-shrink-0 w-12 h-12 bg-summit-sage rounded-lg flex items-center justify-center text-2xl transition-all duration-200 ease-out group-hover:scale-110 group-hover:shadow-md'
+    'flex-shrink-0 w-12 h-12 bg-summit-sage rounded-lg flex items-center justify-center transition-all duration-200 ease-out group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-md'
 
   return (
     <div className="max-w-3xl mx-auto">
       <div className="text-center mb-8">
         <div className="flex justify-center mb-6">
-          <div className="w-32 h-32 rounded-full bg-white shadow-elevated flex items-center justify-center">
-            <img src="/summit-illustration.png" alt="Summit" className="w-[96px] h-[96px]" />
-          </div>
+          <img src="/summit-logo.svg" alt="Summit Health" className="h-10" />
         </div>
         <h1 className="text-h1 text-summit-forest mb-3">How do you want to start?</h1>
-        <p className="text-body text-stone-600">There's no wrong answer — you can switch later.</p>
+        <p className="text-body text-stone-600 max-w-md mx-auto">
+          Your vision, your habits, your pace — there's no wrong way in.
+        </p>
       </div>
 
       <div className="space-y-4">
@@ -591,7 +591,9 @@ const ModeForkScreen = ({ onPickMotivation, onPickHabits }) => {
         <button onClick={onPickMotivation} className={cardClass}>
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
-              <div className={tileClass}>🌱</div>
+              <div className={tileClass}>
+                <MaterialSymbol name="eco" className="text-[28px] text-summit-pine" />
+              </div>
               <div>
                 <h3 className="text-lg font-semibold text-summit-forest mb-1">Just send me a little inspiration</h3>
                 <p className="text-body-sm text-stone-600 mb-2">
@@ -610,7 +612,9 @@ const ModeForkScreen = ({ onPickMotivation, onPickHabits }) => {
         <button onClick={onPickHabits} className={cardClass}>
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
-              <div className={tileClass}>🎯</div>
+              <div className={tileClass}>
+                <MaterialSymbol name="mountain_flag" className="text-[28px] text-summit-pine" />
+              </div>
               <div>
                 <h3 className="text-lg font-semibold text-summit-forest mb-1">Help me build a habit</h3>
                 <p className="text-body-sm text-stone-600 mb-2">

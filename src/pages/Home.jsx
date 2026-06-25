@@ -46,8 +46,8 @@ export default function Home() {
         navigate(path, { replace: true })
       } else if (!profile.onboarding_completed) {
         // Tailored marketing segments get a per-segment welcome first; everyone
-        // else sees the generic "How Summit Works" intro.
-        const dest = getSegment(profile.acquisition_source) ? '/welcome' : '/start'
+        // else goes straight to the mode fork on /vision (the welcome screen).
+        const dest = getSegment(profile.acquisition_source) ? '/welcome' : '/vision'
         console.log(`Home: Onboarding not completed, navigating to ${dest}`)
         navigate(dest, { replace: true })
       } else if (!hasActiveSubscription(profile, userEmail)) {

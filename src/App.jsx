@@ -23,7 +23,6 @@ import Pricing from './pages/Pricing'
 import SubscriptionSuccess from './pages/SubscriptionSuccess'
 import ProfileSetup from './pages/ProfileSetup'
 import Profile from './pages/Profile'
-import Start from './pages/Start'
 import SegmentWelcome from './pages/SegmentWelcome'
 import MotivationLanding from './pages/MotivationLanding'
 import Vision from './pages/Vision'
@@ -182,15 +181,8 @@ function App() {
           }
         />
 
-        {/* First-time user experience */}
-        <Route
-          path="/start"
-          element={
-            <ProtectedRoute>
-              <Start />
-            </ProtectedRoute>
-          }
-        />
+        {/* First-time user experience: the mode fork on /vision is the welcome
+            (the old "How Summit Works" /start screen was cut). */}
         {/* Segment-tailored welcome (marketing-acquired users) */}
         <Route
           path="/welcome"
