@@ -35,10 +35,10 @@ export default function SegmentWelcome() {
       const profileResult = await getProfile(user.id)
       const seg = getSegment(profileResult?.data?.acquisition_source)
 
-      // Not a tailored segment — fall back to the generic intro. (Home should
+      // Not a tailored segment — fall back to the mode fork. (Home should
       // already prevent this, but guard in case /welcome is hit directly.)
       if (!seg) {
-        navigate('/start', { replace: true })
+        navigate('/vision', { replace: true })
         return
       }
 
