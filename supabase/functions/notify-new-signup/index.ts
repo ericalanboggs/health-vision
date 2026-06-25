@@ -18,6 +18,17 @@ interface Profile {
   timezone: string | null
   created_at: string | null
   challenge_type: string | null
+  motivation_mode: boolean | null
+  motivation_prompt: string | null
+  motivation_cadence: string | null
+  motivation_checkin_day: number | null
+}
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+function cadenceLabel(c: string | null): string {
+  if (c === 'daily') return 'Once a day'
+  if (c === 'weekly_x3') return '3x per week'
+  return c || 'N/A'
 }
 
 interface HealthJourney {
@@ -139,6 +150,103 @@ function buildLiteEmailHtml(profile: Profile): string {
             <td align="center" style="padding: 8px 40px 32px 40px;">
               <a href="${adminUrl}" style="display: inline-block; padding: 14px 28px; background-color: #15803d; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
                 View in Admin
+              </a>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 16px 40px; background-color: #f9fafb; border-radius: 0 0 12px 12px;">
+              <p style="margin: 0; font-size: 13px; color: #9a9a9a; text-align: center;">
+                Summit Health — internal admin notification
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`
+}
+
+function buildMotivationEmailHtml(profile: Profile): string {
+  const firstName = profile.first_name || 'Unknown'
+  const lastName = profile.last_name || ''
+  const fullName = `${firstName} ${lastName}`.trim()
+  const adminUrl = `${APP_URL}/admin/users/${profile.id}`
+  const checkinDay = profile.motivation_checkin_day != null ? DAY_NAMES[profile.motivation_checkin_day] : 'N/A'
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Signup (Motivation Mode): ${escapeHtml(fullName)}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 40px 40px 20px 40px; background-color: #15803d; border-radius: 12px 12px 0 0;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; line-height: 1.3;">
+                🌱 New Signup — Motivation Mode
+              </h1>
+              <p style="margin: 8px 0 0 0; font-size: 18px; color: #dcfce7;">
+                ${escapeHtml(fullName)}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Profile Details -->
+          <tr>
+            <td style="padding: 24px 40px 24px 40px;">
+              <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1a1a1a;">Profile</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="padding: 4px 0; font-size: 14px; color: #6a6a6a; width: 100px;">Name</td>
+                  <td style="padding: 4px 0; font-size: 14px; color: #1a1a1a;">${escapeHtml(fullName)}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; font-size: 14px; color: #6a6a6a;">Email</td>
+                  <td style="padding: 4px 0; font-size: 14px; color: #1a1a1a;">${profile.email ? escapeHtml(profile.email) : 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; font-size: 14px; color: #6a6a6a;">Phone</td>
+                  <td style="padding: 4px 0; font-size: 14px; color: #1a1a1a;">${profile.phone ? escapeHtml(profile.phone) : 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; font-size: 14px; color: #6a6a6a;">Timezone</td>
+                  <td style="padding: 4px 0; font-size: 14px; color: #1a1a1a;">${profile.timezone ? escapeHtml(profile.timezone) : 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; font-size: 14px; color: #6a6a6a;">Signed up</td>
+                  <td style="padding: 4px 0; font-size: 14px; color: #1a1a1a;">${formatDate(profile.created_at)}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Motivation Mode -->
+          <tr>
+            <td style="padding: 0 40px 24px 40px;">
+              <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1a1a1a;">Motivation Mode</p>
+              <p style="margin: 0 0 8px 0; font-size: 14px; color: #4a4a4a; line-height: 1.6;"><strong>What they want help with (steering prompt):</strong><br>${profile.motivation_prompt ? escapeHtml(profile.motivation_prompt) : '<span style="color:#9a9a9a;font-style:italic;">Not set</span>'}</p>
+              <p style="margin: 0 0 4px 0; font-size: 14px; color: #4a4a4a;"><strong>Cadence:</strong> ${escapeHtml(cadenceLabel(profile.motivation_cadence))}</p>
+              <p style="margin: 0; font-size: 14px; color: #4a4a4a;"><strong>Readiness check-in:</strong> ${escapeHtml(checkinDay)}</p>
+            </td>
+          </tr>
+
+          <!-- CTA Button -->
+          <tr>
+            <td align="center" style="padding: 8px 40px 32px 40px;">
+              <a href="${adminUrl}" style="display: inline-block; padding: 14px 28px; background-color: #15803d; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
+                Review &amp; approve first batch
               </a>
             </td>
           </tr>
@@ -341,7 +449,7 @@ serve(async (req) => {
     // Load profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, email, phone, timezone, created_at, challenge_type')
+      .select('id, first_name, last_name, email, phone, timezone, created_at, challenge_type, motivation_mode, motivation_prompt, motivation_cadence, motivation_checkin_day')
       .eq('id', userId)
       .single()
 
@@ -363,6 +471,9 @@ serve(async (req) => {
     if (isLite) {
       subject = `Tech Neck Challenge Sign-up: ${firstName}`
       html = buildLiteEmailHtml(profile as Profile)
+    } else if (profile.motivation_mode) {
+      subject = `🌱 New signup (Motivation Mode): ${firstName} ${lastName}`.trim()
+      html = buildMotivationEmailHtml(profile as Profile)
     } else {
       // Load vision (health journey) — data is in form_data JSONB column
       const { data: journeyRow } = await supabase
@@ -386,7 +497,7 @@ serve(async (req) => {
         .eq('user_id', userId)
         .order('created_at', { ascending: true })
 
-      subject = `New signup: ${firstName} ${lastName}`.trim()
+      subject = `🎯 New signup (Habit Mode): ${firstName} ${lastName}`.trim()
       html = buildEmailHtml(profile as Profile, journey as HealthJourney | null, (habits || []) as WeeklyHabit[])
     }
 

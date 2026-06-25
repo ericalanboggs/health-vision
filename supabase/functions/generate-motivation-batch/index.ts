@@ -15,8 +15,10 @@
  *      tavily.searchArticles() (real, ranked web results — never an LLM-invented URL). If a
  *      video/article slot yields nothing (or fails link-verify), it degrades to its fallback
  *      quote — we NEVER persist a null/broken URL.
- *   5. Rows are written status='pending_review', source='ai'. Nothing sends until a
- *      human approves them (see send-daily-motivation).
+ *   5. Rows are written source='ai'. HYBRID APPROVAL: the user's first batch is written
+ *      status='pending_review' (a human approves it to set the tone); once they have any
+ *      approved/sent item, later batches are written status='approved' so the weekly cron
+ *      is hands-off. Nothing sends until approved (see send-daily-motivation).
  *
  *   ┌── steering prompt + history ──► gpt-4o-mini ──► arc plan (JSON)
  *   │                                                            │
@@ -246,6 +248,17 @@ async function buildBatchForUser(
     .maybeSingle()
   const weekBatch = (lastBatch?.week_batch || 0) + 1
 
+  // Hybrid approval: the FIRST batch waits for an admin to approve it (sets the tone);
+  // once the user has any approved/sent item, later batches auto-approve so the weekly
+  // cron is hands-off. Stateless — derived from history, not a flag.
+  const { data: priorApproved } = await supabase
+    .from('motivation_content_queue')
+    .select('id')
+    .eq('user_id', userId)
+    .in('status', ['approved', 'sent'])
+    .limit(1)
+  const newStatus = (priorApproved && priorApproved.length > 0) ? 'approved' : 'pending_review'
+
   const cadence = profile.motivation_cadence || 'daily'
   const itemCount = cadence === 'daily' ? 7 : 3
   const stepDays = cadence === 'daily' ? 1 : 2
@@ -412,7 +425,7 @@ async function buildBatchForUser(
         ...resolved,
         week_batch: weekBatch,
         scheduled_date: scheduledDate,
-        status: 'pending_review',
+        status: newStatus,
         source: 'ai',
       })
     }
@@ -428,7 +441,7 @@ async function buildBatchForUser(
     return { userId, status: 'error', detail: insertError.message }
   }
 
-  return { userId, status: 'ok', inserted: rows.length, detail: `batch ${weekBatch}` }
+  return { userId, status: 'ok', inserted: rows.length, detail: `batch ${weekBatch} (${newStatus})` }
 }
 
 serve(async (req) => {
