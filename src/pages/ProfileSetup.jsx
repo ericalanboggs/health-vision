@@ -127,13 +127,13 @@ export default function ProfileSetup() {
           acquisition_source: acquisitionSource || null,
         })
 
-        // Send welcome email + notify admin (fire-and-forget)
+        // Send the day-1 founder welcome email (fire-and-forget). The admin
+        // signup notification is intentionally NOT sent here — it fires from a
+        // DB trigger on onboarding_completed so it's populated + mode-aware
+        // (vision/habits or motivation), not empty at profile-setup time.
         supabase.functions.invoke('send-welcome-email', {
           body: { userId: user.id }
         }).catch(err => console.error('send-welcome-email error:', err))
-        supabase.functions.invoke('notify-new-signup', {
-          body: { userId: user.id }
-        }).catch(err => console.error('notify-new-signup error:', err))
 
         navigate(formData.smsConsent ? '/verify-phone' : '/')
       } else {
