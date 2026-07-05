@@ -120,6 +120,31 @@ function localDatePlus(tz: string, days: number): string {
   return dt.toISOString().split('T')[0]
 }
 
+/** User's local day-of-week (0=Sun..6=Sat). */
+function localDow(tz: string): number {
+  const wd = new Date().toLocaleDateString('en-US', { timeZone: tz, weekday: 'short' })
+  const map: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
+  return map[wd] ?? 0
+}
+
+/**
+ * Front-loaded weekly shape (9 items). More early in the week when the user has
+ * the most time + attention, tapering to a gentle close; Sunday is the readiness
+ * check-in (no content — see send-daily-motivation). offset = days from the week's
+ * Monday. phase drives the arc: expansion (spark/introduce) → consolidation (let it land).
+ */
+const WEEK_SHAPE: { day: string; offset: number; phase: 'expansion' | 'consolidation' }[] = [
+  { day: 'Monday',    offset: 0, phase: 'expansion' },
+  { day: 'Monday',    offset: 0, phase: 'expansion' },
+  { day: 'Tuesday',   offset: 1, phase: 'expansion' },
+  { day: 'Tuesday',   offset: 1, phase: 'expansion' },
+  { day: 'Wednesday', offset: 2, phase: 'expansion' },
+  { day: 'Wednesday', offset: 2, phase: 'expansion' },
+  { day: 'Thursday',  offset: 3, phase: 'consolidation' },
+  { day: 'Friday',    offset: 4, phase: 'consolidation' },
+  { day: 'Saturday',  offset: 5, phase: 'consolidation' },
+]
+
 // Deterministic pre-filter: drop obvious hustle/grind content before it reaches the LLM.
 const HUSTLE_RE = /(no excuses|kill your|grind|hustle|beast mode|rise and shine|5\s?am|discipline equals|alpha|stop being lazy|motivational speech|crush it|pump.?up|sigma|warrior mindset|push harder|never quit|outwork)/i
 function isHustle(title = ''): boolean {
@@ -238,6 +263,18 @@ async function buildBatchForUser(
     .map((h: any) => `- [${h.content_type}] ${h.title || h.theme || ''}`)
     .join('\n') || '(none yet — this is the first batch)'
 
+  // Closed-loop steer: the direction the user asked for at their most recent weekly
+  // check-in ("more of the same / how should it shift?"). Feeds next week's arc.
+  const { data: lastCheckin } = await supabase
+    .from('motivation_checkins')
+    .select('content_feedback')
+    .eq('user_id', userId)
+    .not('content_feedback', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const contentPref = (lastCheckin?.content_feedback || '').trim() || null
+
   // Next batch number
   const { data: lastBatch } = await supabase
     .from('motivation_content_queue')
@@ -259,9 +296,11 @@ async function buildBatchForUser(
     .limit(1)
   const newStatus = (priorApproved && priorApproved.length > 0) ? 'approved' : 'pending_review'
 
-  const cadence = profile.motivation_cadence || 'daily'
-  const itemCount = cadence === 'daily' ? 7 : 3
-  const stepDays = cadence === 'daily' ? 1 : 2
+  // Front-loaded weekly shape is the single cadence for all Motivation Mode users.
+  const itemCount = WEEK_SHAPE.length // 9
+  const scheduleLines = WEEK_SHAPE
+    .map((s, i) => `  ${i + 1}. ${s.day} — ${s.phase.toUpperCase()}`)
+    .join('\n')
 
   // ── Plan the arc ──────────────────────────────────────────────────────────
   // Drive the haystack off the steering prompt ALONE so coach_knowledge surfaces
@@ -284,11 +323,22 @@ async function buildBatchForUser(
     'is almost impossible to refuse (e.g. "decline one meeting this week", "lights out 10 minutes earlier tonight",',
     '"one 5-minute walk, that is it"). The content is the hook; this tiny action is the point.',
     '',
-    `Plan exactly ${itemCount} items forming a COHERENT ARC that builds on what they have already seen (below),`,
-    'pointed squarely at the COACH STEERING PROMPT below — that prompt is the SOLE thesis for what this content is',
-    'about. Do NOT introduce themes from anywhere else; if a topic is not in the steering prompt, it does not belong.',
-    'Blend three content types across the week — short videos (Reels/Shorts, under ~5 min), short articles',
-    '(a quick, reputable read), and quotes — choosing whatever best serves the steering prompt for each slot.',
+    `Plan exactly ${itemCount} items as ONE COHERENT WEEKLY ARC that builds across the week AND builds forward from`,
+    'what they have already seen (below), pointed squarely at the COACH STEERING PROMPT — that prompt is the SOLE',
+    'thesis. Do NOT introduce themes from anywhere else; if a topic is not in the steering prompt, it does not belong.',
+    '',
+    'WEEKLY SHAPE (front-loaded — the user has the most time + attention early in the week). Plan the items IN ORDER;',
+    'item N maps to this slot:',
+    scheduleLines,
+    'PHASES: EXPANSION (Mon–Wed) = the richer, idea-introducing beats — favor short videos + articles that open a',
+    'thread and give them something to chew on while they have bandwidth. CONSOLIDATION (Thu–Sat) = gentler, shorter —',
+    'favor quotes and brief reflective nudges that help the early-week ideas LAND, not pile on more to process. The',
+    'week should feel like it opens, deepens, then settles — a single build, not 9 disconnected cards. (Sunday is a',
+    'separate readiness check-in, not your job here.)',
+    'CROSS-WEEK: this is week-over-week continuous — pick up the throughline where last week left off (per the history',
+    'below), deepening it, rather than restarting from scratch each Monday.',
+    'Blend three content types across the arc — short videos (Reels/Shorts, under ~5 min), short articles',
+    '(a quick, reputable read), and quotes — choosing whatever best serves the phase + steering prompt for each slot.',
     'For each VIDEO item: give a SPECIFIC, calming search_query (e.g. "gentle restorative yoga 5 minutes",',
     '"box breathing for stress relief", "short body scan for sleep"). AVOID the words "motivation",',
     '"motivational speech", "no excuses", "hustle", "discipline" — those surface grind content that repels',
@@ -316,7 +366,12 @@ async function buildBatchForUser(
     `Build every item from this and nothing else; do not infer topics from elsewhere:`,
     profile.motivation_prompt,
     '',
-    `ALREADY SENT/QUEUED (do not repeat these; build forward from them):`,
+    contentPref
+      ? `WHAT THEY ASKED FOR AT THEIR LAST CHECK-IN (honor this — shift the mix/tone/topics accordingly, ` +
+        `while staying within the steering prompt):\n${contentPref}`
+      : '',
+    '',
+    `ALREADY SENT/QUEUED (do not repeat these; build FORWARD from them — continue the throughline):`,
     historyLines,
   ].filter(Boolean).join('\n')
 
@@ -334,12 +389,16 @@ async function buildBatchForUser(
   }
 
   // ── Resolve each item to a concrete row ───────────────────────────────────
+  // Anchor the arc to the upcoming Monday (today if today is Monday), then place each
+  // item on its WEEK_SHAPE day so the front-loaded curve lands on real calendar dates.
   const rows: any[] = []
   const tz = profile.timezone || 'America/Chicago'
-  let dayOffset = 1
-  for (const item of planned.slice(0, itemCount)) {
-    const scheduledDate = localDatePlus(tz, dayOffset)
-    dayOffset += stepDays
+  const daysUntilMonday = (1 - localDow(tz) + 7) % 7
+  const plan = planned.slice(0, itemCount)
+  for (let i = 0; i < plan.length; i++) {
+    const item = plan[i]
+    const slot = WEEK_SHAPE[i] || WEEK_SHAPE[WEEK_SHAPE.length - 1]
+    const scheduledDate = localDatePlus(tz, daysUntilMonday + slot.offset)
 
     let resolved: any = null
 
