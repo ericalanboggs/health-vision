@@ -12,11 +12,6 @@ import {
   adminApproveMotivationBatch,
 } from '../../services/adminService'
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-const CADENCES = [
-  { value: 'daily', label: 'Once a day' },
-  { value: 'weekly_x3', label: '3x per week' },
-]
 const STATUS_STYLES = {
   pending_review: 'bg-amber-100 text-amber-800',
   approved: 'bg-summit-mint text-summit-forest',
@@ -38,8 +33,6 @@ export default function MotivationModePanel({ userId }) {
 
   // editable settings form
   const [prompt, setPrompt] = useState('')
-  const [cadence, setCadence] = useState('daily')
-  const [checkinDay, setCheckinDay] = useState(5)
 
   // add-content form
   const [showAdd, setShowAdd] = useState(false)
@@ -63,8 +56,6 @@ export default function MotivationModePanel({ userId }) {
     if (s.success) {
       setSettings(s.data)
       setPrompt(s.data.motivation_prompt || '')
-      setCadence(s.data.motivation_cadence || 'daily')
-      setCheckinDay(s.data.motivation_checkin_day ?? 5)
     }
     if (q.success) setQueue(q.data)
     if (c.success) setCheckins(c.data)
@@ -84,7 +75,7 @@ export default function MotivationModePanel({ userId }) {
 
   const saveSettings = async () => {
     setBusy(true)
-    const res = await adminUpdateMotivationSettings(userId, { prompt, cadence, checkinDay: Number(checkinDay) })
+    const res = await adminUpdateMotivationSettings(userId, { prompt })
     setBusy(false)
     res.success ? flash('Settings saved') : flash(res.error || 'Failed', false)
   }
@@ -94,7 +85,7 @@ export default function MotivationModePanel({ userId }) {
     setBusy(true)
     // Save current settings first so the generator reads what's in the box, not a stale value.
     flash('Saving settings…')
-    const saved = await adminUpdateMotivationSettings(userId, { prompt, cadence, checkinDay: Number(checkinDay) })
+    const saved = await adminUpdateMotivationSettings(userId, { prompt })
     if (!saved.success) { setBusy(false); flash(saved.error || 'Failed to save settings', false); return }
     flash(regenerate ? 'Regenerating…' : 'Generating batch… (finding videos, this can take ~20s)')
     const res = await adminGenerateMotivationBatch(userId, { regenerate })
@@ -212,25 +203,22 @@ export default function MotivationModePanel({ userId }) {
               placeholder="What kind of motivation does this user want? (their words are best)"
               className="w-full border border-stone-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-summit-emerald focus:outline-none"
             />
-            <div className="flex flex-wrap gap-4">
-              <div>
-                <label className="block text-xs text-stone-500 mb-1">Cadence</label>
-                <select value={cadence} onChange={e => setCadence(e.target.value)} className="border border-stone-300 rounded-lg px-3 py-2 text-sm">
-                  {CADENCES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-stone-500 mb-1">Check-in day</label>
-                <select value={checkinDay} onChange={e => setCheckinDay(e.target.value)} className="border border-stone-300 rounded-lg px-3 py-2 text-sm">
-                  {DAYS.map((d, i) => <option key={i} value={i}>{d}</option>)}
-                </select>
-              </div>
-              <div className="flex items-end">
-                <button onClick={saveSettings} disabled={busy} className="px-4 py-2 rounded-lg text-sm font-medium bg-summit-forest text-white">
-                  Save settings
-                </button>
-              </div>
+            <button onClick={saveSettings} disabled={busy} className="px-4 py-2 rounded-lg text-sm font-medium bg-summit-forest text-white disabled:opacity-50">
+              Save prompt
+            </button>
+          </div>
+
+          {/* Learned content preferences (read-only, for coaching reference) */}
+          <div className="rounded-lg border border-summit-sage bg-summit-mint/30 p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm font-medium text-summit-forest">Learned preferences</span>
+              <span className="text-xs text-stone-500">— from their replies + check-ins, steers each new batch</span>
             </div>
+            {settings?.motivation_pref ? (
+              <p className="text-sm text-stone-700 whitespace-pre-wrap">{settings.motivation_pref}</p>
+            ) : (
+              <p className="text-sm text-stone-400 italic">None yet — this fills in automatically as the user asks for more/less of something.</p>
+            )}
           </div>
 
           {/* Generate / Add */}
