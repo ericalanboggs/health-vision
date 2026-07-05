@@ -2,12 +2,13 @@
  * send-daily-motivation
  * ─────────────────────
  * Cron (every 30 min). For each Motivation Mode user, in THEIR timezone, on a front-loaded
- * weekly shape (Mon–Wed 2 cards, Thu–Sat 1, Sun check-in):
- *   - Sunday morning → readiness ruler + open a check-in session (only after a full week of
- *     content actually ran, so brand-new/fresh-start users aren't checked in prematurely).
+ * weekly shape (Mon–Wed 2 cards, Thu–Sat 1, Sun = rest):
  *   - Mon–Sat → drip the next `approved` card whose scheduled_date has arrived, in two
  *     windows: morning (~9:30a) and afternoon (~4p). 2x days send one per window; 1x days
  *     send morning only.
+ *   - Saturday afternoon → readiness check-in, right after the week's last content card so
+ *     it lands while the user is warm (not a lonely Sunday ask). Only after a full week of
+ *     content actually ran, so brand-new/fresh-start users aren't checked in prematurely.
  * Idempotent: a per-day sent-count vs. the day's curve target (compared in the user's local
  * date) prevents double-sends when the cron fires repeatedly within a window.
  *
@@ -112,13 +113,59 @@ serve(async (_req) => {
       const userName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || null
       const today = localDate(new Date(), tz)
 
-      // ── Sunday → readiness check-in (caps the weekly arc) ─────────────────
-      if (lt.dayOfWeek === 0) {
-        if (!inMorning) continue // check-in goes out in the morning only
+      // ── Content (Mon–Sat) per the front-loaded curve ─────────────────────
+      const target = WEEK_CURVE[lt.dayOfWeek] || 0
+      if (target > 0) {
+        // By the morning window we allow 1 card; by the afternoon, up to the day's target.
+        const allowedByNow = inMorning ? 1 : target
 
-        // Only after a full week of content actually ran (this week's Mon onward),
-        // so brand-new / fresh-start users aren't checked in before they've seen a week.
-        const mondayStr = localDatePlus(tz, -((lt.dayOfWeek + 6) % 7)) // most recent Monday
+        const { data: recentSent } = await supabase
+          .from('motivation_content_queue')
+          .select('sent_at')
+          .eq('user_id', u.id)
+          .eq('status', 'sent')
+          .order('sent_at', { ascending: false })
+          .limit(5)
+        const sentToday = (recentSent || []).filter(r => r.sent_at && localDate(r.sent_at, tz) === today).length
+
+        if (sentToday < allowedByNow) {
+          // Next approved card whose scheduled_date has arrived (nothing sends before its day).
+          const { data: next } = await supabase
+            .from('motivation_content_queue')
+            .select('*')
+            .eq('user_id', u.id)
+            .eq('status', 'approved')
+            .lte('scheduled_date', today)
+            .order('scheduled_date', { ascending: true })
+            .order('created_at', { ascending: true })
+            .limit(1)
+            .maybeSingle()
+
+          if (!next) {
+            console.error(`⚠️ EMPTY QUEUE: no approved due Motivation Mode content for user ${u.id} — nothing sent. Approve a batch.`)
+            results.push({ userId: u.id, action: 'empty_queue' })
+          } else {
+            const body = composeContentSMS(next)
+            const res = await send(supabase, u.phone, body, u.id, userName)
+            if (res.success) {
+              await supabase
+                .from('motivation_content_queue')
+                .update({ status: 'sent', sent_at: new Date().toISOString() })
+                .eq('id', next.id)
+              results.push({ userId: u.id, action: 'content_sent', itemId: next.id })
+            } else {
+              results.push({ userId: u.id, action: 'send_failed', error: res.error })
+            }
+          }
+          continue // sent (or logged) content this run; check-in rides a later run
+        }
+      }
+
+      // ── Saturday afternoon → readiness check-in (rides after the week's last card) ──
+      // Attached to content (not a lonely Sunday ask) so it lands while the user is warm.
+      // Sunday is a true rest day. Only fires once the week's content has actually run.
+      if (lt.dayOfWeek === 6 && inAfternoon) {
+        const mondayStr = localDatePlus(tz, -((lt.dayOfWeek + 6) % 7)) // this week's Monday
         const { count: weekContent } = await supabase
           .from('motivation_content_queue')
           .select('id', { count: 'exact', head: true })
@@ -158,53 +205,6 @@ serve(async (_req) => {
         await send(supabase, u.phone, opener, u.id, userName)
         results.push({ userId: u.id, action: 'checkin_sent', week })
         continue
-      }
-
-      // ── Mon–Sat → drip approved cards per the front-loaded curve ──────────
-      const target = WEEK_CURVE[lt.dayOfWeek] || 0
-      if (target === 0) continue
-      // By the morning window we allow 1 card; by the afternoon, up to the day's target.
-      const allowedByNow = inMorning ? 1 : target
-
-      // How many already sent today (local date)?
-      const { data: recentSent } = await supabase
-        .from('motivation_content_queue')
-        .select('sent_at')
-        .eq('user_id', u.id)
-        .eq('status', 'sent')
-        .order('sent_at', { ascending: false })
-        .limit(5)
-      const sentToday = (recentSent || []).filter(r => r.sent_at && localDate(r.sent_at, tz) === today).length
-      if (sentToday >= allowedByNow) continue // this window's quota already met
-
-      // Next approved card whose scheduled_date has arrived (nothing sends before its day).
-      const { data: next } = await supabase
-        .from('motivation_content_queue')
-        .select('*')
-        .eq('user_id', u.id)
-        .eq('status', 'approved')
-        .lte('scheduled_date', today)
-        .order('scheduled_date', { ascending: true })
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle()
-
-      if (!next) {
-        console.error(`⚠️ EMPTY QUEUE: no approved due Motivation Mode content for user ${u.id} — nothing sent. Approve a batch.`)
-        results.push({ userId: u.id, action: 'empty_queue' })
-        continue
-      }
-
-      const body = composeContentSMS(next)
-      const res = await send(supabase, u.phone, body, u.id, userName)
-      if (res.success) {
-        await supabase
-          .from('motivation_content_queue')
-          .update({ status: 'sent', sent_at: new Date().toISOString() })
-          .eq('id', next.id)
-        results.push({ userId: u.id, action: 'content_sent', itemId: next.id })
-      } else {
-        results.push({ userId: u.id, action: 'send_failed', error: res.error })
       }
     } catch (e) {
       console.error(`Error for user ${(u as any).id}:`, e)
