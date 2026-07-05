@@ -4,9 +4,11 @@
  * Inbound handler for Motivation Mode replies. Routed here by twilio-webhook when the
  * user has an active check-in session OR is in motivation_mode (no session).
  *
- * Session state machine (mirrors sms-reflection-response):
- *   awaiting_ruler   → parse 1–10 (non-numeric → one re-prompt) → awaiting_feedback
- *   awaiting_feedback→ store feedback + write motivation_checkins → handoff? → awaiting_handoff | done
+ * Session state machine (mirrors sms-reflection-response). Feedback is asked FIRST so the
+ * content-direction steer is captured even if the user skips the rating:
+ *   awaiting_feedback→ write motivation_checkins (content_feedback now, readiness later) → awaiting_ruler
+ *   awaiting_ruler   → parse 1–10 (non-numeric → one re-prompt, then accept null) → update readiness
+ *                      → handoff? → awaiting_handoff | done
  *   awaiting_handoff → YES → clear motivation_mode + kick off ADD flow ; else warm close
  *
  * No active session (motivation_mode user replying to a daily card):
@@ -171,38 +173,42 @@ serve(async (req) => {
     context.messages = context.messages || []
     context.messages.push({ role: 'user', content: body })
 
-    // ── Step: awaiting_ruler ─────────────────────────────────────────────────
-    if (session.step === 'awaiting_ruler') {
-      const score = parseRuler(body)
-      if (score == null) {
-        if (context.reprompted) {
-          // second miss — accept and move on without a score
-          context.readiness = null
-        } else {
-          context.reprompted = true
-          await supabase.from('sms_motivation_checkin_sessions').update({ context }).eq('id', session.id)
-          await send(`No worries — just a number 1–10 for me: how ready do you feel to try one small habit? (1 = not at all, 10 = ready)`)
-          return emptyTwiml()
-        }
-      } else {
-        context.readiness = score
-      }
-      const reply = `Got it${score != null ? ` — ${score}/10` : ''}. Thank you for being honest. Anything you'd want more or less of in what I'm sending you?`
+    // ── Step: awaiting_feedback (asked FIRST) ────────────────────────────────
+    // Lead with the content-direction question. Persist it immediately so the steer
+    // survives even if the user skips the readiness rating that follows.
+    if (session.step === 'awaiting_feedback') {
+      const { data: checkinRow } = await supabase
+        .from('motivation_checkins')
+        .insert({
+          user_id: userId,
+          week: context.week || 1,
+          readiness_score: null,
+          content_feedback: body,
+        })
+        .select('id')
+        .maybeSingle()
+      context.checkinId = checkinRow?.id || null
+
+      const reply = `Thank you — that helps me shape next week. One more, no pressure: on a scale of 1–10, how ready do you feel to try one small habit? (1 = not at all, 10 = ready)`
       context.messages.push({ role: 'assistant', content: reply })
-      await supabase.from('sms_motivation_checkin_sessions').update({ step: 'awaiting_feedback', context }).eq('id', session.id)
+      await supabase.from('sms_motivation_checkin_sessions').update({ step: 'awaiting_ruler', context }).eq('id', session.id)
       await send(reply)
       return emptyTwiml()
     }
 
-    // ── Step: awaiting_feedback ──────────────────────────────────────────────
-    if (session.step === 'awaiting_feedback') {
-      const readiness = context.readiness ?? null
-      await supabase.from('motivation_checkins').insert({
-        user_id: userId,
-        week: context.week || 1,
-        readiness_score: readiness,
-        content_feedback: body,
-      })
+    // ── Step: awaiting_ruler (asked SECOND) ──────────────────────────────────
+    if (session.step === 'awaiting_ruler') {
+      const score = parseRuler(body)
+      if (score == null && !context.reprompted) {
+        context.reprompted = true
+        await supabase.from('sms_motivation_checkin_sessions').update({ context }).eq('id', session.id)
+        await send(`No worries — just a number 1–10 for me: how ready do you feel to try one small habit? (1 = not at all, 10 = ready)`)
+        return emptyTwiml()
+      }
+      const readiness = score ?? null // second miss → accept without a score (feedback already saved)
+      if (context.checkinId) {
+        await supabase.from('motivation_checkins').update({ readiness_score: readiness }).eq('id', context.checkinId)
+      }
 
       // Handoff? readiness >= threshold on TWO consecutive check-ins.
       let handoff = false
@@ -212,7 +218,7 @@ serve(async (req) => {
           .select('readiness_score')
           .eq('user_id', userId)
           .order('created_at', { ascending: false })
-          .range(1, 1) // the one before the row we just inserted
+          .range(1, 1) // the one before the row we just updated
           .maybeSingle()
         if (prior?.readiness_score != null && prior.readiness_score >= READY_THRESHOLD) handoff = true
       }
@@ -227,7 +233,11 @@ serve(async (req) => {
 
       // Warm close, end session.
       await supabase.from('sms_motivation_checkin_sessions').delete().eq('id', session.id)
-      await send(`Thank you, ${firstName} — this helps me send you better stuff. No pressure to do anything. Talk soon. 🌿`)
+      await send(
+        score != null
+          ? `Got it — ${score}/10. Thank you, ${firstName}. This helps me send you better stuff. Talk soon. 🌿`
+          : `All good, ${firstName} — thank you. This helps me send you better stuff. Talk soon. 🌿`
+      )
       return emptyTwiml()
     }
 

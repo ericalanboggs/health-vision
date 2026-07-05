@@ -1,11 +1,15 @@
 /**
  * send-daily-motivation
  * ─────────────────────
- * Cron (every 30 min). For each Motivation Mode user, at ~9:30am in THEIR timezone:
- *   - On their check-in day → send the readiness ruler + open a check-in session.
- *   - Otherwise            → drip the next `approved` content card.
- * Idempotent: a once-per-day guard (compared in the user's local date) prevents
- * double-sends when the cron fires again later in the morning window.
+ * Cron (every 30 min). For each Motivation Mode user, in THEIR timezone, on a front-loaded
+ * weekly shape (Mon–Wed 2 cards, Thu–Sat 1, Sun check-in):
+ *   - Sunday morning → readiness ruler + open a check-in session (only after a full week of
+ *     content actually ran, so brand-new/fresh-start users aren't checked in prematurely).
+ *   - Mon–Sat → drip the next `approved` card whose scheduled_date has arrived, in two
+ *     windows: morning (~9:30a) and afternoon (~4p). 2x days send one per window; 1x days
+ *     send morning only.
+ * Idempotent: a per-day sent-count vs. the day's curve target (compared in the user's local
+ * date) prevents double-sends when the cron fires repeatedly within a window.
  *
  * Every outbound goes through sendSMS with logTable 'sms_messages' so it appears in
  * the admin SMS Conversation panel. (Inbound replies are logged by twilio-webhook.)
@@ -20,11 +24,15 @@ import { sendSMS } from '../_shared/sms.ts'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-// Default send time: 9:30am local. Morning window upper bound is noon (safety: if the
-// cron missed the morning, don't surprise-send in the afternoon).
-const SEND_HOUR = 9
-const SEND_MIN = 30
-const WINDOW_END_HOUR = 12
+// Two daily send windows (user-local). Front-loaded weekly shape sends up to 2 cards on
+// Mon–Wed (one per window) and 1 on Thu–Sat (morning only). Sunday = readiness check-in.
+const MORNING_START_MIN = 9 * 60 + 30   // 9:30a
+const MORNING_END_HOUR = 12             // < 12:00
+const AFTERNOON_START_HOUR = 16         // 4:00p
+const AFTERNOON_END_MIN = 18 * 60 + 30  // < 6:30p
+
+// Sends per day by local day-of-week (0=Sun). Sunday handled separately as the check-in.
+const WEEK_CURVE: Record<number, number> = { 1: 2, 2: 2, 3: 2, 4: 1, 5: 1, 6: 1 }
 
 function getLocalTime(timezone: string): { hours: number; minutes: number; dayOfWeek: number } {
   try {
@@ -46,6 +54,14 @@ function getLocalTime(timezone: string): { hours: number; minutes: number; dayOf
 /** YYYY-MM-DD in the given timezone. */
 function localDate(dateLike: string | number | Date, tz: string): string {
   return new Date(dateLike).toLocaleDateString('en-CA', { timeZone: tz })
+}
+
+/** User's local calendar date, N days from today (N may be negative), as YYYY-MM-DD. */
+function localDatePlus(tz: string, days: number): string {
+  const [y, m, d] = new Date().toLocaleDateString('en-CA', { timeZone: tz }).split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  dt.setUTCDate(dt.getUTCDate() + days)
+  return dt.toISOString().split('T')[0]
 }
 
 /** Compose the SMS body for a content item. */
@@ -88,15 +104,29 @@ serve(async (_req) => {
       if (u.sms_opt_in === false) continue
       const tz = u.timezone || 'America/Chicago'
       const lt = getLocalTime(tz)
-      const inWindow =
-        ((lt.hours > SEND_HOUR) || (lt.hours === SEND_HOUR && lt.minutes >= SEND_MIN)) && lt.hours < WINDOW_END_HOUR
-      if (!inWindow) continue
+      const tMin = lt.hours * 60 + lt.minutes
+      const inMorning = tMin >= MORNING_START_MIN && lt.hours < MORNING_END_HOUR
+      const inAfternoon = lt.hours >= AFTERNOON_START_HOUR && tMin < AFTERNOON_END_MIN
+      if (!inMorning && !inAfternoon) continue
 
       const userName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || null
       const today = localDate(new Date(), tz)
 
-      // ── Check-in day → readiness ruler ────────────────────────────────────
-      if (u.motivation_checkin_day != null && lt.dayOfWeek === u.motivation_checkin_day) {
+      // ── Sunday → readiness check-in (caps the weekly arc) ─────────────────
+      if (lt.dayOfWeek === 0) {
+        if (!inMorning) continue // check-in goes out in the morning only
+
+        // Only after a full week of content actually ran (this week's Mon onward),
+        // so brand-new / fresh-start users aren't checked in before they've seen a week.
+        const mondayStr = localDatePlus(tz, -((lt.dayOfWeek + 6) % 7)) // most recent Monday
+        const { count: weekContent } = await supabase
+          .from('motivation_content_queue')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', u.id)
+          .eq('status', 'sent')
+          .gte('scheduled_date', mondayStr)
+        if (!weekContent) continue // no week of content yet → no check-in
+
         const { data: lastSession } = await supabase
           .from('sms_motivation_checkin_sessions')
           .select('created_at')
@@ -114,14 +144,15 @@ serve(async (_req) => {
           .eq('user_id', u.id)
         const week = (count || 0) + 1
 
+        // Lead with the CONTENT-DIRECTION question (captured even if they skip the rating);
+        // sms-motivation-checkin asks the 1–10 readiness ruler as the second beat.
         const opener =
-          `Hey ${u.first_name || 'there'} — checking in. How's the content felt this week? ` +
-          `And on a scale of 1–10, how ready do you feel to try one small habit? ` +
-          `(1 = not at all, 10 = ready). No pressure either way.`
+          `Hey ${u.first_name || 'there'} — checking in on the week. How's the content been landing? ` +
+          `Anything you'd want more of, less of, or different as it continues next week?`
 
         await supabase.from('sms_motivation_checkin_sessions').insert({
           user_id: u.id,
-          step: 'awaiting_ruler',
+          step: 'awaiting_feedback',
           context: { week, exchange_count: 0, messages: [{ role: 'assistant', content: opener }] },
         })
         await send(supabase, u.phone, opener, u.id, userName)
@@ -129,31 +160,37 @@ serve(async (_req) => {
         continue
       }
 
-      // ── Content day → drip next approved card ─────────────────────────────
-      const { data: lastSent } = await supabase
+      // ── Mon–Sat → drip approved cards per the front-loaded curve ──────────
+      const target = WEEK_CURVE[lt.dayOfWeek] || 0
+      if (target === 0) continue
+      // By the morning window we allow 1 card; by the afternoon, up to the day's target.
+      const allowedByNow = inMorning ? 1 : target
+
+      // How many already sent today (local date)?
+      const { data: recentSent } = await supabase
         .from('motivation_content_queue')
         .select('sent_at')
         .eq('user_id', u.id)
         .eq('status', 'sent')
         .order('sent_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      if (lastSent?.sent_at && localDate(lastSent.sent_at, tz) === today) {
-        continue // already sent today
-      }
+        .limit(5)
+      const sentToday = (recentSent || []).filter(r => r.sent_at && localDate(r.sent_at, tz) === today).length
+      if (sentToday >= allowedByNow) continue // this window's quota already met
 
+      // Next approved card whose scheduled_date has arrived (nothing sends before its day).
       const { data: next } = await supabase
         .from('motivation_content_queue')
         .select('*')
         .eq('user_id', u.id)
         .eq('status', 'approved')
+        .lte('scheduled_date', today)
         .order('scheduled_date', { ascending: true })
         .order('created_at', { ascending: true })
         .limit(1)
         .maybeSingle()
 
       if (!next) {
-        console.error(`⚠️ EMPTY QUEUE: no approved Motivation Mode content for user ${u.id} — nothing sent. Approve a batch.`)
+        console.error(`⚠️ EMPTY QUEUE: no approved due Motivation Mode content for user ${u.id} — nothing sent. Approve a batch.`)
         results.push({ userId: u.id, action: 'empty_queue' })
         continue
       }
