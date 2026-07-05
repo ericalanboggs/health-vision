@@ -531,8 +531,10 @@ NEW MESSAGE FROM USER: "${messageBody}"`
 
     // Safeguard against phantom logging confirmations. The coaching path cannot
     // write entries — if the model claims it did, replace with a safe ack so we
-    // don't mislead the user about what's in their data.
-    const PHANTOM_LOG_PATTERN = /\b(logged|tracked|recorded|saved|noted)\b|got (it|that) (down|in)|marked (it )?(complete|done)/i
+    // don't mislead the user about what's in their data. Patterns cover en + es + pt-BR
+    // phantom-log verbs (localization Workstream S). NOTE: the replacement copy below is
+    // still English — it gets localized alongside the rest of this reply in Workstream B.
+    const PHANTOM_LOG_PATTERN = /\b(logged|tracked|recorded|saved|noted)\b|got (it|that) (down|in)|marked (it )?(complete|done)|\b(registr[ée]|registrei|registrad[oa]|anot[ée]|anotei|guard[ée]|guardei|salvei|marqu[ée]|marquei|apunt[ée]|apontei)\b|marcad[oa]\s+como/i
     if (PHANTOM_LOG_PATTERN.test(coachResponse)) {
       console.warn(`Coaching response contained phantom log language, replacing: "${coachResponse}"`)
       coachResponse = `Hey ${firstName} — I'm here. If you meant to log a habit, reply with the habit name plus how you did (e.g. "walk 30 min" or "yoga done").`
