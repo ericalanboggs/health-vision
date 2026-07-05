@@ -73,6 +73,71 @@ async function generateAck(userMessage: string, firstName: string, lastTitle: st
   }
 }
 
+/** A real content request worth acting on — not a pleasantry, a bare number, or a ready signal. */
+function isSubstantiveFeedback(body: string): boolean {
+  if (isReadyIntent(body)) return false
+  if (/^\s*\d+\s*$/.test(body)) return false // bare rating like "10"
+  const isPleasantry = body.length <= 20 && /\b(thanks|thank you|thx|ty|awesome|nice|cool|great|love it|👍|🙏|❤️|🙌)\b/i.test(body)
+  if (isPleasantry) return false
+  return body.length >= 12
+}
+
+/** Merge a new content ask into the user's durable, evolving preference note. */
+async function mergePref(existing: string | null, newAsk: string): Promise<string> {
+  const prior = (existing || '').trim()
+  const fallback = prior ? `${prior}; ${newAsk}`.slice(0, 600) : newAsk.slice(0, 600)
+  try {
+    const system = [
+      'You maintain a SHORT evolving note of a user\'s content preferences for their Motivation Mode texts.',
+      'Given the existing note and a new request, return an updated note that PRESERVES prior preferences and',
+      'folds in the new one (on a direct conflict, prefer the newer request). Keep it tight: a few specifics,',
+      'comma/semicolon-separated, no preamble, no quotes. Max ~300 chars.',
+    ].join(' ')
+    const out = (await callOpenAI(system, `EXISTING NOTE: ${prior || '(none yet)'}\nNEW REQUEST: ${newAsk}`, 0.3, 200)).trim()
+    return out || fallback
+  } catch (_e) {
+    return fallback
+  }
+}
+
+/** Honest acknowledgment: confirms the re-tune is queued and sets a truthful "when". */
+async function generateResponsiveAck(userMessage: string, firstName: string): Promise<string> {
+  const fallback = `Got it, ${firstName} — I'll re-tune what's coming to match. You'll start seeing it in your next message. 🌿`
+  try {
+    const system = [
+      'You are Summit, a warm habit coach. A Motivation Mode user just asked for a change to their content, and',
+      'you have ALREADY queued an update to their UPCOMING messages to honor it. Write ONE short SMS (max ~200',
+      'chars): warmly confirm you are tuning the content to their ask, and set the honest expectation that they',
+      'will see it starting in their NEXT scheduled message. At most 1 tasteful emoji. Do NOT promise a separate',
+      'message right now, and NEVER use a vague "stay tuned".',
+    ].join(' ')
+    const out = (await callOpenAI(system, `User (${firstName}) asked: "${userMessage}"`, 0.7, 100)).trim()
+    return out || fallback
+  } catch (_e) {
+    return fallback
+  }
+}
+
+/** Fire an immediate mid-week re-tune of the user's upcoming unsent content (runs independently). */
+async function fireRetune(userId: string): Promise<void> {
+  try {
+    await fetch(`${SUPABASE_URL}/functions/v1/generate-motivation-batch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+      body: JSON.stringify({ userId, retune: true }),
+    })
+  } catch (e) {
+    console.error('fireRetune failed:', e)
+  }
+}
+
+/** Keep background work alive past the response on Supabase Edge (no-op if unavailable). */
+function runInBackground(p: Promise<unknown>): void {
+  try {
+    ;(globalThis as any).EdgeRuntime?.waitUntil?.(p)
+  } catch (_e) { /* fall through — the in-flight fetch still gets dispatched */ }
+}
+
 function parseRuler(body: string): number | null {
   const m = body.match(/\b(10|[1-9])\b/)
   return m ? parseInt(m[1]) : null
@@ -150,7 +215,6 @@ serve(async (req) => {
         await send(opener)
         return emptyTwiml()
       }
-      // Treat as lightweight feedback on the most recent sent item.
       const { data: lastSent } = await supabase
         .from('motivation_content_queue')
         .select('id, title')
@@ -159,11 +223,23 @@ serve(async (req) => {
         .order('sent_at', { ascending: false })
         .limit(1)
         .maybeSingle()
-      // Only store as feedback if it's more than a quick pleasantry (keeps the feedback field useful).
-      const isPleasantry = body.length <= 20 && /\b(thanks|thank you|thx|ty|awesome|nice|cool|great|love it|👍|🙏|❤️|🙌)\b/i.test(body)
-      if (lastSent?.id && !isPleasantry) {
-        await supabase.from('motivation_content_queue').update({ feedback: body }).eq('id', lastSent.id)
+
+      // A real content ask → persist it durably, re-tune upcoming content NOW, and set an
+      // honest expectation. (Previously this only tagged one queue row that generation never
+      // read, and the ack over-promised "stay tuned" with nothing behind it.)
+      if (isSubstantiveFeedback(body)) {
+        const merged = await mergePref(profile.motivation_pref, body)
+        await supabase.from('profiles').update({ motivation_pref: merged }).eq('id', userId)
+        if (lastSent?.id) {
+          await supabase.from('motivation_content_queue').update({ feedback: body }).eq('id', lastSent.id)
+        }
+        runInBackground(fireRetune(userId)) // regenerates unsent upcoming cards to honor the ask
+        const ack = await generateResponsiveAck(body, firstName)
+        await send(ack)
+        return emptyTwiml()
       }
+
+      // Otherwise it's a pleasantry — keep it light.
       const ack = await generateAck(body, firstName, lastSent?.title || null)
       await send(ack)
       return emptyTwiml()
@@ -188,6 +264,13 @@ serve(async (req) => {
         .select('id')
         .maybeSingle()
       context.checkinId = checkinRow?.id || null
+
+      // Fold the check-in answer into the durable preference note so next week's generation
+      // honors it. (No mid-week re-tune here — the check-in is Saturday; next content is Monday.)
+      if (isSubstantiveFeedback(body)) {
+        const merged = await mergePref(profile.motivation_pref, body)
+        await supabase.from('profiles').update({ motivation_pref: merged }).eq('id', userId)
+      }
 
       const reply = `Thank you — that helps me shape next week. One more, no pressure: on a scale of 1–10, how ready do you feel to try one small habit? (1 = not at all, 10 = ready)`
       context.messages.push({ role: 'assistant', content: reply })

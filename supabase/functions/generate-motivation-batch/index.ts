@@ -127,6 +127,13 @@ function localDow(tz: string): number {
   return map[wd] ?? 0
 }
 
+/** Day name + arc phase for a YYYY-MM-DD date (Mon–Wed = expansion, Thu–Sat = consolidation). */
+function dayInfo(dateStr: string): { day: string; phase: 'expansion' | 'consolidation' } {
+  const dow = new Date(`${dateStr}T12:00:00Z`).getUTCDay() // noon UTC → weekday is TZ-stable
+  const names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  return { day: names[dow], phase: dow >= 1 && dow <= 3 ? 'expansion' : 'consolidation' }
+}
+
 /**
  * Front-loaded weekly shape (9 items). More early in the week when the user has
  * the most time + attention, tapering to a gentle close; Sunday is the readiness
@@ -226,23 +233,27 @@ async function buildBatchForUser(
   supabase: ReturnType<typeof createClient>,
   youtube: YouTubeAPI,
   tavily: TavilyAPI,
-  profile: { id: string; motivation_prompt: string | null; motivation_cadence: string | null; timezone: string | null },
+  profile: { id: string; motivation_prompt: string | null; motivation_cadence: string | null; timezone: string | null; motivation_pref: string | null },
   regenerate: boolean,
+  retune = false,
 ): Promise<{ userId: string; status: string; inserted?: number; detail?: string }> {
   const userId = profile.id
 
   // Guard: don't pile up un-reviewed batches unless explicitly regenerating.
-  const { data: pending } = await supabase
-    .from('motivation_content_queue')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('status', 'pending_review')
-    .limit(1)
-  if (pending && pending.length > 0 && !regenerate) {
-    return { userId, status: 'skipped', detail: 'pending_review batch already exists (pass regenerate=true to replace)' }
-  }
-  if (regenerate && pending && pending.length > 0) {
-    await supabase.from('motivation_content_queue').delete().eq('user_id', userId).eq('status', 'pending_review')
+  // (Skipped for retune — a mid-week re-tune intentionally rewrites upcoming content.)
+  if (!retune) {
+    const { data: pending } = await supabase
+      .from('motivation_content_queue')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'pending_review')
+      .limit(1)
+    if (pending && pending.length > 0 && !regenerate) {
+      return { userId, status: 'skipped', detail: 'pending_review batch already exists (pass regenerate=true to replace)' }
+    }
+    if (regenerate && pending && pending.length > 0) {
+      await supabase.from('motivation_content_queue').delete().eq('user_id', userId).eq('status', 'pending_review')
+    }
   }
 
   if (!profile.motivation_prompt) {
@@ -263,42 +274,63 @@ async function buildBatchForUser(
     .map((h: any) => `- [${h.content_type}] ${h.title || h.theme || ''}`)
     .join('\n') || '(none yet — this is the first batch)'
 
-  // Closed-loop steer: the direction the user asked for at their most recent weekly
-  // check-in ("more of the same / how should it shift?"). Feeds next week's arc.
-  const { data: lastCheckin } = await supabase
-    .from('motivation_checkins')
-    .select('content_feedback')
-    .eq('user_id', userId)
-    .not('content_feedback', 'is', null)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  const contentPref = (lastCheckin?.content_feedback || '').trim() || null
+  // Closed-loop steer: the durable, accumulated content-preference note (written by
+  // mid-week replies + weekly check-ins). High-priority steering alongside the prompt.
+  const contentPref = (profile.motivation_pref || '').trim() || null
 
-  // Next batch number
-  const { data: lastBatch } = await supabase
-    .from('motivation_content_queue')
-    .select('week_batch')
-    .eq('user_id', userId)
-    .order('week_batch', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  const weekBatch = (lastBatch?.week_batch || 0) + 1
+  const tz = profile.timezone || 'America/Chicago'
+  const todayStr = localDatePlus(tz, 0)
 
-  // Hybrid approval: the FIRST batch waits for an admin to approve it (sets the tone);
-  // once the user has any approved/sent item, later batches auto-approve so the weekly
-  // cron is hands-off. Stateless — derived from history, not a flag.
-  const { data: priorApproved } = await supabase
-    .from('motivation_content_queue')
-    .select('id')
-    .eq('user_id', userId)
-    .in('status', ['approved', 'sent'])
-    .limit(1)
-  const newStatus = (priorApproved && priorApproved.length > 0) ? 'approved' : 'pending_review'
+  // ── Determine the slots to fill (date + day + arc phase) ──────────────────
+  // Normal weekly batch → the front-loaded WEEK_SHAPE anchored to the upcoming Monday.
+  // Re-tune → the SAME dates as the user's not-yet-sent upcoming cards (which we replace),
+  // so a mid-week ask reshapes what's coming without disturbing the weekly rhythm.
+  let slots: { date: string; day: string; phase: 'expansion' | 'consolidation' }[]
+  let newStatus: string
+  let weekBatch: number
 
-  // Front-loaded weekly shape is the single cadence for all Motivation Mode users.
-  const itemCount = WEEK_SHAPE.length // 9
-  const scheduleLines = WEEK_SHAPE
+  if (retune) {
+    const { data: unsent } = await supabase
+      .from('motivation_content_queue')
+      .select('id, scheduled_date, week_batch')
+      .eq('user_id', userId)
+      .in('status', ['approved', 'pending_review'])
+      .gte('scheduled_date', todayStr)
+      .order('scheduled_date', { ascending: true })
+      .order('created_at', { ascending: true })
+    if (!unsent || unsent.length === 0) {
+      return { userId, status: 'skipped', detail: 'no unsent upcoming content to re-tune (preference saved for next week)' }
+    }
+    await supabase.from('motivation_content_queue').delete().in('id', unsent.map((u: any) => u.id))
+    slots = unsent.map((u: any) => ({ date: u.scheduled_date, ...dayInfo(u.scheduled_date) }))
+    newStatus = 'approved' // a re-tune replaces already-approved content mid-flow
+    weekBatch = (unsent[0] as any).week_batch || 1
+  } else {
+    const daysUntilMonday = (1 - localDow(tz) + 7) % 7
+    slots = WEEK_SHAPE.map(s => ({ date: localDatePlus(tz, daysUntilMonday + s.offset), day: s.day, phase: s.phase }))
+
+    // Hybrid approval: the FIRST batch waits for an admin (sets the tone); once the user
+    // has any approved/sent item, later batches auto-approve. Stateless — derived from history.
+    const { data: priorApproved } = await supabase
+      .from('motivation_content_queue')
+      .select('id')
+      .eq('user_id', userId)
+      .in('status', ['approved', 'sent'])
+      .limit(1)
+    newStatus = (priorApproved && priorApproved.length > 0) ? 'approved' : 'pending_review'
+
+    const { data: lastBatch } = await supabase
+      .from('motivation_content_queue')
+      .select('week_batch')
+      .eq('user_id', userId)
+      .order('week_batch', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    weekBatch = (lastBatch?.week_batch || 0) + 1
+  }
+
+  const itemCount = slots.length
+  const scheduleLines = slots
     .map((s, i) => `  ${i + 1}. ${s.day} — ${s.phase.toUpperCase()}`)
     .join('\n')
 
@@ -362,13 +394,19 @@ async function buildBatchForUser(
   const userPrompt = [
     `USER: ${ctx.firstName}`,
     '',
+    retune
+      ? `⚡ MID-WEEK RE-TUNE: the user just asked for a change (captured in CONTENT PREFERENCES below). ` +
+        `Regenerate the remaining ${itemCount} card(s) for this week to honor it RIGHT NOW — pick up ` +
+        `immediately from what they've already seen; this is a direct, responsive answer to their ask.`
+      : '',
+    '',
     `COACH STEERING PROMPT — the SOLE source of truth for what this content is about.`,
     `Build every item from this and nothing else; do not infer topics from elsewhere:`,
     profile.motivation_prompt,
     '',
     contentPref
-      ? `WHAT THEY ASKED FOR AT THEIR LAST CHECK-IN (honor this — shift the mix/tone/topics accordingly, ` +
-        `while staying within the steering prompt):\n${contentPref}`
+      ? `CONTENT PREFERENCES — what this user has explicitly asked for (honor this strongly; shift the ` +
+        `mix/tone/specificity/level accordingly, while staying within the steering prompt):\n${contentPref}`
       : '',
     '',
     `ALREADY SENT/QUEUED (do not repeat these; build FORWARD from them — continue the throughline):`,
@@ -389,16 +427,13 @@ async function buildBatchForUser(
   }
 
   // ── Resolve each item to a concrete row ───────────────────────────────────
-  // Anchor the arc to the upcoming Monday (today if today is Monday), then place each
-  // item on its WEEK_SHAPE day so the front-loaded curve lands on real calendar dates.
+  // Each planned item lands on its pre-computed slot date (front-loaded curve for a
+  // weekly batch, or the replaced cards' dates for a re-tune).
   const rows: any[] = []
-  const tz = profile.timezone || 'America/Chicago'
-  const daysUntilMonday = (1 - localDow(tz) + 7) % 7
   const plan = planned.slice(0, itemCount)
   for (let i = 0; i < plan.length; i++) {
     const item = plan[i]
-    const slot = WEEK_SHAPE[i] || WEEK_SHAPE[WEEK_SHAPE.length - 1]
-    const scheduledDate = localDatePlus(tz, daysUntilMonday + slot.offset)
+    const scheduledDate = (slots[i] || slots[slots.length - 1]).date
 
     let resolved: any = null
 
@@ -531,13 +566,13 @@ serve(async (req) => {
     })
   }
 
-  let body: { userId?: string; regenerate?: boolean } = {}
+  let body: { userId?: string; regenerate?: boolean; retune?: boolean } = {}
   try { body = await req.json() } catch (_e) { /* cron sends no body */ }
 
-  // Target one user (admin) or all motivation_mode users (cron).
+  // Target one user (admin/retune) or all motivation_mode users (cron).
   let query = supabase
     .from('profiles')
-    .select('id, motivation_prompt, motivation_cadence, timezone')
+    .select('id, motivation_prompt, motivation_cadence, timezone, motivation_pref')
     .eq('motivation_mode', true)
   if (body.userId) query = query.eq('id', body.userId)
 
@@ -551,7 +586,7 @@ serve(async (req) => {
   const results = []
   for (const profile of users || []) {
     try {
-      results.push(await buildBatchForUser(supabase, youtube, tavily, profile as any, !!body.regenerate))
+      results.push(await buildBatchForUser(supabase, youtube, tavily, profile as any, !!body.regenerate, !!body.retune))
     } catch (e) {
       console.error(`[${(profile as any).id}] batch error:`, e)
       results.push({ userId: (profile as any).id, status: 'error', detail: String(e) })
