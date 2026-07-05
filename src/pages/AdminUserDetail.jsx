@@ -9,6 +9,15 @@ import SMSThreadsPanel from '../components/admin/SMSThreadsPanel'
 import SendEmailModal from '../components/admin/SendEmailModal'
 import MotivationModePanel from '../components/admin/MotivationModePanel'
 
+// Left-column tabs. The SMS conversation (right rail) stays persistent across all tabs.
+const TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'vision', label: 'Vision' },
+  { id: 'habits', label: 'Habits' },
+  { id: 'motivation', label: 'Motivation' },
+  { id: 'resources', label: 'Resources' },
+]
+
 /**
  * Derive coaching archetype from form data
  */
@@ -78,6 +87,7 @@ export default function AdminUserDetail() {
   const [savingResource, setSavingResource] = useState(false)
   const [showThreadsPanel, setShowThreadsPanel] = useState(false)
   const [showEmailModal, setShowEmailModal] = useState(false)
+  const [activeTab, setActiveTab] = useState('overview')
   const [editingHabits, setEditingHabits] = useState(false)
   const [editingHabitName, setEditingHabitName] = useState(null)
   const [editHabitForm, setEditHabitForm] = useState({ name: '', days: [], reminderTime: '', trackingEnabled: false, trackingType: 'boolean', metricUnit: '', metricTarget: '' })
@@ -510,7 +520,21 @@ export default function AdminUserDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Left column - User details. On mobile this comes after the SMS panel
               so admins reviewing messages on phone don't have to scroll past every card. */}
-          <div className="lg:col-span-2 space-y-4 sm:space-y-6 order-2 lg:order-1">
+          <div className="lg:col-span-2 order-2 lg:order-1">
+        {/* Tab navigation — SMS conversation (right rail) stays visible across all tabs */}
+        <div className="flex flex-wrap gap-1 border-b border-stone-200 mb-4 sm:mb-6">
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              className={`px-3 sm:px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === t.id ? 'border-summit-emerald text-summit-forest' : 'border-transparent text-stone-500 hover:text-summit-forest'}`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className={`space-y-4 sm:space-y-6 ${activeTab === 'overview' ? '' : 'hidden'}`}>
         {/* Coach Summary Card */}
         {healthVision && (
           <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg shadow-sm border border-amber-200 p-4 sm:p-6">
@@ -782,7 +806,9 @@ export default function AdminUserDetail() {
             )}
           </div>
         </div>
+        </div>
 
+        <div className={`space-y-4 sm:space-y-6 ${activeTab === 'vision' ? '' : 'hidden'}`}>
         {/* Health Vision */}
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
@@ -936,7 +962,9 @@ export default function AdminUserDetail() {
             <p className="text-stone-500 italic">No health vision set</p>
           )}
         </div>
+        </div>
 
+        <div className={`space-y-4 sm:space-y-6 ${activeTab === 'habits' ? '' : 'hidden'}`}>
         {/* Current Habits */}
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
@@ -1454,10 +1482,14 @@ export default function AdminUserDetail() {
             <p className="text-stone-500 italic">No reflections submitted yet</p>
           )}
         </div>
+        </div>
 
+        <div className={`space-y-4 sm:space-y-6 ${activeTab === 'motivation' ? '' : 'hidden'}`}>
         {/* Motivation Mode */}
         <MotivationModePanel userId={userId} />
+        </div>
 
+        <div className={`space-y-4 sm:space-y-6 ${activeTab === 'resources' ? '' : 'hidden'}`}>
         {/* Current Resources */}
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
@@ -1627,6 +1659,7 @@ export default function AdminUserDetail() {
               </div>
             </div>
           )}
+        </div>
         </div>
           </div>
 
