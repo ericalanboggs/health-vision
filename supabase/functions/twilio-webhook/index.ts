@@ -7,30 +7,74 @@ const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-// ─── Crisis detection ─────────────────────────────────────────────────
+// ─── Crisis detection (multilingual) ─────────────────────────────────────
+// Detection runs across ALL supported languages regardless of the user's set language —
+// someone may have preferred_language='en' but express crisis in Spanish/Portuguese. The
+// response is sent in the language the crisis was expressed in.
+//
+// ⚠️ SAFETY GATE (localization Workstream S): the es/pt-BR patterns and the resource
+// numbers/lines below are best-effort for a US-based pilot population (New England es/pt-BR
+// communities) plus Brazil (CVV). A native reviewer (Eric) MUST verify every pattern, number,
+// and phrase before any localized user is enrolled. See LOCALIZATION_PHASE0_PLAN.md.
 
-const CRISIS_PATTERNS = [
-  /\b(kill\s*(my\s*)?self|suicide|suicidal)\b/i,
-  /\b(want\s+to\s+die|wanna\s+die|ready\s+to\s+die)\b/i,
-  /\b(end\s+(my\s+)?life|end\s+it\s+all)\b/i,
-  /\b(self[\s-]?harm|hurt\s*(my\s*)?self|cutting\s*(my\s*)?self)\b/i,
-  /\b(no\s+reason\s+to\s+live|better\s+off\s+dead)\b/i,
-  /\b(overdose|od'?ing)\b/i,
-]
-
-const CRISIS_RESPONSE =
-  `If you or someone you know is in crisis, please reach out:\n\n` +
-  `988 Suicide & Crisis Lifeline: Call or text 988\n` +
-  `Crisis Text Line: Text HOME to 741741\n` +
-  `Emergency: Call 911\n\n` +
-  `You are not alone. These services are free, confidential, and available 24/7.`
-
-function isCrisisMessage(text: string): boolean {
-  return CRISIS_PATTERNS.some(pattern => pattern.test(text))
+const CRISIS_PATTERNS: Record<string, RegExp[]> = {
+  en: [
+    /\b(kill\s*(my\s*)?self|suicide|suicidal)\b/i,
+    /\b(want\s+to\s+die|wanna\s+die|ready\s+to\s+die)\b/i,
+    /\b(end\s+(my\s+)?life|end\s+it\s+all)\b/i,
+    /\b(self[\s-]?harm|hurt\s*(my\s*)?self|cutting\s*(my\s*)?self)\b/i,
+    /\b(no\s+reason\s+to\s+live|better\s+off\s+dead)\b/i,
+    /\b(overdose|od'?ing)\b/i,
+  ],
+  es: [
+    /\b(quiero\s+morir(me)?|me\s+quiero\s+morir|ganas\s+de\s+morir)\b/i,
+    /\b(matarme|me\s+quiero\s+matar|quiero\s+matarme|voy\s+a\s+matarme)\b/i,
+    /\b(suicid(arme|io|arme|a)|me\s+voy\s+a\s+suicidar)\b/i,
+    /\b(no\s+quiero\s+vivir|no\s+vale\s+la\s+pena\s+vivir|mejor\s+muert[oa])\b/i,
+    /\b(acabar\s+con\s+(mi\s+vida|todo)|terminar\s+con\s+mi\s+vida)\b/i,
+    /\b(hacerme\s+da[ñn]o|lastimarme|cortarme)\b/i,
+  ],
+  'pt-BR': [
+    /\b(quero\s+morrer|vontade\s+de\s+morrer|prefiro\s+morrer)\b/i,
+    /\b(me\s+matar|vou\s+me\s+matar|quero\s+me\s+matar)\b/i,
+    /\b(suic[íi]d(io|ar|a)|vou\s+me\s+suicidar)\b/i,
+    /\b(n[ãa]o\s+quero\s+viver|n[ãa]o\s+vale\s+a\s+pena\s+viver|melhor\s+mort[oa])\b/i,
+    /\b(acabar\s+com\s+(a\s+minha\s+vida|tudo)|dar\s+um\s+fim)\b/i,
+    /\b(me\s+machucar|me\s+cortar|me\s+ferir)\b/i,
+  ],
 }
 
-async function sendCrisisSMS(to: string): Promise<void> {
-  const result = await sendSMS({ to, body: CRISIS_RESPONSE })
+const CRISIS_RESPONSE: Record<string, string> = {
+  en:
+    `If you or someone you know is in crisis, please reach out:\n\n` +
+    `988 Suicide & Crisis Lifeline: Call or text 988\n` +
+    `Crisis Text Line: Text HOME to 741741\n` +
+    `Emergency: Call 911\n\n` +
+    `You are not alone. These services are free, confidential, and available 24/7.`,
+  es:
+    `Si tú o alguien que conoces está en crisis, por favor busca ayuda:\n\n` +
+    `988 Línea de Prevención del Suicidio y Crisis: llama o envía un mensaje al 988 (oprime 2 para español)\n` +
+    `Crisis Text Line: envía AYUDA al 741741\n` +
+    `Emergencias: llama al 911\n\n` +
+    `No estás solo/a. Estos servicios son gratuitos, confidenciales y están disponibles 24/7.`,
+  'pt-BR':
+    `Se você ou alguém que você conhece está em crise, por favor procure ajuda:\n\n` +
+    `EUA — 988 (Linha de Prevenção ao Suicídio e Crise): ligue ou envie mensagem para 988\n` +
+    `Emergência nos EUA: ligue 911\n` +
+    `Brasil — CVV: ligue 188 (24h, gratuito) ou acesse cvv.org.br\n\n` +
+    `Você não está sozinho/a. Esses serviços são gratuitos, confidenciais e disponíveis 24 horas.`,
+}
+
+/** Returns the language a crisis message was expressed in ('en'|'es'|'pt-BR'), or null. */
+function detectCrisisLang(text: string): string | null {
+  for (const [lang, patterns] of Object.entries(CRISIS_PATTERNS)) {
+    if (patterns.some(pattern => pattern.test(text))) return lang
+  }
+  return null
+}
+
+async function sendCrisisSMS(to: string, lang: string): Promise<void> {
+  const result = await sendSMS({ to, body: CRISIS_RESPONSE[lang] || CRISIS_RESPONSE.en })
   if (!result.success) {
     console.error('Error sending crisis response SMS:', result.error)
   }
@@ -178,24 +222,25 @@ serve(async (req) => {
     }
 
     // ─── CRISIS CHECK (first priority) ────────────────────────────────
-    if (isCrisisMessage(messageBody)) {
-      console.warn(`⚠️ CRISIS MESSAGE detected from ${fromPhone}: "${messageBody.substring(0, 80)}"`)
+    const crisisLang = detectCrisisLang(messageBody)
+    if (crisisLang) {
+      console.warn(`⚠️ CRISIS MESSAGE detected [${crisisLang}] from ${fromPhone}: "${messageBody.substring(0, 80)}"`)
 
-      // Log crisis event
+      // Log crisis event (in the language the resources were sent)
       if (userId) {
         await supabase.from('sms_messages').insert({
           direction: 'outbound',
           user_id: userId,
           phone: fromPhone,
           user_name: userName,
-          body: CRISIS_RESPONSE,
+          body: CRISIS_RESPONSE[crisisLang] || CRISIS_RESPONSE.en,
           sent_by_type: 'system',
           twilio_status: 'sent',
         })
       }
 
-      // Send crisis resources immediately
-      await sendCrisisSMS(fromPhone)
+      // Send crisis resources immediately, in the detected language
+      await sendCrisisSMS(fromPhone, crisisLang)
 
       return new Response(
         '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
