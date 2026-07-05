@@ -1333,7 +1333,7 @@ export const getMotivationSettings = async (userId) => {
     if (!await isAdmin()) return { success: false, error: 'Unauthorized' }
     const { data, error } = await supabase
       .from('profiles')
-      .select('motivation_mode, motivation_prompt, motivation_cadence, motivation_checkin_day')
+      .select('motivation_mode, motivation_prompt, motivation_cadence, motivation_checkin_day, motivation_pref')
       .eq('id', userId)
       .single()
     if (error) throw error
