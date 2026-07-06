@@ -12,10 +12,9 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 // someone may have preferred_language='en' but express crisis in Spanish/Portuguese. The
 // response is sent in the language the crisis was expressed in.
 //
-// ⚠️ SAFETY GATE (localization Workstream S): the es/pt-BR patterns and the resource
-// numbers/lines below are best-effort for a US-based pilot population (New England es/pt-BR
-// communities) plus Brazil (CVV). A native reviewer (Eric) MUST verify every pattern, number,
-// and phrase before any localized user is enrolled. See LOCALIZATION_PHASE0_PLAN.md.
+// SAFETY GATE (localization Workstream S): patterns + resources reviewed & approved by
+// Eric (native es/pt-BR speaker) on 2026-07-06 — 988 confirmed for the US pilot population,
+// CVV 188 for Brazil. Re-verify resource numbers periodically. See LOCALIZATION_PHASE0_PLAN.md.
 
 const CRISIS_PATTERNS: Record<string, RegExp[]> = {
   en: [
