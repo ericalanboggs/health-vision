@@ -4,7 +4,7 @@ import { sendSMS as _sendSMS } from '../_shared/sms.ts'
 import { sendEmail } from '../_shared/resend.ts'
 import { loadUserContext, formatContextForPrompt } from '../_shared/user_context.ts'
 import { SUMMIT_LINKS } from '../_shared/summit_links.ts'
-import { coachKnowledgeBlock } from '../_shared/coach_knowledge.ts'
+import { coachKnowledgeBlock, languageDirective } from '../_shared/coach_knowledge.ts'
 
 const COACH_FLAG_EMAIL = 'eric@summithealth.app'
 
@@ -232,7 +232,8 @@ async function smartParseMessage(
   messageBody: string,
   firstName: string,
   trackingConfigs: TrackingConfig[],
-  userContextPrompt?: string
+  userContextPrompt?: string,
+  lang = 'en'
 ): Promise<SmartParseResult> {
   if (!OPENAI_API_KEY) {
     console.log('OPENAI_API_KEY not set - smart parsing disabled')
@@ -251,7 +252,7 @@ async function smartParseMessage(
     ? `\n\nUSER BACKGROUND:\n${userContextPrompt}\n`
     : ''
 
-  const systemPrompt = `You are Summit, a friendly health habit tracking assistant. Analyze SMS messages to determine what habit(s) the user is trying to log. Use the user's background to better understand their message and provide more personalized confirmations. Respond with JSON only.${contextBlock}`
+  const systemPrompt = `You are Summit, a friendly health habit tracking assistant. Analyze SMS messages to determine what habit(s) the user is trying to log. Use the user's background to better understand their message and provide more personalized confirmations. Respond with JSON only.${contextBlock}${languageDirective(lang)}`
 
   const userPrompt = `USER'S NAME: ${firstName}
 USER'S TRACKED HABITS:
@@ -396,7 +397,8 @@ async function handleCoachFlag(
 async function generateCoachingResponse(
   messageBody: string,
   firstName: string,
-  userContextPrompt?: string
+  userContextPrompt?: string,
+  lang = 'en'
 ): Promise<{ response: string; flagForHumanCoach: boolean; flagReason: string | null }> {
   const fallback = {
     response: `Hey ${firstName}, I hear you. I'm here if you want to talk — or just text your habits when you're ready.`,
@@ -479,12 +481,12 @@ SUMMIT FAQ (use when the user asks about features):
 - Cancel/pause SMS: Text STOP anytime to stop all SMS.
 - ARCHIVE: Text ARCHIVE to shelve habits from a completed challenge. Restore them anytime from the Habits page.
 
-Respond with JSON only:
+Respond with JSON only. Localize ONLY "response" (the user reads it); keep "flag_reason" in English (internal):
 {
   "response": "your SMS reply under 480 chars",
   "flag_for_human_coach": true/false,
   "flag_reason": "brief reason if flagged, or null"
-}`
+}${languageDirective(lang)}`
 
     const userPrompt = `${contextBlock}
 
@@ -1199,7 +1201,7 @@ serve(async (req) => {
 
     if (allConfigs.length === 0) {
       console.log('No active tracking configs - routing to coaching fallback')
-      const coachResult = await generateCoachingResponse(body, firstName, userContextPrompt)
+      const coachResult = await generateCoachingResponse(body, firstName, userContextPrompt, userContext.preferredLanguage)
       await sendSMSWithLog(from, coachResult.response, supabase, profile.id, userName, 'coach')
 
       if (coachResult.flagForHumanCoach) {
@@ -1213,11 +1215,11 @@ serve(async (req) => {
     }
 
     // Use OpenAI to smart-parse the message
-    const parseResult = await smartParseMessage(body, firstName, allConfigs, userContextPrompt)
+    const parseResult = await smartParseMessage(body, firstName, allConfigs, userContextPrompt, userContext.preferredLanguage)
 
     if (!parseResult.understood || parseResult.habits.length === 0) {
       console.log('Smart parse: message not understood as habit logging - routing to coaching')
-      const coachResult = await generateCoachingResponse(body, firstName, userContextPrompt)
+      const coachResult = await generateCoachingResponse(body, firstName, userContextPrompt, userContext.preferredLanguage)
       await sendSMSWithLog(from, coachResult.response, supabase, profile.id, userName, 'coach')
 
       if (coachResult.flagForHumanCoach) {
@@ -1339,7 +1341,7 @@ serve(async (req) => {
       // Smart parse returned habits but none had values (e.g., user asked a question)
       // Fall through to coaching response
       console.log('Smart parse matched habits but no values logged - routing to coaching')
-      const coachResult = await generateCoachingResponse(body, firstName, userContextPrompt)
+      const coachResult = await generateCoachingResponse(body, firstName, userContextPrompt, userContext.preferredLanguage)
       await sendSMSWithLog(from, coachResult.response, supabase, profile.id, userName, 'coach')
 
       if (coachResult.flagForHumanCoach) {
