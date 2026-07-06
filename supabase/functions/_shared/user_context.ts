@@ -34,6 +34,7 @@ export interface UserContext {
   memberSince: string | null
   subscriptionTier: string | null
   coachingSessionsRemaining: number
+  preferredLanguage: string
 }
 
 /**
@@ -79,7 +80,7 @@ export async function loadUserContext(
   ] = await Promise.all([
     supabase
       .from('profiles')
-      .select('first_name, created_at, subscription_tier, subscription_current_period_end')
+      .select('first_name, created_at, subscription_tier, subscription_current_period_end, preferred_language')
       .eq('id', userId)
       .maybeSingle(),
     supabase
@@ -272,6 +273,7 @@ export async function loadUserContext(
     memberSince: profile?.created_at || null,
     subscriptionTier: tier,
     coachingSessionsRemaining,
+    preferredLanguage: profile?.preferred_language || 'en',
   }
 }
 

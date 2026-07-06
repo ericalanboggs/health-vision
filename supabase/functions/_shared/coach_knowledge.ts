@@ -135,3 +135,26 @@ export function coachKnowledgeBlock(haystack = ''): string {
     .filter(Boolean)
   return [COACHING_CORE, CLINICAL_GUARDRAIL, ...slices].join('\n\n')
 }
+
+// ─── Localization (Phase 0 — Workstream A3) ──────────────────────────────
+// Centralized language directive appended to USER-FACING system prompts. Deliberately
+// FIELD-SCOPED: it localizes only the free-text a user reads, and explicitly protects JSON
+// keys, enum values, search queries, and stored habit names (which are compared in code /
+// fed to other systems and MUST stay English). Returns '' for English so the English path
+// is byte-for-byte unchanged. Tune all localization voice in this one place.
+const LANG_NAMES: Record<string, string> = {
+  en: 'English',
+  es: 'Spanish (neutral Latin American)',
+  'pt-BR': 'Brazilian Portuguese',
+}
+
+export function languageDirective(lang = 'en'): string {
+  if (!lang || lang === 'en') return ''
+  const name = LANG_NAMES[lang] ?? 'English'
+  return (
+    `\n\nLANGUAGE: Write ONLY the user-facing free-text fields in ${name} — warm, direct, ` +
+    `terse Summit voice, the way a native ${name} coach would text (never a word-for-word ` +
+    `translation). Do NOT translate JSON keys, enum/type values, search queries, or habit ` +
+    `names — keep those EXACTLY as specified in English. Keep it SMS-length.`
+  )
+}
