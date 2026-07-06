@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendSMS } from '../_shared/sms.ts'
+import { languageDirective } from '../_shared/coach_knowledge.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -118,6 +119,7 @@ async function generateConversationalFollowup(
   trackingType: string,
   metricUnit: string | null,
   fallback: string,
+  lang = 'en',
 ): Promise<string> {
   if (!OPENAI_API_KEY) return fallback
 
@@ -161,7 +163,7 @@ Write the SMS now (under 130 chars, no quotes):`
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'You write SMS coaching nudges in the Summit Coach voice: direct, warm, terse, no fluff.' },
+          { role: 'system', content: `You write SMS coaching nudges in the Summit Coach voice: direct, warm, terse, no fluff.${languageDirective(lang)}` },
           { role: 'user', content: prompt },
         ],
         max_tokens: 60,
@@ -393,6 +395,7 @@ serve(async (req) => {
           trackingConfig.tracking_type,
           trackingConfig.metric_unit,
           templatedMessage,
+          profile.preferred_language || 'en',
         )
       } else {
         message = templatedMessage

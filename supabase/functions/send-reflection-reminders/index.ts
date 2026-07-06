@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendSMS as _sendSMS } from '../_shared/sms.ts'
+import { languageDirective } from '../_shared/coach_knowledge.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -176,7 +177,8 @@ async function generateOpener(
   firstName: string,
   habits: HabitSummary[],
   _hasTracking: boolean,
-  challengeContext: { slug: string; week: number } | null
+  challengeContext: { slug: string; week: number } | null,
+  lang = 'en'
 ): Promise<string> {
   const tracked = habits.filter(h => h.tracked)
   const untracked = habits.filter(h => !h.tracked)
@@ -260,7 +262,7 @@ LENGTH: Under 320 characters. 2-3 sentences. Land it and stop.
 
 CRITICAL: Never write a habit name that doesn't appear in the prompt data. If you can't find a habit in the data, leave it out — do not fabricate, paraphrase, or use placeholder examples.
 
-Respond with ONLY the SMS message text — no quotes, no preamble.`
+Respond with ONLY the SMS message text — no quotes, no preamble.${languageDirective(lang)}`
 
   const userPrompt = `User: ${firstName}\n\n${dataContext}${challengeNote}`
 
@@ -328,7 +330,7 @@ serve(async (req) => {
     // Get all users with SMS consent + active subscription
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, phone, sms_opt_in, subscription_status, trial_ends_at, timezone, challenge_type, created_at')
+      .select('id, first_name, last_name, phone, sms_opt_in, subscription_status, trial_ends_at, timezone, challenge_type, created_at, preferred_language')
       .eq('sms_opt_in', true)
       .eq('motivation_mode', false) // Motivation Mode users are off the action-stage track
       .is('deleted_at', null)
@@ -428,7 +430,8 @@ serve(async (req) => {
         firstName,
         weekData.habits,
         weekData.hasTracking,
-        weekData.challengeContext
+        weekData.challengeContext,
+        profile.preferred_language || 'en'
       )
 
       // Send the opener SMS

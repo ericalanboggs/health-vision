@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendSMS } from '../_shared/sms.ts'
+import { languageDirective } from '../_shared/coach_knowledge.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -141,7 +142,8 @@ function getHabitEmoji(habitName: string): string {
 async function generateConversationalReminder(
   firstName: string,
   habits: { name: string; time: string }[],
-  visionData: VisionData
+  visionData: VisionData,
+  lang = 'en'
 ): Promise<string> {
   const habitCount = habits.length
   const habitNames = habits.map(h => h.name).join(', ')
@@ -196,7 +198,7 @@ Write the SMS now (under 140 chars, no quotes):`
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'You write SMS coaching nudges in the Summit Coach voice: direct, warm, terse, no fluff.' },
+          { role: 'system', content: `You write SMS coaching nudges in the Summit Coach voice: direct, warm, terse, no fluff.${languageDirective(lang)}` },
           { role: 'user', content: prompt },
         ],
         max_tokens: 80,
@@ -229,7 +231,8 @@ Write the SMS now (under 140 chars, no quotes):`
 async function generatePersonalizedMessage(
   firstName: string,
   habits: { name: string; time: string }[],
-  visionData: VisionData
+  visionData: VisionData,
+  lang = 'en'
 ): Promise<string> {
   const habitCount = habits.length
   const habitNames = habits.map(h => h.name).join(', ')
@@ -289,7 +292,7 @@ Generate the message (under 155 chars):`
         messages: [
           {
             role: 'system',
-            content: 'You are a supportive health coach. Write very brief SMS reminders under 155 characters. Always pick relevant emojis for each habit.'
+            content: `You are a supportive health coach. Write very brief SMS reminders under 155 characters. Always pick relevant emojis for each habit.${languageDirective(lang)}`
           },
           {
             role: 'user',
@@ -537,9 +540,10 @@ serve(async (req) => {
 
       // Branch on per-user conversational flag (Phase 1 dogfood)
       const isConversational = profile.sms_conversational === true
+      const lang = profile.preferred_language || 'en'
       const personalizedMessage = isConversational
-        ? await generateConversationalReminder(firstName, habitsForMessage, visionData)
-        : await generatePersonalizedMessage(firstName, habitsForMessage, visionData)
+        ? await generateConversationalReminder(firstName, habitsForMessage, visionData, lang)
+        : await generatePersonalizedMessage(firstName, habitsForMessage, visionData, lang)
 
       // Add opt-out footer
       const message = `${personalizedMessage} Reply STOP to opt out.`

@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendSMS as _sendSMS } from '../_shared/sms.ts'
 import { loadUserContext, formatContextForPrompt } from '../_shared/user_context.ts'
 import { SUMMIT_LINKS } from '../_shared/summit_links.ts'
-import { coachKnowledgeBlock } from '../_shared/coach_knowledge.ts'
+import { coachKnowledgeBlock, languageDirective } from '../_shared/coach_knowledge.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -80,7 +80,8 @@ function parseJSON(content: string): any {
 async function generateFollowUp(
   context: SessionContext,
   exchangeCount: number,
-  userContextPrompt?: string
+  userContextPrompt?: string,
+  lang = 'en'
 ): Promise<string> {
   const conversationHistory = context.messages
     .map(m => `${m.role === 'assistant' ? 'Summit' : 'User'}: ${m.content}`)
@@ -109,7 +110,7 @@ ${SUMMIT_LINKS}
 
 ${focusInstruction}
 ${backgroundBlock}
-Respond with ONLY the SMS message text — no JSON, no formatting.`
+Respond with ONLY the SMS message text — no JSON, no formatting.${languageDirective(lang)}`
 
   const userPrompt = `Conversation so far:\n${conversationHistory}\n\nGenerate your next response.`
 
@@ -176,7 +177,8 @@ If a field wasn't discussed or the user was vague, write a brief summary based o
 async function generateWrapUp(
   context: SessionContext,
   parsedReflection: { went_well: string; friction: string; adjustment: string },
-  userContextPrompt?: string
+  userContextPrompt?: string,
+  lang = 'en'
 ): Promise<string> {
   const backgroundBlock = userContextPrompt
     ? `\nUSER BACKGROUND:\n${userContextPrompt}\n`
@@ -188,7 +190,7 @@ async function generateWrapUp(
 3. Ends with encouragement for the week ahead — tie it back to their vision if natural
 Keep it under 280 characters (SMS). Conversational, not clinical. One emoji max if natural.
 
-Respond with ONLY the SMS message text.`
+Respond with ONLY the SMS message text.${languageDirective(lang)}`
 
   const userPrompt = `${backgroundBlock}What went well: ${parsedReflection.went_well}
 What was hard: ${parsedReflection.friction}
@@ -303,7 +305,7 @@ serve(async (req) => {
     if (context.exchange_count < 2) {
       console.log(`Reflection exchange ${context.exchange_count + 1}/3 for user ${profile.id}`)
 
-      const followUp = await generateFollowUp(context, context.exchange_count, userContextPrompt)
+      const followUp = await generateFollowUp(context, context.exchange_count, userContextPrompt, userContext.preferredLanguage)
 
       // Add AI response to conversation
       context.messages.push({ role: 'assistant', content: followUp })
@@ -357,7 +359,7 @@ serve(async (req) => {
     }
 
     // Generate and send wrap-up message
-    const wrapUpMessage = await generateWrapUp(context, parsedReflection, userContextPrompt)
+    const wrapUpMessage = await generateWrapUp(context, parsedReflection, userContextPrompt, userContext.preferredLanguage)
     await sendSMS(from, wrapUpMessage, supabase, profile.id, userName)
 
     // Clean up session
