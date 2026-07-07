@@ -24,6 +24,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendSMS as _sendSMS } from '../_shared/sms.ts'
+import { languageDirective } from '../_shared/coach_knowledge.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -50,7 +51,7 @@ async function callOpenAI(system: string, userPrompt: string, temperature: numbe
  * A short, warm, VARIED reply to a casual or feedback text (replaces the old single
  * canned ack that repeated verbatim). Falls back to a small varied pool on any error.
  */
-async function generateAck(userMessage: string, firstName: string, lastTitle: string | null): Promise<string> {
+async function generateAck(userMessage: string, firstName: string, lastTitle: string | null, lang = 'en'): Promise<string> {
   const fallbacks = [
     `You got it, ${firstName} 🙌`,
     `Anytime — more good stuff on the way 🌿`,
@@ -64,7 +65,7 @@ async function generateAck(userMessage: string, firstName: string, lastTitle: st
       'energy. At most 1 tasteful emoji. If they just said thanks / nice, keep it light and VARIED (e.g.',
       '"You got it 🙌"). If they shared real feedback, warmly acknowledge you\'ll fold it in. NEVER use a stock',
       '"noted, keep an eye out" phrase. Vary your wording every time.',
-    ].join('\n')
+    ].join('\n') + languageDirective(lang)
     const userPrompt = `User (${firstName}) texted: "${userMessage}".` + (lastTitle ? ` Last thing we sent them: "${lastTitle}".` : '')
     const out = (await callOpenAI(system, userPrompt, 0.85, 80)).trim()
     return out || fallbacks[Math.floor(Math.random() * fallbacks.length)]
@@ -101,7 +102,7 @@ async function mergePref(existing: string | null, newAsk: string): Promise<strin
 }
 
 /** Honest acknowledgment: confirms the re-tune is queued and sets a truthful "when". */
-async function generateResponsiveAck(userMessage: string, firstName: string): Promise<string> {
+async function generateResponsiveAck(userMessage: string, firstName: string, lang = 'en'): Promise<string> {
   const fallback = `Got it, ${firstName} — I'll re-tune what's coming to match. You'll start seeing it in your next message. 🌿`
   try {
     const system = [
@@ -110,7 +111,7 @@ async function generateResponsiveAck(userMessage: string, firstName: string): Pr
       'chars): warmly confirm you are tuning the content to their ask, and set the honest expectation that they',
       'will see it starting in their NEXT scheduled message. At most 1 tasteful emoji. Do NOT promise a separate',
       'message right now, and NEVER use a vague "stay tuned".',
-    ].join(' ')
+    ].join(' ') + languageDirective(lang)
     const out = (await callOpenAI(system, `User (${firstName}) asked: "${userMessage}"`, 0.7, 100)).trim()
     return out || fallback
   } catch (_e) {
@@ -234,13 +235,13 @@ serve(async (req) => {
           await supabase.from('motivation_content_queue').update({ feedback: body }).eq('id', lastSent.id)
         }
         runInBackground(fireRetune(userId)) // regenerates unsent upcoming cards to honor the ask
-        const ack = await generateResponsiveAck(body, firstName)
+        const ack = await generateResponsiveAck(body, firstName, profile.preferred_language || 'en')
         await send(ack)
         return emptyTwiml()
       }
 
       // Otherwise it's a pleasantry — keep it light.
-      const ack = await generateAck(body, firstName, lastSent?.title || null)
+      const ack = await generateAck(body, firstName, lastSent?.title || null, profile.preferred_language || 'en')
       await send(ack)
       return emptyTwiml()
     }

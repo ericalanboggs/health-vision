@@ -34,7 +34,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { loadUserContext } from '../_shared/user_context.ts'
-import { coachKnowledgeBlock } from '../_shared/coach_knowledge.ts'
+import { coachKnowledgeBlock, languageDirective } from '../_shared/coach_knowledge.ts'
 import { YouTubeAPI } from '../generate-weekly-digest/youtubeApi.ts'
 import { TavilyAPI } from './tavilyApi.ts'
 
@@ -196,6 +196,7 @@ async function pickAndFrameContent(
   candidates: { title: string; description: string }[],
   steeringPrompt: string,
   knowledgeHaystack: string,
+  lang = 'en',
 ): Promise<{ fit: boolean; index?: number; coach_framing?: string }> {
   const noun = kind === 'video' ? 'short video' : 'article'
   const contentWord = kind === 'video' ? 'video CONTENT' : 'article'
@@ -214,7 +215,7 @@ async function pickAndFrameContent(
     FRAMING_VOICE,
     'If NONE of the candidates fit the permission genre AND the theme, return {"fit":false}.',
     'Respond as JSON: {"fit":true|false,"index":<number>,"coach_framing":"..."}',
-  ].join('\n')
+  ].join('\n') + languageDirective(lang)
   const user = [
     `THEME: ${item.theme}`,
     `COACH STEERING (the sole thesis — frame everything around this): ${steeringPrompt}`,
@@ -233,7 +234,7 @@ async function buildBatchForUser(
   supabase: ReturnType<typeof createClient>,
   youtube: YouTubeAPI,
   tavily: TavilyAPI,
-  profile: { id: string; motivation_prompt: string | null; motivation_cadence: string | null; timezone: string | null; motivation_pref: string | null },
+  profile: { id: string; motivation_prompt: string | null; motivation_cadence: string | null; timezone: string | null; motivation_pref: string | null; preferred_language: string | null },
   regenerate: boolean,
   retune = false,
 ): Promise<{ userId: string; status: string; inserted?: number; detail?: string }> {
@@ -277,6 +278,7 @@ async function buildBatchForUser(
   // Closed-loop steer: the durable, accumulated content-preference note (written by
   // mid-week replies + weekly check-ins). High-priority steering alongside the prompt.
   const contentPref = (profile.motivation_pref || '').trim() || null
+  const lang = profile.preferred_language || 'en'
 
   const tz = profile.timezone || 'America/Chicago'
   const todayStr = localDatePlus(tz, 0)
@@ -389,7 +391,7 @@ async function buildBatchForUser(
     FRAMING_VOICE,
     '',
     'Respond as JSON: {"items":[{"type":"video|article|quote","theme":"...","search_query":"...","quote_text":"...","quote_author":"...","coach_framing":"..."}]}',
-  ].join('\n')
+  ].join('\n') + languageDirective(lang)
 
   const userPrompt = [
     `USER: ${ctx.firstName}`,
@@ -444,7 +446,7 @@ async function buildBatchForUser(
       if (candidates.length > 0) {
         try {
           // Pass 2: model picks the best-fitting real clip + writes framing grounded in it (or rejects all).
-          const pick = await pickAndFrameContent('video', item, candidates, profile.motivation_prompt || '', knowledgeHaystack)
+          const pick = await pickAndFrameContent('video', item, candidates, profile.motivation_prompt || '', knowledgeHaystack, lang)
           const chosen = pick?.fit && pick.index != null ? candidates[pick.index] : null
           if (chosen) {
             const url = YouTubeAPI.watchUrl(chosen.videoId)
@@ -478,6 +480,7 @@ async function buildBatchForUser(
             candidates.map(a => ({ title: a.title, description: a.content })),
             profile.motivation_prompt || '',
             knowledgeHaystack,
+            lang,
           )
           const chosen = pick?.fit && pick.index != null ? candidates[pick.index] : null
           if (chosen && await verifyArticleUrl(chosen.url)) {
@@ -572,7 +575,7 @@ serve(async (req) => {
   // Target one user (admin/retune) or all motivation_mode users (cron).
   let query = supabase
     .from('profiles')
-    .select('id, motivation_prompt, motivation_cadence, timezone, motivation_pref')
+    .select('id, motivation_prompt, motivation_cadence, timezone, motivation_pref, preferred_language')
     .eq('motivation_mode', true)
   if (body.userId) query = query.eq('id', body.userId)
 
