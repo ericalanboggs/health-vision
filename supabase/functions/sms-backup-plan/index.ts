@@ -594,7 +594,7 @@ serve(async (req) => {
       const trimmed = body.trim().toLowerCase()
 
       // Check for YES
-      if (['y', 'yes', 'yeah', 'yep', 'sure', 'ok', 'okay', '👍'].includes(trimmed)) {
+      if (['y', 'yes', 'yeah', 'yep', 'sure', 'ok', 'okay', '👍', 'sí', 'si', 'claro', 'dale', 'vale', 'sim', 'ok!', 'bora'].includes(trimmed)) {
         // Apply the changes
         const result = await applyPlanChanges(
           supabase,
@@ -636,7 +636,7 @@ serve(async (req) => {
       }
 
       // Check for NO
-      if (['n', 'no', 'nope', 'nah', '👎'].includes(trimmed)) {
+      if (['n', 'no', 'nope', 'nah', '👎', 'não', 'nao'].includes(trimmed)) {
         // Move to custom step
         await supabase
           .from('sms_backup_sessions')
@@ -845,7 +845,7 @@ serve(async (req) => {
       const trimmed = body.trim().toLowerCase()
 
       // YES — they want to try a minimal version
-      if (['y', 'yes', 'yeah', 'yep', 'sure', 'ok', 'okay', '👍'].includes(trimmed)) {
+      if (['y', 'yes', 'yeah', 'yep', 'sure', 'ok', 'okay', '👍', 'sí', 'si', 'claro', 'dale', 'vale', 'sim', 'ok!', 'bora'].includes(trimmed)) {
         // Generate a very minimal suggestion
         const minTarget = context.original_target ? Math.max(1, Math.round(context.original_target / 5)) : null
         const minDays = 1
@@ -887,7 +887,7 @@ serve(async (req) => {
       }
 
       // NO — they want to fully remove the habit
-      if (['n', 'no', 'nope', 'nah', '👎'].includes(trimmed)) {
+      if (['n', 'no', 'nope', 'nah', '👎', 'não', 'nao'].includes(trimmed)) {
         // Delete all weekly_habits rows for this habit
         const { error: deleteError } = await supabase
           .from('weekly_habits')

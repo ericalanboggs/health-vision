@@ -60,6 +60,11 @@ export async function sendSMS(
               To: to,
               From: fromNumber,
               Body: body,
+              // Localization (Workstream G): let Twilio down-convert stray unicode (curly
+              // quotes, some symbols) to GSM-7 where it can, so we don't get pushed into
+              // expensive 70-char UCS-2 segments unnecessarily. True accented chars (á, ã, ç)
+              // still require UCS-2 — that cost is inherent to Spanish/Portuguese and expected.
+              SmartEncoded: 'true',
             })
             if (payload.mediaUrl) params.set('MediaUrl', payload.mediaUrl)
             return params
