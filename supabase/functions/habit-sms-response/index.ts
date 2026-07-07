@@ -200,13 +200,15 @@ function parseTrackingResponse(body: string, expectedType: 'boolean' | 'metric')
   if (/^(✓|✔️|👍|✅|💯)/.test(trimmed)) {
     return { type: 'boolean', value: true }
   }
-  if (/^(y|yes|yeah|yep|yup|ya|yea|did|done|finished|completed|sure|true|got it|i did|i have|i've)\b/.test(trimmed)) {
+  // Affirmatives — en + es + pt-BR (localization Workstream C)
+  if (/^(y|yes|yeah|yep|yup|ya|yea|did|done|finished|completed|sure|true|got it|i did|i have|i've|s[íi]|claro|dale|hecho|list[oa]|sim|feito|pronto|conclu[íi]d[oa])(?![a-záàâãäéèêíìóòôõöúùüçñ])/i.test(trimmed)) {
     return { type: 'boolean', value: true }
   }
   if (/^(👎|❌)/.test(trimmed)) {
     return { type: 'boolean', value: false }
   }
-  if (/^(n|no|nope|nah|skip|skipped|missed|forgot|false|didn't|did not|haven't|i didn't|i haven't|not yet|not today)\b/.test(trimmed)) {
+  // Negatives — en + es + pt-BR
+  if (/^(n|no|nope|nah|skip|skipped|missed|forgot|false|didn't|did not|haven't|i didn't|i haven't|not yet|not today|n[ãa]o|nunca|todav[íi]a no|ainda n[ãa]o|pulei|faltou|esque[cç]i|olvid[ée])(?![a-záàâãäéèêíìóòôõöúùüçñ])/i.test(trimmed)) {
     return { type: 'boolean', value: false }
   }
 
@@ -733,9 +735,10 @@ async function handleClarificationResponse(
     const lowerTrimmed = trimmed.toLowerCase()
     let completed: boolean | null = null
 
-    if (['y', 'yes', 'yeah', 'yep', 'done', '1', '✓', '👍'].includes(lowerTrimmed)) {
+    // en + es + pt-BR (localization Workstream C)
+    if (['y', 'yes', 'yeah', 'yep', 'done', '1', '✓', '👍', 'sí', 'si', 'claro', 'hecho', 'listo', 'sim', 'feito', 'pronto'].includes(lowerTrimmed)) {
       completed = true
-    } else if (['n', 'no', 'nope', 'nah', 'skip', '0', '👎'].includes(lowerTrimmed)) {
+    } else if (['n', 'no', 'nope', 'nah', 'skip', '0', '👎', 'não', 'nao', 'pulei', 'faltou'].includes(lowerTrimmed)) {
       completed = false
     }
 

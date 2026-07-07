@@ -144,10 +144,12 @@ function parseRuler(body: string): number | null {
   return m ? parseInt(m[1]) : null
 }
 function isAffirmative(body: string): boolean {
-  return /\b(yes|yep|yeah|yup|sure|ok|okay|sounds good|let'?s|i'?m in|ready|do it)\b/i.test(body)
+  // en + es + pt-BR (localization Workstream C)
+  return /(^|\s)(yes|yep|yeah|yup|sure|ok|okay|sounds good|let'?s|i'?m in|ready|do it|s[íi]|claro|dale|vale|de acuerdo|list[oa]|sim|com certeza|bora|pode ser|t[oô] dentro)(?![a-záàâãäéèêíìóòôõöúùüçñ])/i.test(body)
 }
 function isReadyIntent(body: string): boolean {
-  return /\b(ready|let'?s do|let'?s go|i'?m in|start (a )?habit|set (a )?habit|sign me up|i think i'?m ready)\b/i.test(body)
+  // en + es + pt-BR
+  return /(^|\s)(ready|let'?s do|let'?s go|i'?m in|start (a )?habit|set (a )?habit|sign me up|i think i'?m ready|list[oa]|estoy list[oa]|quiero empezar|empecemos|vamos|estou pront[oa]|quero come[çc]ar|bora come[çc]ar)(?![a-záàâãäéèêíìóòôõöúùüçñ])/i.test(body)
 }
 
 function emptyTwiml() {
