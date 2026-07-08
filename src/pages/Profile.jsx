@@ -29,7 +29,8 @@ export default function Profile() {
     email: '',
     phone: '',
     smsConsent: false,
-    pilotReason: ''
+    pilotReason: '',
+    preferredLanguage: 'en'
   })
 
   useEffect(() => {
@@ -52,7 +53,8 @@ export default function Profile() {
           email: result.user.email || result.user.user_metadata?.email || '',
           phone: profileResult.data.phone || '',
           smsConsent: profileResult.data.sms_opt_in || false,
-          pilotReason: profileResult.data.pilot_reason || ''
+          pilotReason: profileResult.data.pilot_reason || '',
+          preferredLanguage: profileResult.data.preferred_language || 'en'
         })
       } else {
         setFormData(prev => ({
@@ -128,6 +130,7 @@ export default function Profile() {
         sms_opt_in: formData.smsConsent,
         pilot_reason: formData.pilotReason.trim(),
         profile_completed: true,
+        preferred_language: formData.preferredLanguage,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       })
 
@@ -230,6 +233,25 @@ export default function Profile() {
                 errorMessage={errors.phone}
                 size="lg"
               />
+
+              {/* Preferred language — drives the language of your coaching texts */}
+              <div>
+                <label className="block text-sm font-medium text-summit-forest mb-1">
+                  Coaching language
+                </label>
+                <select
+                  value={formData.preferredLanguage}
+                  onChange={(e) => handleChange('preferredLanguage', e.target.value)}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2.5 text-body focus:outline-none focus:ring-2 focus:ring-summit-emerald"
+                >
+                  <option value="en">English</option>
+                  <option value="es">Español (Spanish)</option>
+                  <option value="pt-BR">Português (Brazilian Portuguese)</option>
+                </select>
+                <p className="text-xs text-stone-500 mt-1">
+                  The language of your SMS coaching messages. The app itself stays in English for now.
+                </p>
+              </div>
 
               {/* SMS Consent */}
               <div className="bg-summit-mint/30 border border-summit-sage rounded-lg p-4">
