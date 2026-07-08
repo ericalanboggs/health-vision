@@ -365,6 +365,7 @@ export const getUserDetail = async (userId) => {
           subscriptionCurrentPeriodEnd: profile.subscription_current_period_end || null,
           trackingFollowupTime: profile.tracking_followup_time || '17:00:00',
           smsConversational: profile.sms_conversational === true,
+          preferredLanguage: profile.preferred_language || 'en',
         },
         pilotReadiness: {
           ready: pilotReady,
@@ -1006,6 +1007,24 @@ export const adminSetSmsConversational = async (userId, enabled) => {
     return { success: true }
   } catch (error) {
     console.error('Error updating sms_conversational:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/** Admin override of a user's coaching language (en / es / pt-BR). */
+export const adminSetPreferredLanguage = async (userId, lang) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+    const { error } = await supabase
+      .from('profiles')
+      .update({ preferred_language: lang })
+      .eq('id', userId)
+    if (error) throw error
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating preferred_language:', error)
     return { success: false, error: error.message }
   }
 }

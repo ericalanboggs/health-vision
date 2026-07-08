@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit, adminUpdateTrackingConfig, adminUpdateFollowupTime, adminUpsertTrackingEntry, adminUpdateHealthVision, adminSetSmsConversational, generateWeeklyTracker, exportCoachingBrief } from '../services/adminService'
+import { getUserDetail, getCoachingSessions, logCoachingSession, adminAddResource, adminDeleteResource, adminTogglePinResource, adminDeleteHabit, adminUpdateHabit, adminAddHabit, adminUpdateTrackingConfig, adminUpdateFollowupTime, adminUpsertTrackingEntry, adminUpdateHealthVision, adminSetSmsConversational, adminSetPreferredLanguage, generateWeeklyTracker, exportCoachingBrief } from '../services/adminService'
 import { COACHING_CONFIG, getBillingPeriod } from '../services/subscriptionService'
 import { ArrowBack, CheckCircle, Cancel, Autorenew, CalendarMonth, TipsAndUpdates, TrackChanges, Warning, Bolt, Forum, Edit as EditIcon, Close, Add, PushPin, PushPinOutlined, DeleteOutline, Chat, Email, Checklist, FileDownload, Summarize } from '@mui/icons-material'
 import { Tag } from '@summit/design-system'
@@ -113,6 +113,17 @@ export default function AdminUserDetail() {
     }
     setTogglingConversational(false)
   }
+
+  const handleSetLanguage = async (lang) => {
+    const prevLang = data?.profile?.preferredLanguage
+    setData(prev => ({ ...prev, profile: { ...prev.profile, preferredLanguage: lang } }))
+    const result = await adminSetPreferredLanguage(userId, lang)
+    if (!result.success) {
+      window.alert(`Failed: ${result.error}`)
+      setData(prev => ({ ...prev, profile: { ...prev.profile, preferredLanguage: prevLang } }))
+    }
+  }
+
   const [generatingTracker, setGeneratingTracker] = useState(null) // null | 'email' | 'download'
   const [exportingBrief, setExportingBrief] = useState(false)
   const [editingVision, setEditingVision] = useState(false)
@@ -687,6 +698,20 @@ export default function AdminUserDetail() {
             <span className="text-xs text-stone-500">
               {profile.smsConversational ? 'On — uses new conversational prompts' : 'Off — standard prompts'}
             </span>
+          </div>
+          <div className="mt-4 pt-4 border-t border-stone-200 flex items-center gap-3">
+            <span className="text-sm text-stone-600">Coaching language:</span>
+            <select
+              value={profile.preferredLanguage || 'en'}
+              onChange={(e) => handleSetLanguage(e.target.value)}
+              className="border border-stone-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-summit-emerald"
+              title="Override this user's SMS coaching language"
+            >
+              <option value="en">English</option>
+              <option value="es">Español</option>
+              <option value="pt-BR">Português (BR)</option>
+            </select>
+            <span className="text-xs text-stone-500">Sets the language of their SMS coaching (app UI stays English)</span>
           </div>
         </div>
 
