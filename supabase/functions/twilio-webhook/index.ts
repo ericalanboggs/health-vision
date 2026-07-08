@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { crypto } from 'https://deno.land/std@0.168.0/crypto/mod.ts'
 import { sendSMS } from '../_shared/sms.ts'
+import { t } from '../_shared/i18n.ts'
 
 const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
@@ -185,7 +186,7 @@ serve(async (req) => {
     // Look up user by phone number (prefer non-lite user if multiple profiles share a phone)
     const { data: profiles, error: profileError } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, challenge_type')
+      .select('id, first_name, last_name, challenge_type, preferred_language')
       .eq('phone', fromPhone)
       .is('deleted_at', null)
 
@@ -264,7 +265,7 @@ serve(async (req) => {
 
     if (upperBody === 'HELP') {
       console.log(`User ${fromPhone} requested help via SMS`)
-      const helpResult = await sendSMS({ to: fromPhone, body: 'Summit Health Habit Reminders: For help, visit go.summithealth.app or email hello@summithealth.app. Msg & data rates may apply. Msg frequency varies. Reply STOP to cancel.' })
+      const helpResult = await sendSMS({ to: fromPhone, body: t('help_response', profile?.preferred_language || 'en') })
       if (!helpResult.success) {
         console.error('Error sending HELP response SMS:', helpResult.error)
       }
@@ -283,7 +284,7 @@ serve(async (req) => {
           .eq('id', userId)
         console.log(`Updated user ${userId} sms_opt_in to true`)
         const optInResult = await sendSMS(
-          { to: fromPhone, body: 'Welcome to Summit Health SMS Coaching! You are now subscribed to recurring messages. Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to cancel.' },
+          { to: fromPhone, body: t('optin_confirm', profile?.preferred_language || 'en') },
           { supabase, logTable: 'sms_messages', extra: { user_id: userId, sent_by_type: 'system' } }
         )
         if (!optInResult.success) {

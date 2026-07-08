@@ -25,6 +25,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendSMS as _sendSMS } from '../_shared/sms.ts'
 import { languageDirective } from '../_shared/coach_knowledge.ts'
+import { t } from '../_shared/i18n.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -177,6 +178,7 @@ serve(async (req) => {
     const profile = profiles.find((p: any) => p.challenge_type !== 'lite') || profiles[0]
     const userId = profile.id
     const firstName = profile.first_name || 'there'
+    const lang = profile.preferred_language || 'en'
     const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || null
 
     const send = (msg: string) =>
@@ -200,16 +202,13 @@ serve(async (req) => {
     const startHabitHandoff = async () => {
       await supabase.from('profiles').update({ motivation_mode: false }).eq('id', userId)
       if (session) await supabase.from('sms_motivation_checkin_sessions').delete().eq('id', session.id)
-      await send(
-        `Love it. Let's set your first small habit together. ` +
-        `Reply: ADD <the habit> — e.g. "ADD 10-minute walk after lunch". Keep it tiny on purpose.`
-      )
+      await send(t('motivation_add_handoff', lang))
     }
 
     // ── No active session: motivation_mode user replying to a daily card ─────
     if (!session) {
       if (isReadyIntent(body)) {
-        const opener = `Love hearing that, ${firstName}. Want to set one small habit together? Reply YES and we'll start — or NO worries if it's not the moment.`
+        const opener = t('motivation_ready_opener', lang, { name: firstName })
         await supabase.from('sms_motivation_checkin_sessions').insert({
           user_id: userId,
           step: 'awaiting_handoff',
@@ -275,7 +274,7 @@ serve(async (req) => {
         await supabase.from('profiles').update({ motivation_pref: merged }).eq('id', userId)
       }
 
-      const reply = `Thank you — that helps me shape next week. One more, no pressure: on a scale of 1–10, how ready do you feel to try one small habit? (1 = not at all, 10 = ready)`
+      const reply = t('motivation_checkin_ruler', lang)
       context.messages.push({ role: 'assistant', content: reply })
       await supabase.from('sms_motivation_checkin_sessions').update({ step: 'awaiting_ruler', context }).eq('id', session.id)
       await send(reply)
@@ -288,7 +287,7 @@ serve(async (req) => {
       if (score == null && !context.reprompted) {
         context.reprompted = true
         await supabase.from('sms_motivation_checkin_sessions').update({ context }).eq('id', session.id)
-        await send(`No worries — just a number 1–10 for me: how ready do you feel to try one small habit? (1 = not at all, 10 = ready)`)
+        await send(t('motivation_ruler_reprompt', lang))
         return emptyTwiml()
       }
       const readiness = score ?? null // second miss → accept without a score (feedback already saved)
@@ -310,7 +309,7 @@ serve(async (req) => {
       }
 
       if (handoff) {
-        const offer = `Honestly, ${firstName}, you sound ready. Want to turn one of these into a real habit you'll actually keep? Reply YES and we'll set it together — small, I promise.`
+        const offer = t('motivation_handoff_offer', lang, { name: firstName })
         context.messages.push({ role: 'assistant', content: offer })
         await supabase.from('sms_motivation_checkin_sessions').update({ step: 'awaiting_handoff', context }).eq('id', session.id)
         await send(offer)
@@ -321,8 +320,8 @@ serve(async (req) => {
       await supabase.from('sms_motivation_checkin_sessions').delete().eq('id', session.id)
       await send(
         score != null
-          ? `Got it — ${score}/10. Thank you, ${firstName}. This helps me send you better stuff. Talk soon. 🌿`
-          : `All good, ${firstName} — thank you. This helps me send you better stuff. Talk soon. 🌿`
+          ? t('motivation_close_score', lang, { score, name: firstName })
+          : t('motivation_close_noscore', lang, { name: firstName })
       )
       return emptyTwiml()
     }
@@ -333,7 +332,7 @@ serve(async (req) => {
         await startHabitHandoff()
       } else {
         await supabase.from('sms_motivation_checkin_sessions').delete().eq('id', session.id)
-        await send(`Totally fine, ${firstName} — no rush at all. I'll keep the inspiration coming, and we can set a habit whenever you're ready. 🌿`)
+        await send(t('motivation_handoff_decline', lang, { name: firstName }))
       }
       return emptyTwiml()
     }

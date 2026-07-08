@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendSMS } from '../_shared/sms.ts'
+import { t } from '../_shared/i18n.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -129,7 +130,7 @@ serve(async (req) => {
     // Send opt-in confirmation SMS (required for A2P recurring campaigns)
     const { data: profile } = await supabase
       .from('profiles')
-      .select('phone, sms_opt_in, challenge_type')
+      .select('phone, sms_opt_in, challenge_type, preferred_language')
       .eq('id', user.id)
       .single()
 
@@ -137,7 +138,7 @@ serve(async (req) => {
       const isLite = profile.challenge_type === 'lite'
       const confirmBody = isLite
         ? '\u26f0\ufe0f Welcome to the Tech Neck Challenge, brought to you by Summit Health! You\'ll get 5 coaching texts/day starting Monday. Msg & data rates may apply. Reply HELP for help, STOP to cancel.'
-        : 'Welcome to Summit Health SMS Coaching! Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to cancel.'
+        : t('optin_confirm', profile.preferred_language || 'en')
       const twilioOpts = isLite && TWILIO_PHONE_NUMBER_LITE
         ? { from: TWILIO_PHONE_NUMBER_LITE, accountSid: TWILIO_ACCOUNT_SID_LITE!, authToken: TWILIO_AUTH_TOKEN_LITE! }
         : {}
