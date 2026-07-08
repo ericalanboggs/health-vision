@@ -20,9 +20,21 @@ unchanged.
 
 **Reset to English when done:** set it back to `en` (or `update ... set preferred_language='en'`).
 
-**Triggering cron-driven sends without waiting:** several flows fire on a schedule (reminders,
-reflections, daily motivation, weekly check-in). To fire one on demand, POST the function via
-SQL (mirrors how we regenerate batches):
+**⚠️ Triggering cron-driven sends without waiting — READ FIRST.** Several flows fire on a
+schedule (reminders, reflections, daily motivation, weekly check-in). You *can* fire one on
+demand via SQL, **BUT these functions select the whole currently-DUE population, not just your
+test account.** Firing one in prod will text **every real user who is due right now**, in their
+own language. The eligibility guards stop it hitting the *wrong* users, not *all due* users.
+
+Before firing any batch sender, do ONE of:
+- **Preferred:** verify your test account is the only due row first, e.g. count opted-in users
+  whose local send-window is open / who have unsent content — if it's just you, fire away.
+- Run against a **staging Supabase project** instead of prod.
+- **Safest for voice-checking:** skip the outbound cron entirely and verify the localized voice
+  through the **inbound** flows (§2, §3.1, §4.3–4.5) — those are naturally scoped to the phone
+  you text from and can't touch other users.
+
+On-demand fire (only after the check above):
 ```sql
 select net.http_post(
   url := 'https://oxszevplpzmzmeibjtdz.supabase.co/functions/v1/FUNCTION_NAME',
@@ -31,8 +43,6 @@ select net.http_post(
   body := '{}'::jsonb
 );
 ```
-(Each still applies its own time-window / eligibility guards, so the target user must otherwise
-be due.)
 
 **Prereqs for the SMS scenarios:** the test account has a **verified phone**, **sms_opt_in = true**,
 and (for habit flows) at least one **active tracked habit**; (for motivation flows)
@@ -57,6 +67,28 @@ Text a crisis phrase from the test phone (you know it's a test).
 the Portuguese crisis reply (crisis is detected across all languages regardless of the set one).
 - 1.7 Account set to `en`, text `me quiero matar` → Spanish crisis reply fires ☐
 
+**Dropped accents / typos must STILL fire** (a distressed user won't type cleanly — a missed
+crisis is the worst outcome in this whole plan). Detection is now accent-insensitive:
+| # | Send | Expect | ✅ |
+|---|---|---|---|
+| 1.8 | **es no accents:** `suicidio` / `no quiero vivir` | Fires (es) | ☐ |
+| 1.9 | **pt-BR no accents:** `nao quero viver` / `suicidio` | Fires | ☐ |
+
+**Idioms must NOT over-fire (much).** These contain matar/morir/morrer but aren't crises:
+| # | Send | Expect | ✅ |
+|---|---|---|---|
+| 1.10 | **es:** `estoy muerto de risa` / `este trabajo me está matando` | **No** crisis reply | ☐ |
+| 1.11 | **pt-BR:** `tô morrendo de rir` | **No** crisis reply | ☐ |
+| 1.12 | **pt-BR:** `esse trabalho vai me matar` | **KNOWN: still fires** — accepted. We keep bare "me matar" so real statements like "penso em me matar" are caught; over-offering help is the safe direction. Note if it bothers you. | ☐ |
+
+> **Resource-scope decision (intentional):** `es` resources are **US-based** (988 has a Spanish
+> line) — assumes Spanish-speaking users are in the US. `pt-BR` includes both US 988/911 **and**
+> Brasil **CVV 188**. So an es user *outside* the US currently gets no in-country line. If your
+> es audience includes non-US speakers, add a line to the `es` `CRISIS_RESPONSE`. Also note:
+> the near-identical cognate "suicidio/suicídio" may resolve to the **es** resources for a pt-BR
+> user (single ambiguous word) — still valid crisis help, just possibly the other language's
+> resources. Flag if you want to disambiguate.
+
 > ⚠️ If any resource/number reads wrong to you, fix `CRISIS_RESPONSE` in
 > `supabase/functions/twilio-webhook/index.ts` and redeploy `--no-verify-jwt`.
 
@@ -74,8 +106,25 @@ With an active **tracked habit** and a pending followup/clarification (or reply 
 | 2.4 | **pt-BR:** `não` / `pulei` / `ainda não` | Habit logged as **not done** | ☐ |
 | 2.5 | **en control:** `yes` / `done` and `no` / `skip` | Log correctly (unchanged) | ☐ |
 
-Regression guard (must NOT false-match):
-- 2.6 `simple` does NOT count as "sim"; `yesterday` does NOT count as "yes" ☐
+**The `sí` vs `si` semantic trap** (accented "sí" = yes; bare "si" = Spanish "if"). Fixed so
+bare "si" only counts as yes when it's the *whole* reply:
+| # | Send (in a yes/no context) | Expect | ✅ |
+|---|---|---|---|
+| 2.6 | **es:** `sí` / `si` / `si!` | Logged **done** (bare "si" as a full reply = yes) | ☐ |
+| 2.7 | **es:** `si puedo` / `si termino hoy` | **NOT** auto-logged as done (goes to AI parse) | ☐ |
+
+Regression guards (must NOT false-match):
+| # | Send | Expect | ✅ |
+|---|---|---|---|
+| 2.8 | **en:** `yesterday` | Not "yes" | ☐ |
+| 2.9 | **pt-BR:** `simples` / `simplesmente` | Not "sim" (the Portuguese word that literally *is* "simple") | ☐ |
+| 2.10 | **pt-BR:** `não` **and** `nao` (no accent) | Both = not done | ☐ |
+
+**Metric replies with a comma decimal** (es/pt-BR write `1,5`, not `1.5`):
+| # | Send (metric habit followup) | Expect | ✅ |
+|---|---|---|---|
+| 2.11 | **es/pt:** `1,5` (or `1,25`) | Logged as **1.5** / **1.25**, not 1 | ☐ |
+| 2.12 | `30` / `2.5` (period) | Still logged correctly | ☐ |
 
 ---
 
@@ -111,10 +160,10 @@ Set the test account `motivation_mode = true` + a steering prompt + `preferred_l
 
 ## 5. Signup path & compliance (Workstream F)
 
-> **Timing caveat:** OTP + opt-in localize **only if `preferred_language` is set _before_ phone
-> verification.** There's no onboarding language picker in Phase 0, so a brand-new signup is
-> normally English unless you (admin) set the language first, or the user set it on profile-setup.
-> To test the localized path, set the account's language, then re-trigger these.
+> **Timing caveat → see PRODUCT RISK in §8.** OTP + opt-in localize **only if
+> `preferred_language` is set _before_ phone verification.** There's no onboarding language
+> picker in Phase 0, so a brand-new organic signup gets these in English. To *test* the
+> localized path, set the account's language first (admin), then re-trigger these.
 
 | # | Scenario | Send / Trigger | Expect | ✅ |
 |---|---|---|---|---|
@@ -123,6 +172,11 @@ Set the test account `motivation_mode = true` + a steering prompt + `preferred_l
 | 5.3 | **HELP** | text `HELP` | HELP response **in-language** | ☐ |
 | 5.4 | **STOP** | text `STOP` | Carrier opt-out (English, carrier-level) — expected | ☐ |
 | 5.5 | **en control** | text `HELP` on an en account | English HELP (unchanged) | ☐ |
+| 5.6 | **Malformed lang code** | `update profiles set preferred_language='pt'` (invalid) then any coaching msg | Falls back cleanly to **English**, no crash. (The DB CHECK constraint should reject `'pt'`/`'es-MX'` outright — confirm the update errors; if it somehow stored, output must be English.) | ☐ |
+
+> **⚠️ Sequencing:** `5.4 (STOP)` sets `sms_opt_in=false`, which will suppress the §6 English
+> regression sends. Run STOP **last**, or re-opt-in afterward (`text START`, or
+> `update profiles set sms_opt_in=true …`) before continuing.
 
 ---
 
@@ -149,10 +203,28 @@ These are deliberately deferred; seeing English here is correct for Phase 0:
 
 ---
 
-## 8. Sign-off
+## 8. Product risk to decide (not a test — a decision)
 
-- [ ] Crisis (§1) verified in es + pt-BR, resources correct → **safety gate cleared**
-- [ ] Inbound parsing (§2) registers es/pt replies, no false matches
+**Organic es/pt-BR signups get their FIRST touch in English.** Because there's no language
+picker in the onboarding flow (Phase 0), `preferred_language` is `'en'` until a user reaches
+their Profile *after* signup — but the OTP and opt-in confirmation fire *during* signup. So the
+localized signup trio (§5) is effectively **only reachable via admin pre-set**, i.e. not
+shippable to real new users until we add an onboarding picker.
+
+Impact: a Spanish/Portuguese speaker's very first Summit texts (verification code, "you're
+subscribed") arrive in English — right at the step where they're deciding whether to trust and
+opt in. Risk of confusion / early opt-out for exactly the audience this initiative serves.
+
+**Decision needed:** accept this for Phase 0 (pilot cohort is admin-set anyway), OR close it by
+adding a language selector to `profile-setup` (before phone verification). The latter is a small,
+self-contained add — say the word and it becomes the real fix.
+
+---
+
+## 9. Sign-off
+
+- [ ] Crisis (§1) verified in es + pt-BR, incl. dropped-accent (1.8–1.9) and idiom (1.10–1.11) cases → **safety gate cleared**
+- [ ] Inbound parsing (§2) registers es/pt replies; `si puedo` doesn't mislog (2.7); comma decimals parse (2.11)
 - [ ] Habit loop (§3) speaks the language
 - [ ] Motivation loop (§4) speaks the language; links stay English/on-topic
 - [ ] Signup path (§5) localizes when language pre-set
