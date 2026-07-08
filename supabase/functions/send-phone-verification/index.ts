@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendSMS } from '../_shared/sms.ts'
+import { t } from '../_shared/i18n.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -50,7 +51,7 @@ serve(async (req) => {
     // Look up user's phone from profiles
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('phone, challenge_type')
+      .select('phone, challenge_type, preferred_language')
       .eq('id', user.id)
       .maybeSingle()
 
@@ -111,7 +112,7 @@ serve(async (req) => {
       : {}
     const smsResult = await sendSMS({
       to: phone,
-      body: `Your Summit verification code is: ${code}. It expires in 10 minutes.`,
+      body: t('otp_code', profile.preferred_language || 'en', { code }),
       ...liteOverrides,
     })
 

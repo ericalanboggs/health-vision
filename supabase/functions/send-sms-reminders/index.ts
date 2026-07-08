@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendSMS } from '../_shared/sms.ts'
 import { languageDirective } from '../_shared/coach_knowledge.ts'
+import { t } from '../_shared/i18n.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -546,7 +547,7 @@ serve(async (req) => {
         : await generatePersonalizedMessage(firstName, habitsForMessage, visionData, lang)
 
       // Add opt-out footer
-      const message = `${personalizedMessage} Reply STOP to opt out.`
+      const message = `${personalizedMessage} ${t('compliance_stop_footer', lang)}`
 
       console.log(`Message length: ${message.length} characters (${sortedHabits.length} habits)`)
 

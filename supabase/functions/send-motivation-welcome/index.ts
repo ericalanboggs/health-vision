@@ -19,6 +19,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendSMS } from '../_shared/sms.ts'
+import { languageDirective } from '../_shared/coach_knowledge.ts'
+import { t } from '../_shared/i18n.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -29,11 +31,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const FALLBACK_FOCUS = 'what matters to you'
-
 /** Distill the free-text steering prompt into a short focus phrase for the welcome SMS. */
-async function distillFocus(steeringPrompt: string): Promise<string> {
-  if (!OPENAI_API_KEY || !steeringPrompt?.trim()) return FALLBACK_FOCUS
+async function distillFocus(steeringPrompt: string, lang = 'en'): Promise<string> {
+  const fallback = t('motivation_welcome_focus_fallback', lang)
+  if (!OPENAI_API_KEY || !steeringPrompt?.trim()) return fallback
   try {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -51,9 +52,9 @@ async function distillFocus(steeringPrompt: string): Promise<string> {
               'inspiration around, phrased in second person where natural (e.g. "finding work that uses',
               'your strengths", "feeling like yourself again", "rebuilding your energy"). Lowercase, no',
               'quotes, no trailing period, no leading "to". If the note is unclear or empty, respond with',
-              `exactly: ${FALLBACK_FOCUS}`,
+              `exactly: ${fallback}`,
               'Respond as JSON: {"focus":"..."}',
-            ].join(' '),
+            ].join(' ') + languageDirective(lang), // focus phrase in the user's language
           },
           { role: 'user', content: steeringPrompt.slice(0, 600) },
         ],
@@ -61,25 +62,16 @@ async function distillFocus(steeringPrompt: string): Promise<string> {
     })
     if (!res.ok) {
       console.error('distillFocus OpenAI error:', res.status, await res.text())
-      return FALLBACK_FOCUS
+      return fallback
     }
     const data = await res.json()
     const raw = data.choices?.[0]?.message?.content || ''
     const focus = (JSON.parse(raw).focus || '').trim().replace(/^["']|["']$/g, '').replace(/\.$/, '')
-    return focus || FALLBACK_FOCUS
+    return focus || fallback
   } catch (e) {
     console.error('distillFocus failed:', e)
-    return FALLBACK_FOCUS
+    return fallback
   }
-}
-
-function buildWelcome(focus: string): string {
-  return (
-    `Welcome to Summit 🌱 Here's what to expect: one short text a day with a little inspiration around ` +
-    `${focus}. No tracking, no judgment — just small nudges to get you moving. Every so often I'll check ` +
-    `in to see if you'd like to turn one into a small habit — but there's zero pressure to reply, ever. ` +
-    `Everyone's on their own journey, at their own pace, and yours is exactly right.`
-  )
 }
 
 /** True if the bearer is the env service-role key OR the app_config key DB triggers use. */
@@ -115,7 +107,7 @@ serve(async (req) => {
 
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('id, first_name, phone, sms_opt_in, deleted_at, motivation_mode, motivation_prompt')
+    .select('id, first_name, phone, sms_opt_in, deleted_at, motivation_mode, motivation_prompt, preferred_language')
     .eq('id', userId)
     .single()
 
@@ -145,8 +137,9 @@ serve(async (req) => {
     })
   }
 
-  const focus = await distillFocus(profile.motivation_prompt || '')
-  const body = buildWelcome(focus)
+  const lang = profile.preferred_language || 'en'
+  const focus = await distillFocus(profile.motivation_prompt || '', lang)
+  const body = t('motivation_welcome', lang, { focus })
 
   const result = await sendSMS({ to: profile.phone, body }, {
     supabase,

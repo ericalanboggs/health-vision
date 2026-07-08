@@ -21,6 +21,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendSMS } from '../_shared/sms.ts'
+import { t } from '../_shared/i18n.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -88,7 +89,7 @@ serve(async (_req) => {
 
   const { data: users, error } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name, phone, timezone, motivation_checkin_day, sms_opt_in')
+    .select('id, first_name, last_name, phone, timezone, motivation_checkin_day, sms_opt_in, preferred_language')
     .eq('motivation_mode', true)
     .not('phone', 'is', null)
     .is('deleted_at', null)
@@ -193,9 +194,7 @@ serve(async (_req) => {
 
         // Lead with the CONTENT-DIRECTION question (captured even if they skip the rating);
         // sms-motivation-checkin asks the 1–10 readiness ruler as the second beat.
-        const opener =
-          `Hey ${u.first_name || 'there'} — checking in on the week. How's the content been landing? ` +
-          `Anything you'd want more of, less of, or different as it continues next week?`
+        const opener = t('motivation_checkin_opener', u.preferred_language || 'en', { name: u.first_name || 'there' })
 
         await supabase.from('sms_motivation_checkin_sessions').insert({
           user_id: u.id,
