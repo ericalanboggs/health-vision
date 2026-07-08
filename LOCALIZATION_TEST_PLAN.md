@@ -160,10 +160,13 @@ Set the test account `motivation_mode = true` + a steering prompt + `preferred_l
 
 ## 5. Signup path & compliance (Workstream F)
 
-> **Timing caveat → see PRODUCT RISK in §8.** OTP + opt-in localize **only if
-> `preferred_language` is set _before_ phone verification.** There's no onboarding language
-> picker in Phase 0, so a brand-new organic signup gets these in English. To *test* the
-> localized path, set the account's language first (admin), then re-trigger these.
+> **Now auto-detected.** `preferred_language` is set silently from the browser locale
+> (`navigator.language`) at profile-setup, *before* phone verification — so an organic es/pt-BR
+> signup gets OTP + opt-in in their language automatically. To test: use a browser/OS set to
+> Spanish or Portuguese (or override the account's language first), then run the signup path.
+| # | Scenario | Send / Trigger | Expect | ✅ |
+|---|---|---|---|---|
+| 5.0 | **Auto-detect** | Sign up with browser language set to es/pt-BR | New profile's `preferred_language` = es/pt-BR (check DB), OTP/opt-in arrive in-language | ☐ |
 
 | # | Scenario | Send / Trigger | Expect | ✅ |
 |---|---|---|---|---|
@@ -203,21 +206,17 @@ These are deliberately deferred; seeing English here is correct for Phase 0:
 
 ---
 
-## 8. Product risk to decide (not a test — a decision)
+## 8. Signup first-touch — RESOLVED (was a product risk)
 
-**Organic es/pt-BR signups get their FIRST touch in English.** Because there's no language
-picker in the onboarding flow (Phase 0), `preferred_language` is `'en'` until a user reaches
-their Profile *after* signup — but the OTP and opt-in confirmation fire *during* signup. So the
-localized signup trio (§5) is effectively **only reachable via admin pre-set**, i.e. not
-shippable to real new users until we add an onboarding picker.
+Originally: organic es/pt-BR signups got their first touch (OTP, opt-in) in English because
+`preferred_language` wasn't set until the Profile page, *after* signup.
 
-Impact: a Spanish/Portuguese speaker's very first Summit texts (verification code, "you're
-subscribed") arrive in English — right at the step where they're deciding whether to trust and
-opt in. Risk of confusion / early opt-out for exactly the audience this initiative serves.
-
-**Decision needed:** accept this for Phase 0 (pilot cohort is admin-set anyway), OR close it by
-adding a language selector to `profile-setup` (before phone verification). The latter is a small,
-self-contained add — say the word and it becomes the real fix.
+**Closed** by silently auto-detecting the language from the browser locale
+(`navigator.language`) at profile-setup, *before* phone verification (`src/lib/detectLanguage.js`
+→ `ProfileSetup.jsx`). So an organic Spanish/Portuguese signup now gets OTP + opt-in + coaching
+in their language with no UI. It's an **overridable default** — the Profile picker and admin
+override correct the edge cases (e.g. a US Spanish speaker on an English phone). Verify via test
+5.0.
 
 ---
 
