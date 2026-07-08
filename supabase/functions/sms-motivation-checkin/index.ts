@@ -146,7 +146,9 @@ function parseRuler(body: string): number | null {
 }
 function isAffirmative(body: string): boolean {
   // en + es + pt-BR (localization Workstream C)
-  return /(^|\s)(yes|yep|yeah|yup|sure|ok|okay|sounds good|let'?s|i'?m in|ready|do it|s[íi]|claro|dale|vale|de acuerdo|list[oa]|sim|com certeza|bora|pode ser|t[oô] dentro)(?![a-záàâãäéèêíìóòôõöúùüçñ])/i.test(body)
+  // accented "sí" is confident anywhere; bare "si" only as a standalone reply (not "si puedo")
+  if (/^\s*si[\s!.,]*$/i.test(body)) return true
+  return /(^|\s)(yes|yep|yeah|yup|sure|ok|okay|sounds good|let'?s|i'?m in|ready|do it|sí|claro|dale|vale|de acuerdo|list[oa]|sim|com certeza|bora|pode ser|t[oô] dentro)(?![a-záàâãäéèêíìóòôõöúùüçñ])/i.test(body)
 }
 function isReadyIntent(body: string): boolean {
   // en + es + pt-BR

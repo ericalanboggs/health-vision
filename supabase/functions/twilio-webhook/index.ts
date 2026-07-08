@@ -65,10 +65,14 @@ const CRISIS_RESPONSE: Record<string, string> = {
     `Você não está sozinho/a. Esses serviços são gratuitos, confidenciais e disponíveis 24 horas.`,
 }
 
-/** Returns the language a crisis message was expressed in ('en'|'es'|'pt-BR'), or null. */
+/** Returns the language a crisis message was expressed in ('en'|'es'|'pt-BR'), or null.
+ * Accent-INSENSITIVE: a distressed user won't type clean accents, and a false negative here
+ * is the worst outcome, so we strip diacritics before matching (patterns already tolerate
+ * both accented and bare forms via char classes; this covers any dropped accent). */
 function detectCrisisLang(text: string): string | null {
+  const norm = text.normalize('NFD').replace(/[̀-ͯ]/g, '')
   for (const [lang, patterns] of Object.entries(CRISIS_PATTERNS)) {
-    if (patterns.some(pattern => pattern.test(text))) return lang
+    if (patterns.some(pattern => pattern.test(text) || pattern.test(norm))) return lang
   }
   return null
 }

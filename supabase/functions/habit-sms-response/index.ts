@@ -183,8 +183,10 @@ function findHabitConfig<T extends { habit_name: string }>(configs: T[], aiName:
 function parseTrackingResponse(body: string, expectedType: 'boolean' | 'metric'): { type: 'boolean'; value: boolean } | { type: 'metric'; value: number } | null {
   const trimmed = body.trim().toLowerCase()
 
-  // Check for pure numeric values first (including "1" and "0")
-  const numMatch = trimmed.match(/^[\d.]+$/)
+  // Check for pure numeric values first (including "1" and "0").
+  // Accept a comma decimal ("1,5") — standard in es/pt-BR — by normalizing to a period.
+  const numStr = /^\d+,\d+$/.test(trimmed) ? trimmed.replace(',', '.') : trimmed
+  const numMatch = numStr.match(/^[\d.]+$/)
   if (numMatch) {
     const num = parseFloat(numMatch[0])
     if (!isNaN(num) && num >= 0) {
@@ -200,8 +202,13 @@ function parseTrackingResponse(body: string, expectedType: 'boolean' | 'metric')
   if (/^(✓|✔️|👍|✅|💯)/.test(trimmed)) {
     return { type: 'boolean', value: true }
   }
-  // Affirmatives — en + es + pt-BR (localization Workstream C)
-  if (/^(y|yes|yeah|yep|yup|ya|yea|did|done|finished|completed|sure|true|got it|i did|i have|i've|s[íi]|claro|dale|hecho|list[oa]|sim|feito|pronto|conclu[íi]d[oa])(?![a-záàâãäéèêíìóòôõöúùüçñ])/i.test(trimmed)) {
+  // Affirmatives — en + es + pt-BR (localization Workstream C).
+  // NOTE: accented "sí" = yes (safe as a prefix); bare "si" = Spanish "if" (ambiguous) so it
+  // only counts when it's the WHOLE reply ("si", "si!"), never a prefix like "si puedo".
+  if (/^si[\s!.,]*$/i.test(trimmed)) {
+    return { type: 'boolean', value: true }
+  }
+  if (/^(y|yes|yeah|yep|yup|ya|yea|did|done|finished|completed|sure|true|got it|i did|i have|i've|sí|claro|dale|hecho|list[oa]|sim|feito|pronto|conclu[íi]d[oa])(?![a-záàâãäéèêíìóòôõöúùüçñ])/i.test(trimmed)) {
     return { type: 'boolean', value: true }
   }
   if (/^(👎|❌)/.test(trimmed)) {
