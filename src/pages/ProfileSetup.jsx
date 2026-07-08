@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { Person, Phone, Email, Autorenew } from '@mui/icons-material'
 import { getCurrentUser } from '../services/authService'
 import { upsertProfile } from '../services/authService'
+import { detectLanguage } from '../lib/detectLanguage'
 import { trackEvent } from '../lib/posthog'
 import { getAcquisitionSource, clearAcquisition } from '../lib/acquisition'
 import supabase from '../lib/supabase'
@@ -114,6 +115,9 @@ export default function ProfileSetup() {
         sms_opt_in: formData.smsConsent,
         profile_completed: true,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        // Silent, overridable default from the browser locale so es/pt-BR signups get their
+        // first touch (OTP, opt-in, coaching) localized. Correctable in Profile / admin.
+        preferred_language: detectLanguage(),
         trial_started_at: new Date().toISOString(),
         trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
         ...(acquisitionSource ? { acquisition_source: acquisitionSource } : {}),
