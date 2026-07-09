@@ -56,15 +56,15 @@ Burnout isn't a stamina problem.
 
 I used to think it was. If I was this tired, I must not be tough enough. Just push harder, sleep less, catch up on the weekend.
 
-Then I looked at the data. Gallup surveyed 7,500 full-time employees and found about two in three feel burned out at least sometimes. And the top causes weren't personal — unmanageable workload, unreasonable time pressure, unfair treatment. Not "wasn't disciplined enough." Not once.
+Then I looked at the data. Gallup surveyed 7,500 full-time employees and found about two in three feel burned out at least sometimes. And the top causes weren't personal — unmanageable workload, unreasonable time pressure, unfair treatment. None of them were "you're not tough enough."
 
-That reframed it for me. Burnout isn't your body running out of gas. It's a signal — your days stopped matching what you actually care about.
+That reframed it for me. Burnout isn't your body running out of gas so much as a signal that your days stopped matching what you actually care about.
 
-You're not weak. You're spending all your energy on things that aren't yours.
+You're not weak. You're just spending all your energy on things that aren't really yours.
 
-The fix isn't more grit. It's getting a little of your life pointed back at what it's for.
+The fix isn't more grit, then. It's getting a little of your life pointed back at what it's for.
 
-That's a different problem. And a much more solvable one.
+That's a different problem than the one I thought I had — and honestly, a much more solvable one.
 
 *(Source: Gallup, "Employee Burnout: The 5 Main Causes.")*
 
@@ -127,7 +127,7 @@ I got certified as a health coach at Mayo Clinic. Then I did the thing you're no
 
 Because here's what I kept running into. The plans were never the problem. I knew what to do. Everyone knows what to do.
 
-What was missing was someone in my corner on the ordinary days. And it turns out that's not a soft thing — it's measurable. In a Dominican University study, people who sent a weekly progress note to someone else hit their goals more than 70% of the time. The ones who just kept their goals in their head? 35%. Same goals. Double the follow-through, from accountability alone.
+What was missing was someone in my corner on the ordinary days. And it turns out that's not just a soft thing — it's measurable. In a Dominican University study, people who sent a weekly progress note to someone else hit their goals more than 70% of the time. The people who just kept their goals in their own head landed around 35%. Same goals — the only real difference was having someone in the loop.
 
 That's the whole gap. Not knowledge. Not motivation on the good days. Someone tracking the small stuff with you on the Tuesday with back-to-back meetings and no willpower left.
 
@@ -153,11 +153,11 @@ Jen came in burned out and stretched thin. Here's what she told me a while in:
 
 "Summit helped me see what was holding me back. It gave me the tools to kickstart my path toward a more centered and healthier life."
 
-Notice what she didn't say. Not a transformation. Not a six-week overhaul. She saw what was in the way, and she started — small, and for real.
+And notice what she didn't say. There's no transformation in there, no six-week overhaul. She just saw what was in the way, and she started — small, and for real.
 
 There's a reason that works. Harvard researchers analyzed nearly 12,000 daily diary entries from people at work, looking for what actually drives motivation. The single biggest factor on people's best days wasn't a raise or a big win. It was simply making progress — even small progress — on something that mattered to them.
 
-Small wins aren't a consolation prize. They're the engine.
+That's the part I keep coming back to. Small progress isn't a consolation prize — it's most of what actually keeps people going.
 
 That's what I want for anyone stuck on the treadmill. If that's you, the free guide is the place to start. Same method Jen used. Just an email, then it's yours.
 
