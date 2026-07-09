@@ -22,6 +22,40 @@ Watch for `source = 'linkedin-post3'` / `'linkedin-post5'`.
 
 ---
 
+## Post 0 — Founder update / who Summit is for (no link)
+
+*Lead-in to the series. Founder-in-public: where the build is, and the pattern that's
+clarifying who Summit is for. Ties all three doors together (approaching-40, postpartum,
+burnout) and tees up the posts that follow. No study cited here on purpose — the evidence
+is Eric's own pilots. Optional: drop a real number into the "paying members" line if you
+want to be concrete (left qualitative so nothing overstates).*
+
+A quick, honest update on Summit — and something that's finally getting clear.
+
+I built it. I ran pilots. People are paying for it now. That part still gets me a little.
+
+But the thing I didn't expect is what these months taught me about *who* this is actually for.
+
+Early on, you build for "anyone who wants to be healthier." That's not a person. That's a wish.
+
+What I'm seeing now is a pattern. The people Summit really clicks for tend to be at the same kind of moment — a hinge point, where the old way of doing things quietly stopped working.
+
+A few keep showing up:
+
+- People coming up on 40, realizing the body keeps score and the numbers are starting to talk back.
+- New moms, six months to a few years in, trying to find themselves again in a life that runs on everyone else.
+- High-output people, running hard and burned out — good at the job, no longer sure what it's for.
+
+Different lives. Same core thing. They've tried the plans, the apps, the willpower reset. And those didn't fail because they weren't trying. They failed because each one was just one more thing to manage.
+
+What's working instead is smaller, and more human. One tiny habit at a time. A nudge on the ordinary days. Something that actually asks what matters to you — with a real person behind it.
+
+That clarity is shaping everything I build next. I'll have more to say on each of these groups soon.
+
+If you're one of them, you probably already know it.
+
+---
+
 ## Post 1 — The reframe (no link)
 
 Burnout isn't a stamina problem.
