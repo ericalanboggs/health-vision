@@ -286,10 +286,10 @@ export default function YourTurn() {
         {/* Proof band — real pilot mom, in her words */}
         <section className="rounded-3xl bg-gradient-to-br from-summit-forest to-summit-pine px-6 py-10 text-center sm:px-10">
           <p className="mx-auto max-w-2xl text-xl font-semibold leading-snug text-white sm:text-2xl">
-            “There are 1–2 days every week I know I’d have missed my goals if it weren’t for Summit.
-            Those text reminders are the gentle nudge I need — and it never feels like a chore.”
+            “Summit provided structure, easy-to-implement habits, and the support I needed as a
+            postpartum mom looking to revive energy and feel more connected within.”
           </p>
-          <p className="mt-4 text-sm font-medium text-summit-lime">Julie, mom of Clark (1)</p>
+          <p className="mt-4 text-sm font-medium text-summit-lime">AJ, postpartum mom</p>
         </section>
 
         {/* Three things that keep it going */}
