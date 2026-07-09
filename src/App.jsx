@@ -43,6 +43,7 @@ import SmsConsent from './pages/SmsConsent'
 import Freebies from './pages/Freebies'
 import LifestyleGuide from './pages/LifestyleGuide'
 import YourTurn from './pages/YourTurn'
+import Burnout from './pages/Burnout'
 import ChallengesLanding from './pages/ChallengesLanding'
 import ChallengeDetail from './pages/ChallengeDetail'
 import ChallengeAddHabit from './pages/ChallengeAddHabit'
@@ -154,6 +155,7 @@ function App() {
         <Route path="/freebies" element={<Freebies />} />
         <Route path="/lifestyle-changes" element={<LifestyleGuide />} />
         <Route path="/yourturn" element={<YourTurn />} />
+        <Route path="/burnout" element={<Burnout />} />
 
         {/* Welcome back - reactivation flow */}
         <Route
