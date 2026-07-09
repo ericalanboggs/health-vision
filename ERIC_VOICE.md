@@ -47,8 +47,32 @@ honest version, and roots for you without going soft.
 - **Human, not slick.** It should read like a real person arriving at a point,
   not pre-polished marketing copy. A little texture beats a frictionless line.
 
+## Longer posts & founder updates (how he structures a whole piece)
+
+The sentence-level "hedge then land" is right, but across a *full post* he moves
+slower and warmer than punchy copy. Calibrated from him directly (2026-07-09):
+
+- **Greet people; don't open cold on a clever line.** A founder update starts like
+  a person saying hello — "Hi all — really excited to share some updates on Summit.
+  It's been a little while." The warmth and the direct address are the opener, not a hook.
+- **Unpack the synthesis slowly — arrive, don't lead.** He reaches the insight by
+  narrating the realization: "I ran into this problem, and then here's what I found."
+  The point lands at the *end* of the walk-through, not the top. Sequential, thinking-it-
+  through, teaching from his own experience.
+- **He works a guiding phrase.** Grabs a frame ("meet people where they are") and turns
+  it over out loud — "here's what I mean by that."
+- **Enumerates naturally.** "That means a couple of things. One, … "
+- **Corrects toward honesty mid-thought.** "That isn't marketing — that's just how habit
+  change works." He pauses to keep himself honest and non-salesy.
+- **His first draft runs long and searching. That's native.** Brevity is imposed after —
+  and it can go too far. Some of the searching texture should survive the edit.
+
 ## What to avoid
 
+- **The aphoristic slogan / mic-drop fragment.** Clean, punchy, standalone declaratives —
+  "That's not a person. That's a wish." — read as a pro copywriter who studied him, NOT
+  as him. This is the "too good / that's not how I talk" tell. When he lands a point it's
+  the end of a walk-through, not a slogan. (Flagged directly by Eric, 2026-07-09.)
 - Patronizing positivity and hype. (This is the one he hates most.)
 - Clusters of big words or jargon.
 - Long, nested sentences with multiple clauses.
