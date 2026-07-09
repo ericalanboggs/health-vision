@@ -64,18 +64,26 @@ The loop won't break itself. You're too good at feeding it. The only way out is 
 
 ## Post 3 — The method, given away (LINK)
 
-I've tried every app. Headspace, Calm, Whoop, Oura, a productivity coach I found in a podcast. Each one worked for about ten days.
+I've tried the trackers. Whoop. Fitbit. A few others.
 
-The problem was never the app. It's that every one of them was one more thing to manage. And the first heavy week, the extra thing is the first thing to go.
+Here's what I noticed. They're genuinely good at answering one specific question. And then you're done.
 
-Here's what actually held for me. It's not mine — it's how habits genuinely form.
+With Whoop, I was curious how my sleep, my activity, and a few habits actually added up to how I felt. Real question. It answered it — pretty fast. And then that was kind of it. What was left was the feeling of being tracked, which, honestly, I didn't love.
+
+Fitbit was the anxious one. Some stress, a racing heart, and half of what I wanted was just to know I was okay. It told me. My heart rate was fine — dropped when I was stressed, sometimes, which was genuinely interesting. Question answered. And I was done being tracked.
+
+Here's the thing none of them did. Not one ever asked what actually matters to me. They measure you. They don't support you. And when your questions change — and they do — a tracker just keeps tracking.
+
+What I needed was something more human. A two-way thing that moves with me as I evolve. A tracker hands you a number. It can't hand you a life pointed back at what it's for.
+
+That starts with a method that's about you, not your data:
 
 1. Pick one thing you've lost. Not the whole list. One.
 2. Shrink it until it's almost too small to skip. A walk after the last meeting. Laptop shut by 9.
-3. Anchor it to something you already do. This is the part people skip, and it's the part that works. Across more than 90 studies, deciding exactly *when and where* a small action happens — tied to a cue you already hit — is one of the most reliable ways to actually follow through. The cue does the remembering, not your willpower.
+3. Anchor it to something you already do. Across more than 90 studies, deciding exactly *when and where* a small action happens — tied to a cue you already hit — is one of the most reliable ways to follow through. The cue does the remembering, not your willpower.
 4. Run it a week. Add the next only when the last one holds.
 
-One more thing that took the pressure off me: the research on how long a habit takes to stick found a median of 66 days — with a range from 18 to 254. So if it feels slow, that's not you failing. That's the actual timeline. Slow is why it survives a 60-hour week.
+And if it feels slow — the research on habit formation found a median of 66 days to stick, ranging from 18 to 254. Slow isn't you failing. Slow is why it survives a 60-hour week.
 
 I wrote the whole thing up — 2 pages, free, with a worksheet. No signup wall.
 
