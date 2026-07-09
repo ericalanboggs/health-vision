@@ -85,7 +85,7 @@ That starts with a method that's about you, not your data:
 
 And if it feels slow — the research on habit formation found a median of 66 days to stick, ranging from 18 to 254. Slow isn't you failing. Slow is why it survives a 60-hour week.
 
-I wrote the whole thing up — 2 pages, free, with a worksheet. No signup wall.
+I wrote the whole thing up — 2 pages, free, with a worksheet. Just drop your email and it's yours.
 
 → go.summithealth.app/burnout?source=linkedin-post3
 
@@ -131,7 +131,7 @@ There's a reason that works. Harvard researchers analyzed nearly 12,000 daily di
 
 Small wins aren't a consolation prize. They're the engine.
 
-That's what I want for anyone stuck on the treadmill. If that's you, the free guide is the place to start. Same method Jen used. No card, no wall.
+That's what I want for anyone stuck on the treadmill. If that's you, the free guide is the place to start. Same method Jen used. Just an email, then it's yours.
 
 → go.summithealth.app/burnout?source=linkedin-post5
 
