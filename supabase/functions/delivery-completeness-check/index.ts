@@ -81,6 +81,10 @@ serve(async (req) => {
         .select('id, first_name, phone, sms_opt_in, timezone, subscription_status, trial_ends_at, challenge_type')
         .in('id', habitUserIds)
         .eq('sms_opt_in', true)
+        // Mirror send-sms-reminders exactly: Motivation Mode users are off the
+        // action-stage track and never get habit reminders, so they must not be
+        // flagged as "missing" here. See send-sms-reminders/index.ts.
+        .eq('motivation_mode', false)
         .not('phone', 'is', null)
         .is('deleted_at', null)
 
