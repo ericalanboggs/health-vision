@@ -35,6 +35,11 @@ const FREEBIES: Record<string, FreebieConfig> = {
     file: 'postpartum-guide.pdf',
     kind: 'guide',
   },
+  'burnout-guide': {
+    name: 'Off the Treadmill',
+    file: 'burnout-guide.pdf',
+    kind: 'guide',
+  },
 }
 
 function isValidEmail(email: string): boolean {
@@ -291,6 +296,85 @@ function buildYourTurnGuideHtml(downloadUrl: string, logoUrl: string): string {
 `
 }
 
+function buildOffTreadmillGuideHtml(downloadUrl: string, logoUrl: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Off the Treadmill — the guide is inside</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+          <tr>
+            <td align="center" style="padding: 40px 40px 20px 40px;">
+              <img src="${logoUrl}" alt="Summit" width="120" style="display: block; max-width: 120px; height: auto;">
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding: 0 40px 12px 40px;">
+              <h1 style="margin: 0; font-size: 26px; font-weight: 700; color: #1a1a1a; line-height: 1.3;">
+                Here's your guide
+              </h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0 40px 20px 40px;">
+              <p style="margin: 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
+                Burnout isn't a stamina problem — it's a sign your days stopped matching what matters.
+                <strong>Off the Treadmill</strong> is a no-overhaul way back to what you're actually
+                building toward, in the small increments you already have.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding: 8px 40px 28px 40px;">
+              <a href="${downloadUrl}" style="display: inline-block; padding: 16px 32px; background-color: #15803d; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
+                Download the guide (PDF)
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0 40px 24px 40px;">
+              <p style="margin: 0 0 6px 0; font-size: 16px; font-weight: 600; color: #1a1a1a;">
+                Start here:
+              </p>
+              <p style="margin: 0; font-size: 15px; color: #4a4a4a; line-height: 1.7;">
+                Page 2 is your plan, on paper. Print it or fill it on your phone — name what's draining
+                you, write the one line you're reaching for, pick the one small thing, and anchor it to
+                your day. That's the whole first step.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 20px 40px 40px 40px; background-color: #f9fafb; border-radius: 0 0 12px 12px;">
+              <p style="margin: 0 0 8px 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
+                Want someone in your corner so it isn't all on you — a gentle nudge over text on the days
+                it slips, and a real coach behind it? That's Summit.
+                <a href="https://summithealth.app/use-cases/burnout?source=burnout" style="color: #15803d; font-weight: 600;">Try it free for 14 days</a>.
+              </p>
+              <p style="margin: 12px 0 0 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
+                — <strong>Coach Eric</strong><br>
+                <span style="font-size: 14px; color: #6a6a6a;">Summit Founder</span>
+              </p>
+              <p style="margin: 16px 0 0 0; font-size: 13px; color: #9a9a9a; text-align: center; line-height: 1.5;">
+                Questions? Just reply to this email.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS })
@@ -330,16 +414,21 @@ serve(async (req) => {
     const downloadUrl = `${FRONTEND_URL}/freebies/${cfg.file}`
     const logoUrl = `${FRONTEND_URL}/summit-logo.png`
     const isPostpartum = freebieSlug === 'postpartum-guide'
+    const isBurnout = freebieSlug === 'burnout-guide'
     const subject = isPostpartum
       ? 'Your Turn — the guide is inside'
-      : cfg.kind === 'guide'
-        ? `Your ${cfg.name} — download inside`
-        : `Your ${cfg.name} skill — download inside`
+      : isBurnout
+        ? 'Off the Treadmill — the guide is inside'
+        : cfg.kind === 'guide'
+          ? `Your ${cfg.name} — download inside`
+          : `Your ${cfg.name} skill — download inside`
     const html = isPostpartum
       ? buildYourTurnGuideHtml(downloadUrl, logoUrl)
-      : cfg.kind === 'guide'
-        ? buildGuideHtml(downloadUrl, logoUrl)
-        : buildDownloadHtml(downloadUrl, logoUrl, cfg.name)
+      : isBurnout
+        ? buildOffTreadmillGuideHtml(downloadUrl, logoUrl)
+        : cfg.kind === 'guide'
+          ? buildGuideHtml(downloadUrl, logoUrl)
+          : buildDownloadHtml(downloadUrl, logoUrl, cfg.name)
     const emailResult = await sendEmail({ to: email, subject, html })
 
     if (emailResult.success) {
