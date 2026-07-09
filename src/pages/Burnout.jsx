@@ -314,7 +314,7 @@ export default function Burnout() {
             “Summit helped me see what was holding me back. It gave me the tools to kickstart my path
             toward a more centered and healthier life.”
           </p>
-          <p className="mt-4 text-sm font-medium text-summit-lime">Julie D., Summit member</p>
+          <p className="mt-4 text-sm font-medium text-summit-lime">Jen, Summit member</p>
         </section>
 
         {/* Three things that keep it going */}
