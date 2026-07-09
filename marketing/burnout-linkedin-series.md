@@ -4,7 +4,17 @@
 Voice: `ERIC_VOICE.md` (Eric, first person). Audience: mid-to-senior knowledge workers
 on fumes. Strategy: give the method away, earn trust, let the guide be the soft CTA.
 Only posts 3 and 5 carry a link — the rest are pure value so the feed doesn't read as
-a funnel. Guide link: `go.summithealth.app/burnout`. Cadence: ~1/week, in order.*
+a funnel. Guide link: `go.summithealth.app/burnout` (posts tag `?source=linkedin-post3`
+/ `-post5` so opt-ins are attributable per post). Cadence: ~1/week, in order.*
+
+**Track opt-ins** (Supabase SQL editor):
+```sql
+select source, count(*) leads, max(created_at) latest
+from freebie_leads
+where freebie_slug = 'burnout-guide'
+group by source order by leads desc;
+```
+Watch for `source = 'linkedin-post3'` / `'linkedin-post5'`.
 
 ---
 
@@ -57,7 +67,7 @@ That's it. It feels too slow to matter. That's exactly why it survives a 60-hour
 
 I wrote the whole thing up — 2 pages, free, with a worksheet. No signup wall.
 
-→ go.summithealth.app/burnout
+→ go.summithealth.app/burnout?source=linkedin-post3
 
 ---
 
@@ -91,7 +101,7 @@ That's what I want for anyone stuck on the treadmill.
 
 If that's you, the free guide is the place to start. Same method Jen used. No card, no wall.
 
-→ go.summithealth.app/burnout
+→ go.summithealth.app/burnout?source=linkedin-post5
 
 ---
 
@@ -100,7 +110,7 @@ If that's you, the free guide is the place to start. Same method Jen used. No ca
   post one, post that.
 - **Links suppress reach on LinkedIn.** Standard move: put the link in the *first comment* and
   add "(link in comments)" to the post body. Test both — you have two link posts (3 and 5) to
-  compare.
+  compare. The `?source=linkedin-post3` / `-post5` tags let you see which post actually converted.
 - **Cadence:** ~1/week, in order. The no-link posts (1, 2, 4) build the audience that makes the
   link posts convert. Don't front-load the asks.
 - **Reuse:** these double as newsletter sections, a Twitter/X thread, or the founder-note block
