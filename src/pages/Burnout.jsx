@@ -308,13 +308,13 @@ export default function Burnout() {
           <p className="mt-4 text-sm font-medium text-summit-moss">— Eric, Summit founder</p>
         </section>
 
-        {/* Proof band — PLACEHOLDER until a real burnout pilot quote lands */}
+        {/* Proof band — real Summit member */}
         <section className="rounded-3xl bg-gradient-to-br from-summit-forest to-summit-pine px-6 py-10 text-center sm:px-10">
           <p className="mx-auto max-w-2xl text-xl font-semibold leading-snug text-white sm:text-2xl">
-            “I didn’t need another optimization project. I needed one small thing that survived a brutal
-            week — and then another. That’s the first time in years anything actually stuck.”
+            “Summit helped me see what was holding me back. It gave me the tools to kickstart my path
+            toward a more centered and healthier life.”
           </p>
-          <p className="mt-4 text-sm font-medium text-summit-lime">Summit member {/* TODO: real burnout pilot name + quote */}</p>
+          <p className="mt-4 text-sm font-medium text-summit-lime">Julie D., Summit member</p>
         </section>
 
         {/* Three things that keep it going */}
