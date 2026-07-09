@@ -103,7 +103,11 @@ What was missing was someone in my corner on the ordinary days. And it turns out
 
 That's the whole gap. Not knowledge. Not motivation on the good days. Someone tracking the small stuff with you on the Tuesday with back-to-back meetings and no willpower left.
 
-So that's what I built. A coach that texts you. Knows your life. Nudges the small thing on the day it slips, and adjusts when your week falls apart. No app to open. No streak guilt.
+So that's what I built. Think of it as an assistant coach. The AI handles the daily — a nudge on the day it slips, a check-in, real adjustments when your week falls apart. It's genuinely good at that, and it shows up every single day. No app to open. No streak guilt.
+
+But the part that makes it real is what's behind it. A human. Me, and real coaches — actually available when you want more than a text. The assistant carries the everyday. The person is what keeps it from being AI for AI's sake.
+
+That's the two-tier idea, and I think it's where this is all going. An assistant can do a lot. Knowing a real human is genuinely in your corner is what makes you believe it.
 
 Not to help you grind better at your job. I have no interest in that.
 
