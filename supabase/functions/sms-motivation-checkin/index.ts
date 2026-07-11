@@ -62,10 +62,11 @@ async function generateAck(userMessage: string, firstName: string, lastTitle: st
   try {
     const system = [
       'You are Summit, a warm habit coach, replying to a user in "Motivation Mode" (they get a daily piece of',
-      'inspiration, never pressure). Write ONE short SMS reply (max ~160 chars), warm and human, matching their',
-      'energy. At most 1 tasteful emoji. If they just said thanks / nice, keep it light and VARIED (e.g.',
-      '"You got it 🙌"). If they shared real feedback, warmly acknowledge you\'ll fold it in. NEVER use a stock',
-      '"noted, keep an eye out" phrase. Vary your wording every time.',
+      'inspiration, never pressure). They just sent a positive reaction, a thanks, or a light comment — NOT a',
+      'request to change anything. Write ONE short SMS reply (max ~160 chars), warm and human, matching their',
+      'energy, at most 1 tasteful emoji, and VARIED (e.g. "You got it 🙌", "Glad that one landed ☀️"). Do NOT',
+      'promise to change, update, tune, or "fold in" anything — they did not ask for a change. NEVER use a',
+      'stock "noted, keep an eye out" phrase.',
     ].join('\n') + languageDirective(lang)
     const userPrompt = `User (${firstName}) texted: "${userMessage}".` + (lastTitle ? ` Last thing we sent them: "${lastTitle}".` : '')
     const out = (await callOpenAI(system, userPrompt, 0.85, 80)).trim()
@@ -75,13 +76,43 @@ async function generateAck(userMessage: string, firstName: string, lastTitle: st
   }
 }
 
-/** A real content request worth acting on — not a pleasantry, a bare number, or a ready signal. */
-function isSubstantiveFeedback(body: string): boolean {
+/**
+ * iOS "tapback" reactions delivered to an SMS (green-bubble) recipient arrive as plain text
+ * like 'Loved an image', 'Liked "…"', 'Emphasized "…"', 'Laughed at "…"', 'Questioned "…"',
+ * 'Disliked "…"', or newer 'Reacted 👍 to …'. These are reactions, not messages — a positive
+ * reaction is never a content instruction.
+ */
+function isTapback(body: string): boolean {
+  const t = body.trim()
+  return /^(loved|liked|disliked|laughed at|emphasi[sz]ed|questioned)\s+(an image|a video|a movie|an audio message|the location|["“'].*)/i.test(t)
+    || /^reacted\b.*\bto\b/i.test(t)
+}
+
+/**
+ * Steer content ONLY on an actual request to change what they receive (topic/type/tone/length/
+ * frequency, or an explicit more/less). Praise, thanks, and reactions are NOT feedback to act on
+ * — a "like" is not an instruction (that assumption is exactly what over-tuned users' content).
+ * Conservative: tapbacks / ready-intents / bare numbers short-circuit to false, and the
+ * classifier itself defaults to NO when unsure or on error.
+ */
+async function isActionableContentRequest(body: string): Promise<boolean> {
+  if (isTapback(body)) return false
   if (isReadyIntent(body)) return false
   if (/^\s*\d+\s*$/.test(body)) return false // bare rating like "10"
-  const isPleasantry = body.length <= 20 && /\b(thanks|thank you|thx|ty|awesome|nice|cool|great|love it|👍|🙏|❤️|🙌)\b/i.test(body)
-  if (isPleasantry) return false
-  return body.length >= 12
+  try {
+    const system = [
+      'You classify one SMS reply from a user in a daily-motivation text program. Answer strictly',
+      'YES or NO to a single question: does this message REQUEST a change to the content they',
+      'receive — a different topic, type, tone, length, or frequency, or explicitly asking for more',
+      'or less of something specific? Pure praise, thanks, emoji, or a positive reaction (e.g.',
+      '"loved this", "great, thank you", "🙌", "loved an image") is NOT a request → answer NO.',
+      'If unsure, answer NO.',
+    ].join(' ')
+    const out = (await callOpenAI(system, `Message: "${body}"`, 0, 3)).trim().toUpperCase()
+    return out.startsWith('Y')
+  } catch (_e) {
+    return false // never steer on ambiguous input
+  }
 }
 
 /** Merge a new content ask into the user's durable, evolving preference note. */
@@ -229,9 +260,11 @@ serve(async (req) => {
         .maybeSingle()
 
       // A real content ask → persist it durably, re-tune upcoming content NOW, and set an
-      // honest expectation. (Previously this only tagged one queue row that generation never
-      // read, and the ack over-promised "stay tuned" with nothing behind it.)
-      if (isSubstantiveFeedback(body)) {
+      // honest expectation. A like / positive reaction is NOT an ask — it falls through to the
+      // light ack below and never touches the steering note. (Previously any 12+ char reply,
+      // including an iMessage tapback like "Loved an image", was treated as feedback and steered
+      // the content.)
+      if (await isActionableContentRequest(body)) {
         const merged = await mergePref(profile.motivation_pref, body)
         await supabase.from('profiles').update({ motivation_pref: merged }).eq('id', userId)
         if (lastSent?.id) {
@@ -270,8 +303,10 @@ serve(async (req) => {
       context.checkinId = checkinRow?.id || null
 
       // Fold the check-in answer into the durable preference note so next week's generation
-      // honors it. (No mid-week re-tune here — the check-in is Saturday; next content is Monday.)
-      if (isSubstantiveFeedback(body)) {
+      // honors it — but ONLY if it's an actual content request. If they just answered warmly
+      // ("it was all great!"), we keep the raw content_feedback above but don't steer on it.
+      // (No mid-week re-tune here — the check-in is Saturday; next content is Monday.)
+      if (await isActionableContentRequest(body)) {
         const merged = await mergePref(profile.motivation_pref, body)
         await supabase.from('profiles').update({ motivation_pref: merged }).eq('id', userId)
       }
