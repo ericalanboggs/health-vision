@@ -49,27 +49,35 @@ async function callOpenAI(system: string, userPrompt: string, temperature: numbe
 }
 
 /**
- * A short, warm, VARIED reply to a casual or feedback text (replaces the old single
- * canned ack that repeated verbatim). Falls back to a small varied pool on any error.
+ * A short, warm, VARIED reply to a non-request message: a light thanks/reaction OR — importantly —
+ * a commitment to an action / an answer to the prompt's question. Gets the message the user was
+ * replying to so it can CELEBRATE a commitment specifically instead of flattening it into a
+ * content change (which reads as demotivating). Falls back to a small varied pool on any error.
  */
-async function generateAck(userMessage: string, firstName: string, lastTitle: string | null, lang = 'en'): Promise<string> {
+async function generateAck(userMessage: string, firstName: string, lastContent: string | null, lang = 'en'): Promise<string> {
   const fallbacks = [
-    `You got it, ${firstName} 🙌`,
-    `Anytime — more good stuff on the way 🌿`,
-    `Glad that one landed ☀️`,
-    `💚 Be good to yourself today, ${firstName}.`,
+    `Love that, ${firstName} 🙌`,
+    `Yes — that one counts ☀️`,
+    `That's a good one. Go enjoy it 🌿`,
+    `💚 Rooting for you today, ${firstName}.`,
   ]
   try {
     const system = [
-      'You are Summit, a warm habit coach, replying to a user in "Motivation Mode" (they get a daily piece of',
-      'inspiration, never pressure). They just sent a positive reaction, a thanks, or a light comment — NOT a',
-      'request to change anything. Write ONE short SMS reply (max ~160 chars), warm and human, matching their',
-      'energy, at most 1 tasteful emoji, and VARIED (e.g. "You got it 🙌", "Glad that one landed ☀️"). Do NOT',
-      'promise to change, update, tune, or "fold in" anything — they did not ask for a change. NEVER use a',
-      'stock "noted, keep an eye out" phrase.',
+      'You are Summit, a warm habit coach texting a user in "Motivation Mode" (a daily piece of',
+      'inspiration, never pressure). They just replied to their latest message, and they did NOT ask to',
+      'change what content they get. Write ONE short SMS reply (max ~200 chars), warm, human, VARIED, at',
+      'most 1 tasteful emoji. Read their intent:',
+      '- If they are committing to an action, or answering a question the message asked (e.g. "I\'ll take',
+      '  a midday walk"), CELEBRATE that specific thing — name it back, cheer them on, maybe a light nudge',
+      '  to go enjoy it. This is a win; treat it like one.',
+      '- If it is just a thanks or a light reaction, keep it brief and warm.',
+      'NEVER say you will change, update, tune, add, or "fold in" content — they did not ask for that, and',
+      'turning a personal commitment into a settings/content change is demotivating. NEVER use a stock',
+      '"noted, keep an eye out" phrase.',
     ].join('\n') + languageDirective(lang)
-    const userPrompt = `User (${firstName}) texted: "${userMessage}".` + (lastTitle ? ` Last thing we sent them: "${lastTitle}".` : '')
-    const out = (await callOpenAI(system, userPrompt, 0.85, 80)).trim()
+    const userPrompt = `User (${firstName}) replied: "${userMessage}".`
+      + (lastContent ? `\n\nThe message they were replying to said: "${lastContent}"` : '')
+    const out = (await callOpenAI(system, userPrompt, 0.8, 110)).trim()
     return out || fallbacks[Math.floor(Math.random() * fallbacks.length)]
   } catch (_e) {
     return fallbacks[Math.floor(Math.random() * fallbacks.length)]
@@ -252,7 +260,7 @@ serve(async (req) => {
       }
       const { data: lastSent } = await supabase
         .from('motivation_content_queue')
-        .select('id, title')
+        .select('id, title, coach_framing, body')
         .eq('user_id', userId)
         .eq('status', 'sent')
         .order('sent_at', { ascending: false })
@@ -276,8 +284,11 @@ serve(async (req) => {
         return emptyTwiml()
       }
 
-      // Otherwise it's a pleasantry — keep it light.
-      const ack = await generateAck(body, firstName, lastSent?.title || null, profile.preferred_language || 'en')
+      // Not a content ask — could be a light thanks/reaction OR a commitment to an action / an
+      // answer to the prompt's question. Give the ack the message they're replying to so it can
+      // CELEBRATE a commitment specifically, instead of flattening it into a content change.
+      const lastContent = lastSent?.coach_framing || lastSent?.body || lastSent?.title || null
+      const ack = await generateAck(body, firstName, lastContent, profile.preferred_language || 'en')
       await send(ack)
       return emptyTwiml()
     }
