@@ -48,6 +48,8 @@ What I'm finding actually works is smaller, and more human. One small habit at a
 
 I'll have more to say on each of these groups soon. And if you're one of them, my guess is you already know it.
 
+**Hashtags:** #BuildInPublic #HealthTech #HealthyHabits #Coaching #Burnout
+
 ---
 
 ## Post 1 — The reframe (no link)
@@ -68,6 +70,8 @@ That's a different problem than the one I thought I had — and honestly, a much
 
 *(Source: Gallup, "Employee Burnout: The 5 Main Causes.")*
 
+**Hashtags:** #Burnout #Wellbeing #MentalHealth #WorkLifeBalance #Leadership
+
 ---
 
 ## Post 2 — The good-at-your-job trap (no link)
@@ -87,6 +91,8 @@ And the first thing to fall off the list is you. The workout. The real dinner. T
 The loop won't break itself. You're too good at feeding it. The only way out is to protect something small — before the calendar votes on it for you.
 
 *(Source: Cross, Rebele & Grant, "Collaborative Overload," Harvard Business Review.)*
+
+**Hashtags:** #Burnout #Productivity #Leadership #FutureOfWork #Collaboration
 
 ---
 
@@ -119,6 +125,8 @@ I wrote the whole thing up — 2 pages, free, with a worksheet. Just drop your e
 
 *(Sources: Gollwitzer & Sheeran, implementation-intentions meta-analysis; Lally et al., UCL, on habit formation.)*
 
+**Hashtags:** #HealthyHabits #Wellness #Productivity #Burnout #PersonalDevelopment
+
 ---
 
 ## Post 4 — Why I built the coach I wanted (no link)
@@ -143,6 +151,8 @@ To help you get back to what the job was supposed to be for.
 
 *(Source: Matthews, Dominican University, goal-achievement study.)*
 
+**Hashtags:** #AI #HealthTech #Coaching #DigitalHealth #FutureOfWork
+
 ---
 
 ## Post 5 — Proof, in a member's words (LINK)
@@ -164,6 +174,8 @@ That's what I want for anyone stuck on the treadmill. If that's you, the free gu
 → go.summithealth.app/burnout?source=linkedin-post5
 
 *(Source: Amabile & Kramer, "The Progress Principle," Harvard Business School.)*
+
+**Hashtags:** #Wellbeing #HealthyHabits #Motivation #Coaching #Burnout
 
 ---
 
