@@ -54,21 +54,19 @@ I'll have more to say on each of these groups soon. And if you're one of them, m
 
 ## Post 1 — The reframe (no link)
 
-Burnout isn't a stamina problem. I've felt it myself, and it was never about running out of gas.
+Burnout isn't a stamina problem. I used to think it was — but I've felt it myself, and for me it comes down to something else: an energy imbalance.
 
-For a long time I thought it was. If I was this tired, I must not be tough enough. Push harder, sleep less, catch up on the weekend.
+It's what happens when the energy you put in doesn't come back as the output you were hoping for.
 
-Then I looked at the data — and at my own experience. Gallup surveyed 7,500 full-time employees and found about two in three feel burned out at least sometimes. The top causes weren't personal — unmanageable workload, unreasonable time pressure, unfair treatment. None of them were "you're not tough enough."
+The data backs the "it's not you" part. Gallup surveyed 7,500 full-time employees and found about two in three feel burned out at least sometimes — and the top causes weren't personal. Unmanageable workload, unreasonable time pressure, unfair treatment. Not "you're not tough enough."
 
-Here's how I've come to think about it. For me, burnout is an energy imbalance. It's what happens when the energy you put in doesn't come back as the output you were hoping for.
+But the way I've felt it is more specific than a heavy workload. I've poured myself into projects — the office hours, and then the thinking that follows you into the evening, into the night, into your sleep, all of it chasing the best version of a product or a feature. I get genuinely excited by that part. But some of those projects died in implementation, and some never made it that far — sometimes the idea was just too big to build right then. And I'd look up and realize I'd invested far more energy than the outcome could hold.
 
-I've poured myself into projects — the office hours, and then the thinking that follows you into the evening, into the night, into your sleep, all of it chasing the best version of a product or a feature. I get genuinely excited by that part. But some of those projects died in implementation, and some never made it that far — sometimes the idea was just too big to build right then. And I'd look up and realize I'd invested far more energy than the outcome could hold.
+Startups turn that dial up. The culture asks for everything, calls itself a family, and you buy in. But the other side of that deal doesn't always show up. Sometimes you give it all and still get burned.
 
-At EverlyWell I pushed hard to move NPS — every touchpoint, every detail. In a startup that pull is even stronger. The culture asks for everything, calls itself a family, and you buy in. But the other side of that deal doesn't always show up. Sometimes you give it all and still get burned.
+That's the imbalance — the energy you give doesn't come back as the outcome you hoped for, or the investment you expected from the people around you. And after enough of that, you start to wonder what it's even worth — whether you're having any real impact.
 
-That's the imbalance — not a lack of grit, but a mismatch. The energy you give doesn't come back as the outcome you hoped for, or the investment you expected from the people around you. And after enough of that, you start to wonder what it's even worth — whether you're having any real impact.
-
-So the fix was never more grit. It's getting your energy pointed at what actually returns something — and protecting it there.
+So the fix was never about pushing harder. It's getting your energy pointed at what actually returns something — and protecting it there.
 
 That's a different problem than the one I thought I had. And honestly, a much more solvable one.
 
