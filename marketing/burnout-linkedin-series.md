@@ -54,7 +54,9 @@ I'll have more to say on each of these groups soon. And if you're one of them, m
 
 ## Post 1 — The reframe (no link)
 
-Burnout isn't a stamina problem. I used to think it was — but I've felt it myself, and for me it comes down to something else: an energy imbalance.
+Burnout isn't a stamina problem.
+
+Honestly, I never really knew what it was. I had a vague sense it was a thing that happened to people — until it happened to me. And once I felt it, I understood what it came down to, at least for me: an energy imbalance.
 
 It's what happens when the energy you put in doesn't come back as the output you were hoping for.
 
@@ -66,9 +68,11 @@ Startups turn that dial up. The culture asks for everything, calls itself a fami
 
 That's the imbalance — the energy you give doesn't come back as the outcome you hoped for, or the investment you expected from the people around you. And after enough of that, you start to wonder what it's even worth — whether you're having any real impact.
 
-So the fix was never about pushing harder. It's getting your energy pointed at what actually returns something — and protecting it there.
+So the fix was never about pushing harder. It's about protecting your core — investing in yourself first, the way they tell you to put your own oxygen mask on before helping anyone else. And spending your energy on the things you know will actually return something to you.
 
-That's a different problem than the one I thought I had. And honestly, a much more solvable one.
+Naming it that way made it feel solvable. A lot more solvable than it feels when you're in the middle of it.
+
+I'm genuinely curious how this lands — when you've hit burnout, was it an energy imbalance for you too, or something else entirely?
 
 *(Source: Gallup, "Employee Burnout: The 5 Main Causes.")*
 
