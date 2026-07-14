@@ -54,19 +54,23 @@ I'll have more to say on each of these groups soon. And if you're one of them, m
 
 ## Post 1 — The reframe (no link)
 
-Burnout isn't a stamina problem.
+Burnout isn't a stamina problem. I've felt it myself, and it was never about running out of gas.
 
-I used to think it was. If I was this tired, I must not be tough enough. Just push harder, sleep less, catch up on the weekend.
+For a long time I thought it was. If I was this tired, I must not be tough enough. Push harder, sleep less, catch up on the weekend.
 
-Then I looked at the data. Gallup surveyed 7,500 full-time employees and found about two in three feel burned out at least sometimes. And the top causes weren't personal — unmanageable workload, unreasonable time pressure, unfair treatment. None of them were "you're not tough enough."
+Then I looked at the data — and at my own experience. Gallup surveyed 7,500 full-time employees and found about two in three feel burned out at least sometimes. The top causes weren't personal — unmanageable workload, unreasonable time pressure, unfair treatment. None of them were "you're not tough enough."
 
-That reframed it for me. Burnout isn't your body running out of gas so much as a signal that your days stopped matching what you actually care about.
+Here's how I've come to think about it. For me, burnout is an energy imbalance. It's what happens when the energy you put in doesn't come back as the output you were hoping for.
 
-You're not weak. You're just spending all your energy on things that aren't really yours.
+I've poured myself into projects — the office hours, and then the thinking that follows you into the evening, into the night, into your sleep, all of it chasing the best version of a product or a feature. I get genuinely excited by that part. But some of those projects died in implementation, and some never made it that far — sometimes the idea was just too big to build right then. And I'd look up and realize I'd invested far more energy than the outcome could hold.
 
-The fix isn't more grit, then. It's getting a little of your life pointed back at what it's for.
+At EverlyWell I pushed hard to move NPS — every touchpoint, every detail. In a startup that pull is even stronger. The culture asks for everything, calls itself a family, and you buy in. But the other side of that deal doesn't always show up. Sometimes you give it all and still get burned.
 
-That's a different problem than the one I thought I had — and honestly, a much more solvable one.
+That's the imbalance — not a lack of grit, but a mismatch. The energy you give doesn't come back as the outcome you hoped for, or the investment you expected from the people around you. And after enough of that, you start to wonder what it's even worth — whether you're having any real impact.
+
+So the fix was never more grit. It's getting your energy pointed at what actually returns something — and protecting it there.
+
+That's a different problem than the one I thought I had. And honestly, a much more solvable one.
 
 *(Source: Gallup, "Employee Burnout: The 5 Main Causes.")*
 
