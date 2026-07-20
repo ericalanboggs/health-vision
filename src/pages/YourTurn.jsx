@@ -340,8 +340,8 @@ export default function YourTurn() {
         {/* Footer CTA → Summit trial (bookends the dark hero) */}
         <section className="rounded-3xl bg-gradient-to-br from-summit-forest to-summit-pine px-6 py-12 text-center sm:px-10">
           <h2 className="mx-auto max-w-xl text-2xl font-bold text-white sm:text-3xl">
-            We say moms are heroes.
-            <span className="text-summit-lime"> Let’s start treating them like it.</span>
+            You keep everyone else going.
+            <span className="text-summit-lime"> Your turn to be kept going.</span>
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-white/80">
             Summit puts you first and asks for almost nothing — a nudge over text on the day it slips,
