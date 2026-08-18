@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Description, AutoAwesome, Favorite, Map, Schedule, Edit, Notifications, Science, TrendingUp, TipsAndUpdates, AutoFixHigh, Autorenew, Refresh, ContentCopy, Check, CheckCircle, Terrain, InfoOutlined } from '@mui/icons-material'
-import { Checkbox } from '@summit/design-system'
+import { Description, AutoAwesome, Favorite, Map, Schedule, Edit, Notifications, Science, TrendingUp, TipsAndUpdates, AutoFixHigh, Autorenew, Refresh, ContentCopy, Check, CheckCircle, Terrain, InfoOutlined, ErrorOutline } from '@mui/icons-material'
+import { Banner, Button, Checkbox } from '@summit/design-system'
 import { generateActionPlan, generateMotivationalMessage } from '../../utils/planGenerator'
 import { enhanceActionPlan } from '../../utils/aiService'
 import { saveHabits } from '../../services/habitService'
@@ -806,16 +806,24 @@ END:VEVENT
               </button>
             )}
 
-            {/* Error Message */}
+            {/* AI unavailable — human-readable, and the user can still continue via "Add My Own" */}
             {enhancementError && !isEnhancing && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-800">
-                  <strong>Error:</strong> {enhancementError}
-                </p>
-                <p className="text-xs text-red-600 mt-1">
-                  Make sure you've added your OpenAI API key to the .env file.
-                </p>
-              </div>
+              <Banner
+                variant="error"
+                icon={<ErrorOutline className="w-5 h-5 text-red-500" />}
+                title="Personalized suggestions aren't available right now"
+                className="mb-4"
+              >
+                Our AI coach is temporarily down, so we can't suggest personalized habits at the
+                moment. You can still keep going. Use “Add My Own” above to add habits you'd like
+                to try.
+                <div className="mt-3">
+                  <Button variant="secondary" size="sm" onClick={handleAIEnhancement}>
+                    <Refresh className="w-4 h-4" />
+                    Try again
+                  </Button>
+                </div>
+              </Banner>
             )}
 
             {/* AI Personalized Plan Header - Only show in edit mode */}
