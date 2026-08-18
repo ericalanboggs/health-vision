@@ -745,7 +745,6 @@ That's the whole flow — commit, push, done. New routes (e.g. `/lifestyle-chang
    supabase functions deploy sms-add-habit --no-verify-jwt
    supabase functions deploy send-challenge-completion-sms --no-verify-jwt
    supabase functions deploy send-confidence-check --no-verify-jwt
-   supabase functions deploy ai-chat --no-verify-jwt
    supabase functions deploy send-march-update --no-verify-jwt
    supabase functions deploy generate-weekly-tracker --no-verify-jwt
    supabase functions deploy export-coaching-brief --no-verify-jwt
@@ -760,12 +759,18 @@ That's the whole flow — commit, push, done. New routes (e.g. `/lifestyle-chang
    flag — not only the Twilio/cron ones. (Caught us on `capture-freebie-lead`'s first deploy: the
    gateway 401'd every browser call until it was redeployed with the flag.)
 
-   **`ai-chat` is the one that bit onboarding.** It's called from the browser by `src/utils/aiService.js`
-   (the Step 5/5 "Generate Personalized Plan" AI suggestions) with the user's session JWT. It verifies
-   that JWT *inside* the function (`supabase.auth.getUser`), so `--no-verify-jwt` is safe. Without the
-   flag the gateway 401s every call, and the onboarding UI showed a raw "AI request failed (401)". A
-   401 here is ALWAYS auth/gateway, never OpenAI — the function returns **502** on an OpenAI failure and
-   **500** if `OPENAI_API_KEY` is unset, so a 401 means redeploy `ai-chat --no-verify-jwt`.
+   **`ai-chat` + the onboarding 401 (was a FRONTEND bug, not a deploy-flag issue).** `ai-chat` powers
+   the Step 5/5 "Generate Personalized Plan" suggestions (`src/utils/aiService.js` → `enhanceActionPlan`,
+   NOT `habit-ai-suggest` — that one is the Track Details tracking-type guesser, called from
+   `trackingService.js`). `ai-chat` keeps gateway JWT verification ON (authenticated users only) and also
+   re-checks the user JWT inside via `supabase.auth.getUser`. The onboarding 401 happened because
+   `aiService.js` used a hand-rolled `fetch()` that sent `Authorization` but **no `apikey` header**, so the
+   gateway rejected it before it reached the function (surfaced as a raw "AI request failed (401)"). Fix:
+   call via `supabase.functions.invoke('ai-chat', …)`, which attaches apikey + auth — matching the working
+   `habit-ai-suggest` call. Debugging note: on `ai-chat` a **401 is always auth/gateway, never OpenAI** —
+   the function returns **502** on an OpenAI failure and **500** if `OPENAI_API_KEY` is unset. If a 401
+   recurs, first confirm the caller still uses `functions.invoke` (not a raw fetch missing apikey); the
+   gateway-bypass backstop is `supabase functions deploy ai-chat --no-verify-jwt`.
 
 2. **Migration file names must have unique YYYYMMDD prefixes.** Duplicate dates cause `duplicate key` errors in `supabase db push`. If two migrations land on the same day, use adjacent dates (e.g., 20260325 and 20260326).
 

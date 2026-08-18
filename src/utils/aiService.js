@@ -1,37 +1,32 @@
 import supabase from '../lib/supabase'
 
-const SUPABASE_FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL?.replace('.supabase.co', '.supabase.co/functions/v1') || ''
-
 /**
- * Call the ai-chat edge function (proxies to OpenAI server-side)
+ * Call the ai-chat edge function (proxies to OpenAI server-side).
+ *
+ * Uses supabase.functions.invoke so the request carries BOTH the `apikey` header and
+ * the signed-in user's Authorization — the same path habit-ai-suggest uses successfully.
+ * A prior hand-rolled fetch() sent Authorization but omitted `apikey`, which the Supabase
+ * gateway rejected with a 401 before the request reached the function. That surfaced as
+ * "AI request failed (401)" on the onboarding "Generate Personalized Plan" step.
  */
 const callAI = async (messages, { temperature, max_tokens, response_format } = {}) => {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session?.access_token) {
-    throw new Error('Not authenticated — please sign in to use AI features')
-  }
+  if (!supabase) throw new Error('AI is unavailable right now')
 
   const body = { messages }
   if (temperature !== undefined) body.temperature = temperature
   if (max_tokens !== undefined) body.max_tokens = max_tokens
   if (response_format) body.response_format = response_format
 
-  const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/ai-chat`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify(body),
-  })
+  const { data, error } = await supabase.functions.invoke('ai-chat', { body })
 
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({}))
-    throw new Error(errBody.error || `AI request failed (${res.status})`)
+  if (error) {
+    // Surface the function's JSON error when available; else a generic message.
+    let detail = ''
+    try { detail = (await error.context?.json())?.error || '' } catch { /* ignore */ }
+    throw new Error(detail || error.message || 'AI request failed')
   }
-
-  const { content } = await res.json()
-  return content
+  if (data?.error) throw new Error(data.error)
+  return data?.content
 }
 
 /**
