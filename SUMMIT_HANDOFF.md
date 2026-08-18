@@ -380,10 +380,21 @@ The shared `_shared/sms.ts` accepts optional `accountSid`, `authToken`, `from` o
 
 When admin sends SMS via `send-admin-sms`:
 - Sets `admin_sms_hold_until = NOW() + 24h` on recipient profiles
-- **Step 3 (AI coaching/smart-parse) suppressed** during hold
-- **Steps 1-2 still work** — users can always reply to tracking prompts (Y/N, metric values)
-- **Scheduled followups NOT blocked** — they're system-initiated, not AI auto-replies
-- "Resume AI" button in admin clears the hold early
+- **ALL automated/proactive SMS is paused during the hold** (updated 2026-08-18). Every scheduled
+  sender checks the shared `isAdminHoldActive(profile)` helper in `_shared/sms.ts` and skips held
+  users: `send-sms-reminders` (daily reminder), `habit-sms-followup` (followup — previously exempt,
+  now paused too), `send-onboarding-emails`, `send-welcome-tour-sms`, `send-motivation-welcome`,
+  `send-trial-expiry-sms`, `send-weekly-synthesis-sms`, `send-reflection-reminders`,
+  `send-confidence-check`, `send-daily-motivation`, `send-challenge-completion-sms`.
+- **Held skips must not consume the send** — skip with a plain `continue` BEFORE any "already sent"
+  marking so the message still goes out after the hold clears (`send-challenge-completion-sms`
+  defers without writing `completion_sms_sent_at`).
+- On an inbound reply, `habit-sms-response` **Step 3 (AI coaching/smart-parse) is suppressed**, but
+  **Steps 1-2 still work** — users can always reply to tracking prompts (Y/N, metric values).
+- **Emails are NOT affected** — the hold is SMS-specific.
+- Correctly exempt (always send): the coach's own `send-admin-sms`, phone verification/OTP, and
+  `twilio-webhook`'s STOP/HELP/opt-in/crisis (user-initiated safety/compliance).
+- "Resume AI" button in admin clears the hold early.
 
 ### Duplicate Phone Handling
 
