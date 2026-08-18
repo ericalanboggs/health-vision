@@ -75,6 +75,11 @@ const STRINGS: Record<string, Record<string, string>> = {
     es: `Me encanta. Armemos juntos tu primer pequeño hábito. Responde: ADD <el hábito> — por ejemplo "ADD caminata de 10 minutos después de comer". Que sea pequeño a propósito.`,
     'pt-BR': `Adorei. Vamos montar juntos seu primeiro pequeno hábito. Responda: ADD <o hábito> — por exemplo "ADD caminhada de 10 minutos depois do almoço". Mantenha bem pequeno de propósito.`,
   },
+  motivation_back_to_habits: {
+    en: `You're back in habit mode, {name}. Here's what you're working on:\n{habits}\nText me anytime to adjust one, and I'll pick your reminders back up. 🌿`,
+    es: `Estás de vuelta en modo hábitos, {name}. Esto es en lo que estás trabajando:\n{habits}\nEscríbeme cuando quieras para ajustar alguno, y retomo tus recordatorios. 🌿`,
+    'pt-BR': `Você está de volta ao modo hábitos, {name}. Aqui está no que você está trabalhando:\n{habits}\nMe manda mensagem quando quiser para ajustar algum, e eu retomo seus lembretes. 🌿`,
+  },
 
   // ── Signup path (Workstream F) ───────────────────────────────────────────
   otp_code: {

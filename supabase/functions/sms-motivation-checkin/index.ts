@@ -12,8 +12,10 @@
  *   awaiting_handoff → YES → clear motivation_mode + kick off ADD flow ; else warm close
  *
  * No active session (motivation_mode user replying to a daily card):
- *   "ready" intent → offer the habit (open awaiting_handoff session)
- *   otherwise      → log feedback on the last sent item + warm ack
+ *   "ready" intent (no habits yet)                → offer to set one (open awaiting_handoff session)
+ *   habit-mode intent + already has habits        → flip to habit mode and list their habits
+ *   actionable content request                    → re-tune upcoming content + honest ack
+ *   otherwise                                      → log feedback on the last sent item + warm ack
  *
  * Handoff fires when readiness ≥ 7 on two consecutive check-ins, OR the user raises
  * their hand early. Inbound is logged by twilio-webhook; outbound here logs to sms_messages.
@@ -106,6 +108,7 @@ function isTapback(body: string): boolean {
 async function isActionableContentRequest(body: string): Promise<boolean> {
   if (isTapback(body)) return false
   if (isReadyIntent(body)) return false
+  if (isHabitModeIntent(body)) return false // mode switch / habit management is not a content ask
   if (/^\s*\d+\s*$/.test(body)) return false // bare rating like "10"
   try {
     const system = [
@@ -114,6 +117,8 @@ async function isActionableContentRequest(body: string): Promise<boolean> {
       'receive — a different topic, type, tone, length, or frequency, or explicitly asking for more',
       'or less of something specific? Pure praise, thanks, emoji, or a positive reaction (e.g.',
       '"loved this", "great, thank you", "🙌", "loved an image") is NOT a request → answer NO.',
+      'Asking to switch modes, leave motivation mode, go to habit mode, or to see/update/manage',
+      'their actual HABITS is about their program, NOT the daily content → answer NO.',
       'If unsure, answer NO.',
     ].join(' ')
     const out = (await callOpenAI(system, `Message: "${body}"`, 0, 3)).trim().toUpperCase()
@@ -194,6 +199,41 @@ function isReadyIntent(body: string): boolean {
   return /(^|\s)(ready|let'?s do|let'?s go|i'?m in|start (a )?habit|set (a )?habit|sign me up|i think i'?m ready|list[oa]|estoy list[oa]|quiero empezar|empecemos|vamos|estou pront[oa]|quero come[çc]ar|bora come[çc]ar)(?![a-záàâãäéèêíìóòôõöúùüçñ])/i.test(body)
 }
 
+/**
+ * A request to LEAVE Motivation Mode for habit mode, or to view/manage their actual habits
+ * ("switch me back to habit mode", "what are my current habits", "I want to update my habits").
+ * These are NOT content-preference asks. Treating them as content — the bug that replied
+ * "I'm updating your messages" to "switch me to habit mode" — is demotivating and wrong. Detected
+ * deterministically so they short-circuit the content classifier and route to the habit handoff.
+ * Requires plural "habits" or an explicit "habit mode" so a content ask about a single habit tip
+ * doesn't trip it.
+ */
+function isHabitModeIntent(body: string): boolean {
+  const b = body.toLowerCase()
+  // en — explicit mode switch, or leaving motivation mode
+  if (/\bhabit mode\b|\bhabit tracking\b/.test(b)) return true
+  if (/\b(switch|change|move|go|back|return|take me|put me|send me|get me)\b[^.?!]*\b(to |into |onto )?(habits\b|habit mode|habit tracking)/.test(b)) return true
+  if (/\b(leave|exit|stop|quit|end|turn off|cancel|off of|out of|done with)\b[^.?!]*\bmotivation( mode)?\b/.test(b)) return true
+  // en — asking about / managing their own habits
+  if (/\b(my|current|existing) habits\b/.test(b)) return true
+  if (/\b(what|which|see|view|show|list|check|review|update|change|edit|manage|add|set ?up|remove|delete)\b[^.?!]*\bhabits\b/.test(b)) return true
+  // es / pt-BR
+  if (/\bmodo (de )?h[aá]bitos?\b/.test(b)) return true
+  if (/\b(mis|mi) h[aá]bitos\b|\b(meus|minhas?) h[aá]bitos\b/.test(b)) return true
+  if (/\b(cambiar|volver|pasar|ir|mudar|voltar|trocar)\b[^.?!]*\bh[aá]bitos\b/.test(b)) return true
+  return false
+}
+
+/** Distinct active habit names for the user (dedup across day-of-week rows; archived_at IS NULL). */
+async function loadActiveHabitNames(supabase: any, userId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from('weekly_habits')
+    .select('habit_name')
+    .eq('user_id', userId)
+    .is('archived_at', null)
+  return Array.from(new Set((data || []).map((h: any) => h.habit_name).filter(Boolean))) as string[]
+}
+
 function emptyTwiml() {
   return new Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', { headers: { 'Content-Type': 'text/xml' } })
 }
@@ -222,6 +262,17 @@ serve(async (req) => {
     const lang = profile.preferred_language || 'en'
     const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || null
 
+    // Admin SMS hold: when a coach has manually taken over the conversation
+    // (admin_sms_hold_until in the future), stay silent — don't generate any AI
+    // motivation reply. The inbound message is already logged by twilio-webhook.
+    // Mirrors the suppression in habit-sms-response so ALL AI paths honor the hold.
+    const adminHoldActive =
+      profile.admin_sms_hold_until && new Date(profile.admin_sms_hold_until) > new Date()
+    if (adminHoldActive) {
+      console.log(`⏸ Admin SMS hold active until ${profile.admin_sms_hold_until} — suppressing motivation AI reply`)
+      return emptyTwiml()
+    }
+
     const send = (msg: string) =>
       _sendSMS({ to: from, body: msg }, {
         supabase,
@@ -248,7 +299,20 @@ serve(async (req) => {
 
     // ── No active session: motivation_mode user replying to a daily card ─────
     if (!session) {
-      if (isReadyIntent(body)) {
+      // Ready to start, OR explicitly asking to leave Motivation Mode / manage their habits →
+      // open the habit handoff (confirm-first). Both are the user raising their hand for habits;
+      // neither is a request to re-tune the daily content.
+      if (isReadyIntent(body) || isHabitModeIntent(body)) {
+        // If they're asking to switch to / see their habits AND already have some set up, flip to
+        // habit mode and show them — don't push a returning user to create a brand-new first habit.
+        const habitNames = isHabitModeIntent(body) ? await loadActiveHabitNames(supabase, userId) : []
+        if (habitNames.length > 0) {
+          await supabase.from('profiles').update({ motivation_mode: false }).eq('id', userId)
+          const list = habitNames.map((n) => `• ${n}`).join('\n')
+          await send(t('motivation_back_to_habits', lang, { name: firstName, habits: list }))
+          return emptyTwiml()
+        }
+        // No habits yet (contemplation user raising their hand) → confirm-first opener.
         const opener = t('motivation_ready_opener', lang, { name: firstName })
         await supabase.from('sms_motivation_checkin_sessions').insert({
           user_id: userId,
