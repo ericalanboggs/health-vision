@@ -741,6 +741,7 @@ That's the whole flow — commit, push, done. New routes (e.g. `/lifestyle-chang
    supabase functions deploy send-lite-challenge-sms --no-verify-jwt
    supabase functions deploy send-lite-challenge-email --no-verify-jwt
    supabase functions deploy sms-reflection-response --no-verify-jwt
+   supabase functions deploy sms-motivation-checkin --no-verify-jwt
    supabase functions deploy sms-add-habit --no-verify-jwt
    supabase functions deploy send-challenge-completion-sms --no-verify-jwt
    supabase functions deploy send-confidence-check --no-verify-jwt
