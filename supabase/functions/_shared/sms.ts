@@ -6,6 +6,19 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 
+/**
+ * True when a coach has manually taken over the SMS conversation (admin_sms_hold_until
+ * is in the future). Proactive/automated senders MUST skip these users so the bot doesn't
+ * step on a live human conversation. Set by send-admin-sms (NOW()+24h); cleared by "Resume AI".
+ *
+ * Does NOT apply to: the coach's own messages (send-admin-sms), user-initiated safety/compliance
+ * replies (STOP/HELP/opt-in/crisis), phone verification, or a user's direct reply to a prompt.
+ */
+export function isAdminHoldActive(profile: { admin_sms_hold_until?: string | null } | null | undefined): boolean {
+  const until = profile?.admin_sms_hold_until
+  return !!until && new Date(until) > new Date()
+}
+
 const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
 const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
 const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')

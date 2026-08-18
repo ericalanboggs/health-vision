@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
-import { sendSMS } from '../_shared/sms.ts'
+import { sendSMS, isAdminHoldActive } from '../_shared/sms.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -36,7 +36,7 @@ serve(async (req) => {
     // Find users whose trial ended in the last 24 hours, with SMS opt-in, no active subscription
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, first_name, phone, trial_ends_at, subscription_status')
+      .select('id, first_name, phone, trial_ends_at, subscription_status, admin_sms_hold_until')
       .eq('sms_opt_in', true)
       .is('deleted_at', null)
       .not('phone', 'is', null)
@@ -81,6 +81,8 @@ serve(async (req) => {
     let failed = 0
 
     for (const profile of toSend) {
+      // Skip if a coach has taken over this conversation (admin SMS hold active).
+      if (isAdminHoldActive(profile)) continue
       const firstName = profile.first_name || 'there'
       const message = `Hey ${firstName}, it's been great having you on Summit! Your trial is wrapping up, so this will be the last text from us until you choose a plan. If you'd like to keep going, use code SUMMIT50 at checkout for 50% off your first month: go.summithealth.app\n\nWe're rooting for you either way.`
 

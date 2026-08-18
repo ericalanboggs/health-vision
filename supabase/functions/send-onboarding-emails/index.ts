@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendEmail, sendEmailsInBatches, type EmailPayload } from '../_shared/resend.ts'
-import { sendSMS } from '../_shared/sms.ts'
+import { sendSMS, isAdminHoldActive } from '../_shared/sms.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
@@ -507,7 +507,7 @@ serve(async (req) => {
 
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, first_name, email, phone, sms_opt_in, created_at, subscription_status, trial_ends_at')
+      .select('id, first_name, email, phone, sms_opt_in, created_at, subscription_status, trial_ends_at, admin_sms_hold_until')
       .eq('profile_completed', true)
       .not('email', 'is', null)
       .is('deleted_at', null)
@@ -674,6 +674,13 @@ serve(async (req) => {
 
       for (const user of usersForDay) {
         if (!user.phone || !user.sms_opt_in) continue
+
+        // A coach has taken over this conversation — don't let an automated onboarding
+        // nudge step on it. (Emails above still send; the hold is SMS-specific.)
+        if (isAdminHoldActive(user)) {
+          console.log(`Skipping SMS ${smsConfig.smsType} for ${user.id} - admin SMS hold active`)
+          continue
+        }
 
         const smsKey = `${user.id}:${smsConfig.smsType}`
         if (smsSentSet.has(smsKey)) {

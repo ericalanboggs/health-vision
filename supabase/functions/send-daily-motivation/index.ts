@@ -20,7 +20,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
-import { sendSMS } from '../_shared/sms.ts'
+import { sendSMS, isAdminHoldActive } from '../_shared/sms.ts'
 import { t } from '../_shared/i18n.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
@@ -89,7 +89,7 @@ serve(async (_req) => {
 
   const { data: users, error } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name, phone, timezone, motivation_checkin_day, sms_opt_in, preferred_language')
+    .select('id, first_name, last_name, phone, timezone, motivation_checkin_day, sms_opt_in, preferred_language, admin_sms_hold_until')
     .eq('motivation_mode', true)
     .not('phone', 'is', null)
     .is('deleted_at', null)
@@ -104,6 +104,8 @@ serve(async (_req) => {
   for (const u of users || []) {
     try {
       if (u.sms_opt_in === false) continue
+      // Skip if a coach has taken over this conversation (admin SMS hold active).
+      if (isAdminHoldActive(u)) continue
       const tz = u.timezone || 'America/Chicago'
       const lt = getLocalTime(tz)
       const tMin = lt.hours * 60 + lt.minutes

@@ -18,7 +18,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
-import { sendSMS } from '../_shared/sms.ts'
+import { sendSMS, isAdminHoldActive } from '../_shared/sms.ts'
 import { languageDirective } from '../_shared/coach_knowledge.ts'
 import { t } from '../_shared/i18n.ts'
 
@@ -107,7 +107,7 @@ serve(async (req) => {
 
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('id, first_name, phone, sms_opt_in, deleted_at, motivation_mode, motivation_prompt, preferred_language')
+    .select('id, first_name, phone, sms_opt_in, deleted_at, motivation_mode, motivation_prompt, preferred_language, admin_sms_hold_until')
     .eq('id', userId)
     .single()
 
@@ -118,7 +118,8 @@ serve(async (req) => {
   }
 
   // Guards: only motivation-mode users with a usable, opted-in phone.
-  if (!profile.motivation_mode || profile.deleted_at || !profile.phone || profile.sms_opt_in === false) {
+  // Skip if a coach has taken over this conversation (admin SMS hold active).
+  if (!profile.motivation_mode || profile.deleted_at || !profile.phone || profile.sms_opt_in === false || isAdminHoldActive(profile)) {
     return new Response(JSON.stringify({ skipped: 'ineligible (mode/phone/opt-in)' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
-import { sendSMS } from '../_shared/sms.ts'
+import { sendSMS, isAdminHoldActive } from '../_shared/sms.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -66,7 +66,7 @@ serve(async (_req: Request) => {
     // habit-summary confidence check.
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, first_name, phone, sms_opt_in, created_at, subscription_status, trial_ends_at, deleted_at')
+      .select('id, first_name, phone, sms_opt_in, created_at, subscription_status, trial_ends_at, deleted_at, admin_sms_hold_until')
       .eq('sms_opt_in', true)
       .eq('motivation_mode', false)
       .not('phone', 'is', null)
@@ -127,6 +127,8 @@ serve(async (_req: Request) => {
     let sentCount = 0
 
     for (const profile of eligible) {
+      // Skip if a coach has taken over this conversation (admin SMS hold active).
+      if (isAdminHoldActive(profile)) continue
       if (sentSet.has(profile.id)) {
         console.log(`Skipping ${profile.id}: confidence check sent within the last 2 weeks`)
         continue

@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
-import { sendSMS } from '../_shared/sms.ts'
+import { sendSMS, isAdminHoldActive } from '../_shared/sms.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -95,9 +95,17 @@ serve(async (req: Request) => {
         // Get user profile
         const { data: profile } = await supabase
           .from('profiles')
-          .select('first_name, phone, sms_opt_in, subscription_status, trial_ends_at, deleted_at')
+          .select('first_name, phone, sms_opt_in, subscription_status, trial_ends_at, deleted_at, admin_sms_hold_until')
           .eq('id', enrollment.user_id)
           .maybeSingle()
+
+        // A coach has taken over this conversation — defer WITHOUT marking sent, so the
+        // completion SMS still goes out on a later run once the hold clears (the hold is
+        // temporary; unlike the permanent skips below, we must not consume the send).
+        if (isAdminHoldActive(profile)) {
+          console.log(`Deferring challenge completion SMS for ${enrollment.user_id} — admin SMS hold active`)
+          continue
+        }
 
         if (!profile || !profile.phone || !profile.sms_opt_in || profile.deleted_at) {
           console.log(`Skipping user ${enrollment.user_id}: no phone, not opted in, or deleted`)

@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
-import { sendSMS } from '../_shared/sms.ts'
+import { sendSMS, isAdminHoldActive } from '../_shared/sms.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -67,7 +67,7 @@ serve(async (req) => {
     // Look up user profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('first_name, phone, sms_opt_in, motivation_mode')
+      .select('first_name, phone, sms_opt_in, motivation_mode, admin_sms_hold_until')
       .eq('id', userId)
       .single()
 
@@ -81,8 +81,9 @@ serve(async (req) => {
 
     // Only send if user has opted in to SMS and has a phone, and is not in Motivation Mode
     // (Motivation Mode users are off the action-stage track)
-    if (!profile.sms_opt_in || !profile.phone || profile.motivation_mode) {
-      console.log(`Skipping welcome tour SMS for user ${userId}: sms_opt_in=${profile.sms_opt_in}, phone=${!!profile.phone}, motivation_mode=${profile.motivation_mode}`)
+    // Skip if a coach has taken over this conversation (admin SMS hold active).
+    if (!profile.sms_opt_in || !profile.phone || profile.motivation_mode || isAdminHoldActive(profile)) {
+      console.log(`Skipping welcome tour SMS for user ${userId}: sms_opt_in=${profile.sms_opt_in}, phone=${!!profile.phone}, motivation_mode=${profile.motivation_mode}, hold=${isAdminHoldActive(profile)}`)
       return new Response(JSON.stringify({ success: true, skipped: true }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       })
