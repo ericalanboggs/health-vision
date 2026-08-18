@@ -17,6 +17,7 @@ CREATE INDEX IF NOT EXISTS idx_sms_manage_habit_sessions_expires ON sms_manage_h
 
 ALTER TABLE sms_manage_habit_sessions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Service role full access on manage habit sessions" ON sms_manage_habit_sessions;
 CREATE POLICY "Service role full access on manage habit sessions"
   ON sms_manage_habit_sessions FOR ALL
   USING (true)
