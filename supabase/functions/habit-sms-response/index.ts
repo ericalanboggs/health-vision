@@ -180,6 +180,40 @@ function findHabitConfig<T extends { habit_name: string }>(configs: T[], aiName:
 /**
  * Parse incoming SMS body for tracking response (simple parsing for followup context)
  */
+/**
+ * Deterministic detector for a habit-management request (archive / pause / resume /
+ * edit schedule / add). Routes to sms-manage-habits, which extracts + confirms + executes
+ * with writes gated on real DB success. Kept conservative so tracking replies and metric
+ * goal changes still flow to the normal parser; a miss falls through to the guardrailed coach.
+ */
+function isManageHabitsIntent(body: string): boolean {
+  const b = body.toLowerCase()
+  if (/\b(archive|unarchive|remove|delete|get rid of|drop)\b/.test(b) && /\b(habit|habits|it|them|this|these|the|my)\b/.test(b)) return true
+  if (/\b(pause|unpause|resume|mute|unmute|snooze)\b/.test(b) && /\b(habit|habits|reminder|reminders|it|them|this|my)\b/.test(b)) return true
+  if (/\bturn (off|on|back on)\b.*\b(reminder|reminders|habit|tracking)/.test(b)) return true
+  if (/\breminders?\s+(off|on|back on)\b/.test(b)) return true
+  if (/\b(reschedule|move|change|edit|switch|update|adjust|set)\b.*\b(schedule|day|days|time|reminder|habit)/.test(b)) return true
+  if (/\b(move|change|switch|reschedule)\b.*\bto\b.*\b(weekday|weekend|monday|tuesday|wednesday|thursday|friday|saturday|sunday|daily|every ?day|noon|\d\s?(am|pm))/.test(b)) return true
+  if (/\b(add|create|start|set ?up)\b.*\bhabit/.test(b)) return true
+  if (/\badd\b.*\b(weekday|weekend|every ?day|daily|noon|\d\s?(am|pm))/.test(b)) return true
+  if (/\b(manage|edit|update)\b.*\bhabits?\b/.test(b)) return true
+  return false
+}
+
+/** Forward the inbound SMS to another handler function (same From/Body form shape). */
+async function forwardToFunction(fnName: string, from: string, body: string): Promise<void> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/${fnName}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+      body: new URLSearchParams({ From: from, Body: body }).toString(),
+    })
+    console.log(`${fnName} status: ${res.status}`)
+  } catch (e) {
+    console.error(`Error forwarding to ${fnName}:`, e)
+  }
+}
+
 function parseTrackingResponse(body: string, expectedType: 'boolean' | 'metric'): { type: 'boolean'; value: boolean } | { type: 'metric'; value: number } | null {
   const trimmed = body.trim().toLowerCase()
 
@@ -432,6 +466,7 @@ ${coachingKnowledge}
 
 RULES:
 - CRITICAL: You CANNOT log, track, save, or record habits from this response — that pipeline already ran and decided this message wasn't a tracking entry. NEVER use words like "logged", "tracked", "recorded", "saved", "noted", or any phrase implying you wrote their habit to the system (e.g. "got that down", "marked complete"). If they say they did something, acknowledge their effort but DO NOT claim it was tracked. If you think they meant to log a habit, tell them to reply with the habit name + value or text the habit directly.
+- CRITICAL: You also CANNOT archive, pause, resume, delete, add, or reschedule a habit from this response, and you must NEVER claim you did (no "archived", "paused", "added", "moved", "done"). If they want a change like that, tell them to just say it plainly — e.g. "archive the walk", "pause meditation", "move snack to weekdays at 9am", or "add stretching every day" — and Summit will confirm it before making the change.
 - CRITICAL: If the user asks for a link, URL, or to "go to" / "open" / "show me" / "link me to" any page (dashboard, habits, vision, reflection, guides, coaching, challenges, profile, pricing), respond ONLY with a brief one-liner and the exact URL from SUMMIT LINKS below. Do NOT add coaching suggestions, vision references, or other content. ALWAYS prefix URLs with https:// so they are clickable in SMS. Example: "Here's your dashboard: https://go.summithealth.app/dashboard"
 - CRITICAL: If the user asks a question (e.g., "what are my habits?", "can you give me tips?"), answer it fully in your response. Never give a teaser like "Here are your habits!" without listing them. The user cannot see a follow-up — every SMS must be self-contained.
 - If the user asks about their habits, list them by name from their background context. Include streaks and completion rates when available.
@@ -455,7 +490,8 @@ SMART ROUTING — when you detect intent that matches an existing feature, route
 - Wants to add a new habit → "Text ADD to set up a new habit right here. Summit will help you define it and get it on your schedule."
 - Feeling overwhelmed, wants to reduce or simplify a habit → "Text BACKUP and Summit will suggest a more manageable plan for any habit."
 - Wants to hide or clean up old challenge habits → "Text ARCHIVE to tidy up habits from a completed challenge."
-- Wants to change their schedule, days, or reminder times → "You can adjust your schedule in the app at go.summithealth.app/habits"
+- Wants to change their schedule, days, or reminder times → "Just tell me the change and I'll confirm it first — e.g. 'move the walk to weekdays at 9am'. You can also edit anytime at go.summithealth.app/habits"
+- Wants to archive, pause, resume, or add a habit → "Just say it and I'll confirm before doing it — e.g. 'archive the walk', 'pause meditation', 'add stretching every day'."
 - Wants to start a challenge → "Check out the challenges at go.summithealth.app/challenges — there are 5 to choose from."
 - Wants to see their progress or weekly summary → "Your weekly digest has all your stats. You can also check go.summithealth.app/guides for your latest one."
 - Wants to cancel or quit a habit → suggest BACKUP first ("Before removing it, text BACKUP — sometimes a smaller version of the habit is all you need"). Only mention go.summithealth.app/habits for full removal.
@@ -988,6 +1024,24 @@ serve(async (req) => {
       )
     }
 
+    // STEP 0c: Active habit-management confirmation session → sms-manage-habits (handles YES/NO)
+    const { data: manageSession } = await supabase
+      .from('sms_manage_habit_sessions')
+      .select('id')
+      .eq('user_id', profile.id)
+      .gt('expires_at', new Date().toISOString())
+      .limit(1)
+      .maybeSingle()
+
+    if (manageSession) {
+      console.log(`Routing to sms-manage-habits (active confirm session) for user ${profile.id}`)
+      await forwardToFunction('sms-manage-habits', from, body)
+      return new Response(
+        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+        { headers: { 'Content-Type': 'text/xml' } }
+      )
+    }
+
     // Safety net: Check for active reflection session (primary check is in twilio-webhook)
     const { data: reflectionSession } = await supabase
       .from('sms_reflection_sessions')
@@ -1048,6 +1102,19 @@ serve(async (req) => {
         await sendSMSWithLog(from, result.response, supabase, profile.id, userName)
       }
 
+      return new Response(
+        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+        { headers: { 'Content-Type': 'text/xml' } }
+      )
+    }
+
+    // ============================================
+    // STEP 1.5: Habit-management intent (archive/pause/resume/edit/add) → sms-manage-habits.
+    // Runs before tracking so "archive the walk" isn't mistaken for a followup reply.
+    // ============================================
+    if (isManageHabitsIntent(body)) {
+      console.log(`Routing to sms-manage-habits (management intent) for user ${profile.id}`)
+      await forwardToFunction('sms-manage-habits', from, body)
       return new Response(
         '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
         { headers: { 'Content-Type': 'text/xml' } }
