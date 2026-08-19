@@ -39,6 +39,36 @@ They want a partner to figure out what does work, at their pace.
 Postpartum and burnt-out-professional personas stay live on their landing pages but
 receive **static maintenance only**. Don't build new flows, copy, or funnels for them.
 
+### 2.1 Category position: the hybrid (Eric, 2026-08-19)
+
+The competitive set has two poles, and the bet is that **both fail, for opposite
+reasons**:
+
+- **AI-only.** Where most of the money and most of the new entrants are going,
+  because it scales fast. Nobody is actually paying attention to you. It is a
+  very responsive way of being alone.
+- **Human-only.** Traditional 1:1 coaching. Real attention, but roughly
+  $200–300/mo for two or three calls, so most of the month happens without them.
+  And any coach carrying a full roster ends up running one framework across
+  everyone — not laziness, just hours.
+
+**Summit is the hybrid, and the hybrid is not a compromise between the two.** AI
+does the work that needs doing daily and per-person (reading the week, shaping the
+next suggestion). The human does the work that needs judgment. Each covers the
+other's failure mode.
+
+Use this frame when the question is "how is this different." Two rules when
+writing it:
+
+1. **Never position as AI beating human coaches.** Eric is a coach; the human in
+   the loop is the entire argument. Criticism of one-to-one work is a concession
+   made from the inside, never an attack.
+2. **The $200–300 figure is a hedged market observation** from conversations, not
+   published data and not a claim about a named competitor. Keep it hedged.
+
+Live implementation: `summit-web/src/components/Different.astro` (homepage +
+all three persona pages).
+
 **Retired language — do not reintroduce anywhere in code, copy, or metadata:**
 - "5 minutes a day"
 - "reset boundaries" / "redefine what health means"
