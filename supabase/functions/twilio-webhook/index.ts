@@ -225,6 +225,31 @@ serve(async (req) => {
       console.log(`✓ Logged inbound message from ${fromPhone}`)
     }
 
+    // Notify the coach's iOS app of the inbound reply (Summit Coach, Phase 4).
+    // Fire-and-forget: never await, never throw — a push failure must not affect
+    // SMS handling. Builds the record from values already in scope so it doesn't
+    // depend on re-reading the inserted row.
+    try {
+      fetch(`${SUPABASE_URL}/functions/v1/notify-coach-inbound`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({
+          record: {
+            direction: 'inbound',
+            user_id: userId,
+            user_name: userName,
+            phone: fromPhone,
+            body: messageBody,
+          },
+        }),
+      }).catch((e) => console.error('notify-coach-inbound call failed:', e))
+    } catch (e) {
+      console.error('notify-coach-inbound dispatch error:', e)
+    }
+
     // ─── CRISIS CHECK (first priority) ────────────────────────────────
     const crisisLang = detectCrisisLang(messageBody)
     if (crisisLang) {
@@ -276,9 +301,27 @@ serve(async (req) => {
     }
 
     // Handle opt-in keywords (START, SUBSCRIBE, YES)
-    // Only treat YES as opt-in if user is NOT already opted in — otherwise it's a habit reply
+    // Only treat YES as opt-in if the user is NOT already opted in AND is not mid-flow.
+    // A "YES" confirming a habit/backup/reflection/manage action must reach that flow — it must
+    // NOT be hijacked into the subscribe confirmation just because sms_opt_in happens to be false.
+    let yesIsInFlowReply = false
+    if (upperBody === 'YES' && userId && (!profile || !profile.sms_opt_in)) {
+      const nowIso = new Date().toISOString()
+      const sessionChecks = await Promise.all(
+        [
+          'sms_manage_habit_sessions',
+          'sms_backup_sessions',
+          'sms_add_habit_sessions',
+          'sms_reflection_sessions',
+          'sms_motivation_checkin_sessions',
+        ].map((tbl) =>
+          supabase.from(tbl).select('id').eq('user_id', userId).gt('expires_at', nowIso).limit(1).maybeSingle()
+        )
+      )
+      yesIsInFlowReply = sessionChecks.some((r) => r.data)
+    }
     const isOptInKeyword = upperBody === 'START' || upperBody === 'SUBSCRIBE' ||
-      (upperBody === 'YES' && (!profile || !profile.sms_opt_in))
+      (upperBody === 'YES' && (!profile || !profile.sms_opt_in) && !yesIsInFlowReply)
     if (isOptInKeyword) {
       console.log(`User ${fromPhone} requested opt-in via SMS keyword: ${upperBody}`)
       if (userId) {
