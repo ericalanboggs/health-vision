@@ -188,8 +188,11 @@ function findHabitConfig<T extends { habit_name: string }>(configs: T[], aiName:
  */
 function isManageHabitsIntent(body: string): boolean {
   const b = body.toLowerCase()
-  if (/\b(archive|unarchive|remove|delete|get rid of|drop)\b/.test(b) && /\b(habit|habits|it|them|this|these|the|my)\b/.test(b)) return true
-  if (/\b(pause|unpause|resume|mute|unmute|snooze)\b/.test(b) && /\b(habit|habits|reminder|reminders|it|them|this|my)\b/.test(b)) return true
+  // Strong, unambiguous management verbs — route on their own (rare in tracking/chat).
+  // A miss breaks the feature; an over-route just yields a harmless "here are your habits" reply.
+  if (/\b(archive|unarchive|pause|unpause|resume|snooze|mute|unmute|reschedule|delete)\b/.test(b)) return true
+  // remove / get rid of — but not past-tense diet chatter ("removed sugar", "getting rid of")
+  if (/\b(remove|get rid of)\b/.test(b) && !/\b(removed|removing)\b/.test(b)) return true
   if (/\bturn (off|on|back on)\b.*\b(reminder|reminders|habit|tracking)/.test(b)) return true
   if (/\breminders?\s+(off|on|back on)\b/.test(b)) return true
   if (/\b(reschedule|move|change|edit|switch|update|adjust|set)\b.*\b(schedule|day|days|time|reminder|habit)/.test(b)) return true
