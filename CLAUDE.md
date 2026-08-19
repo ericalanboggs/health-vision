@@ -5,6 +5,12 @@ Postgres with RLS, Stripe subscriptions, Twilio SMS, Resend email, OpenAI (gpt-4
 
 ## Read these first
 
+- **[`marketing/STRATEGIC_DIRECTION.md`](./marketing/STRATEGIC_DIRECTION.md)** — current
+  growth strategy and **build HOLDS** (as of 2026-07-30, review ~2026-09-21). Read before
+  proposing or building anything growth-related. It documents what is deliberately **on
+  hold** (LinkedIn, paid, new lead-capture surfaces, new landing pages) — don't "helpfully"
+  build past a hold. Supersedes the weekly-playbook assumptions in `marketing/growth-strategy.md`
+  and the paid/funnel plans below it.
 - **[`SUMMIT_HANDOFF.md`](./SUMMIT_HANDOFF.md)** — developer handoff guide. Read before
   any architecture, backend, SMS, challenges, or deployment work.
 - **[`SUMMIT_COACH_VOICE.md`](./SUMMIT_COACH_VOICE.md)** — the Summit *coach* voice. Read
