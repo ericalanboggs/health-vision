@@ -75,8 +75,8 @@ trusts. Most of that traffic is **mobile**, so design mobile-first.
 - **The 4-step method is the centerpiece** — make it *visual*. Icons or simple
   illustrations per step, a connected/stacked progression, numbers that feel designed.
   This is where copy-heaviness hurts most; turn prose into a scannable visual sequence.
-- **Add light proof/trust.** The Framer source page
-  (`summithealth.app/use-cases/lifestyle-changes`) uses concrete results
+- **Add light proof/trust.** The marketing-site page
+  (`summithealth.app/use-cases/warning-signs`, in the `summit-web` repo) uses concrete results
   ("-12 mg/dL LDL") and a real-guy testimonial. Borrow that energy if it fits — a
   tasteful result stat or quote builds trust for cold traffic. Keep it honest.
 - **Mobile:** consider a sticky/persistent email-capture or CTA on scroll, since the
@@ -86,8 +86,8 @@ trusts. Most of that traffic is **mobile**, so design mobile-first.
 
 ## Visual reference
 
-- Match the look-and-feel of `summithealth.app/use-cases/lifestyle-changes` (the Framer
-  page this funnel feeds into) — forest/emerald greens, clean type, generous white space,
+- Match the look-and-feel of `summithealth.app/use-cases/warning-signs` (the marketing-site
+  page this funnel feeds into, in the `summit-web` repo) — forest/emerald greens, clean type, generous white space,
   masculine-but-warm, not stock-y or corporate.
 
 ## Definition of done

@@ -42,4 +42,4 @@ This folder contains marketing copy and messaging frameworks for the Summit webs
 
 ## Usage
 
-These markdown files are designed to be easily transferred to Framer or any other website builder. Each section is clearly labeled for easy copy/paste.
+These markdown files predate the `summit-web` marketing site. Live marketing copy now lives in `summit-web/src/data/*.ts` and blog posts in `summit-web/src/content/posts/`. Treat these as source notes, not as the published copy.

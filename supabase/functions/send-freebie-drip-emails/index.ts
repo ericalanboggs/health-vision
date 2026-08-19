@@ -12,7 +12,7 @@ const LOGO_URL = 'https://go.summithealth.app/summit-logo.png'
 // Where the "start your trial" CTA points: the men's-health / lifestyle-changes
 // landing page. Its own CTAs carry ?source=lifestyle-changes, so signups from
 // here get the tailored /welcome onboarding. UTMs here attribute the drip.
-const TRIAL_URL = 'https://summithealth.app/use-cases/lifestyle-changes?utm_source=freebie_drip&utm_medium=email'
+const TRIAL_URL = 'https://summithealth.app/use-cases/warning-signs?utm_source=freebie_drip&utm_medium=email'
 
 // Drip-specific founder video (Vimeo watch URL). DIFFERENT from the landing-page
 // video (vimeo.com/1200892364) — that one is top-of-funnel and ends with "go grab

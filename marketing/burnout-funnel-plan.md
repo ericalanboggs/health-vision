@@ -73,8 +73,8 @@ fork, but not required to ship.)
   (same 6-day schedule/emailTypes; default content untouched — same pattern as postpartum).
 - **Assets:** `freebies/burnout-guide/off-the-treadmill.md` → `public/freebies/burnout-guide.pdf`.
 - **Attribution:** same `utm_content`→source fold + Meta pixel, already in the cloned page.
-- **Trial target:** needs a `use-cases/burnout` page on the Framer marketing site (the
-  `use-cases/*` pages live on summithealth.app, not this repo) — or point `TRIAL_URL` at an
+- **Trial target:** needs a `use-cases/burnout` page on the marketing site (the
+  `use-cases/*` pages live on summithealth.app in the `summit-web` repo, not this one) — or point `TRIAL_URL` at an
   existing page until it's built. ← **flag for Eric.**
 
 ## Build sequence
@@ -93,4 +93,4 @@ fork, but not required to ship.)
 - Real outcome numbers for the `[BRACKET]` placeholders in the copy draft.
 - Burnout testimonial — real pilot user + quote (or launch text-only).
 - Whether a founder video sits on the landing (postpartum shipped text-only first).
-- `use-cases/burnout` Framer page for the `TRIAL_URL`.
+- `use-cases/burnout` marketing-site page for the `TRIAL_URL`. **Shipped** — built in `summit-web`.

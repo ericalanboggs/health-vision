@@ -133,6 +133,27 @@ only after Instagram produces measurable, repeatable traffic to the existing CTA
 - **iOS/SwiftUI** — learning project, backlog-only, never displaces the 5 hours.
 - **Deploy hygiene** — see `SUMMIT_HANDOFF.md` §9. `--no-verify-jwt` resets on every
   redeploy; that gotcha still applies.
+- **Marketing site edits** — cheap now, see §5.1.
+
+### 5.1 The marketing site moved off Framer (2026-08-19)
+
+`summithealth.app` is an Astro site in the **`summit-web`** repo, auto-deployed by
+Vercel on push to `main`. Framer is retired.
+
+This changes the cost side of several decisions in this document. A landing page
+was an afternoon in Framer; it's now a data file and a push. A blog post was a
+manual CMS entry; it's now a markdown file in `summit-web/src/content/posts/`.
+
+**The holds in §4 still stand.** They were never about build cost — §4.2's stated
+rationale is that *capture surfaces without traffic are wasted build time*, and
+that's unchanged. What's changed is that when a hold does lift, acting on it is
+hours rather than days. Do not read "it's cheap now" as permission to build past
+§4.2. In particular the site ships **no email capture anywhere**: the persona pages
+have the slot built and disabled (`capture.enabled: false` in
+`summit-web/src/data/personas.ts`).
+
+Slug changes from the move, both 308 at the edge:
+`/use-cases/lifestyle-changes` → `/use-cases/warning-signs`, `/category/all` → `/resources`.
 
 ---
 

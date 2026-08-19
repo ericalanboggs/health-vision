@@ -13,7 +13,7 @@ import { trackEvent } from '../lib/posthog'
 
 const FREEBIE_SLUG = 'lifestyle-changes-guide'
 const PDF_PATH = `/freebies/${FREEBIE_SLUG}.pdf`
-const TRIAL_URL = 'https://summithealth.app/use-cases/lifestyle-changes'
+const TRIAL_URL = 'https://summithealth.app/use-cases/warning-signs'
 const FOUNDER_VIDEO_EMBED = 'https://player.vimeo.com/video/1200892364'
 
 const STEPS = [

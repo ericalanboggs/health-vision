@@ -254,7 +254,7 @@ Inbound SMS (Twilio)
 - SMS: `sms_opt_in`, `tracking_followup_time` (default 17:00), `admin_sms_hold_until`, `sms_conversational` (default false; opt-in to Summit Coach voice prompts)
 - Stripe: `stripe_customer_id`, `stripe_subscription_id`, `subscription_status`, `subscription_tier`, `trial_ends_at`, `subscription_current_period_end`
 - Challenge: `challenge_type` ('lite' or NULL)
-- Acquisition: `acquisition_source` (marketing landing segment the user came in from — e.g. 'burnout', 'postpartum', 'lifestyle-changes'; NULL for organic). Captured from the Framer `?source=` tag via `src/lib/acquisition.js` (localStorage, survives the OAuth redirect) and written in `ProfileSetup.jsx` at profile creation. Used to tailor onboarding. Migration `20260531`.
+- Acquisition: `acquisition_source` (marketing landing segment the user came in from — e.g. 'burnout', 'postpartum', 'lifestyle-changes'; NULL for organic). Captured from the `?source=` tag on inbound links from the marketing site via `src/lib/acquisition.js` (localStorage, survives the OAuth redirect) and written in `ProfileSetup.jsx` at profile creation. Used to tailor onboarding. Migration `20260531`. **Note:** existing rows still carry `'lifestyle-changes'`; that page is now `/use-cases/warning-signs`, but the stored value is deliberately unchanged so historical attribution stays comparable.
 - Soft delete: `deleted_at`
 
 **`health_journeys`** — Onboarding vision data

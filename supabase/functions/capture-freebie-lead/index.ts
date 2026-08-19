@@ -197,7 +197,7 @@ function buildGuideHtml(downloadUrl: string, logoUrl: string): string {
               <p style="margin: 0 0 8px 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
                 Want a coach who runs this with you — nudges you over text, adjusts when life gets
                 loud, and keeps your why in front of you? That's Summit.
-                <a href="https://summithealth.app/use-cases/lifestyle-changes" style="color: #15803d; font-weight: 600;">Try it free for 14 days</a>.
+                <a href="https://summithealth.app/use-cases/warning-signs" style="color: #15803d; font-weight: 600;">Try it free for 14 days</a>.
               </p>
               <p style="margin: 12px 0 0 0; font-size: 16px; color: #4a4a4a; line-height: 1.7;">
                 — <strong>Coach Eric</strong><br>

@@ -3,6 +3,23 @@
 Habit coaching platform: React + Vite frontend, Supabase Edge Functions (Deno) backend,
 Postgres with RLS, Stripe subscriptions, Twilio SMS, Resend email, OpenAI (gpt-4o-mini).
 
+## Two sites, two repos
+
+| | Repo | Domain | Stack |
+|---|---|---|---|
+| **Product app** | `health-vision` (this one) | `go.summithealth.app` | React + Vite SPA |
+| **Marketing site** | `summit-web` (sibling dir, [GitHub](https://github.com/ericalanboggs/summit-web)) | `summithealth.app` | Astro, static |
+
+**Framer is retired** (cut over 2026-08-19). The marketing site, blog and all
+`/use-cases/*` pages now live in `summit-web`. Anything referring to Framer as the
+marketing site is stale. Marketing copy changes go in `summit-web/src/data/*.ts`;
+blog posts are markdown in `summit-web/src/content/posts/`.
+
+Two slugs changed in the move — both 308 at the edge, but link to the new ones:
+
+- `/use-cases/lifestyle-changes` → **`/use-cases/warning-signs`**
+- `/category/all` → **`/resources`**
+
 ## Read these first
 
 - **[`marketing/STRATEGIC_DIRECTION.md`](./marketing/STRATEGIC_DIRECTION.md)** — current
