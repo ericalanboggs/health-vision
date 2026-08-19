@@ -98,7 +98,7 @@ serve(async (req) => {
       )
     }
 
-    const { recipients, message }: { recipients: Recipient[]; message: string } = body
+    const { recipients, message, mediaUrl, mediaPath }: { recipients: Recipient[]; message: string; mediaUrl?: string; mediaPath?: string } = body
 
     if (!recipients || recipients.length === 0) {
       return new Response(
@@ -107,7 +107,8 @@ serve(async (req) => {
       )
     }
 
-    if (!message || message.trim().length === 0) {
+    // A message is required unless we're sending media (image-only MMS is valid).
+    if ((!message || message.trim().length === 0) && !mediaUrl) {
       return new Response(
         JSON.stringify({ error: 'Message cannot be empty' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -125,7 +126,7 @@ serve(async (req) => {
       const recipient = recipients[i]
 
       const smsResult = await sendSMS(
-        { to: recipient.phone, body: message },
+        { to: recipient.phone, body: message, mediaUrl },
         {
           supabase,
           logTable: 'sms_messages',
@@ -134,6 +135,7 @@ serve(async (req) => {
             user_name: recipient.name,
             sent_by: user.id,
             sent_by_type: 'admin',
+            media_url: mediaPath ?? null,
           },
         }
       )
