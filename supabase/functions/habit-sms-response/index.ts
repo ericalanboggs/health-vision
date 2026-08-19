@@ -5,6 +5,7 @@ import { sendEmail } from '../_shared/resend.ts'
 import { loadUserContext, formatContextForPrompt } from '../_shared/user_context.ts'
 import { SUMMIT_LINKS } from '../_shared/summit_links.ts'
 import { coachKnowledgeBlock, languageDirective } from '../_shared/coach_knowledge.ts'
+import { formatDays, formatTime } from '../_shared/scheduleParse.ts'
 
 const COACH_FLAG_EMAIL = 'eric@summithealth.app'
 
@@ -215,6 +216,48 @@ async function forwardToFunction(fnName: string, from: string, body: string): Pr
   } catch (e) {
     console.error(`Error forwarding to ${fnName}:`, e)
   }
+}
+
+/**
+ * "List my habits" intent. Handled deterministically (buildHabitList) instead of via the
+ * coaching LLM, which summarizes the context and sometimes drops habits (e.g. challenge ones).
+ */
+function isListHabitsIntent(body: string): boolean {
+  const b = body.toLowerCase()
+  if (/\b(list|show|see|view|which)\b[^.?!]*\bhabits?\b/.test(b)) return true
+  if (/\bwhat are\b[^.?!]*\bhabits?\b/.test(b)) return true   // "what are my habits"
+  if (/\bwhat habits?\b/.test(b)) return true                 // "what habits do I have"
+  if (/^\s*(my|current|active)\s+habits\??\s*$/.test(b)) return true
+  return false
+}
+
+/** Deterministic roster of the user's ACTIVE habits, straight from the DB. */
+async function buildHabitList(supabase: ReturnType<typeof createClient>, userId: string): Promise<string> {
+  const [{ data: rows }, { data: configs }] = await Promise.all([
+    supabase.from('weekly_habits')
+      .select('habit_name, day_of_week, reminder_time, time_of_day, challenge_slug')
+      .eq('user_id', userId).is('archived_at', null),
+    supabase.from('habit_tracking_config')
+      .select('habit_name, tracking_enabled').eq('user_id', userId),
+  ])
+  if (!rows || rows.length === 0) {
+    return "You don't have any active habits right now. Text ADD to set one up. 🌿"
+  }
+  const cfg = new Map((configs || []).map((c: any) => [c.habit_name, c]))
+  const byName = new Map<string, { name: string; days: Set<number>; time: string | null; slug: string | null }>()
+  for (const r of rows as any[]) {
+    const e = byName.get(r.habit_name) || { name: r.habit_name, days: new Set<number>(), time: null, slug: r.challenge_slug ?? null }
+    e.days.add(r.day_of_week)
+    if (!e.time) e.time = r.reminder_time || r.time_of_day || null
+    byName.set(r.habit_name, e)
+  }
+  const lines = [...byName.values()].map((e) => {
+    const paused = cfg.get(e.name)?.tracking_enabled === false ? ' (paused)' : ''
+    const challenge = e.slug ? ` [${e.slug}]` : ''
+    const when = `${formatDays([...e.days])}${e.time ? ` at ${formatTime(e.time)}` : ''}`
+    return `• ${e.name}${challenge}: ${when}${paused}`
+  })
+  return `Here are your active habits:\n${lines.join('\n')}`
 }
 
 function parseTrackingResponse(body: string, expectedType: 'boolean' | 'metric'): { type: 'boolean'; value: boolean } | { type: 'metric'; value: number } | null {
@@ -1118,6 +1161,20 @@ serve(async (req) => {
     if (isManageHabitsIntent(body)) {
       console.log(`Routing to sms-manage-habits (management intent) for user ${profile.id}`)
       await forwardToFunction('sms-manage-habits', from, body)
+      return new Response(
+        '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+        { headers: { 'Content-Type': 'text/xml' } }
+      )
+    }
+
+    // ============================================
+    // STEP 1.6: "List my habits" → deterministic roster from the DB. The coaching LLM
+    // sometimes omits habits (e.g. challenge ones), so we build this list in code.
+    // ============================================
+    if (isListHabitsIntent(body)) {
+      console.log(`Listing habits (deterministic) for user ${profile.id}`)
+      const listMsg = await buildHabitList(supabase, profile.id)
+      await sendSMSWithLog(from, listMsg, supabase, profile.id, userName)
       return new Response(
         '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
         { headers: { 'Content-Type': 'text/xml' } }
