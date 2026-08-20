@@ -1,6 +1,6 @@
 # Summit Health — Developer Handoff Guide
 
-> Living document. Last updated: 2026-06-05.
+> Living document. Last updated: 2026-08-20.
 
 **Companion docs:**
 - [`SUMMIT_COACH_VOICE.md`](./SUMMIT_COACH_VOICE.md) — voice and tone guide for all user-facing copy (SMS messages, email content, AI system prompts, challenge content). Read this before writing or editing any user-facing text.
@@ -167,6 +167,13 @@ export const doSomething = async (params) => {
 - `sendEmailBatch(emails)` — batch up to 100
 - `sendEmailsInBatches(emails)` — handles large lists with delays
 
+**`scheduleParse.ts`** — deterministic natural-language schedule parsing for SMS habit management
+- `parseDays(input)` → sorted `day_of_week[]` (0=Sun…6=Sat) or null; handles "weekdays", "weekends", "every day", "mon/wed/fri"
+- `parseTime(input)` → `"HH:MM:SS"` or null; handles "9am", "9:30pm", "noon", "17:00"
+- `formatDays` / `formatTime` — for confirmation copy. Used by `sms-manage-habits` and `habit-sms-response`'s deterministic list
+
+**`isAdminHoldActive(profile)`** (exported from `sms.ts`) — true when a coach has taken over (`admin_sms_hold_until` in the future). Every proactive/automated sender checks it; see §5 "Admin SMS Hold".
+
 ### Function Reference
 
 | Function | Trigger | `--no-verify-jwt` | Description |
@@ -211,6 +218,7 @@ export const doSomething = async (params) => {
 | `habit-ai-suggest` | Frontend POST | NO | AI habit suggestions based on vision |
 | `send-invite-email` | Frontend POST | NO | Invitation emails |
 | `sms-add-habit` | Internal (from twilio-webhook) | **YES** | SMS habit creation state machine (ADD keyword) |
+| `sms-manage-habits` | Internal (from habit-sms-response) | **YES** | Natural-language habit management (archive/pause/resume/edit-schedule/add), confirm-first. LLM only EXTRACTS intent; code resolves names, confirms, and executes gated writes. State in `sms_manage_habit_sessions`. See §5 "Habit Management". |
 | `cal-webhook` | External webhook | NO | Calendar integration |
 | `send-march-update` | Manual POST | **YES** | One-time March 2026 product update email to all users |
 | `generate-weekly-tracker` | Manual POST (cron-ready) | **YES** | Generates a printable one-page weekly habit tracker PDF and emails it as an attachment via Resend. Uses pdf-lib + embedded Inter TTFs (fetched from jsdelivr, module-cached). Accepts `{userId}` or `{email}` and optional `{weekStart}`. |
@@ -227,14 +235,19 @@ Inbound SMS (Twilio)
        ├→ CRISIS keywords → 988 Lifeline resources
        ├→ STOP/UNSUBSCRIBE → Update sms_opt_in = false
        ├→ HELP → Info reply
-       ├→ START/SUBSCRIBE/YES (not opted in) → Opt-in confirmation
+       ├→ START/SUBSCRIBE/YES (not opted in AND no active session) → Opt-in confirmation
+       │     ↳ a bare YES DEFERS past opt-in when the user has an active conversation
+       │       session, so it can confirm a manage/backup/add/reflection action
        ├→ ARCHIVE → Archives completed challenge habits (inline handler)
        ├→ BACKUP → sms-backup-plan (state machine)
        ├→ ADD / NEW HABIT → sms-add-habit (state machine)
        ├→ Active reflection session → sms-reflection-response (AI conversation)
        └→ Everything else → habit-sms-response
-            ├→ Step 0: Safety net check for backup/reflection/add-habit sessions
+            ├→ Step 0: Safety net for backup/reflection/add-habit sessions
+            ├→ Step 0c: Active sms_manage_habit_sessions → sms-manage-habits (handles YES/NO)
             ├→ Step 1: Check sms_pending_clarification (10 min expiry)
+            ├→ Step 1.5: Habit-management intent → sms-manage-habits (confirm-first)
+            ├→ Step 1.6: "List my habits" → deterministic roster from DB (NOT the LLM)
             ├→ Step 2: Check sms_followup_log for context (Y/N reply)
             └→ Step 3: OpenAI smart-parse (suppressed during admin hold)
                   ├→ If understood as habit log → process entries
@@ -304,6 +317,9 @@ Inbound SMS (Twilio)
 
 **`sms_add_habit_sessions`** — ADD habit flow state (30 min expiry)
 - `user_id`, `step` (describe_habit|smart_refine), `context` (JSONB: proposed_habit_name, proposed_tracking_type, proposed_days, refinement_count, etc.), `expires_at`
+
+**`sms_manage_habit_sessions`** — Habit-management confirm-first state (15 min expiry). Migration `20260818`.
+- `user_id`, `step` (`awaiting_confirm`), `context` (JSONB: `plan` = resolved `[{op, habit_name, days?, time?, tracking_type?}]`), `expires_at`. See §5 "Habit Management".
 
 **`sms_reflection_sessions`** — Sunday reflection conversation state (2 hr expiry)
 - `user_id`, `week_number`, `step`, `context` (JSONB: opener, messages[], exchange_count, tracking_data, habit_names), `expires_at`
@@ -433,6 +449,41 @@ Key details:
 - CANCEL/QUIT/EXIT exits at any step
 - Duplicate habit names detected and flagged
 - 5 personal habit cap enforced (challenge habits excluded)
+
+### Habit Management, natural language (`sms-manage-habits`)
+
+Lets a user **archive / pause / resume / edit-schedule / add** habits by texting plain English
+("archive the walk", "pause meditation", "move snack to weekdays at 9am", "add stretching every
+day at 7pm"). Added 2026-08-19; dogfooded working.
+
+**Trust boundary (the whole design):** the LLM ONLY extracts intent into structured ops. Deterministic
+code resolves habit names against the DB, normalizes the schedule (`scheduleParse.ts`), stores a
+concrete plan, asks the user to confirm, and only on an explicit **YES** executes gated writes —
+reporting only what actually wrote. This is deliberately **not** an agentic loop; it's what replaced
+the old bug where the coaching LLM *claimed* "Archived your habits!" with no DB write.
+
+```
+"archive the walk and add stretching weekdays 9am"
+  → habit-sms-response STEP 1.5 (isManageHabitsIntent) → sms-manage-habits
+      → LLM extracts ops → resolve names vs active weekly_habits → normalize days/time
+      → store sms_manage_habit_sessions (awaiting_confirm, 15-min expiry)
+      → "Just to confirm, I'll archive 'X'; add 'Y' (weekdays at 9am). Reply YES to do it, or NO."
+"YES"
+  → STEP 0c (active manage session) → sms-manage-habits → executePlan (gated) → "Done: …"
+```
+
+Op → write:
+- **archive** → `weekly_habits.archived_at = now()`
+- **pause / resume** → `habit_tracking_config.tracking_enabled = false / true` (see §5 Admin hold note on what tracking_enabled gates — followups yes, the daily reminder no)
+- **edit** → reconcile `weekly_habits` day rows + update `reminder_time`/`time_of_day` (preserves `challenge_slug`/`timezone`)
+- **add** → insert honoring requested days AND time (unlike the ADD keyword flow, which ignores time); respects the 5-habit cap
+
+Routing & gotchas:
+- Detector `isManageHabitsIntent` is conservative but routes **strong verbs (archive/pause/resume/delete/reschedule) on their own** — a determiner ("the/my") is not required. Over-routing is harmless (function replies with the habit list); a miss breaks the flow.
+- **"List my habits" is deterministic** (`buildHabitList`, STEP 1.6) — built from `weekly_habits`, NOT the coaching LLM, which sometimes omitted habits (e.g. challenge ones).
+- A bare **YES** confirming an action defers past the opt-in handler in `twilio-webhook` when the user has an active session (else it was hijacked into the subscribe flow when `sms_opt_in=false`).
+- v1 confirmation copy is **English-only** (the extractor still understands es/pt input); i18n is a known follow-up.
+- Files: `sms-manage-habits/index.ts`, `_shared/scheduleParse.ts`, migration `20260818_create_manage_habit_sessions.sql`, wiring in `habit-sms-response`, opt-in defer in `twilio-webhook`.
 
 ### AI Coaching System
 
@@ -754,6 +805,7 @@ That's the whole flow — commit, push, done. New routes (e.g. `/lifestyle-chang
    supabase functions deploy sms-reflection-response --no-verify-jwt
    supabase functions deploy sms-motivation-checkin --no-verify-jwt
    supabase functions deploy sms-add-habit --no-verify-jwt
+   supabase functions deploy sms-manage-habits --no-verify-jwt
    supabase functions deploy send-challenge-completion-sms --no-verify-jwt
    supabase functions deploy send-confidence-check --no-verify-jwt
    supabase functions deploy send-march-update --no-verify-jwt
