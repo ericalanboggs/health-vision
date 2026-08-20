@@ -2,6 +2,12 @@
 
 > Living document. Last updated: 2026-08-20.
 
+**Scope: this repo only** — the product app at `go.summithealth.app` (React SPA,
+Supabase edge functions, Postgres, Twilio, Stripe). The **marketing site**
+(`summithealth.app`, including every `/use-cases/*` page and the blog) is a
+separate Astro repo, **`summit-web`**, deployed by Vercel. Framer was retired
+2026-08-19. See `CLAUDE.md` for the split before assuming a page lives here.
+
 **Companion docs:**
 - [`SUMMIT_COACH_VOICE.md`](./SUMMIT_COACH_VOICE.md) — voice and tone guide for all user-facing copy (SMS messages, email content, AI system prompts, challenge content). Read this before writing or editing any user-facing text.
 
@@ -206,8 +212,8 @@ export const doSomething = async (params) => {
 | `send-phone-verification` | Frontend POST | NO | Sends OTP for phone verification |
 | `verify-phone-code` | Frontend POST | NO | Verifies OTP, sends opt-in confirmation |
 | `create-lite-enrollment` | Frontend POST | **YES** | Lite challenge signup (creates user + profile + enrollment) |
-| `capture-freebie-lead` | Frontend POST | **YES** | Freebie email capture — stores lead + emails the download link. Multi-freebie via `FREEBIES` config: `summit-weekly-reflection` (skill .zip, /freebies) and `lifestyle-changes-guide` (PDF guide, /lifestyle-changes). |
-| `send-freebie-drip-emails` | Cron (daily 4PM UTC) | **YES** | Nurture drip for freebie leads (days 2,4,7,10,13,17): why lifestyle change works → how → Summit system → founder video → 14-day trial CTA → last note. Dedups via `freebie_lead_emails`; skips leads who already signed up. Respects `freebie_leads.wants_tips`. |
+| `capture-freebie-lead` | Frontend POST | **YES** | Freebie email capture — stores lead + emails the download link. Multi-freebie via `FREEBIES` config: `summit-weekly-reflection` (skill .zip, /freebies) and `lifestyle-changes-guide` (PDF guide, /lifestyle-changes). The trial link in that email points at `summithealth.app/use-cases/warning-signs` (renamed from `/use-cases/lifestyle-changes`). **Edited 2026-08-19, not yet redeployed.** |
+| `send-freebie-drip-emails` | Cron (daily 4PM UTC) | **YES** | Nurture drip for freebie leads (days 2,4,7,10,13,17): why lifestyle change works → how → Summit system → founder video → 14-day trial CTA → last note. Dedups via `freebie_lead_emails`; skips leads who already signed up. Respects `freebie_leads.wants_tips`. `TRIAL_URL` now points at `/use-cases/warning-signs`. **Edited 2026-08-19, not yet redeployed.** |
 | `freebie-unsubscribe` | Email link (GET) | **YES** | One-click unsubscribe from the freebie drip; sets `wants_tips=false`. Public — auth via link possession. |
 | `send-lite-challenge-sms` | Cron (every 15 min) | **YES** | 5x/day SMS for lite challenge |
 | `send-lite-challenge-email` | Cron (daily) | **YES** | Daily email + end-of-challenge summary |
@@ -784,6 +790,16 @@ That's the whole flow — commit, push, done. New routes (e.g. `/lifestyle-chang
 **Workflow preference: ship finished work to `main`.** Vercel only auto-deploys `main`, so finished changes should be committed and merged to `main` — don't leave shippable work stranded on a feature branch. When work is ready, the default is: commit it, merge the branch to `main`, and push `main`. (If asked to "deploy" or "ship" the frontend, that means: get it onto `main`.)
 
 **Backend (Supabase edge functions + migrations) is the part you deploy manually** — it does *not* ride along with the GitHub push. Use the `supabase` CLI:
+
+> **Pending redeploy (as of 2026-08-19).** Two functions have committed URL
+> changes that are not live yet, because edge functions don't ride along with a
+> git push. Nothing is broken — the old URL 308s at the edge — but the emails
+> ship a redirect hop until these go out:
+>
+> ```bash
+> supabase functions deploy capture-freebie-lead --no-verify-jwt
+> supabase functions deploy send-freebie-drip-emails --no-verify-jwt
+> ```
 
 1. **`--no-verify-jwt` resets on EVERY redeploy.** Any redeploy — CLI, dashboard, or auto-deploy — strips this flag. Always include it:
    ```bash
