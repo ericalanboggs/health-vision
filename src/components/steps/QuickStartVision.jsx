@@ -56,9 +56,32 @@ const OptionButton = ({ option, isSelected, onClick }) => {
   )
 }
 
-const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBackToIntro }) => {
+// Props beyond the first four are optional and default to the full authenticated
+// onboarding behaviour — /vision passes none of them.
+//
+//   questionPlan        [{ field, section }] — subset + reorder + relabel the question
+//                       set. Section counters are recomputed from the resulting order.
+//                       Used by the pre-auth /plan quiz, which runs a short six.
+//   requireSliderTouch  sliders normally satisfy `hasSelection()` on their default
+//                       value, so a user can tap straight past them. Cold traffic
+//                       shouldn't be able to: an untouched default is indistinguishable
+//                       from an answer, and capacity is the whole point of the question.
+//   quizOnly            finish at the last question and hand back to the parent instead
+//                       of entering the vision-summary / habit-intro phases. The pre-auth
+//                       page renders its own payoff, because the AI polish on the summary
+//                       needs a signed-in user (ai-chat rejects anonymous callers).
+const QuickStartVision = ({
+  formData,
+  updateFormData,
+  onComplete,
+  onBack: onBackToIntro,
+  questionPlan = null,
+  requireSliderTouch = false,
+  quizOnly = false,
+}) => {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [otherText, setOtherText] = useState({})
+  const [touchedSliders, setTouchedSliders] = useState({})
   const [phase, setPhase] = useState('quiz') // 'quiz', 'vision-summary', 'habit-intro'
   const [visionAdjectives, setVisionAdjectives] = useState('')
   const [consolidatedVision, setConsolidatedVision] = useState('')
@@ -71,7 +94,7 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
   const [customHabitText, setCustomHabitText] = useState('')
 
   // Question definitions
-  const questions = [
+  const allQuestions = [
     // VISION (Q1-Q3)
     {
       section: 'Vision',
@@ -253,6 +276,37 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
     },
   ]
 
+  // Apply questionPlan when given: pick the named questions in the order listed,
+  // relabel their section, and recompute the "Vision (2/3)" counters so the chip
+  // matches the shortened arc rather than the full ten-question one.
+  const questions = React.useMemo(() => {
+    if (!questionPlan) return allQuestions
+
+    const picked = questionPlan
+      .map(({ field, section, question }) => {
+        // An entry may carry its own full question definition. Used for questions
+        // that only exist in a shortened plan — the /plan routing question isn't
+        // part of the ten-question onboarding set and shouldn't be added to it.
+        const q = question || allQuestions.find(item => item.field === field)
+        if (!q) {
+          console.warn(`QuickStartVision: questionPlan references unknown field "${field}"`)
+          return null
+        }
+        return { ...q, field: q.field || field, section: section || q.section }
+      })
+      .filter(Boolean)
+
+    const perSection = picked.reduce((acc, q) => {
+      acc[q.section] = (acc[q.section] || 0) + 1
+      return acc
+    }, {})
+    const seen = {}
+    return picked.map(q => {
+      seen[q.section] = (seen[q.section] || 0) + 1
+      return { ...q, sectionIndex: seen[q.section], sectionTotal: perSection[q.section] }
+    })
+  }, [questionPlan])
+
   const currentQ = questions[currentQuestion]
   const totalQuestions = questions.length
 
@@ -411,6 +465,10 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
 
     if (currentQuestion < totalQuestions - 1) {
       setCurrentQuestion(currentQuestion + 1)
+    } else if (quizOnly) {
+      // Pre-auth: the parent owns the payoff screen.
+      onComplete()
+      return
     } else {
       // Quiz complete, move to vision summary
       setPhase('vision-summary')
@@ -428,9 +486,13 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
   // Check if current question has any selection
   const hasSelection = () => {
     const q = currentQ
-    if (q.type === 'slider') return true // Slider always has a value
-    if (q.type === 'discrete-slider') return true // Discrete slider always has a value
+    // Sliders always hold a value, so they pass by default. When requireSliderTouch
+    // is on, the user has to actually move or tap one before Next unlocks.
+    if (q.type === 'slider' || q.type === 'discrete-slider') {
+      return requireSliderTouch ? !!touchedSliders[q.field] : true
+    }
     if (q.type === 'single-select') return !!formData[q.field]
+    if (q.type === 'single-select-chip') return !!formData[q.field]
     if (q.type === 'multi-select-text') {
       const clicked = formData[q.clickedField] || []
       return clicked.length > 0
@@ -440,6 +502,13 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
       return arr.length > 0
     }
     return false
+  }
+
+  // Slider writes go through here so `requireSliderTouch` can tell a real answer
+  // from an untouched default.
+  const setSliderValue = (field, value) => {
+    updateFormData(field, value)
+    setTouchedSliders(prev => (prev[field] ? prev : { ...prev, [field]: true }))
   }
 
   const renderQuestion = () => {
@@ -470,7 +539,7 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
                 min={q.min}
                 max={q.max}
                 value={value}
-                onChange={(e) => updateFormData(q.field, parseInt(e.target.value))}
+                onChange={(e) => setSliderValue(q.field, parseInt(e.target.value))}
                 className="absolute top-0 left-0 w-full h-3 opacity-0 cursor-pointer"
               />
 
@@ -490,7 +559,7 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
               {steps.map((step) => (
                 <button
                   key={step}
-                  onClick={() => updateFormData(q.field, step)}
+                  onClick={() => setSliderValue(q.field, step)}
                   className={`w-8 h-8 rounded-full text-sm font-medium transition-all ${
                     step === value
                       ? 'bg-summit-emerald text-white'
@@ -519,7 +588,7 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
       const percentage = (currentIndex / (steps.length - 1)) * 100
 
       // Store as "X minutes/day" string for downstream compatibility
-      const storeValue = (stepVal) => updateFormData(q.field, `${stepVal} minutes/day`)
+      const storeValue = (stepVal) => setSliderValue(q.field, `${stepVal} minutes/day`)
 
       return (
         <div className="space-y-6">
@@ -582,6 +651,52 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
       )
     }
 
+    // Chip-styled single select. Stores option.value (not the label) so the answer
+    // is a stable slug the routing code can key off. Picking a real option advances
+    // on its own — one tap per screen, which is the point of a single-select. The
+    // "something else" option instead reveals a text field and waits.
+    if (q.type === 'single-select-chip') {
+      const selected = formData[q.field]
+      const isOther = selected && selected === q.otherValue
+
+      return (
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {q.options.map((option) => (
+              <OptionButton
+                key={option.value}
+                option={option}
+                isSelected={selected === option.value}
+                onClick={() => {
+                  updateFormData(q.field, option.value)
+                  if (option.value !== q.otherValue) {
+                    // Small pause so the selected state is visible before the
+                    // screen changes, otherwise the advance reads as a glitch.
+                    setTimeout(() => handleNext(), 180)
+                  }
+                }}
+              />
+            ))}
+          </div>
+          {isOther && (
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-white border-2 border-summit-emerald shadow-md">
+              <div className="flex-shrink-0 w-11 h-11 rounded-lg bg-summit-emerald flex items-center justify-center">
+                <MaterialSymbol name="edit" className="text-[22px] text-white" />
+              </div>
+              <input
+                type="text"
+                autoFocus
+                value={formData[q.otherField] || ''}
+                onChange={(e) => updateFormData(q.otherField, e.target.value)}
+                placeholder="What are you facing?"
+                className="flex-1 bg-transparent outline-none text-summit-forest placeholder:text-stone-400"
+              />
+            </div>
+          )}
+        </div>
+      )
+    }
+
     if (q.type === 'single-select') {
       return (
         <div className="grid grid-cols-2 gap-3">
@@ -624,8 +739,10 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
             })}
           </div>
           {q.hasOther && (
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-white border border-summit-sage">
-              <span className="text-2xl">✏️</span>
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-white border-2 border-transparent shadow-sm">
+              <div className="flex-shrink-0 w-11 h-11 rounded-lg bg-summit-sage flex items-center justify-center">
+                <MaterialSymbol name="edit" className="text-[22px] text-summit-pine" />
+              </div>
               <input
                 type="text"
                 value={otherText[currentQuestion] || ''}
@@ -656,8 +773,10 @@ const QuickStartVision = ({ formData, updateFormData, onComplete, onBack: onBack
             })}
           </div>
           {q.hasOther && (
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-white border border-summit-sage">
-              <span className="text-2xl">✏️</span>
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-white border-2 border-transparent shadow-sm">
+              <div className="flex-shrink-0 w-11 h-11 rounded-lg bg-summit-sage flex items-center justify-center">
+                <MaterialSymbol name="edit" className="text-[22px] text-summit-pine" />
+              </div>
               <input
                 type="text"
                 value={otherText[currentQuestion] || ''}

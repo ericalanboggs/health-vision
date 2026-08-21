@@ -44,6 +44,7 @@ import Freebies from './pages/Freebies'
 import LifestyleGuide from './pages/LifestyleGuide'
 import YourTurn from './pages/YourTurn'
 import Burnout from './pages/Burnout'
+import QuickPlan from './pages/QuickPlan'
 import ChallengesLanding from './pages/ChallengesLanding'
 import ChallengeDetail from './pages/ChallengeDetail'
 import ChallengeAddHabit from './pages/ChallengeAddHabit'
@@ -156,6 +157,8 @@ function App() {
         <Route path="/lifestyle-changes" element={<LifestyleGuide />} />
         <Route path="/yourturn" element={<YourTurn />} />
         <Route path="/burnout" element={<Burnout />} />
+        {/* Pre-auth vision quiz — the marketing hero's primary CTA lands here. */}
+        <Route path="/plan" element={<QuickPlan />} />
 
         {/* Welcome back - reactivation flow */}
         <Route

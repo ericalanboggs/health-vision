@@ -31,4 +31,9 @@ export const EMPTY_VISION_FORM = {
   // Segment onboarding (set on /welcome for marketing-acquired users)
   segmentReason: '',
   segmentWhy: '',
+  // Self-reported segment from the pre-auth /plan quiz. Uses the same slugs as
+  // acquisition_source ('burnout' | 'postpartum' | 'lifestyle-changes' | 'other'),
+  // so it can stand in when there's no ?source= tag. See src/lib/quickPlan.js.
+  lifeContext: '',
+  lifeContextNote: '',
 }

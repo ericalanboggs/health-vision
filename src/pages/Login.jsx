@@ -1,13 +1,19 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { signInWithGoogle, signUpWithPassword, signInWithPassword } from '../services/authService'
 
 export default function Login() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [emailLoading, setEmailLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [mode, setMode] = useState('sign-in') // 'sign-in' or 'sign-up'
+  // ?mode=sign-up opens on the create-account tab. The pre-auth /plan quiz sends
+  // people here after they've already done the work, so landing on "Sign In"
+  // would read as a dead end.
+  const [mode, setMode] = useState(
+    searchParams.get('mode') === 'sign-up' ? 'sign-up' : 'sign-in'
+  )
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmationSent, setConfirmationSent] = useState(false)

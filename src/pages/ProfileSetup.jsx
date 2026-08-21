@@ -6,6 +6,9 @@ import { upsertProfile } from '../services/authService'
 import { detectLanguage } from '../lib/detectLanguage'
 import { trackEvent } from '../lib/posthog'
 import { getAcquisitionSource, clearAcquisition } from '../lib/acquisition'
+import { loadQuickPlan, clearQuickPlan } from '../lib/quickPlan'
+import { saveJourney } from '../services/journeyService'
+import { EMPTY_VISION_FORM } from '../data/visionFormDefaults'
 import supabase from '../lib/supabase'
 import { formatPhoneToE164, isValidUSPhoneNumber, formatPhoneAsYouType } from '../utils/phoneFormatter'
 import { Button, Input, Checkbox, Card } from '@summit/design-system'
@@ -125,6 +128,21 @@ export default function ProfileSetup() {
 
       if (result.success) {
         clearAcquisition()
+
+        // Claim answers from the pre-auth /plan quiz, if they took it. Same
+        // stash-then-claim shape as acquisition source above. Non-blocking: a
+        // failure here costs them the prefill, not the signup.
+        const quickPlan = loadQuickPlan()
+        if (quickPlan) {
+          try {
+            await saveJourney({ ...EMPTY_VISION_FORM, ...quickPlan }, 'quickstart')
+            clearQuickPlan()
+            trackEvent('quick_plan_claimed')
+          } catch (err) {
+            console.error('QuickPlan claim error:', err)
+          }
+        }
+
         trackEvent('profile_completed', {
           has_phone: !!formData.phone,
           sms_consent: formData.smsConsent,
