@@ -122,7 +122,9 @@ Deno.serve(async (req) => {
 
     const jwt = await apnsJwt(nowSec);
     const aps = {
-      aps: { alert: { title, body }, sound: "default", "thread-id": msg.user_id ?? msg.phone },
+      // Custom bundled sound (Funk.caf ships in the app). If a device's installed
+      // build lacks the file, iOS silently falls back to the default sound.
+      aps: { alert: { title, body }, sound: "Funk.caf", "thread-id": msg.user_id ?? msg.phone },
       user_id: msg.user_id ?? "",
       phone: msg.phone ?? "",
     };
