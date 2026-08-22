@@ -441,3 +441,25 @@ accountability are the two that carry it.
 **Consequence for the video list:** with this written, `not-ready` almost
 certainly does not need its own shoot. Every cut ends on the same two-option
 branch, which handles it.
+
+---
+
+# TODO — reshoot "why I built this"
+
+The generic founder cut (`1200892364`) is the men-40+ ad/landing video: hat on
+backwards, shot for a cold Meta audience. It reads as mismatched anywhere else,
+which is why it was pulled off the postpartum persona page (2026-08-22).
+
+**The reshoot:** same "why I built this" content, but presented as a coach —
+dressed up, put together. It has three jobs, so it is worth doing properly:
+
+1. The `/use-cases/postpartum` video slot, currently empty
+2. The `/use-cases/warning-signs` slot, currently still running the ad cut
+3. The `/jason`-style personal pages (`PersonalPage.astro`), same video
+
+Script exists already: "1. Ad / Landing video — Why I built this" at the top of
+this file. Worth a light pass first — it ends with "go grab the free guide,"
+which is right for a cold ad and wrong for someone already reading a persona page.
+
+Landscape this time. The ad cut is 16:9 and the persona page frame defaults to
+16:9, so a portrait reshoot would need the orientation flag flipped.

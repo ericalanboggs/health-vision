@@ -5,7 +5,7 @@ import { Button, Card } from '@summit/design-system'
 import QuickStartVision from '../components/steps/QuickStartVision'
 import { EMPTY_VISION_FORM } from '../data/visionFormDefaults'
 import {
-  QUICK_PLAN_QUESTIONS,
+  questionsForSource,
   saveQuickPlan,
   loadQuickPlan,
   resolvePersona,
@@ -145,6 +145,12 @@ export default function QuickPlan() {
     navigate('/login?mode=sign-up')
   }
 
+  // Spelled out, since "7 questions" in a sentence reads like a spec sheet. The
+  // count varies: a tagged visitor skips the segment question.
+  const NUMBER_WORDS = { 6: 'Six', 7: 'Seven' }
+  const planLength = questionsForSource(acquisitionSource).length
+  const questionCount = NUMBER_WORDS[planLength] || planLength
+
   if (phase === 'intro') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-white to-summit-mint">
@@ -158,8 +164,8 @@ export default function QuickPlan() {
               Start with your vision
             </h1>
             <p className="text-body-lg text-text-secondary max-w-xl mx-auto leading-relaxed">
-              Seven questions. You'll end up with a picture of what you actually want,
-              and an honest read on what you can give right now.
+              {questionCount} questions. You'll end up with a picture of what you actually
+              want, and an honest read on what you can give right now.
             </p>
           </div>
 
@@ -224,7 +230,7 @@ export default function QuickPlan() {
             updateFormData={updateFormData}
             onComplete={handleQuizComplete}
             onBack={() => { setPhase('intro'); window.scrollTo(0, 0) }}
-            questionPlan={QUICK_PLAN_QUESTIONS}
+            questionPlan={questionsForSource(acquisitionSource)}
             requireSliderTouch
             quizOnly
           />

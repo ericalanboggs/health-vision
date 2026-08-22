@@ -51,6 +51,21 @@ export const QUICK_PLAN_QUESTIONS = [
   { field: 'habitsToImprove', section: "What's in the way" },
 ]
 
+// Someone who arrived from a persona page already answered the segment question
+// by clicking, so asking it again reads as not paying attention. Drop it when a
+// recognized ?source= tag is present. resolvePersona prefers the tag over the
+// stated answer anyway, so nothing downstream changes.
+//
+// An unrecognized tag (a UTM campaign, say) is not a segment, so the question
+// stays — that visitor genuinely hasn't told us anything.
+export const questionsForSource = (acquisitionSource) => {
+  const known = ['burnout', 'postpartum', 'lifestyle-changes']
+  if (!acquisitionSource || !known.includes(acquisitionSource)) {
+    return QUICK_PLAN_QUESTIONS
+  }
+  return QUICK_PLAN_QUESTIONS.filter(q => q.field !== 'lifeContext')
+}
+
 export const saveQuickPlan = (formData) => {
   try {
     localStorage.setItem(STASH_KEY, JSON.stringify({ savedAt: Date.now(), formData }))
