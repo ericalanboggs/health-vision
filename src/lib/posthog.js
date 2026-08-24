@@ -23,11 +23,19 @@ export const initPostHog = () => {
       capture_pageview: true, // Automatically capture pageviews
       capture_pageleave: true, // Capture when users leave
       autocapture: true, // Automatically capture clicks and interactions
-      session_recording: {
-        enabled: true, // Enable session recordings
-        maskAllInputs: true, // Mask sensitive input fields
-        maskTextSelector: '[data-private]', // Mask elements with data-private attribute
-      },
+      // Session replay is OFF, deliberately (decided 2026-08-24).
+      //
+      // Summit is a health product. Replay would record people answering
+      // questions about their sleep, their lab results, and what they are
+      // struggling with. Input masking reduces that exposure but does not remove
+      // it, and the funnel questions we actually need answered are answerable
+      // from events alone.
+      //
+      // It is also switched off in the PostHog project settings. Both, on
+      // purpose: the dashboard toggle is the one that takes effect, and this
+      // flag is the one that records the intent so a future dashboard change
+      // does not quietly turn it back on.
+      disable_session_recording: true,
       loaded: (posthog) => {
         if (import.meta.env.DEV) {
           console.log('PostHog initialized successfully')
