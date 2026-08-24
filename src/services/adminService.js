@@ -691,6 +691,44 @@ export const clearAdminSmsHold = async (userId) => {
 }
 
 /**
+ * Indefinitely pause ALL outbound SMS for a user (family leave, etc.) WITHOUT opting them
+ * out of consent (sms_opt_in is untouched). Cleared with clearAdminSmsHold ("Resume").
+ * @param {string} userId
+ */
+export const pauseAllSms = async (userId) => {
+  try {
+    if (!await isAdmin()) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/send-admin-sms`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({ action: 'pause-sms', userId })
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      return { success: false, error: result.error || 'Failed to pause SMS' }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error pausing SMS:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
  * Get admin SMS hold status for a user
  * @param {string} userId
  * @returns {{ holdUntil: string } | null}
@@ -701,16 +739,22 @@ export const getAdminSmsHoldStatus = async (userId) => {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('admin_sms_hold_until')
+      .select('admin_sms_hold_until, sms_paused')
       .eq('id', userId)
       .single()
 
-    if (error || !data?.admin_sms_hold_until) return null
+    if (error || !data) return null
 
-    // Check if hold is still active
-    if (new Date(data.admin_sms_hold_until) <= new Date()) return null
+    const smsPaused = data.sms_paused === true
+    // An indefinite pause stores a far-future hold; don't surface that date — the UI shows
+    // "paused" instead. Otherwise report a genuine, still-active 24h AI hold.
+    const holdUntil = (!smsPaused && data.admin_sms_hold_until && new Date(data.admin_sms_hold_until) > new Date())
+      ? data.admin_sms_hold_until
+      : null
 
-    return { holdUntil: data.admin_sms_hold_until }
+    if (!smsPaused && !holdUntil) return null
+
+    return { holdUntil, smsPaused }
   } catch (error) {
     console.error('Error checking admin SMS hold status:', error)
     return null

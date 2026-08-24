@@ -68,7 +68,7 @@ serve(async (req) => {
     // Parse request body
     const body = await req.json()
 
-    // Handle resume-ai action: clear admin_sms_hold_until for a user
+    // Handle resume-ai action: clear the 24h AI hold AND the indefinite SMS pause for a user
     if (body.action === 'resume-ai') {
       const { userId } = body
       if (!userId) {
@@ -80,7 +80,7 @@ serve(async (req) => {
 
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ admin_sms_hold_until: null })
+        .update({ admin_sms_hold_until: null, sms_paused: false })
         .eq('id', userId)
 
       if (updateError) {
@@ -94,6 +94,39 @@ serve(async (req) => {
       console.log(`Admin ${user.email} resumed AI for user ${userId}`)
       return new Response(
         JSON.stringify({ success: true, action: 'resume-ai' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Handle pause-sms action: indefinitely pause ALL outbound SMS for a user WITHOUT
+    // touching consent (sms_opt_in stays true). Enforced by piggybacking on the admin hold:
+    // sms_paused=true is the intent/UI flag; admin_sms_hold_until far in the future makes every
+    // automated sender (which already checks it) skip the user. Cleared by resume-ai.
+    if (body.action === 'pause-sms') {
+      const { userId } = body
+      if (!userId) {
+        return new Response(
+          JSON.stringify({ error: 'userId is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const { error: pauseError } = await supabase
+        .from('profiles')
+        .update({ sms_paused: true, admin_sms_hold_until: '2999-12-31T00:00:00.000Z' })
+        .eq('id', userId)
+
+      if (pauseError) {
+        console.error('Error pausing SMS:', pauseError)
+        return new Response(
+          JSON.stringify({ error: 'Failed to pause SMS' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      console.log(`Admin ${user.email} paused ALL SMS for user ${userId}`)
+      return new Response(
+        JSON.stringify({ success: true, action: 'pause-sms' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -160,10 +193,13 @@ serve(async (req) => {
     const sentUserIds = results.filter(r => r.status === 'sent').map(r => r.userId)
     if (sentUserIds.length > 0) {
       const holdUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      // Skip users on an indefinite pause — a coach texting them must NOT shorten their
+      // far-future hold to 24h (which would silently un-pause them tomorrow).
       const { error: holdError } = await supabase
         .from('profiles')
         .update({ admin_sms_hold_until: holdUntil })
         .in('id', sentUserIds)
+        .not('sms_paused', 'is', true)
 
       if (holdError) {
         console.error('Error setting admin SMS hold:', holdError)

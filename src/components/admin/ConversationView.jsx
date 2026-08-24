@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Send, EmojiEmotions, Autorenew, SmsOutlined, Add, Chat, Close, Image, AttachFile } from '@mui/icons-material'
-import { getConversation, sendAdminSMS, getAdminSmsHoldStatus, clearAdminSmsHold } from '../../services/adminService'
+import { getConversation, sendAdminSMS, getAdminSmsHoldStatus, clearAdminSmsHold, pauseAllSms } from '../../services/adminService'
 import supabase from '../../lib/supabase'
 
 // Summit-themed emoji palette
@@ -72,6 +72,8 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
   const [showAddMenu, setShowAddMenu] = useState(false)
   const [holdUntil, setHoldUntil] = useState(null)
   const [resumingAi, setResumingAi] = useState(false)
+  const [smsPaused, setSmsPaused] = useState(false)
+  const [pausing, setPausing] = useState(false)
 
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
@@ -192,6 +194,7 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
   const loadHoldStatus = async () => {
     const status = await getAdminSmsHoldStatus(userId)
     setHoldUntil(status?.holdUntil || null)
+    setSmsPaused(status?.smsPaused || false)
   }
 
   const handleResumeAi = async () => {
@@ -199,8 +202,19 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
     const { success } = await clearAdminSmsHold(userId)
     if (success) {
       setHoldUntil(null)
+      setSmsPaused(false)
     }
     setResumingAi(false)
+  }
+
+  const handlePauseSms = async () => {
+    setPausing(true)
+    const { success } = await pauseAllSms(userId)
+    if (success) {
+      setSmsPaused(true)
+      setHoldUntil(null)
+    }
+    setPausing(false)
   }
 
   const scrollToBottom = () => {
@@ -303,15 +317,41 @@ export default function ConversationView({ userId, userName, phone, smsOptIn }) 
           <SmsOutlined className="w-5 h-5 text-summit-emerald" />
           <h2 className="text-lg font-bold text-summit-forest">SMS Conversation</h2>
         </div>
-        {!canSend && (
-          <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
-            {!phone || phone === 'N/A' ? 'No phone' : 'Opted out'}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {!canSend && (
+            <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+              {!phone || phone === 'N/A' ? 'No phone' : 'Opted out'}
+            </span>
+          )}
+          {phone && phone !== 'N/A' && !smsPaused && (
+            <button
+              onClick={handlePauseSms}
+              disabled={pausing}
+              title="Pause all outbound SMS for this user. Keeps their consent — does not opt them out. Clear with Resume."
+              className="text-xs font-medium text-stone-600 hover:text-summit-forest border border-stone-300 rounded px-2 py-1 disabled:opacity-50"
+            >
+              {pausing ? 'Pausing…' : 'Pause SMS'}
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Admin SMS Hold Banner */}
-      {holdUntil && (
+      {/* Indefinite "pause all SMS" banner (consent preserved) */}
+      {smsPaused && (
+        <div className="flex items-center justify-between px-4 py-2 bg-amber-50 border-b border-amber-200 text-amber-800 text-sm">
+          <span>All outbound SMS paused for this user (still subscribed).</span>
+          <button
+            onClick={handleResumeAi}
+            disabled={resumingAi}
+            className="text-amber-700 hover:text-amber-900 font-medium underline underline-offset-2 disabled:opacity-50"
+          >
+            {resumingAi ? 'Resuming…' : 'Resume'}
+          </button>
+        </div>
+      )}
+
+      {/* Admin SMS Hold Banner (24h AI hold) */}
+      {holdUntil && !smsPaused && (
         <div className="flex items-center justify-between px-4 py-2 bg-amber-50 border-b border-amber-200 text-amber-800 text-sm">
           <span>
             AI paused until {new Date(holdUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })},{' '}
