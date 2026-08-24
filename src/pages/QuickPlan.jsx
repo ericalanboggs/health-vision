@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowForward, ArrowBack, PlayArrow, Schedule, Flag } from '@mui/icons-material'
 import { Button, Card } from '@summit/design-system'
@@ -125,6 +125,19 @@ export default function QuickPlan() {
     })
   }
 
+  // Per-question funnel step. Without this we would know how many people start
+  // and finish, but not which question they abandon on — and that is the only
+  // part of a drop-off number you can act on.
+  const handleQuestionView = useCallback(({ number, total, field, section }) => {
+    trackEvent('quick_plan_question_viewed', {
+      question_number: number,
+      question_total: total,
+      field,
+      section,
+      source: acquisitionSource,
+    })
+  }, [acquisitionSource])
+
   const handleQuizComplete = () => {
     // QuickStartVision writes the final answer and calls onComplete in the same
     // tick, so `formData` here can be one update behind. The stash is written
@@ -231,6 +244,7 @@ export default function QuickPlan() {
             onComplete={handleQuizComplete}
             onBack={() => { setPhase('intro'); window.scrollTo(0, 0) }}
             questionPlan={questionsForSource(acquisitionSource)}
+            onQuestionView={handleQuestionView}
             requireSliderTouch
             quizOnly
           />

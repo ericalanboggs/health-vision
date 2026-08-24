@@ -8,6 +8,17 @@ export const initPostHog = () => {
   if (apiKey) {
     posthog.init(apiKey, {
       api_host: apiHost,
+      // Carry one identity across www.summithealth.app (marketing, summit-web)
+      // and go.summithealth.app (this app). Both are subdomains of
+      // summithealth.app, so a cookie scoped to the parent domain follows the
+      // visitor across the handoff.
+      //
+      // This only works if BOTH sites use the same PostHog project key. Get it
+      // wrong and the numbers still look plausible — the same person counts
+      // twice and the homepage -> /plan step reads as zero conversion, which is
+      // precisely the step we set analytics up to measure.
+      cross_subdomain_cookie: true,
+      persistence: 'localStorage+cookie',
       person_profiles: 'identified_only', // Only create profiles for identified users
       capture_pageview: true, // Automatically capture pageviews
       capture_pageleave: true, // Capture when users leave

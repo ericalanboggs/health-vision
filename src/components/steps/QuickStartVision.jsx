@@ -66,6 +66,10 @@ const OptionButton = ({ option, isSelected, onClick }) => {
 //                       value, so a user can tap straight past them. Cold traffic
 //                       shouldn't be able to: an untouched default is indistinguishable
 //                       from an answer, and capacity is the whole point of the question.
+//   onQuestionView      called with ({ index, total, field }) each time a question
+//                       is shown. Without it we can see how many people start and
+//                       finish the quiz but not which question loses them, which
+//                       is the only actionable part of a drop-off number.
 //   quizOnly            finish at the last question and hand back to the parent instead
 //                       of entering the vision-summary / habit-intro phases. The pre-auth
 //                       page renders its own payoff, because the AI polish on the summary
@@ -78,6 +82,7 @@ const QuickStartVision = ({
   questionPlan = null,
   requireSliderTouch = false,
   quizOnly = false,
+  onQuestionView = null,
 }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [otherText, setOtherText] = useState({})
@@ -309,6 +314,17 @@ const QuickStartVision = ({
 
   const currentQ = questions[currentQuestion]
   const totalQuestions = questions.length
+
+  useEffect(() => {
+    if (!onQuestionView || phase !== 'quiz' || !currentQ) return
+    onQuestionView({
+      index: currentQuestion,
+      number: currentQuestion + 1,
+      total: totalQuestions,
+      field: currentQ.field,
+      section: currentQ.section,
+    })
+  }, [currentQuestion, phase, currentQ, totalQuestions, onQuestionView])
 
   // Toggle selection for multi-select-text (builds text string)
   const toggleTextOption = (option, field, clickedField) => {
