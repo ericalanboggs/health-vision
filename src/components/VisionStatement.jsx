@@ -26,6 +26,22 @@ import { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react'
 // emphasis, it never gates reading — a slow reader, a screen reader, or anyone
 // with motion turned off gets the same content at the same moment.
 
+// Said once the underline has finished, so it reads as a response to what you
+// just read rather than something that was always sitting there.
+//
+// The opener varies, the line under it does not — a fixed second sentence keeps
+// the point consistent and avoids odd pairings. Note what these praise: the act
+// of naming it, never the person. "You're amazing" is the patronising positivity
+// ERIC_VOICE.md rules out; "most people skip this part" is earned, and true.
+const OPENERS = [
+  { word: 'Powerful.', emoji: '⚡' },
+  { word: 'There it is.', emoji: '🎯' },
+  { word: 'Nice.', emoji: '✨' },
+  { word: 'Love this.', emoji: '💚' },
+  { word: 'Clear.', emoji: '🧭' },
+  { word: 'Inspiring, right?', emoji: '🙌' },
+]
+
 const DRAW_MS = 600
 const HOLD_MS = 2200
 const FADE_MS = 400
@@ -137,6 +153,10 @@ export default function VisionStatement({ text }) {
   const [active, setActive] = useState(-1)
   const [reducedMotion, setReducedMotion] = useState(false)
 
+  // Picked once. A useMemo without deps would still re-roll on remount, but the
+  // real hazard is re-rolling on every `active` change mid-animation.
+  const [opener] = useState(() => OPENERS[Math.floor(Math.random() * OPENERS.length)])
+
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)')
     setReducedMotion(query.matches)
@@ -182,6 +202,16 @@ export default function VisionStatement({ text }) {
           </div>
         ))}
       </div>
+
+      <p
+        className="text-body-sm text-text-secondary text-center mt-6 transition-opacity duration-700"
+        style={{ opacity: reducedMotion || active >= sentences.length ? 1 : 0 }}
+      >
+        <span className="font-medium text-summit-forest">
+          {opener.word} {opener.emoji}
+        </span>{' '}
+        Most people skip this part. It's the one that makes everything after it hold.
+      </p>
     </div>
   )
 }
