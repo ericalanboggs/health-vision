@@ -174,7 +174,7 @@ export default function QuickPlan() {
 
   // Spelled out, since "7 questions" in a sentence reads like a spec sheet. The
   // count varies: a tagged visitor skips the segment question.
-  const NUMBER_WORDS = { 6: 'Six', 7: 'Seven' }
+  const NUMBER_WORDS = { 6: 'Six', 7: 'Seven', 8: 'Eight' }
   const planLength = questionsForSource(acquisitionSource).length
   const questionCount = NUMBER_WORDS[planLength] || planLength
 

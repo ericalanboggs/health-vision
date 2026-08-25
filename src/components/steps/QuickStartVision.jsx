@@ -288,7 +288,7 @@ const QuickStartVision = ({
     if (!questionPlan) return allQuestions
 
     const picked = questionPlan
-      .map(({ field, section, question }) => {
+      .map(({ field, section, question, prompt, subtitle }) => {
         // An entry may carry its own full question definition. Used for questions
         // that only exist in a shortened plan — the /plan routing question isn't
         // part of the ten-question onboarding set and shouldn't be added to it.
@@ -297,7 +297,15 @@ const QuickStartVision = ({
           console.warn(`QuickStartVision: questionPlan references unknown field "${field}"`)
           return null
         }
-        return { ...q, field: q.field || field, section: section || q.section }
+        // `prompt` and `subtitle` reword a shared question for one plan without
+        // touching the option set or the authenticated /vision flow.
+        return {
+          ...q,
+          field: q.field || field,
+          section: section || q.section,
+          ...(prompt ? { question: prompt } : {}),
+          ...(subtitle ? { subtitle } : {}),
+        }
       })
       .filter(Boolean)
 
@@ -349,7 +357,10 @@ const QuickStartVision = ({
     return clicked.includes(optionLabel)
   }
 
-  // Toggle selection for multi-select-array (stores array of labels)
+  // Toggle selection for multi-select-array. Stores option.value when the option
+  // defines one, so the wording can be rewritten without changing what lands in
+  // the database or breaking anything matching on the old strings
+  // (src/lib/quickPlan.js resolvePersona, and the AI habit prompts).
   const toggleArrayOption = (optionLabel, field) => {
     const current = formData[field] || []
     if (current.includes(optionLabel)) {
@@ -509,6 +520,7 @@ const QuickStartVision = ({
     }
     if (q.type === 'single-select') return !!formData[q.field]
     if (q.type === 'single-select-chip') return !!formData[q.field]
+    if (q.type === 'long-text') return true // optional by design
     if (q.type === 'multi-select-text') {
       const clicked = formData[q.clickedField] || []
       return clicked.length > 0
@@ -713,6 +725,23 @@ const QuickStartVision = ({
       )
     }
 
+    // Optional free-text. Always satisfies hasSelection, so it can be skipped
+    // without blocking the flow — the point is to catch what the option sets
+    // could not anticipate, not to make anyone type.
+    if (q.type === 'long-text') {
+      return (
+        <div className="bg-white p-4 rounded-2xl shadow-md border border-stone-200">
+          <textarea
+            value={formData[q.field] || ''}
+            onChange={(e) => updateFormData(q.field, e.target.value)}
+            placeholder={q.placeholder || 'In your own words…'}
+            rows={5}
+            className="w-full resize-none bg-transparent outline-none text-summit-forest placeholder:text-stone-400 leading-relaxed"
+          />
+        </div>
+      )
+    }
+
     if (q.type === 'single-select') {
       return (
         <div className="grid grid-cols-2 gap-3">
@@ -777,13 +806,13 @@ const QuickStartVision = ({
         <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {q.options.map((option) => {
-              const isSelected = isArrayOptionSelected(option.label, q.field)
+              const isSelected = isArrayOptionSelected(option.value || option.label, q.field)
               return (
                 <OptionButton
                   key={option.label}
                   option={option}
                   isSelected={isSelected}
-                  onClick={() => toggleArrayOption(option.label, q.field)}
+                  onClick={() => toggleArrayOption(option.value || option.label, q.field)}
                 />
               )
             })}

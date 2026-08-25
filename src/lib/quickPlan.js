@@ -21,34 +21,108 @@ const STASH_KEY = 'summit_quick_plan_v1'
 // did not change with it.
 const LIFE_CONTEXT_QUESTION = {
   field: 'lifeContext',
-  question: 'Are you facing any of these right now?',
-  subtitle: 'Pick the closest one. It changes where Summit starts you.',
+  question: 'What made you think about your health today?',
+  subtitle: 'Something usually does. Pick the closest.',
   type: 'single-select-chip',
   otherValue: 'other',
   otherField: 'lifeContextNote',
   options: [
-    { value: 'lifestyle-changes', icon: 'monitor_heart', label: 'Warning signs at a checkup' },
-    { value: 'postpartum', icon: 'child_friendly', label: 'New baby, postpartum' },
-    { value: 'burnout', icon: 'battery_alert', label: 'Burnout at work' },
+    { value: 'lifestyle-changes', icon: 'monitor_heart', label: 'My numbers came back off' },
+    { value: 'postpartum', icon: 'child_friendly', label: "New baby, and I'm last on the list" },
+    { value: 'burnout', icon: 'battery_alert', label: 'Work is grinding me down' },
     { value: 'other', icon: 'more_horiz', label: 'Something else' },
   ],
 }
 
-// Seven questions, in this order. `field` names match a question in
-// QuickStartVision's definitions unless the entry carries its own `question`.
-// `section` relabels the progress chip for the short arc.
+// Barriers, reworded. Same field, same stored values, options written the way a
+// person would say them rather than as category labels — the lesson the site
+// audit drew from watching how consumer quizzes phrase their choices.
 //
-// Capacity sits fifth on purpose — it's the question that keeps the whole thing
-// honest, and ninth (where it sits in the full flow) is too late for cold traffic
-// to reach it.
+// `value` is the stable key. It is what lands in the database and what
+// resolvePersona and the AI habit prompts match on, so the labels above it can
+// be rewritten freely. Do not change a value to fix wording.
+//
+// "Execution" is new. Nothing in the old set covered "I know what to do, I just
+// don't do it", which is the single most common version of this problem and the
+// one Summit exists for.
+const BARRIERS_QUESTION = {
+  field: 'barriers',
+  question: "What's getting in the way?",
+  subtitle: 'Pick as many as are true.',
+  type: 'multi-select-array',
+  hasOther: true,
+  options: [
+    { value: 'Execution', icon: 'repeat', label: "I know what to do, I just don't do it" },
+    { value: 'Time', icon: 'schedule', label: "My life doesn't leave much room for this" },
+    { value: 'Energy', icon: 'bolt', label: "I'm running on empty" },
+    { value: 'Stress', icon: 'waves', label: "There's too much going on" },
+    { value: 'Motivation', icon: 'local_fire_department', label: 'I start strong and fall off' },
+    { value: 'Clarity', icon: 'lightbulb', label: "I don't know where to start" },
+    { value: 'Knowledge', icon: 'school', label: 'I get conflicting advice' },
+    { value: 'Support', icon: 'groups', label: "I'm doing this on my own" },
+    { value: 'Environment', icon: 'home', label: 'My surroundings work against me' },
+  ],
+}
+
+// Optional, and last. The option sets cannot anticipate everything, and this is
+// the only place someone can say something in their own words. Skippable by
+// design — `long-text` always satisfies hasSelection, so nobody is made to type.
+const OPEN_QUESTION = {
+  field: 'meaningfulMoment',
+  question: 'A year from now, what would you want to be able to say about yourself?',
+  subtitle: 'No right answer. Skip it if nothing comes to mind.',
+  type: 'long-text',
+  placeholder: 'In your own words…',
+}
+
+// Eight screens: seven questions plus one optional free-text at the end.
+//
+// `field` names match a question in QuickStartVision's shared set unless the
+// entry carries its own `question`. `prompt` and `subtitle` reword a shared
+// question for this plan only, so the authenticated /vision flow is untouched.
+// `section` relabels the progress chip.
+//
+// The arc is deliberate: why now, where you are headed, where you are now,
+// what's in the way. Capacity sits fifth rather than ninth (where it lives in the
+// full flow) because it is the question that keeps the whole thing honest and
+// cold traffic never reaches question nine.
 export const QUICK_PLAN_QUESTIONS = [
-  { field: 'visionStatement', section: 'Your summit' },
-  { field: 'whyMatters', section: 'Your summit' },
-  { field: 'lifeContext', section: 'Your summit', question: LIFE_CONTEXT_QUESTION },
-  { field: 'currentScore', section: 'Where you are' },
-  { field: 'timeCapacity', section: 'Where you are' },
-  { field: 'barriers', section: "What's in the way" },
-  { field: 'habitsToImprove', section: "What's in the way" },
+  // The trigger comes first. People do not decide to change their health
+  // intellectually — something happens, and naming that on screen one is both the
+  // most engaging question and the one that routes everything downstream.
+  { field: 'lifeContext', section: 'Why now', question: LIFE_CONTEXT_QUESTION },
+  {
+    field: 'visionStatement',
+    section: 'Where you are headed',
+    prompt: "Six months from now, what's actually different?",
+    subtitle: 'Not the numbers. The day-to-day.',
+  },
+  {
+    field: 'whyMatters',
+    section: 'Where you are headed',
+    prompt: 'And why does that matter?',
+    subtitle: "This is the part that holds when motivation doesn't.",
+  },
+  {
+    field: 'currentScore',
+    section: 'Where you are now',
+    prompt: 'Where are you starting from?',
+    subtitle: 'Honest, not generous.',
+  },
+  {
+    field: 'timeCapacity',
+    section: 'Where you are now',
+    prompt: 'How much time can you actually give this?',
+    subtitle: 'The real number, not the aspirational one.',
+  },
+  { field: 'barriers', section: "What's in the way", question: BARRIERS_QUESTION },
+  {
+    field: 'habitsToImprove',
+    section: "What's in the way",
+    prompt: "What's worth working on?",
+    subtitle: "Select what's true. We'll narrow it later.",
+  },
+  { field: 'meaningfulMoment', section: 'One more thing', question: OPEN_QUESTION },
 ]
 
 // Someone who arrived from a persona page already answered the segment question
