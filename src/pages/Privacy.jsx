@@ -79,6 +79,14 @@ export default function Privacy() {
                 <li>Usage patterns and feature interactions</li>
                 <li>SMS delivery and response data</li>
               </ul>
+              <p className="text-stone-600 mt-4">
+                We use a product analytics tool (PostHog) to understand how people move through the
+                site and the app, so we can see where the experience is confusing or broken. It sets a
+                cookie so the same visit is not counted twice across summithealth.app and
+                go.summithealth.app. <strong>We do not record your screen</strong> &mdash; session replay is
+                switched off deliberately. Once you have an account, analytics identifies you by an
+                internal account ID rather than your name or email address.
+              </p>
             </section>
 
             <section className="mb-8">
@@ -116,11 +124,34 @@ export default function Privacy() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-xl font-semibold text-summit-forest mb-4">5. Data Sharing and Disclosure</h2>
+              <h2 className="text-xl font-semibold text-summit-forest mb-4">5. AI and Automated Coaching</h2>
+              <p className="text-stone-600 mb-4">
+                Parts of Summit are powered by AI. When you write to Summit or record a habit, that
+                content, along with relevant context such as your vision, your habits and your recent
+                activity, may be sent to OpenAI to generate a reply, a suggestion or a weekly summary.
+              </p>
+              <ul className="list-disc pl-6 text-stone-600 space-y-2">
+                <li><strong>What the AI does:</strong> suggests habits, writes reminders and check-ins,
+                  interprets your replies, and summarizes your week</li>
+                <li><strong>What a human does:</strong> Eric reviews accounts, steps into conversations,
+                  and makes the judgment calls, including any change to your plan that needs context a
+                  model does not have</li>
+                <li><strong>What Summit never does:</strong> diagnose a condition, prescribe or adjust
+                  medication, or replace your doctor</li>
+              </ul>
+              <p className="text-stone-600 mt-4">
+                Summit is lifestyle and habit coaching, not medical care. Do not use it for anything
+                urgent or for a medical emergency. <strong>Your information is not used to train AI models.</strong>
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-xl font-semibold text-summit-forest mb-4">6. Data Sharing and Disclosure</h2>
               <p className="text-stone-600 mb-4">We may share your information with:</p>
               <ul className="list-disc pl-6 text-stone-600 space-y-2">
-                <li><strong>Service Providers:</strong> Third-party vendors who help us operate our service
-                  (e.g., Twilio for SMS, Supabase for data storage, Resend for email)</li>
+                <li><strong>Service Providers:</strong> Third-party vendors who help us operate our service:
+                  Twilio for SMS, Supabase for data storage, Resend for email, Stripe for payments,
+                  OpenAI for the AI coaching features described in section 5, and PostHog for product analytics</li>
                 <li><strong>Legal Requirements:</strong> When required by law or to protect our rights</li>
                 <li><strong>Business Transfers:</strong> In connection with a merger, acquisition, or sale of assets</li>
               </ul>
@@ -130,7 +161,7 @@ export default function Privacy() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-xl font-semibold text-summit-forest mb-4">6. Data Security</h2>
+              <h2 className="text-xl font-semibold text-summit-forest mb-4">7. Data Security</h2>
               <p className="text-stone-600 mb-4">
                 We implement appropriate technical and organizational measures to protect your personal
                 information, including:
@@ -148,7 +179,7 @@ export default function Privacy() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-xl font-semibold text-summit-forest mb-4">7. Data Retention</h2>
+              <h2 className="text-xl font-semibold text-summit-forest mb-4">8. Data Retention</h2>
               <p className="text-stone-600">
                 We retain your personal information for as long as your account is active or as needed
                 to provide you services. You may request deletion of your account and associated data
@@ -157,7 +188,7 @@ export default function Privacy() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-xl font-semibold text-summit-forest mb-4">8. Your Rights</h2>
+              <h2 className="text-xl font-semibold text-summit-forest mb-4">9. Your Rights</h2>
               <p className="text-stone-600 mb-4">You have the right to:</p>
               <ul className="list-disc pl-6 text-stone-600 space-y-2">
                 <li>Access the personal information we hold about you</li>
@@ -172,7 +203,7 @@ export default function Privacy() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-xl font-semibold text-summit-forest mb-4">9. Age Requirement</h2>
+              <h2 className="text-xl font-semibold text-summit-forest mb-4">10. Age Requirement</h2>
               <p className="text-stone-600">
                 Summit is intended for individuals 18 years of age and older. By using Summit, you
                 represent that you are at least 18 years old. We do not knowingly collect personal
@@ -182,7 +213,7 @@ export default function Privacy() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-xl font-semibold text-summit-forest mb-4">10. Changes to This Policy</h2>
+              <h2 className="text-xl font-semibold text-summit-forest mb-4">11. Changes to This Policy</h2>
               <p className="text-stone-600">
                 We may update this Privacy Policy from time to time. We will notify you of any changes
                 by posting the new Privacy Policy on this page and updating the "Last updated" date.
@@ -191,7 +222,7 @@ export default function Privacy() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-xl font-semibold text-summit-forest mb-4">11. Contact Us</h2>
+              <h2 className="text-xl font-semibold text-summit-forest mb-4">12. Contact Us</h2>
               <p className="text-stone-600 mb-4">
                 If you have questions about this Privacy Policy or our data practices, please contact us:
               </p>
