@@ -95,7 +95,13 @@ embed in `src/pages/YourTurn.jsx`.*
 > "Hi. If you've had a baby in the last few years, and somewhere in there you lost track of yourself — this is for you. I'm Eric."
 
 **[0:08 — who you are]**
-> "I'm a Mayo-certified health coach. I'm also a designer — I've spent years in tech. I built Summit."
+> "I'm a Mayo Clinic-trained health coach. I'm also a designer, I've spent years in tech. I built Summit."
+
+**Corrected 2026-08-25.** This line previously read "Mayo-certified", which
+breaches the credential guardrail in `marketing/STRATEGIC_DIRECTION.md` §7: the
+credential reads "Mayo Clinic-trained", and no form of "certified" is used
+until the NBHWC results land. **If any already-shot video says
+"Mayo-certified", it needs reshooting or pulling.**
 
 **[0:16 — why you built it]**
 > "I wanted something that takes health and breaks it into pieces small enough to actually fit a busy life — and makes sure a little time goes back to you."
