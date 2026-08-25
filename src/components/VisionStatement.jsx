@@ -26,8 +26,10 @@ import { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react'
 // emphasis, it never gates reading — a slow reader, a screen reader, or anyone
 // with motion turned off gets the same content at the same moment.
 
-// Said once the underline has finished, so it reads as a response to what you
-// just read rather than something that was always sitting there.
+// Shown straight away rather than after the underline finishes. Holding it back
+// read better in theory, but the underline runs for ten seconds and plenty of
+// people scroll to the video before then — a line nobody sees is worse than one
+// that arrives a beat early.
 //
 // The opener varies, the line under it does not — a fixed second sentence keeps
 // the point consistent and avoids odd pairings. Note what these praise: the act
@@ -203,15 +205,14 @@ export default function VisionStatement({ text }) {
         ))}
       </div>
 
-      <p
-        className="text-body-sm text-text-secondary text-center mt-6 transition-opacity duration-700"
-        style={{ opacity: reducedMotion || active >= sentences.length ? 1 : 0 }}
-      >
-        <span className="font-medium text-summit-forest">
+      <div className="text-center mt-6">
+        <p className="text-body-sm font-medium text-summit-forest">
           {opener.word} {opener.emoji}
-        </span>{' '}
-        Most people skip this part. It's the one that makes everything after it hold.
-      </p>
+        </p>
+        <p className="text-body-sm text-text-secondary mt-0.5">
+          Most people skip this part. It's the one that makes everything after it hold.
+        </p>
+      </div>
     </div>
   )
 }
