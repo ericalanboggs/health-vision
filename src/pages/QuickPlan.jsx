@@ -164,7 +164,6 @@ export default function QuickPlan() {
       timeCapacity: latest.timeCapacity,
       barriers: latest.barriers || [],
       habitsToImprove: latest.habitsToImprove || [],
-      lifeContextLabel: persona.label,
     })
   }
 

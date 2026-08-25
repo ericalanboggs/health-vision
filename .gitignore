@@ -29,3 +29,6 @@ dist-ssr
 
 # Supabase CLI local state (per-machine; not source)
 supabase/.temp/
+
+# Locally generated vision PDFs from testing src/lib/visionPdf.js
+my-health-vision-*.pdf

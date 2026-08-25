@@ -1,4 +1,9 @@
-import jsPDF from 'jspdf'
+import * as jspdfNS from 'jspdf'
+
+// jsPDF v3 exposes the constructor as a named export under Node and as the
+// default under the browser bundler. Taking both means this module can be
+// rendered and eyeballed in a script, not just in a browser.
+const JsPDF = jspdfNS.jsPDF || jspdfNS.default
 
 // One-page PDF of the vision built on /plan, for someone who has not created an
 // account yet.
@@ -23,25 +28,32 @@ export const downloadVisionPdf = ({
   timeCapacity,
   barriers = [],
   habitsToImprove = [],
-  lifeContextLabel,
 }) => {
-  const doc = new jsPDF()
+  const doc = new JsPDF()
   const pageWidth = doc.internal.pageSize.getWidth()
   const margin = 22
   const maxWidth = pageWidth - 2 * margin
   let y = 26
 
-  const addText = (text, { size = 11, color = FOREST, lineGap = 1.6, after = 4 } = {}) => {
+  // jsPDF font sizes are points, y positions are millimetres. Converting between
+  // them is the whole trick: 1pt = 0.3528mm. Multiplying the point size directly
+  // by a factor (as an earlier version did) left lines roughly 75% too far apart,
+  // which looked like a rendering fault rather than a spacing choice.
+  const PT_TO_MM = 0.3528
+  const addText = (text, { size = 11, color = FOREST, lineGap = 1.35, after = 4, bold = false } = {}) => {
+    doc.setFont('helvetica', bold ? 'bold' : 'normal')
     doc.setFontSize(size)
     doc.setTextColor(...color)
+    const lineHeight = size * PT_TO_MM * lineGap
     doc.splitTextToSize(text, maxWidth).forEach(line => {
       if (y > 270) {
         doc.addPage()
         y = 26
       }
       doc.text(line, margin, y)
-      y += size * 0.5 * lineGap
+      y += lineHeight
     })
+    doc.setFont('helvetica', 'normal')
     y += after
   }
 
@@ -61,11 +73,13 @@ export const downloadVisionPdf = ({
     y += 7
   }
 
-  // Header
-  doc.setFontSize(20)
-  doc.setTextColor(...FOREST)
-  doc.text('My Health Vision', margin, y)
-  y += 8
+  // Header is a small eyebrow, not a title. The vision statement is the headline
+  // of this document — it is the thing they made, and it should be the first
+  // thing the eye lands on.
+  doc.setFontSize(9)
+  doc.setTextColor(...EMERALD)
+  doc.text('MY HEALTH VISION', margin, y)
+  y += 5
   doc.setFontSize(9)
   doc.setTextColor(...GREY)
   doc.text(`Summit Health  ·  ${new Date().toLocaleDateString()}`, margin, y)
@@ -73,11 +87,10 @@ export const downloadVisionPdf = ({
   doc.setDrawColor(...EMERALD)
   doc.setLineWidth(0.6)
   doc.line(margin, y, pageWidth - margin, y)
-  y += 12
+  y += 14
 
   if (visionParagraph) {
-    addLabel('Where I am headed')
-    addText(visionParagraph, { size: 13, lineGap: 1.7, after: 10 })
+    addText(visionParagraph, { size: 19, lineGap: 1.3, after: 14, bold: true })
   }
 
   addLabel('Where I am starting')
@@ -85,7 +98,6 @@ export const downloadVisionPdf = ({
   if (timeCapacity) addRow('Time I can give', timeCapacity)
   if (barriers.length) addRow('In the way', barriers.join(', '))
   if (habitsToImprove.length) addRow('Worth working on', habitsToImprove.join(', '))
-  if (lifeContextLabel) addRow('Right now', lifeContextLabel)
   y += 8
 
   addLabel('What comes next')
