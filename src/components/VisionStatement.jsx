@@ -163,9 +163,17 @@ export default function VisionStatement({ text }) {
 
   return (
     <div className="mb-8">
-      <p className="text-body-sm text-summit-emerald font-medium uppercase tracking-wide mb-3 text-center">
-        Your vision
-      </p>
+      <div className="text-center mb-5">
+        <p className="text-body-sm text-summit-emerald font-medium uppercase tracking-wide">
+          Your vision
+        </p>
+        {/* Sits with the label rather than after the statement. As a footer it
+            read as a caption explaining the vision; up here it is a lead-in, and
+            the vision gets to land last. */}
+        <p className="text-body-sm text-text-tertiary mt-1">
+          Here's what you just described.
+        </p>
+      </div>
 
       <div className="space-y-3">
         {sentences.map((sentence, i) => (
@@ -174,13 +182,6 @@ export default function VisionStatement({ text }) {
           </div>
         ))}
       </div>
-
-      {/* Demoted from the h1 it used to be. The vision is the headline here, the
-          way it is on the downloadable PDF — the two should agree about what the
-          important thing on the page is. */}
-      <p className="text-body-sm text-text-tertiary text-center mt-6">
-        Here's what you just described.
-      </p>
     </div>
   )
 }
