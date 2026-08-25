@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowForward, ArrowBack, PlayArrow, Schedule, Flag, FileDownload } from '@mui/icons-material'
 import { Button, Card } from '@summit/design-system'
 import QuickStartVision from '../components/steps/QuickStartVision'
+import VisionStatement from '../components/VisionStatement'
 import { EMPTY_VISION_FORM } from '../data/visionFormDefaults'
 import {
   questionsForSource,
@@ -280,22 +281,7 @@ export default function QuickPlan() {
           <img src="/summit-logo.svg" alt="Summit Health" className="h-8" />
         </div>
 
-        <div className="text-center mb-8">
-          <p className="text-body-sm text-summit-emerald font-medium uppercase tracking-wide mb-2">
-            Your Vision
-          </p>
-          <h1 className="text-h1 text-summit-forest">
-            Here's what you just described.
-          </h1>
-        </div>
-
-        {visionParagraph && (
-          <div className="bg-white p-6 rounded-2xl shadow-md border border-stone-200 mb-8">
-            <p className="text-body text-stone-700 leading-relaxed italic">
-              "{visionParagraph}"
-            </p>
-          </div>
-        )}
+        <VisionStatement text={visionParagraph} />
 
         {persona.embed
           ? <FounderVideo persona={persona} reason={persona.reason} />
