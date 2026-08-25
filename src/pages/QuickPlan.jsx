@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowForward, ArrowBack, PlayArrow, Schedule, Flag } from '@mui/icons-material'
+import { ArrowForward, ArrowBack, PlayArrow, Schedule, Flag, FileDownload } from '@mui/icons-material'
 import { Button, Card } from '@summit/design-system'
 import QuickStartVision from '../components/steps/QuickStartVision'
 import { EMPTY_VISION_FORM } from '../data/visionFormDefaults'
@@ -13,6 +13,7 @@ import {
 } from '../lib/quickPlan'
 import { trackEvent } from '../lib/posthog'
 import { captureAcquisitionFromUrl, getAcquisitionSource } from '../lib/acquisition'
+import { downloadVisionPdf } from '../lib/visionPdf'
 
 // Pre-auth vision quiz, served at /plan with no account required.
 //
@@ -151,6 +152,20 @@ export default function QuickPlan() {
     })
     setPhase('summary')
     window.scrollTo(0, 0)
+  }
+
+  const handleDownload = () => {
+    const latest = loadQuickPlan() || formData
+    const persona = resolvePersona(latest, acquisitionSource)
+    trackEvent('quick_plan_downloaded', { persona: persona.key })
+    downloadVisionPdf({
+      visionParagraph: buildVisionParagraph(latest),
+      currentScore: latest.currentScore,
+      timeCapacity: latest.timeCapacity,
+      barriers: latest.barriers || [],
+      habitsToImprove: latest.habitsToImprove || [],
+      lifeContextLabel: persona.label,
+    })
   }
 
   const handleCreateAccount = () => {
@@ -332,6 +347,20 @@ export default function QuickPlan() {
           <p className="text-xs text-text-tertiary mt-3">
             14-day trial. Your answers carry over.
           </p>
+
+          {/* Secondary, and deliberately given away before signup. The download is
+              what turns the quiz from a lead form into something that produced an
+              artifact — printable, keepable, shareable with a doctor. Someone who
+              takes it and leaves was not going to sign up today anyway, and they
+              leave holding something with Summit's name on it. */}
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="w-full flex items-center justify-center gap-2 text-sm font-medium text-summit-forest hover:text-summit-emerald underline underline-offset-4 py-3 mt-4 transition"
+          >
+            <FileDownload className="w-4 h-4" />
+            Download a copy of my vision
+          </button>
         </Card>
 
         <button
