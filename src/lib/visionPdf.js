@@ -1,4 +1,5 @@
 import * as jspdfNS from 'jspdf'
+import { SUMMIT_LOGO_PNG, SUMMIT_LOGO_RATIO } from './summitLogo'
 
 // jsPDF v3 exposes the constructor as a named export under Node and as the
 // default under the browser bundler. Taking both means this module can be
@@ -73,6 +74,13 @@ export const downloadVisionPdf = ({
     y += 7
   }
 
+  // Logo top left, then the eyebrow. Without it the page was correct but
+  // anonymous — nothing said Summit until the footer.
+  const logoWidth = 30
+  const logoHeight = logoWidth / SUMMIT_LOGO_RATIO
+  doc.addImage(SUMMIT_LOGO_PNG, 'PNG', margin, y - 4, logoWidth, logoHeight)
+  y += logoHeight + 6
+
   // Header is a small eyebrow, not a title. The vision statement is the headline
   // of this document — it is the thing they made, and it should be the first
   // thing the eye lands on.
@@ -82,7 +90,7 @@ export const downloadVisionPdf = ({
   y += 5
   doc.setFontSize(9)
   doc.setTextColor(...GREY)
-  doc.text(`Summit Health  ·  ${new Date().toLocaleDateString()}`, margin, y)
+  doc.text(new Date().toLocaleDateString(), margin, y)
   y += 6
   doc.setDrawColor(...EMERALD)
   doc.setLineWidth(0.6)
