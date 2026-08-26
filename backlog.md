@@ -459,6 +459,87 @@ Reuse targets when ready: `sms-add-habit` state machine (AI assigns days/times, 
 
 ---
 
+## 19. Google Calendar Integration (read-only first)
+
+**Priority:** Medium
+**Status:** Researched, not started (2026-08-26)
+**Value:** Summit adapts to the week you actually have, not the one you planned
+
+### The idea
+
+Eric's framing came from the SMS thread on the homepage — Summit noticing a missed
+habit and offering to move it. Original ask was two-way sync: put habits on the
+user's Google Calendar and let the AI move them around.
+
+### The reframe
+
+**Most of that does not need Google Calendar at all.**
+
+Summit already owns the schedule in `weekly_habits`. It is the source of truth. So
+"move the walk to Thursday" is Summit changing its own data — the calendar just
+needs to reflect it.
+
+Today's export (`src/components/steps/SummaryPage.jsx:397`) is a one-time `.ics`
+download. That drops detached *copies* onto a calendar which Summit has no handle
+on, so nothing can ever update them. That is the actual limitation, not the lack
+of an API.
+
+Replace it with a **subscription feed**: a per-user secret `webcal://` URL serving
+a live `.ics` that the calendar app polls. Habits change in Summit, the calendar
+follows. No OAuth, no Google verification, and it works with Apple Calendar and
+Outlook too, not just Google.
+
+Roughly a day of work, mostly one edge function and a token column.
+
+### What genuinely needs the API
+
+Not writing. **Reading.**
+
+> "You have back-to-backs from 9 to 4 Thursday. Want to move the walk to Wednesday?"
+
+That is Summit adapting to real life, which is the product thesis, and it only
+needs read scope. Much smaller blast radius than write access, and it is the part
+no competitor is doing well.
+
+### Research findings (verified 2026-08-26)
+
+- **Calendar is a *sensitive* scope, not restricted.** Verification is 3-5 business
+  days with no CASA security assessment. Gmail-tier pain does not apply.
+- **`extendedProperties.private` + the `privateExtendedProperty` filter on
+  `events.list`** is exactly the "tag them as Summit's" mechanism. It means Summit
+  can query only its own events, which is the safety property to insist on before
+  any AI gets write access.
+- **Before verification completes** there is a test-user cap and refresh tokens
+  expire weekly, so a dev integration breaks every seven days.
+
+### Where the real cost hides
+
+Not OAuth. Three other places:
+
+1. **Recurring events.** Habits are weekly. Moving one instance without detaching
+   the series is RRULE and exception handling. This is where the bugs will live.
+2. **Timezones.** This codebase already has a documented landmine about filtering
+   at midnight UTC. Calendar work will find every remaining one.
+3. **Token lifecycle.** New table, refresh handling, and behaving gracefully when
+   someone revokes access.
+
+### Suggested phasing
+
+| Phase | Scope | Effort | Needs Google approval |
+|---|---|---|---|
+| 1 | Subscription `.ics` feed, replaces the download | ~1 day | No |
+| 2 | Read-only calendar context for scheduling | ~1 week | Yes, 3-5 days |
+| 3 | Write access | — | Probably never needed |
+
+### Timing note
+
+Sound feature, and the paradigm is common enough now that people expect it. But it
+is a real build at a moment when the constraint is attention rather than product.
+Worth doing when there are users whose weeks it can read.
+
+
+---
+
 ## Appendix: Core Philosophy Reminders
 
 When evaluating features, remember:
@@ -471,4 +552,4 @@ When evaluating features, remember:
 
 ---
 
-*Last updated: May 2026*
+*Last updated: August 2026*
