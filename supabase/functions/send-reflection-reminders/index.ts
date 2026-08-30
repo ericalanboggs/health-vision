@@ -173,6 +173,28 @@ async function loadWeekData(
  * (scheduled but user opted out of tracking — we have no completion data
  * and must NOT assume they failed). The model is told this explicitly.
  */
+/**
+ * Deterministic, never-fabricates opener. Cites a completion number ONLY from a truly
+ * tracked habit (real entries); otherwise it's number-free. Used as the no-API-key fallback
+ * AND as the safety net when the AI output fails validation.
+ */
+function safeOpener(firstName: string, habits: HabitSummary[]): string {
+  const tracked = habits.filter(h => h.tracked)
+  const untracked = habits.filter(h => !h.tracked)
+  if (tracked.length > 0) {
+    const top = tracked.reduce((a, b) =>
+      (b.completed_count / Math.max(b.scheduled_count, 1)) >
+      (a.completed_count / Math.max(a.scheduled_count, 1)) ? b : a
+    )
+    const untrackedNote = untracked.length > 0
+      ? ` ${untracked.map(h => h.habit_name).join(', ')} were on your plate too.`
+      : ''
+    return `Hey ${firstName}! Solid week — ${top.completed_count}/${top.scheduled_count} on ${top.habit_name}.${untrackedNote} How'd the week feel?`
+  }
+  const habitList = habits.map(h => h.habit_name).join(', ')
+  return `Hey ${firstName}! Nice job staying with ${habitList || 'your habits'} this week. How did it go?`
+}
+
 async function generateOpener(
   firstName: string,
   habits: HabitSummary[],
@@ -185,18 +207,7 @@ async function generateOpener(
 
   // ── Fallback (no API key) ────────────────────────────────────
   if (!OPENAI_API_KEY) {
-    if (tracked.length > 0) {
-      const top = tracked.reduce((a, b) =>
-        (b.completed_count / Math.max(b.scheduled_count, 1)) >
-        (a.completed_count / Math.max(a.scheduled_count, 1)) ? b : a
-      )
-      const untrackedNote = untracked.length > 0
-        ? ` ${untracked.map(h => h.habit_name).join(', ')} were on your plate too.`
-        : ''
-      return `Hey ${firstName}! Solid week — ${top.completed_count}/${top.scheduled_count} on ${top.habit_name}.${untrackedNote} How'd the week feel?`
-    }
-    const habitList = habits.map(h => h.habit_name).join(', ')
-    return `Hey ${firstName}! Nice job staying with ${habitList || 'your habits'} this week. How did it go?`
+    return safeOpener(firstName, habits)
   }
 
   // ── Build the data context ───────────────────────────────────
@@ -290,13 +301,26 @@ Respond with ONLY the SMS message text — no quotes, no preamble.${languageDire
 
     const data = await content.json()
     const reply = (data.choices?.[0]?.message?.content || '').trim().replace(/^["']|["']$/g, '')
+
+    // Guard against fabricated completion stats. The AI may ONLY cite an X/Y figure that
+    // matches real tracked data; any other completion number — or ANY number-of-days claim
+    // when there is no tracked data at all — is a hallucination (e.g. "completing 5/7 days"
+    // of workouts for a habit the user isn't tracking). Throw it out for a safe opener.
+    const allowedFractions = new Set(
+      tracked.filter(h => h.scheduled_count > 0).map(h => `${h.completed_count}/${h.scheduled_count}`)
+    )
+    const citedFractions = (reply.match(/\b\d+\s*\/\s*\d+\b/g) || []).map(s => s.replace(/\s+/g, ''))
+    const hasFakeFraction = citedFractions.some(f => !allowedFractions.has(f))
+    const hasCountButNoData = tracked.length === 0 &&
+      /\b\d+\s*\/\s*\d+\b|\b\d+\s+days?\b|\b\d+\s+(?:out of|of)\s+\d+\b/i.test(reply)
+    if (hasFakeFraction || hasCountButNoData) {
+      console.warn(`Reflection opener had a fabricated completion stat; using safe fallback. reply="${reply}"`)
+      return safeOpener(firstName, habits)
+    }
     return reply
   } catch (error) {
     console.error('Error generating opener:', error)
-    if (tracked.length > 0) {
-      return `Hey ${firstName}! Time for your weekly reflection — how did it go?`
-    }
-    return `Hey ${firstName}! Nice job staying with your habits this week. How did it go?`
+    return safeOpener(firstName, habits)
   }
 }
 
