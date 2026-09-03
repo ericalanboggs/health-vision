@@ -540,6 +540,129 @@ Worth doing when there are users whose weeks it can read.
 
 ---
 
+## 20. Situational / Context-Triggered Habits
+
+**Priority:** High
+**Status:** Idea, scoped (2026-09-03)
+**Value:** Covers the class of behavior Summit currently cannot represent at all —
+and it is the class where a two-way SMS coach beats every reminder app
+
+### The idea
+
+Some habits are not scheduled, they are *situational*. "When I go out to eat, ask
+for a to-go box and put half in it before I start." "When I travel, walk the
+terminal." "When work gets loud, take the four-count breath."
+
+They do not slip because the user forgot the intention. They slip because the cue
+arrives and the intention is not in the room.
+
+### The reframe: this is a data-model gap, not a reminder gap
+
+Everything in Summit today is **time-triggered**. `weekly_habits` is
+`day_of_week` + `reminder_time`. The cue for a situational habit is not Thursday
+at 6pm, it is *being handed a menu*.
+
+Right now the model actively punishes these. "Box half my entrée" would sit in
+`weekly_habits` on arbitrary days, fire a reminder at 8am when the user is nowhere
+near a restaurant, get no reply, and drag down the completion rate. The user learns
+to ignore it.
+
+**A situational habit cannot be missed.** If you did not eat out, nothing failed.
+The current schema has no way to say that, and that is the actual bug.
+
+### Layer zero: `habit_kind`
+
+`habit_kind: 'scheduled' | 'situational'`. Situational habits:
+
+- are **excluded** from `send-sms-reminders`, `habit-sms-followup`, and
+  completion-rate math (same shape as the `archived_at` and `motivation_mode`
+  exclusions — every sender already knows how to filter)
+- store a **trigger** (`"when I eat out"`) and an **if-then script**
+  (`"ask for a to-go box when I order"`) as first-class fields, not free text
+- are scored as **opportunities taken**, not days completed — "3 dinners out,
+  boxed half at 2." Needs a nullable/absent day rather than
+  `habit_tracking_entries.completed = false` for a day the situation never arose.
+
+This lands adjacent to the `habit_kind` field already sketched for Conversational
+SMS Phase 3 (daily-total vs avoidance habits) — worth designing the two together
+so there is one enum, not two.
+
+### Why the trigger has to be a real field
+
+These are **implementation intentions** — Gollwitzer's if-then plans, one of the
+better-replicated findings in behavior change (Gollwitzer & Sheeran's 2006
+meta-analysis pooled ~94 independent tests and found a medium-to-large effect).
+The effect comes specifically from pre-committing the *cue*, not from being
+reminded more often. **Verify the exact figures before any of this goes into
+marketing copy** — cited here from memory as the rationale for the schema shape.
+
+That is the argument for structuring the trigger rather than storing a sentence:
+the cue is the active ingredient.
+
+### Three delivery options, ranked
+
+**1. Weekly email/SMS summary of situational habits — weakest alone, keep a piece.**
+The failure mode is recall *at the moment*; a Monday email is not present at the
+moment. It does buy rehearsal, which genuinely helps. So: a small block inside the
+existing weekly digest ("situations you're working on this week"), not its own
+artifact.
+
+**2. User announces the moment over SMS — cheapest real intervention, lead with this.**
+Text "heading out to dinner" and Summit answers in seconds with the user's own
+if-then script, then logs an opportunity. Needs an intent branch in
+`habit-sms-response` (next to the existing manage-habits detector) and one table.
+It is **pull**, so it costs no attention budget, and it self-selects for the
+moments that actually matter. No other habit app can do this — it exists only
+because Summit already has a live two-way channel with intent routing.
+
+**3. Read-only calendar — an input, not a feature.** It does not nudge anyone. What
+it does is fill in "dinner Thursday at 7" without the user typing it. Covers only
+the situations that are calendared (dinners, travel, back-to-backs — yes; "I'm at
+the grocery store," "work got stressful" — no). See §19 for the OAuth cost.
+
+### Suggested sequence
+
+| Phase | Scope | Effort | Depends on |
+|---|---|---|---|
+| 1 | `habit_kind` + situational habits as real objects, opportunity-counting | ~2-3 days | — |
+| 2 | Harvest upcoming situations in the Sunday reflection → just-in-time SMS | ~2 days | 1 |
+| 3 | Announce-a-moment intent branch in `habit-sms-response` | ~1-2 days | 1 |
+| 4 | Calendar read auto-fills the moments table | ~1 week + Google verification | §19, 2 |
+
+**Phase 2 is the sleeper.** `sms-reflection-response` is already a multi-turn Sunday
+conversation. Adding one exchange — "anything coming up this week where the to-go
+box matters?" — harvests the week's moments from the human, stores them, and fires
+a just-in-time SMS an hour ahead. That converts the weekly-email idea into a
+just-in-time nudge with **zero new channel and no new OAuth**.
+
+Phase 4 then stops being a feature and becomes "remove the typing from a loop we
+already know works." That is a much easier call to make than paying Google's tax to
+find out whether the loop works at all.
+
+### Watch-outs
+
+1. **Cadence is the risk, not the tech.** Moment nudges stack on top of morning
+   reminders, followups, reflection, confidence checks, and motivation sends. A
+   moment nudge should probably **replace** that day's followup rather than add to
+   it, with a hard daily ceiling. Same lesson as Conversational SMS: cadence risk >
+   tech risk.
+2. **Any inferred situation must be confirm-first.** "Lunch w/ Sarah" might be at a
+   desk. A system that guesses a situation and asserts it is the same failure as the
+   coach claiming "Archived your habits!" with no write behind it. Hold the
+   `sms-manage-habits` trust boundary: the LLM proposes, the user confirms, code acts.
+3. **Do not let opportunity-counting become a streak.** "3 dinners out, boxed half
+   at 2" is data. It must not render as "you failed 1 of 3." See the philosophy
+   appendix below.
+
+### Deliberately not doing yet
+
+**Geofencing.** Genuinely the best possible trigger for "I'm at a restaurant," and
+it is the honest answer to the cue problem. It needs the native iOS app that does
+not exist yet, plus background-location permission and battery cost. Park it as a
+reason the iOS app gets more interesting later, not a reason to build it now.
+
+---
+
 ## Appendix: Core Philosophy Reminders
 
 When evaluating features, remember:
@@ -552,4 +675,4 @@ When evaluating features, remember:
 
 ---
 
-*Last updated: August 2026*
+*Last updated: September 2026*
