@@ -78,7 +78,7 @@ serve(async (req) => {
     if (habitUserIds.length > 0) {
       const { data: profiles, error: profilesErr } = await supabase
         .from('profiles')
-        .select('id, first_name, phone, sms_opt_in, timezone, subscription_status, trial_ends_at, challenge_type')
+        .select('id, first_name, phone, sms_opt_in, timezone, subscription_status, trial_ends_at, challenge_type, admin_sms_hold_until')
         .in('id', habitUserIds)
         .eq('sms_opt_in', true)
         // Mirror send-sms-reminders exactly: Motivation Mode users are off the
@@ -114,6 +114,16 @@ serve(async (req) => {
     const remindedUserIds = new Set((todayReminders || []).map(r => r.user_id))
 
     const missingReminders: MissingReminder[] = []
+    // Suppressed on purpose, not failed. send-sms-reminders skips anyone under an
+    // active admin hold (see isAdminHoldActive in _shared/sms.ts), so those users
+    // legitimately have no reminder today. Reported separately rather than
+    // dropped: "Jen got nothing because you're mid-conversation with her" is
+    // useful, "Jen got nothing" is a false alarm.
+    //
+    // Same class of bug as the motivation_mode exclusion above. Any future
+    // skip condition added to send-sms-reminders needs mirroring here too, or it
+    // shows up as a failure.
+    const heldUsers: MissingReminder[] = []
 
     for (const profile of smsEligibleProfiles) {
       if (remindedUserIds.has(profile.id)) continue
@@ -148,7 +158,9 @@ serve(async (req) => {
         console.error(`Timezone error for ${profile.first_name}:`, e)
       }
 
-      missingReminders.push({
+      const holdUntil = profile.admin_sms_hold_until
+      const onHold = !!holdUntil && new Date(holdUntil) > now
+      ;(onHold ? heldUsers : missingReminders).push({
         userId: profile.id,
         firstName: profile.first_name || 'Unknown',
         phone: profile.phone,
@@ -158,7 +170,7 @@ serve(async (req) => {
       })
     }
 
-    console.log(`Missing SMS reminders: ${missingReminders.length}`)
+    console.log(`Missing SMS reminders: ${missingReminders.length} (plus ${heldUsers.length} suppressed by admin hold)`)
 
     // -------------------------------------------------------
     // 2. WEEKLY DIGEST COMPLETENESS (Monday only)
@@ -228,12 +240,20 @@ serve(async (req) => {
     // -------------------------------------------------------
     const totalMissing = missingReminders.length + missingDigests.length
 
+    // heldUsers deliberately does NOT count toward totalMissing. A hold is a
+    // working system doing what it was told, and an alert that fires on correct
+    // behaviour trains you to ignore alerts.
     if (totalMissing === 0) {
-      console.log('All deliveries accounted for — no alert needed')
+      console.log(
+        heldUsers.length > 0
+          ? `All deliveries accounted for — ${heldUsers.length} suppressed by admin hold, no alert needed`
+          : 'All deliveries accounted for — no alert needed'
+      )
       return new Response(JSON.stringify({
         message: 'All deliveries complete',
         missingSmsReminders: 0,
         missingDigests: 0,
+        suppressedByAdminHold: heldUsers.length,
         diagnostics: { isMonday, dayOfWeek, ...digestDiagnostics },
       }), {
         headers: { 'Content-Type': 'application/json' },
@@ -380,6 +400,7 @@ serve(async (req) => {
         details: result.error,
         missingSmsReminders: missingReminders.length,
         missingDigests: missingDigests.length,
+        suppressedByAdminHold: heldUsers.length,
       }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },

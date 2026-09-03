@@ -12,5 +12,12 @@
         ]
       }
     ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(sips:*)",
+      "Bash(pkill -f:*)",
+      "Bash(npx astro preview:*)"
+    ]
   }
 }
