@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendEmailsInBatches, type EmailPayload } from '../_shared/resend.ts'
+import { getActiveHabitsByUser, patchHabitListInMarkdown } from '../_shared/digestHabits.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -358,9 +359,23 @@ serve(async (req) => {
     // Prepare email payloads for batch sending
     const emailPayloads: Array<EmailPayload & { userId: string; digestId: string; digestSubject: string }> = []
 
+    // Fetch current active habits for all recipients in one query so each email
+    // reflects the user's live habit set, not the snapshot taken when the digest
+    // was generated earlier in the week.
+    const habitsByUser = await getActiveHabitsByUser(
+      supabase,
+      (usersToProcess as Profile[]).map(p => p.id)
+    )
+
     for (const user of usersToProcess as Profile[]) {
       const digest = digestsByUser.get(user.id)!
-      const htmlContent = markdownToHtml(digest.email_markdown)
+      // habitsByUser lacks the user only if the batch query errored; in that
+      // case keep the stored markdown rather than wiping the habit list.
+      const freshHabits = habitsByUser.get(user.id)
+      const refreshedMarkdown = freshHabits === undefined
+        ? digest.email_markdown
+        : patchHabitListInMarkdown(digest.email_markdown, freshHabits)
+      const htmlContent = markdownToHtml(refreshedMarkdown)
       const fullHtml = buildEmailHtml(htmlContent)
 
       emailPayloads.push({

@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { sendEmail } from '../_shared/resend.ts'
+import { getActiveHabitsConsolidated, patchHabitListInMarkdown } from '../_shared/digestHabits.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
@@ -351,8 +352,17 @@ serve(async (req) => {
     console.log(`Sending digest to: ${recipientEmail}`)
     console.log(`Subject: ${digest.subject}`)
 
+    // Refresh the habit list against current (non-archived) habits so a habit
+    // archived between generation and send doesn't appear in the email. If the
+    // lookup errored (null), fall back to the stored markdown rather than wiping
+    // the habit list by accident.
+    const freshHabits = await getActiveHabitsConsolidated(supabase, digest.user_id)
+    const refreshedMarkdown = freshHabits === null
+      ? digest.email_markdown
+      : patchHabitListInMarkdown(digest.email_markdown, freshHabits)
+
     // Convert markdown to HTML
-    const htmlContent = markdownToHtml(digest.email_markdown)
+    const htmlContent = markdownToHtml(refreshedMarkdown)
     const fullHtml = buildEmailHtml(htmlContent, firstName)
 
     // Send via Resend (with retry on rate limit)
