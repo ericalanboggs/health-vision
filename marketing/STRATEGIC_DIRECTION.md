@@ -131,7 +131,16 @@ Do not add email/phone capture to any new surface. Specifically on hold:
   The Supabase-wired "text me my plan" version (which would feed SMS onboarding) is
   **v1 and deliberately deferred.** It is the known next step; it is not this quarter's
   work. Do not add the field, the table, or the edge function.
-- **No new landing pages.** The three persona pages that exist are the set.
+- **No new landing pages, with one closed exception.** The GLP-1 persona page
+  (Eric's call, 2026-11-04 — "this is the last one"; content and reasoning in
+  `marketing/glp-1-page-content.md`) is the fourth and final Tier-2 persona
+  page. It was approved specifically because the GLP-1 coursework Eric was
+  waiting on (see `positioning-lead-with-eric.md`'s Phase 4 table, GLP-1 row)
+  landed, and because the framework he brought back turned out to map
+  cleanly onto the existing Understand/Stack/Believe model rather than
+  needing new infrastructure. The hold is otherwise unchanged and applies in
+  full to anything beyond this one page — this bullet does not reopen §4.2,
+  it closes a single named exception to it.
 - **No new freebies/lead magnets** beyond the three CTAs that already exist and ship:
   wake-up call worksheet, weekly trackers, free coaching session.
 - **No popups, exit-intent, scroll-triggered capture, or gated content** anywhere on
@@ -204,8 +213,14 @@ Don't lift a hold on vibes. Concrete triggers:
 ## 7. Standing guardrails (non-negotiable, apply to all copy and code)
 
 - **Claims stay at adherence and habit mechanics.** Never specific health outcomes.
-- **Credential reads "Mayo Clinic-trained."** NBHWC exam has been taken; results are
-  weeks out. Do **not** write "board-certified" anywhere until results land.
+- **Both credentials are now live and correct (amended 2026-10-27).** The NBHWC
+  results landed; Eric is a National Board Certified Health and Wellness Coach
+  (NBC-HWC), confirmed 2026-09-29. Write it. The two credentials are separate
+  things and must not be merged: Mayo Clinic is **"trained"** and never
+  "certified" or "board-certified"; the board certification is NBHWC's, not
+  Mayo's. Live implementation: `summit-web/src/data/coaching.ts` → `COACH`.
+  *(This bullet previously forbade "board-certified" while results were pending.
+  It outlived the wait and started contradicting the live site. Superseded.)*
 - **"Coaching, not medical advice" disclaimer** is preserved verbatim on every
   freebie, tool, and page that carries method content.
 - Brand accent: `#1F7A8C`. Domain: summithealth.app.
