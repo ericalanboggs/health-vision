@@ -663,6 +663,39 @@ reason the iOS app gets more interesting later, not a reason to build it now.
 
 ---
 
+## 21. GLP-1 12-Week App Challenge (self-serve GLP-1 track)
+
+**Priority:** Low
+**Status:** Idea (2026-11-10)
+**Value:** Would give the GLP-1 page a real second option below the $300/month Signature Plan
+
+### Context
+
+On 2026-11-10 the `/use-cases/glp-1` page on summit-web went to a **single pricing tier**
+(Signature Plan only). A reader said the $12 generic app card "didn't feel like a real
+choice": the whole page argues for a coach, and the app had nothing GLP-1-specific to offer.
+
+### The idea
+
+A GLP-1 flavored 12-week challenge in the existing challenges system
+(`challengeConfig.js`, 4-week focus areas → would need 12 weeks / 3 phases):
+Understand → Stack (protein, water, movement, strength) → Believe (setback practice,
+plateau and off-ramp plan). Habit coaching only, same scope boundary as the page.
+
+### Guardrails
+
+- Never a symptom log, dose tracker, or medication advice. The app has none of these
+  and the page copy was corrected on 2026-11-10 for claiming one.
+- No drug brand names; claims stay at habit mechanics (STRATEGIC_DIRECTION.md §7).
+
+### When it ships
+
+Re-add the app tier to the GLP-1 page: in summit-web, change
+`<Pricing only="coaching" />` to `<Pricing />` in `src/pages/use-cases/glp-1.astro`,
+and point the app card at the challenge rather than the generic trial.
+
+---
+
 ## Appendix: Core Philosophy Reminders
 
 When evaluating features, remember:
