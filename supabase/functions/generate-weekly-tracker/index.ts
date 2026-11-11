@@ -386,7 +386,11 @@ async function generatePDF(data: {
   let gridTop: number
   if (data.visionStatement) {
     const maxVisionW = INNER - 50
-    const vision = truncateByWidth(data.visionStatement, interSemibold, 16.5, maxVisionW)
+    // Only the first line prints: it's the mantra. pdf-lib's drawText renders
+    // embedded newlines as extra lines, which ran into the grid below.
+    const firstLine =
+      data.visionStatement.split(/\r?\n/).map((l) => l.trim()).find((l) => l.length > 0) || ''
+    const vision = truncateByWidth(firstLine, interSemibold, 16.5, maxVisionW)
     // Big serif " glyph (Times Roman Bold, emerald)
     page.drawText('“', {
       x: LEFT, y: 676, size: 48, font: timesBold, color: EMERALD,
