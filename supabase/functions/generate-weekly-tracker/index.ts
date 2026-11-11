@@ -395,7 +395,7 @@ async function generatePDF(data: {
     page.drawText('“', {
       x: LEFT, y: 676, size: 48, font: timesBold, color: EMERALD,
     })
-    drawTrackedText(page, 'YOUR NORTH STAR', {
+    drawTrackedText(page, 'YOUR SUMMIT', {
       xLeft: LEFT + 44, y: 702, size: 7.5, font: interBold, color: MOSS, trackingEm: 0.08,
     })
     page.drawText(vision, {
